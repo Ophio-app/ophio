@@ -1,0 +1,6126 @@
+[
+ {
+  "name": "u34-1-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('button')].filter(b=>/Give input back/.test(b.textContent+b.getAttribute('aria-label'))).length+' give-back buttons; badge='+(document.querySelector('.nav__tab:nth-child(3) .badge, .nav__tab:nth-child(3) [class*=badge]')?.textContent??'none')"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "((els)=>{els[0]?.scrollIntoView({block:'center'});return els.map(e=>(e.closest('section')?.querySelector('h2,h3')?.textContent??'?')+': '+e.textContent).join(' | ')})([...document.querySelectorAll('.work-row-line')].filter(e=>/Waiting for input on/.test(e.textContent)))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work"
+   ],
+   [
+    "log",
+    "((h)=>{const sec=h?.closest('section');const row=[...(sec?.querySelectorAll('*')??[])].filter(e=>/Waiting for input on DP-1/.test(e.textContent)).at(-1);row?.scrollIntoView({block:'center'});return row?'Needs you: '+row.textContent:'Needs you: missing'})([...document.querySelectorAll('main h2')].find(h=>h.textContent==='Needs you'&&h.getClientRects().length))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "needs-you"
+   ],
+   [
+    "log",
+    "'Work tab: '+document.querySelector('.nav__tab:nth-child(3)')?.textContent"
+   ]
+  ]
+ },
+ {
+  "name": "u34-1-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('button')].filter(b=>/Give input back/.test(b.textContent+b.getAttribute('aria-label'))).length+' give-back buttons; badge='+(document.querySelector('.nav__tab:nth-child(3) .badge, .nav__tab:nth-child(3) [class*=badge]')?.textContent??'none')"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "((els)=>{els[0]?.scrollIntoView({block:'center'});return els.map(e=>(e.closest('section')?.querySelector('h2,h3')?.textContent??'?')+': '+e.textContent).join(' | ')})([...document.querySelectorAll('.work-row-line')].filter(e=>/Waiting for input on/.test(e.textContent)))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work"
+   ],
+   [
+    "log",
+    "((h)=>{const sec=h?.closest('section');const row=[...(sec?.querySelectorAll('*')??[])].filter(e=>/Waiting for input on DP-1/.test(e.textContent)).at(-1);row?.scrollIntoView({block:'center'});return row?'Needs you: '+row.textContent:'Needs you: missing'})([...document.querySelectorAll('main h2')].find(h=>h.textContent==='Needs you'&&h.getClientRects().length))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "needs-you"
+   ],
+   [
+    "log",
+    "'Work tab: '+document.querySelector('.nav__tab:nth-child(3)')?.textContent"
+   ]
+  ]
+ },
+ {
+  "name": "u34-1-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('button')].filter(b=>/Give input back/.test(b.textContent+b.getAttribute('aria-label'))).length+' give-back buttons; badge='+(document.querySelector('.nav__tab:nth-child(3) .badge, .nav__tab:nth-child(3) [class*=badge]')?.textContent??'none')"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "((els)=>{els[0]?.scrollIntoView({block:'center'});return els.map(e=>(e.closest('section')?.querySelector('h2,h3')?.textContent??'?')+': '+e.textContent).join(' | ')})([...document.querySelectorAll('.work-row-line')].filter(e=>/Waiting for input on/.test(e.textContent)))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work"
+   ],
+   [
+    "log",
+    "((h)=>{const sec=h?.closest('section');const row=[...(sec?.querySelectorAll('*')??[])].filter(e=>/Waiting for input on DP-1/.test(e.textContent)).at(-1);row?.scrollIntoView({block:'center'});return row?'Needs you: '+row.textContent:'Needs you: missing'})([...document.querySelectorAll('main h2')].find(h=>h.textContent==='Needs you'&&h.getClientRects().length))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "needs-you"
+   ],
+   [
+    "log",
+    "'Work tab: '+document.querySelector('.nav__tab:nth-child(3)')?.textContent"
+   ]
+  ]
+ },
+ {
+  "name": "u34-1-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('button')].filter(b=>/Give input back/.test(b.textContent+b.getAttribute('aria-label'))).length+' give-back buttons; badge='+(document.querySelector('.nav__tab:nth-child(3) .badge, .nav__tab:nth-child(3) [class*=badge]')?.textContent??'none')"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "((els)=>{els[0]?.scrollIntoView({block:'center'});return els.map(e=>(e.closest('section')?.querySelector('h2,h3')?.textContent??'?')+': '+e.textContent).join(' | ')})([...document.querySelectorAll('.work-row-line')].filter(e=>/Waiting for input on/.test(e.textContent)))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work"
+   ],
+   [
+    "log",
+    "((h)=>{const sec=h?.closest('section');const row=[...(sec?.querySelectorAll('*')??[])].filter(e=>/Waiting for input on DP-1/.test(e.textContent)).at(-1);row?.scrollIntoView({block:'center'});return row?'Needs you: '+row.textContent:'Needs you: missing'})([...document.querySelectorAll('main h2')].find(h=>h.textContent==='Needs you'&&h.getClientRects().length))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "needs-you"
+   ],
+   [
+    "log",
+    "'Work tab: '+document.querySelector('.nav__tab:nth-child(3)')?.textContent"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-844",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-1280",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-2-1280-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('work');ui.reset('work',[{screen:'next_up'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'front: '+document.querySelector('.work-queue-state')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "next-up"
+   ],
+   [
+    "clickSel",
+    ".work-queue li .btn--primary"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'queued review foot: '+document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review-foot')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "queue-review"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.saveDraft(ids.pTide,null,{text:'Tidy the README'});ui.selectTab('talk');ui.reset('talk',[{screen:'review',projectId:ids.pTide,taskId:null}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'review held: '+document.querySelector('.review__held')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__held')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u34-3-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+   ],
+   [
+    "log",
+    "'toast: '+[...document.querySelectorAll('.toasts button')].map(b=>b.getAttribute('aria-label')??b.textContent).join(', ')+' in '+document.querySelector('.toasts')?.getAttribute('aria-label')"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+   ],
+   [
+    "shot",
+    "typing"
+   ]
+  ]
+ },
+ {
+  "name": "u34-3-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+   ],
+   [
+    "log",
+    "'toast: '+[...document.querySelectorAll('.toasts button')].map(b=>b.getAttribute('aria-label')??b.textContent).join(', ')+' in '+document.querySelector('.toasts')?.getAttribute('aria-label')"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+   ],
+   [
+    "shot",
+    "typing"
+   ]
+  ]
+ },
+ {
+  "name": "u34-3-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+   ],
+   [
+    "log",
+    "'toast: '+[...document.querySelectorAll('.toasts button')].map(b=>b.getAttribute('aria-label')??b.textContent).join(', ')+' in '+document.querySelector('.toasts')?.getAttribute('aria-label')"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+   ],
+   [
+    "shot",
+    "typing"
+   ]
+  ]
+ },
+ {
+  "name": "u34-3-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+   ],
+   [
+    "log",
+    "'toast: '+[...document.querySelectorAll('.toasts button')].map(b=>b.getAttribute('aria-label')??b.textContent).join(', ')+' in '+document.querySelector('.toasts')?.getAttribute('aria-label')"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+   ],
+   [
+    "shot",
+    "typing"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-844",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-1280",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-5-1280-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('work',[{screen:'receipt',taskId:ids.tDash}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const c=b=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:b});await c({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await c({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request button')].find(b=>b.textContent==='Put back in composer').click()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'talk: '+document.querySelector('.composer textarea')?.value+' / '+([...document.querySelectorAll('.talk-held')].at(-1)?.textContent)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "'receipt after: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent).join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt-back"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-844",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-1280",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-4-1280-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'not_delivered',commandId:null,detail:'Couldn\u2019t upload the markup. Nothing was sent to studio.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');const text='Make the legend match the new colours.';ui.saveDraft(ids.pTide,ids.tDash,{text,attempt:{...{phase:'unknown',commandId:'c-lost',detail:'The connection dropped before studio answered. It may have arrived.'},at:Date.now(),text}});ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.notice')].map(n=>n.getAttribute('role')+': '+n.textContent).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.notice')?.scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "unknown"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-844",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-1280",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-6-1280-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.safety-rail button')].map(b=>b.getAttribute('aria-label')).join(' | ')"
+   ],
+   [
+    "shot",
+    "caption"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.safety-rail button')].find(b=>/^Stop \u00b7 Fix the flaky/.test(b.getAttribute('aria-label')||''))?.click()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.safety-rail .stop-status[role=status]')?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "wait",
+    10500
+   ],
+   [
+    "log",
+    "'rail: '+document.querySelector('.safety-rail')?.textContent"
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(x=>x.task_id===ids.tFlaky);const r=h.runs.find(x=>x.run_id===t.current_run);const run={...r,state:'reconciliation_required',outcome:{summary:null,changed_files:[],checks:[],usage:null,still_active:[],unknowns:['Shell commands started by the agent may still be running']}};h.runs=h.runs.map(x=>x.run_id===run.run_id?run:x);h.emit({type:'run_upserted',run});const item={attention_id:crypto.randomUUID(),kind:'reconciliation_required',title:t.title,body:null,task_id:t.task_id,run_id:run.run_id,approval_id:null,created_at:Date.now(),resolved_at:null,priority:5};h.attention=[...h.attention,item];h.emit({type:'attention_upserted',item})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')].find(b=>/Work/.test(b.textContent))?.click()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'brief: '+document.querySelector('.work-brief')?.textContent"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-brief')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "brief"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-844",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-1280",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-7-1280-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.reset('work',[{screen:'receipt',taskId:ids.tHeaders}]);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {withPlan}=await import('/src/screens/talk/carryPlan.ts');const h=window.__sim.host;const plan='1. Add the headers middleware.\\n2. Cover 429s with a `Retry-After` test.';const add=item=>h.emit({type:'timeline_appended',task_id:ids.tHeaders,item:{seq:h.seq+1,at:Date.now(),run_id:ids.rHeaders,item}});add({kind:'user_message',text:withPlan('Go ahead, but keep the public API unchanged.',{text:plan,number:1}),bundle:null,delivery:'native_delivered',carried_plan:{run_id:ids.rHeaders,text:plan}});add({kind:'user_message',text:withPlan('Like before:',{text:'Delete the release branch.',number:1}),bundle:null,delivery:'native_delivered'})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-2)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'receipt: '+[...document.querySelectorAll('.receipt-request')].map(r=>r.textContent+' [figures '+r.querySelectorAll('figure').length+']').join(' | ')"
+   ],
+   [
+    "shot",
+    "receipt"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.receipt-request')].at(-1)?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "shot",
+    "typed"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-844",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-1280",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-8-1280-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('[role=radio]')].find(b=>b.textContent.trim()==='Add to Next up').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelector('.review__auth').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "log",
+    "'when: '+document.querySelector('.review__auth').closest('section').innerText"
+   ],
+   [
+    "shot",
+    "when"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-844",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-844-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-844-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-1280",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ },
+ {
+  "name": "u34-9-1280-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.selectTab('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'pause_input',target_id:ids.tgDp1}})})()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'online: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "online"
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "'offline: '+[...document.querySelectorAll('.safety-rail .named-stop__button')].map(b=>{const l=b.querySelector('.btn__label');const r=b.getBoundingClientRect();return b.getAttribute('aria-label')+' => h='+Math.round(r.height)+' w='+Math.round(r.width)+' clipped='+(l.scrollHeight>l.clientHeight+1||l.scrollWidth>l.clientWidth+1)+' action='+[...b.querySelectorAll('.named-stop__action')].map(a=>{const ar=a.getBoundingClientRect(),lr=l.getBoundingClientRect();return a.textContent+(ar.bottom<=lr.bottom+1&&ar.right<=lr.right+1?' whole':' CUT')})}).join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "'sheet: '+[...document.querySelectorAll('.sheet[open] .row')].map(r=>r.innerText.replace(/\\n/g,' / ')).join(' | ')"
+   ],
+   [
+    "eval",
+    "document.querySelector('.sheet[open] .row__reported')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "'pills: '+[...document.querySelectorAll('.sheet[open] .row__reported')].map(p=>{const r=p.closest('.row'),cs=getComputedStyle(r),a=p.getBoundingClientRect(),b=r.getBoundingClientRect();return (a.left>=b.left+parseFloat(cs.paddingLeft)-1&&a.right<=b.right-parseFloat(cs.paddingRight)+1)?'inside':'OUT'}).join(' ')"
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ]
+  ]
+ }
+]

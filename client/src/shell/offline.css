@@ -1,0 +1,10 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.offline-card { display: grid; gap: var(--s4); max-width: 36rem; margin-inline: auto; overflow-wrap: break-word; }
+.offline-card h1 { font-size: var(--text-2xl); line-height: 1.2; font-weight: 650; }
+.offline-card__actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.offline-card summary { display: flex; align-items: center; min-height: var(--target); cursor: pointer; color: var(--accent-text); }
+.offline-card dl { display: grid; gap: var(--s2); font-size: var(--text-sm); }
+.offline-card dd { margin: 0 0 var(--s2); }
+.offline-card dt { color: var(--ink-3); }
+.offline-foot { padding: var(--s3) max(var(--s4), var(--safe-left)) var(--s3) max(var(--s4), var(--safe-right)); }
+.offline-foot > * { max-width: 36rem; margin-inline: auto; }

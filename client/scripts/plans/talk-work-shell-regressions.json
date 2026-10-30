@@ -1,0 +1,1907 @@
+[
+  {
+    "name": "P2-task-switch-light",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "clickSel",
+        "nav[aria-label='Main'] button:has-text('Work')"
+      ],
+      [
+        "clickSel",
+        ".tab:not(.is-hidden) .route:not(.is-hidden) button.row:has-text('Check the staging dashboard')"
+      ],
+      [
+        "eval",
+        "if(window.__p2app.ui.route().screen!=='talk'||window.__p2app.ui.get().taskByProject['0192f7a1-0000-7000-8000-000000000101']!=='0192f7a1-0000-7000-8000-000000000204') throw Error('Wrong task route')"
+      ],
+      [
+        "eval",
+        "const title=document.querySelector('.talk-bar__title-text');if(getComputedStyle(title).overflow!=='hidden')throw Error('Task title paints outside its line clamp')"
+      ]
+    ]
+  },
+  {
+    "name": "P2-correction-light",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const p={...h.projects[0],active_writer:null};h.projects[0]=p;h.emit({type:'project_upserted',project:p});"
+      ],
+      [
+        "click",
+        "Not quite — A"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible."
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "click",
+        "Done typing"
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.route:not(.is-hidden) button')].find(b=>b.textContent.trim()==='Continue');if(!b||b.disabled)throw Error('Continue not usable');b.scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-receipt-file-light",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.route:not(.is-hidden) button.row')].find(b=>b.textContent.includes('README.md'));b.scrollIntoView({block:'center'});b.focus();window.__p2scroll=b.closest('.screen__body').scrollTop"
+      ],
+      [
+        "click",
+        "README.md"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "shot",
+        "file"
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "eval",
+        "if(window.__p2app.ui.route().screen!=='receipt'||!document.activeElement.textContent.includes('README.md'))throw Error('Receipt focus not restored');const b=document.activeElement.closest('.screen__body');if(Math.abs(b.scrollTop-window.__p2scroll)>2)throw Error('Receipt scroll not restored')"
+      ]
+    ]
+  },
+  {
+    "name": "P2-task-switch-dark",
+    "scale": 1,
+    "settle": 850,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "clickSel",
+        "nav[aria-label='Main'] button:has-text('Work')"
+      ],
+      [
+        "clickSel",
+        ".tab:not(.is-hidden) .route:not(.is-hidden) button.row:has-text('Check the staging dashboard')"
+      ],
+      [
+        "eval",
+        "if(window.__p2app.ui.route().screen!=='talk'||window.__p2app.ui.get().taskByProject['0192f7a1-0000-7000-8000-000000000101']!=='0192f7a1-0000-7000-8000-000000000204') throw Error('Wrong task route')"
+      ],
+      [
+        "eval",
+        "const title=document.querySelector('.talk-bar__title-text');if(getComputedStyle(title).overflow!=='hidden')throw Error('Task title paints outside its line clamp')"
+      ]
+    ]
+  },
+  {
+    "name": "P2-correction-dark",
+    "scale": 1,
+    "settle": 850,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const p={...h.projects[0],active_writer:null};h.projects[0]=p;h.emit({type:'project_upserted',project:p});"
+      ],
+      [
+        "click",
+        "Not quite — A"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible."
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "click",
+        "Done typing"
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.route:not(.is-hidden) button')].find(b=>b.textContent.trim()==='Continue');if(!b||b.disabled)throw Error('Continue not usable');b.scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-receipt-file-dark",
+    "scale": 1,
+    "settle": 850,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.route:not(.is-hidden) button.row')].find(b=>b.textContent.includes('README.md'));b.scrollIntoView({block:'center'});b.focus();window.__p2scroll=b.closest('.screen__body').scrollTop"
+      ],
+      [
+        "click",
+        "README.md"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "shot",
+        "file"
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "eval",
+        "if(window.__p2app.ui.route().screen!=='receipt'||!document.activeElement.textContent.includes('README.md'))throw Error('Receipt focus not restored');const b=document.activeElement.closest('.screen__body');if(Math.abs(b.scrollTop-window.__p2scroll)>2)throw Error('Receipt scroll not restored')"
+      ]
+    ]
+  },
+  {
+    "name": "P2-task-switch-large",
+    "scale": 1,
+    "settle": 850,
+    "width": 360,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "clickSel",
+        "nav[aria-label='Main'] button:has-text('Work')"
+      ],
+      [
+        "clickSel",
+        ".tab:not(.is-hidden) .route:not(.is-hidden) button.row:has-text('Check the staging dashboard')"
+      ],
+      [
+        "eval",
+        "if(window.__p2app.ui.route().screen!=='talk'||window.__p2app.ui.get().taskByProject['0192f7a1-0000-7000-8000-000000000101']!=='0192f7a1-0000-7000-8000-000000000204') throw Error('Wrong task route')"
+      ],
+      [
+        "eval",
+        "const title=document.querySelector('.talk-bar__title-text');if(getComputedStyle(title).overflow!=='hidden')throw Error('Task title paints outside its line clamp')"
+      ]
+    ]
+  },
+  {
+    "name": "P2-correction-large",
+    "scale": 1,
+    "settle": 850,
+    "width": 360,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const p={...h.projects[0],active_writer:null};h.projects[0]=p;h.emit({type:'project_upserted',project:p});"
+      ],
+      [
+        "click",
+        "Not quite — A"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible."
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "click",
+        "Done typing"
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.route:not(.is-hidden) button')].find(b=>b.textContent.trim()==='Continue');if(!b||b.disabled)throw Error('Continue not usable');b.scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-receipt-file-large",
+    "scale": 1,
+    "settle": 850,
+    "width": 360,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.route:not(.is-hidden) button.row')].find(b=>b.textContent.includes('README.md'));b.scrollIntoView({block:'center'});b.focus();window.__p2scroll=b.closest('.screen__body').scrollTop"
+      ],
+      [
+        "click",
+        "README.md"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "shot",
+        "file"
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "eval",
+        "if(window.__p2app.ui.route().screen!=='receipt'||!document.activeElement.textContent.includes('README.md'))throw Error('Receipt focus not restored');const b=document.activeElement.closest('.screen__body');if(Math.abs(b.scrollTop-window.__p2scroll)>2)throw Error('Receipt scroll not restored')"
+      ]
+    ]
+  },
+  {
+    "name": "P2-queue-removed",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002006');window.__p2app.ui.reset('talk');window.__p2app.ui.push({screen:'next_up'},'work')"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".work-queue > li:has-text('Review keyboard navigation') button:has-text('Remove…')"
+      ],
+      [
+        "click",
+        "Remove Review keyboard navigation"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        "nav[aria-label='Main'] button:has-text('Talk')"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.composer')?.textContent.includes('starts when'))throw Error('Stale queue promise')"
+      ]
+    ]
+  },
+  {
+    "name": "P2-offline-light",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');window.__p2app.ui.reset('talk')"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk-working .stateline__spinner'))throw Error('Offline spinner');if(!document.querySelector('.talk-bar__meta').textContent.includes('last reported'))throw Error('Unqualified badge')"
+      ],
+      [
+        "shot",
+        "talk"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.push({screen:'agents'},'work')"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const e=[...document.querySelectorAll('.tab:not(.is-hidden) .route:not(.is-hidden) article')].find(e=>e.textContent.includes('Check the staging dashboard'));e?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-offline-dark-large",
+    "scale": 1,
+    "settle": 850,
+    "dark": true,
+    "text": 2,
+    "width": 360,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');window.__p2app.ui.reset('talk')"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk-working .stateline__spinner'))throw Error('Offline spinner');if(!document.querySelector('.talk-bar__meta').textContent.includes('last reported'))throw Error('Unqualified badge')"
+      ],
+      [
+        "shot",
+        "talk"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.push({screen:'agents'},'work')"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const e=[...document.querySelectorAll('.tab:not(.is-hidden) .route:not(.is-hidden) article')].find(e=>e.textContent.includes('Check the staging dashboard'));e?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-offline-wide",
+    "scale": 1,
+    "settle": 850,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');window.__p2app.ui.reset('talk')"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk-working .stateline__spinner'))throw Error('Offline spinner');if(!document.querySelector('.talk-bar__meta').textContent.includes('last reported'))throw Error('Unqualified badge')"
+      ],
+      [
+        "shot",
+        "talk"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.push({screen:'agents'},'work')"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const e=[...document.querySelectorAll('.tab:not(.is-hidden) .route:not(.is-hidden) article')].find(e=>e.textContent.includes('Check the staging dashboard'));e?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-windows-status",
+    "path": "/?host=windows",
+    "scale": 1,
+    "dark": false,
+    "settle": 850,
+    "steps": [
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__body').scrollTop=420"
+      ],
+      [
+        "shot",
+        "capabilities"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('dialog[open] .section')].find(e=>e.textContent.includes('Start at sign-in'));el?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-windows-stop-unavailable",
+    "path": "/?host=windows&indicator=missing",
+    "scale": 1,
+    "dark": true,
+    "settle": 850,
+    "steps": [
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__body').scrollTop=420"
+      ],
+      [
+        "shot",
+        "capabilities"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('dialog[open] .section')].find(e=>e.textContent.includes('Start at sign-in'));el?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-gnome-status",
+    "path": "/?host=gnome",
+    "scale": 1,
+    "dark": false,
+    "settle": 850,
+    "steps": [
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__body').scrollTop=420"
+      ],
+      [
+        "shot",
+        "capabilities"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('dialog[open] .section')].find(e=>e.textContent.includes('Start at sign-in'));el?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-gnome-stop-unavailable",
+    "path": "/?host=gnome&indicator=missing",
+    "scale": 1,
+    "dark": true,
+    "settle": 850,
+    "steps": [
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__body').scrollTop=420"
+      ],
+      [
+        "shot",
+        "capabilities"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('dialog[open] .section')].find(e=>e.textContent.includes('Start at sign-in'));el?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-kde-status",
+    "path": "/?host=kde",
+    "scale": 1,
+    "dark": false,
+    "settle": 850,
+    "steps": [
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__body').scrollTop=420"
+      ],
+      [
+        "shot",
+        "capabilities"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('dialog[open] .section')].find(e=>e.textContent.includes('Start at sign-in'));el?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-kde-stop-unavailable",
+    "path": "/?host=kde&indicator=missing",
+    "scale": 1,
+    "dark": true,
+    "settle": 850,
+    "steps": [
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__body').scrollTop=420"
+      ],
+      [
+        "shot",
+        "capabilities"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('dialog[open] .section')].find(e=>e.textContent.includes('Start at sign-in'));el?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-hyprland-status",
+    "path": "/?host=hyprland",
+    "scale": 1,
+    "dark": false,
+    "settle": 850,
+    "steps": [
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__body').scrollTop=420"
+      ],
+      [
+        "shot",
+        "capabilities"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('dialog[open] .section')].find(e=>e.textContent.includes('Start at sign-in'));el?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-hyprland-stop-unavailable",
+    "path": "/?host=hyprland&indicator=missing",
+    "scale": 1,
+    "dark": true,
+    "settle": 850,
+    "steps": [
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__body').scrollTop=420"
+      ],
+      [
+        "shot",
+        "capabilities"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('dialog[open] .section')].find(e=>e.textContent.includes('Start at sign-in'));el?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-Y4-recovery-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project · Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Delete…"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Delete README.md"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Recently deleted"
+      ],
+      [
+        "click",
+        "README.md"
+      ],
+      [
+        "shot",
+        "inspect"
+      ],
+      [
+        "click",
+        "Restore original path"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "P2-Y4-move-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project · Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Move…"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text('docs')"
+      ],
+      [
+        "click",
+        "Choose this folder"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Move file"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".route:not(.is-hidden) button.row:has-text('docs')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "P2-annotate-landscape-focused",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'marks');location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible while the menu opens."
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-stage svg image')) throw Error('Missing marked crop'); if(document.querySelectorAll('[aria-label=\"Back and keep draft\"]').length!==1) throw Error('Close control count');"
+      ],
+      [
+        "shot",
+        "focused"
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-screen.is-composing')) throw Error('Comment jumped out of typing');"
+      ]
+    ]
+  },
+  {
+    "name": "P2-trim-review-light",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'clip');location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "clickSel",
+        "summary"
+      ],
+      [
+        "fill",
+        "Range start (seconds)",
+        "0.3"
+      ],
+      [
+        "fill",
+        "Range end (seconds)",
+        "1.1"
+      ],
+      [
+        "click",
+        "Apply trim"
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('input[aria-label=\"Clip position\"]'); if(s.min!=='0.3'||s.max!=='1.1') throw Error('Scrubber not trimmed');"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Add this moment"
+      ],
+      [
+        "fill",
+        "Describe step 1",
+        "Open the menu"
+      ],
+      [
+        "click",
+        "+1 s"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Add this moment"
+      ],
+      [
+        "fill",
+        "Describe step 2",
+        "The chart disappears"
+      ],
+      [
+        "fill",
+        "Expected",
+        "The chart stays visible"
+      ],
+      [
+        "fill",
+        "Actual",
+        "The chart disappears"
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})();if(!document.querySelector('.an-outgoing')) throw Error('Missing outgoing review');"
+      ],
+      [
+        "shot",
+        "frames"
+      ],
+      [
+        "eval",
+        "const range=document.querySelector('.an-reviewed-ranges');if(!range||document.querySelectorAll('.an-reviewed-ranges p').length!==1)throw Error('Trim range repeated or missing');const body=range.closest('.screen__body');if(body)body.scrollTop+=range.getBoundingClientRect().top-body.getBoundingClientRect().top"
+      ],
+      [
+        "shot",
+        "range"
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing-steps');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ],
+    "scale": 1
+  },
+  {
+    "name": "P2-trim-review-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'clip');location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "clickSel",
+        "summary"
+      ],
+      [
+        "fill",
+        "Range start (seconds)",
+        "0.3"
+      ],
+      [
+        "fill",
+        "Range end (seconds)",
+        "1.1"
+      ],
+      [
+        "click",
+        "Apply trim"
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('input[aria-label=\"Clip position\"]'); if(s.min!=='0.3'||s.max!=='1.1') throw Error('Scrubber not trimmed');"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Add this moment"
+      ],
+      [
+        "fill",
+        "Describe step 1",
+        "Open the menu"
+      ],
+      [
+        "click",
+        "+1 s"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Add this moment"
+      ],
+      [
+        "fill",
+        "Describe step 2",
+        "The chart disappears"
+      ],
+      [
+        "fill",
+        "Expected",
+        "The chart stays visible"
+      ],
+      [
+        "fill",
+        "Actual",
+        "The chart disappears"
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})();if(!document.querySelector('.an-outgoing')) throw Error('Missing outgoing review');"
+      ],
+      [
+        "shot",
+        "frames"
+      ],
+      [
+        "eval",
+        "const range=document.querySelector('.an-reviewed-ranges');if(!range||document.querySelectorAll('.an-reviewed-ranges p').length!==1)throw Error('Trim range repeated or missing');const body=range.closest('.screen__body');if(body)body.scrollTop+=range.getBoundingClientRect().top-body.getBoundingClientRect().top"
+      ],
+      [
+        "shot",
+        "range"
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing-steps');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ],
+    "scale": 1
+  },
+  {
+    "name": "P2-trim-review-large",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'clip');location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "clickSel",
+        "summary"
+      ],
+      [
+        "fill",
+        "Range start (seconds)",
+        "0.3"
+      ],
+      [
+        "fill",
+        "Range end (seconds)",
+        "1.1"
+      ],
+      [
+        "click",
+        "Apply trim"
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('input[aria-label=\"Clip position\"]'); if(s.min!=='0.3'||s.max!=='1.1') throw Error('Scrubber not trimmed');"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Add this moment"
+      ],
+      [
+        "fill",
+        "Describe step 1",
+        "Open the menu"
+      ],
+      [
+        "click",
+        "+1 s"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Add this moment"
+      ],
+      [
+        "fill",
+        "Describe step 2",
+        "The chart disappears"
+      ],
+      [
+        "fill",
+        "Expected",
+        "The chart stays visible"
+      ],
+      [
+        "fill",
+        "Actual",
+        "The chart disappears"
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})();if(!document.querySelector('.an-outgoing')) throw Error('Missing outgoing review');"
+      ],
+      [
+        "shot",
+        "frames"
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing-steps');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ],
+      [
+        "eval",
+        "const range=document.querySelector('.an-reviewed-ranges');if(!range||document.querySelectorAll('.an-reviewed-ranges p').length!==1)throw Error('Trim range repeated or missing');const body=range.closest('.screen__body');if(body)body.scrollTop+=range.getBoundingClientRect().top-body.getBoundingClientRect().top"
+      ],
+      [
+        "shot",
+        "range"
+      ],
+      [
+        "shot",
+        "steps"
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.screen__footer--flow');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop=b.scrollHeight;else throw Error('Review action missing')})()"
+      ]
+    ],
+    "scale": 1
+  },
+  {
+    "name": "P2-annotate-empty",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'empty');location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ]
+    ],
+    "scale": 1
+  },
+  {
+    "name": "P2-annotate-source-error",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'missing');location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-canvas')?.textContent.includes('missing from phone storage'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-canvas');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ],
+    "scale": 1
+  },
+  {
+    "name": "P2-stream-light",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "const a=window.__p2app,t=window.__sim.host.tasks.find(t=>t.task_id.endsWith('0204'));a.ui.selectTask(t.project_id,t.task_id);a.ui.reset('talk');a.session.state.set(s=>({...s,liveText:{demo:{key:'demo',taskId:t.task_id,runId:t.current_run,text:'The chart remains visible while the menu opens.',at:Date.now()}},timelines:{...s.timelines,[t.task_id]:{loaded:true,hasMore:false,items:[{seq:10000,at:Date.now(),run_id:t.current_run,item:{kind:'agent_message',text:'I have the dashboard open.',partial:true}}]}}}));"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk-caret'))throw Error('Stray streaming caret');const line=document.querySelector('.talk-working');if(!line)throw Error('Working status missing');line.scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-stream-dark-large",
+    "scale": 1,
+    "settle": 850,
+    "dark": true,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "const a=window.__p2app,t=window.__sim.host.tasks.find(t=>t.task_id.endsWith('0204'));a.ui.selectTask(t.project_id,t.task_id);a.ui.reset('talk');a.session.state.set(s=>({...s,liveText:{demo:{key:'demo',taskId:t.task_id,runId:t.current_run,text:'The chart remains visible while the menu opens.',at:Date.now()}},timelines:{...s.timelines,[t.task_id]:{loaded:true,hasMore:false,items:[{seq:10000,at:Date.now(),run_id:t.current_run,item:{kind:'agent_message',text:'I have the dashboard open.',partial:true}}]}}}));"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk-caret'))throw Error('Stray streaming caret');const line=document.querySelector('.talk-working');if(!line)throw Error('Working status missing');line.scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-stream-wide",
+    "scale": 1,
+    "settle": 850,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "const a=window.__p2app,t=window.__sim.host.tasks.find(t=>t.task_id.endsWith('0204'));a.ui.selectTask(t.project_id,t.task_id);a.ui.reset('talk');a.session.state.set(s=>({...s,liveText:{demo:{key:'demo',taskId:t.task_id,runId:t.current_run,text:'The chart remains visible while the menu opens.',at:Date.now()}},timelines:{...s.timelines,[t.task_id]:{loaded:true,hasMore:false,items:[{seq:10000,at:Date.now(),run_id:t.current_run,item:{kind:'agent_message',text:'I have the dashboard open.',partial:true}}]}}}));"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk-caret'))throw Error('Stray streaming caret');const line=document.querySelector('.talk-working');if(!line)throw Error('Working status missing');line.scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-future-expiry-light",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const approval={...h.approvals[0],expires_at:Date.now()+241000};h.approvals[0]=approval;h.emit({type:'approval_upserted',approval});window.__p2app.ui.selectTask(approval.project_id,approval.task_id);window.__p2app.ui.reset('talk');"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const time=[...document.querySelectorAll('time')].find(e=>e.textContent==='in 4 min');if(!time)throw Error('Future expiry should say in 4 min');time.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-future-expiry-dark",
+    "scale": 1,
+    "settle": 850,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const approval={...h.approvals[0],expires_at:Date.now()+241000};h.approvals[0]=approval;h.emit({type:'approval_upserted',approval});window.__p2app.ui.selectTask(approval.project_id,approval.task_id);window.__p2app.ui.reset('talk');"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const time=[...document.querySelectorAll('time')].find(e=>e.textContent==='in 4 min');if(!time)throw Error('Future expiry should say in 4 min');time.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "P2-reusable-route",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__p2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__p2app.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'talk')"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Make reusable…"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(window.__p2app.ui.route().screen!=='reusable'||document.querySelector('[role=dialog]'))throw Error('Reusable must use its own route')"
+      ]
+    ]
+  },
+  {
+    "name": "P2-upload-source",
+    "scale": 1,
+    "settle": 850,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__p2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const a=window.__p2app,h=window.__sim.host,task=h.tasks.find(t=>t.task_id.endsWith('2001'));const bytes=new TextEncoder().encode('Reviewed source');const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');const receipt=await a.session.command({command:'create_upload_reviewed',name:'source.txt',size:bytes.length,sha256:hash,destination:{kind:'artifact'},collision:{choice:'keep_both',name:'source (1).txt'},task_id:task.task_id},{label:'Upload reviewed source'});if(receipt.result?.kind!=='transfer')throw Error('Declaration rejected');const id=receipt.result.transfer.transfer_id;h.transfers=h.transfers.map(t=>t.transfer_id===id?{...t,transferred:bytes.length}:t);const done=await h.finishUpload(id,hash,'text/plain',bytes);if(!done.ok)throw Error(done.reason);const artifact=a.session.state.get().artifacts[done.artifactId];if(!artifact?.links?.some(l=>l.task_id===task.task_id&&l.role==='source'))throw Error('Missing Source link');a.ui.push({screen:'transfers'},'library')})()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "P2-Y4-instructions-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902','docs/retry-policy.md','# Changed instructions\\n')"
+      ],
+      [
+        "click",
+        "Refresh instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "discovered"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[1]?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "loaded"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[2]?.scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "P2-Y4-reusable-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "What happened in this task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Make reusable…"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.route:not(.is-hidden) select'); s.value='sim-drafts'; s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "fill",
+        "Draft file name",
+        "retry-task.md"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Save reviewed draft"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "P2-Y4-transfer-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Transfers"
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text')"
+      ],
+      [
+        "fill",
+        "File name",
+        "note.md"
+      ],
+      [
+        "fill",
+        "File text",
+        "A reviewed note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "shot",
+        "reset"
+      ],
+      [
+        "fill",
+        "File text",
+        "A second note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "collision"
+      ],
+      [
+        "click",
+        "Keep both"
+      ],
+      [
+        "wait",
+        900
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "P2-Y4-transfer-replace",
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Transfers"
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text')"
+      ],
+      [
+        "fill",
+        "File name",
+        "README.md"
+      ],
+      [
+        "fill",
+        "File text",
+        "# Replacement reviewed on phone"
+      ],
+      [
+        "clickSel",
+        "label.transfer-choice:has-text('A project folder')"
+      ],
+      [
+        "click",
+        "Choose folder…"
+      ],
+      [
+        "click",
+        "Use this folder"
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "decision"
+      ],
+      [
+        "click",
+        "Replace README.md"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "width": 360,
+    "text": 2
+  },
+  {
+    "name": "P2-annotate-large-focused",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'marks');location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible while the menu opens."
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-stage svg image')) throw Error('Missing marked crop'); if(document.querySelectorAll('[aria-label=\"Back and keep draft\"]').length!==1) throw Error('Close control count');"
+      ],
+      [
+        "shot",
+        "focused"
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-screen.is-composing')) throw Error('Comment jumped out of typing');"
+      ]
+    ],
+    "scale": 1
+  },
+  {
+    "name": "P2-localhost-preview-offline-large",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "eval",
+        "(async()=>{const {previewCompletion}=await import('/src/dev/sim/annotationCompletion.ts');previewCompletion(window.__sim.host)})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('#control-previews');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ],
+    "scale": 1
+  },
+  {
+    "name": "P2-annotate-large-keyboard",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'marks');location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible while the menu opens."
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-stage svg image')) throw Error('Missing marked crop'); if(document.querySelectorAll('[aria-label=\"Back and keep draft\"]').length!==1) throw Error('Close control count');"
+      ],
+      [
+        "height",
+        600
+      ],
+      [
+        "shot",
+        "focused"
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-screen.is-composing')) throw Error('Comment jumped out of typing');"
+      ]
+    ],
+    "scale": 1
+  }
+]

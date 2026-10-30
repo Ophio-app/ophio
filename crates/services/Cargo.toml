@@ -1,0 +1,71 @@
+[package]
+name = "services"
+description = "Application services: admission, dispatch, control arbitration, library, transfers"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+toml = "0.9"
+jev = { path = "../jev" }
+voice-control = { path = "../voice-control" }
+protocol.workspace = true
+domain.workspace = true
+ports.workspace = true
+store.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+bytes.workspace = true
+ed25519-dalek = "2.2"
+report-fixer = { path = "../report-fixer" }
+report-pipeline = { path = "../report-pipeline" }
+intake = { path = "../intake" }
+
+sha2 = "0.10.9"
+sha1-checked = "0.10.0"
+flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
+base64 = "0.22.1"
+getrandom = "0.3.4"
+subtle = "2.6.1"
+zeroize = "1.9"
+url = "2.5.7"
+cap-std = "3.4.5"
+rustix = { version = "1.1.4", features = ["fs"] }
+reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls"] }
+time = { version = "0.3.55", features = ["parsing"] }
+pulldown-cmark = { version = "0.13.4", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Wdk_Storage_FileSystem", "Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_IO"] }
+
+[features]
+testing = []
+
+[dev-dependencies]
+services = { path = ".", features = ["testing"] }
+axum = "0.8"
+terminal.workspace = true
+store = { workspace = true, features = ["testing"] }
+accounts.workspace = true
+harness-claude.workspace = true
+harness-codex.workspace = true
+test-support = { path = "../test-support" }
+rusqlite = { version = "0.38.0", features = ["bundled"] }
+tempfile = "3.23.0"
+library.workspace = true
+sandbox.workspace = true
+tokio = { version = "1.53.1", features = ["test-util"] }
+
+[lints]
+workspace = true
+
+[[example]]
+name = "hub_bench"
+required-features = ["testing"]

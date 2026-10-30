@@ -1,0 +1,4 @@
+[env]
+# JSON numbers become JS numbers; journal sequences stay far below 2^53.
+TS_RS_LARGE_INT = "number"
+TS_RS_EXPORT_DIR = { value = "client/src/protocol/generated", relative = true }

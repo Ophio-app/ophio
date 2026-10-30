@@ -1,0 +1,33 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Øphio",
+  "version": "0.1.0",
+  "identifier": "app.ophio",
+  "build": {
+    "frontendDist": "../dist",
+    "beforeBuildCommand": "node src-tauri/tools/sync-native.mjs && npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Øphio",
+        "width": 430,
+        "height": 900
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [],
+    "icon": [
+      "icons/icon.png"
+    ],
+    "android": {
+      "minSdkVersion": 29
+    }
+  }
+}

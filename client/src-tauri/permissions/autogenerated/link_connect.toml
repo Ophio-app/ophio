@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-link-connect"
+description = "Enables the link_connect command without any pre-configured scope."
+commands.allow = ["link_connect"]
+
+[[permission]]
+identifier = "deny-link-connect"
+description = "Denies the link_connect command without any pre-configured scope."
+commands.deny = ["link_connect"]

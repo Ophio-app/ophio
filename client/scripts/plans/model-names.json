@@ -1,0 +1,437 @@
+[
+  {
+    "name": "U42-1-talk",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Code \\u00b7 Opus 5.5\"))throw Error('Missing '+\"Claude Code \\u00b7 Opus 5.5\");if(t.includes(\"Claude Code \\u00b7 Claude\"))throw Error('Unexpected '+\"Claude Code \\u00b7 Claude\");"
+      ]
+    ]
+  },
+  {
+    "name": "U42-1-talk-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Code \\u00b7 Opus 5.5\"))throw Error('Missing '+\"Claude Code \\u00b7 Opus 5.5\");if(t.includes(\"Claude Code \\u00b7 Claude\"))throw Error('Unexpected '+\"Claude Code \\u00b7 Claude\");"
+      ]
+    ]
+  },
+  {
+    "name": "U42-1-talk-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Code \\u00b7 Opus 5.5\"))throw Error('Missing '+\"Claude Code \\u00b7 Opus 5.5\");if(t.includes(\"Claude Code \\u00b7 Claude\"))throw Error('Unexpected '+\"Claude Code \\u00b7 Claude\");"
+      ]
+    ]
+  },
+  {
+    "name": "U42-1-talk-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Code \\u00b7 Opus 5.5\"))throw Error('Missing '+\"Claude Code \\u00b7 Opus 5.5\");if(t.includes(\"Claude Code \\u00b7 Claude\"))throw Error('Unexpected '+\"Claude Code \\u00b7 Claude\");"
+      ]
+    ]
+  },
+  {
+    "name": "U42-1-talk-landscape",
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Code \\u00b7 Opus 5.5\"))throw Error('Missing '+\"Claude Code \\u00b7 Opus 5.5\");if(t.includes(\"Claude Code \\u00b7 Claude\"))throw Error('Unexpected '+\"Claude Code \\u00b7 Claude\");"
+      ]
+    ]
+  },
+  {
+    "name": "U42-12-receipt-alias",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Opus (latest)\"))throw Error('Missing '+\"Claude Opus (latest)\");if(!t.includes(\"Claude Opus 5.5\"))throw Error('Missing '+\"Claude Opus 5.5\");if(t.includes(\"Different from requested\"))throw Error('Unexpected '+\"Different from requested\");"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U42-2-receipt-fallback",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-sonnet-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Opus (latest)\"))throw Error('Missing '+\"Claude Opus (latest)\");if(!t.includes(\"Claude Sonnet 5\"))throw Error('Missing '+\"Claude Sonnet 5\");if(!t.includes(\"Different from requested\"))throw Error('Missing '+\"Different from requested\");"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U42-3-offline",
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Cannot reach the computer. Check its address and private network.')"
+      ],
+      [
+        "wait",
+        2500
+      ],
+      [
+        "clickSel",
+        "button.status"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const e=[...document.querySelectorAll('dialog[open] *')].filter(e=>e.textContent.startsWith('Cannot reach the computer')).at(-1);if(!e)throw Error('Missing reason');const d=e.textContent;if(!/^Cannot reach the computer\\. Check its address and private network\\. Last heard (just now|.+ ago)\\. Trying again (now|in .+)\\.$/.test(d))throw Error('Unexpected detail: '+d);if(/[.!?…]\\s*[.!?]/.test(d))throw Error('Doubled punctuation: '+d)"
+      ]
+    ]
+  },
+  {
+    "name": "U42-12-receipt-alias-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Opus (latest)\"))throw Error('Missing '+\"Claude Opus (latest)\");if(!t.includes(\"Claude Opus 5.5\"))throw Error('Missing '+\"Claude Opus 5.5\");if(t.includes(\"Different from requested\"))throw Error('Unexpected '+\"Different from requested\");"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U42-2-receipt-fallback-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-sonnet-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Opus (latest)\"))throw Error('Missing '+\"Claude Opus (latest)\");if(!t.includes(\"Claude Sonnet 5\"))throw Error('Missing '+\"Claude Sonnet 5\");if(!t.includes(\"Different from requested\"))throw Error('Missing '+\"Different from requested\");"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U42-3-offline-dark",
+    "dark": true,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Cannot reach the computer. Check its address and private network.')"
+      ],
+      [
+        "wait",
+        2500
+      ],
+      [
+        "clickSel",
+        "button.status"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const e=[...document.querySelectorAll('dialog[open] *')].filter(e=>e.textContent.startsWith('Cannot reach the computer')).at(-1);if(!e)throw Error('Missing reason');const d=e.textContent;if(!/^Cannot reach the computer\\. Check its address and private network\\. Last heard (just now|.+ ago)\\. Trying again (now|in .+)\\.$/.test(d))throw Error('Unexpected detail: '+d);if(/[.!?…]\\s*[.!?]/.test(d))throw Error('Doubled punctuation: '+d)"
+      ]
+    ]
+  },
+  {
+    "name": "U42-12-receipt-alias-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Opus (latest)\"))throw Error('Missing '+\"Claude Opus (latest)\");if(!t.includes(\"Claude Opus 5.5\"))throw Error('Missing '+\"Claude Opus 5.5\");if(t.includes(\"Different from requested\"))throw Error('Unexpected '+\"Different from requested\");"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U42-2-receipt-fallback-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-sonnet-5'};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;if(!t.includes(\"Claude Opus (latest)\"))throw Error('Missing '+\"Claude Opus (latest)\");if(!t.includes(\"Claude Sonnet 5\"))throw Error('Missing '+\"Claude Sonnet 5\");if(!t.includes(\"Different from requested\"))throw Error('Missing '+\"Different from requested\");"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U42-3-offline-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Cannot reach the computer. Check its address and private network.')"
+      ],
+      [
+        "wait",
+        2500
+      ],
+      [
+        "clickSel",
+        "button.status"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const e=[...document.querySelectorAll('dialog[open] *')].filter(e=>e.textContent.startsWith('Cannot reach the computer')).at(-1);if(!e)throw Error('Missing reason');const d=e.textContent;if(!/^Cannot reach the computer\\. Check its address and private network\\. Last heard (just now|.+ ago)\\. Trying again (now|in .+)\\.$/.test(d))throw Error('Unexpected detail: '+d);if(/[.!?…]\\s*[.!?]/.test(d))throw Error('Doubled punctuation: '+d)"
+      ]
+    ]
+  }
+]

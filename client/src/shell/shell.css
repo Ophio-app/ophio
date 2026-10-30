@@ -1,0 +1,950 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* ---- Frame ------------------------------------------------------------- */
+
+.app {
+  --nav-h: 4rem;
+  position: relative;
+  display: grid;
+  grid-template: "notice" auto "main" minmax(0, 1fr) "safety" auto "nav" auto / minmax(0, 1fr);
+  height: 100%;
+  height: 100dvh;
+  background: var(--bg);
+  /* The frame never scrolls, not even to reveal a focused control: moved, it
+     would lift the navigation over a blank band. Screens scroll inside it. */
+  overflow: hidden;
+  overflow: clip;
+}
+
+.app__notice {
+  grid-area: notice;
+  min-width: 0;
+  min-height: 0;
+  /* Keep the screen and Stop usable with large text or a short viewport. */
+  max-height: 40dvh;
+  overflow: auto;
+}
+
+.app__main {
+  grid-area: main;
+  position: relative;
+  min-height: 0;
+}
+
+/* Control safety for a desktop the agent or this phone holds, shown on every
+   other screen. Never hidden by the keyboard. */
+.app__safety {
+  grid-area: safety;
+}
+.app__safety:empty {
+  display: none;
+}
+
+.tab,
+.route {
+  position: absolute;
+  inset: 0;
+}
+
+.route {
+  background: var(--bg);
+}
+
+/* A display full screen: the picture on black, edge to edge. */
+.app--full,
+.app--full .route {
+  background: #000;
+}
+
+/* Kept mounted so selection and drafts survive; not rendered. Shell puts
+   scroll offsets and focus back when one is shown again. content-visibility
+   left a returned route blank in Chromium, so hiding is display: none. */
+.tab.is-hidden,
+.route.is-hidden {
+  display: none;
+}
+
+/* ---- Screen -------------------------------------------------------------- */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.screen__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.screen__body--fixed {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen__inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--s2) max(var(--s4), var(--safe-left)) var(--s8) max(var(--s4), var(--safe-right));
+}
+
+.screen__footer {
+  flex: none;
+}
+
+.screen__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s2) 0 var(--s3);
+}
+.screen__title {
+  font-size: var(--text-2xl);
+  font-weight: 680;
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+}
+.screen__meta {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+
+.screen__loading {
+  height: 100%;
+  min-height: 12rem;
+}
+/* Still shapes, no shimmer: the only motion is one fade, after a pause long
+   enough that a quick load never shows it. */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding-top: var(--s3);
+  opacity: 0;
+  animation: skeleton-in var(--dur-2) var(--ease) 160ms forwards;
+}
+@keyframes skeleton-in {
+  to { opacity: 1; }
+}
+.skeleton__bar {
+  display: block;
+  width: 72%;
+  height: 0.75rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--line) 60%, transparent);
+}
+.skeleton__bar--title {
+  width: 55%;
+  height: 1.6rem;
+}
+.skeleton__bar--meta {
+  width: 38%;
+  margin-bottom: var(--s3);
+}
+.skeleton__bar--short {
+  width: 45%;
+}
+.skeleton__group {
+  background: var(--surface-raised);
+  border-radius: var(--r-sm) var(--r-lg) var(--r-lg) var(--r-sm);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: calc(var(--target) + var(--s2));
+  padding: var(--s3) var(--s4);
+}
+.skeleton__row + .skeleton__row {
+  border-top: 1px solid var(--line);
+}
+.skeleton__icon {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+}
+.skeleton__lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+/* ---- Context header (tab roots) ------------------------------------------ */
+
+.ctx {
+  container: ctx / inline-size;
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: calc(3.5rem + var(--safe-top));
+  padding: var(--safe-top) max(var(--s2), var(--safe-right)) 0 max(var(--s2), var(--safe-left));
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.ctx::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--filament);
+  mask: var(--branch-mask) right center / 480px auto no-repeat;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.ctx__context {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  min-height: var(--target);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-md);
+  text-align: left;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.ctx__heading {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  font: inherit;
+}
+.ctx__context:active {
+  background: var(--surface-pressed);
+}
+
+.ctx__project {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+}
+.ctx__project-name {
+  /* At large text sizes the name stops growing before it would break inside
+     a word; a name like "tidewater-api" then wraps after its hyphen. */
+  font-size: min(var(--text-lg), 6cqi);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  /* Tall enough that the box holds descenders, which it clips. */
+  line-height: 1.3;
+  /* Two lines before the ellipsis, so large text sizes, which widen the name
+     but not the bar, leave a short name whole rather than "Phone ap…". */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.ctx__chevron {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+  color: var(--ink-3);
+}
+.ctx__computer {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.ctx__end {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  margin-left: auto;
+  flex: none;
+}
+
+/* ---- Connection status ---------------------------------------------------- */
+
+.status {
+  --dot: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: var(--target);
+  min-width: var(--target);
+  padding: 0 var(--s3);
+  border-radius: var(--r-full);
+  font-size: var(--text-sm);
+  font-weight: 560;
+  color: var(--ink-2);
+  transition: background-color var(--dur-1) var(--ease);
+}
+.status:active {
+  background: var(--surface-pressed);
+}
+.status__label {
+  white-space: nowrap;
+}
+.status__dot {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--dot);
+  flex: none;
+}
+.status--ok {
+  --dot: var(--ok);
+}
+.status--warn {
+  --dot: var(--warn);
+  color: var(--warn-text);
+}
+.status--stop {
+  --dot: var(--stop);
+  color: var(--stop-text);
+}
+.status--neutral .status__dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+.status--compact {
+  padding: 0;
+}
+.status--compact .status__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+/* ---- Screen bar (pushed destinations) ------------------------------------- */
+
+.bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  min-height: calc(3.5rem + var(--safe-top));
+  padding: var(--safe-top) max(var(--s1), var(--safe-right)) 0 max(var(--s1), var(--safe-left));
+  background: var(--bg);
+}
+.bar__titles {
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--s1);
+}
+/* A screen's title is its identity, so it wraps rather than being cut. */
+.bar__title {
+  font-size: var(--text-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: var(--leading-tight);
+  overflow-wrap: break-word;
+}
+.bar__subtitle {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+/* Cramped, the bar keeps to the height of its buttons and the subtitle follows
+   the title where it fits, so the screen below keeps its content. */
+:root.app-cramped .bar {
+  min-height: calc(var(--target) + var(--safe-top));
+}
+:root.app-cramped .bar__titles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--s2);
+}
+:root.app-cramped .bar__title {
+  min-width: 0;
+}
+:root.app-cramped .bar__subtitle {
+  flex: 1 1 4rem;
+}
+
+/* ---- Bottom navigation ---------------------------------------------------- */
+
+.nav {
+  grid-area: nav;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  container: nav / inline-size;
+  min-height: calc(var(--nav-h) + var(--safe-bottom));
+  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.nav__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: var(--nav-h);
+  padding: var(--s1) 0 var(--s2);
+  color: var(--ink-3);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.nav__pill {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  max-width: 100%;
+  height: 2rem;
+  border-radius: var(--r-full);
+  transition: background-color var(--dur-2) var(--ease);
+}
+.nav__icon {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+.nav__label {
+  /* Keep all five names legible even at large text sizes on narrow phones. */
+  font-size: min(var(--text-xs), 5.2cqi);
+  font-weight: 560;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.nav__tab.is-on {
+  color: var(--ink);
+}
+.nav__tab.is-on .nav__pill {
+  background: var(--signal);
+  color: var(--on-signal);
+  border-radius: 45% 55% 40% 60% / 55% 48% 52% 45%;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.nav__tab.is-on .nav__icon {
+  animation: nav-unfurl 420ms var(--ease);
+}
+@keyframes nav-unfurl {
+  0% { transform: scale(0.78) rotate(-12deg); }
+  55% { transform: scale(1.08) rotate(5deg); }
+  100% { transform: none; }
+}
+.nav__tab.is-on .nav__label {
+  font-weight: 680;
+}
+.nav__tab:active .nav__pill {
+  background: var(--bloom-soft);
+  color: var(--bloom);
+}
+.nav__dot {
+  position: absolute;
+  top: 3px;
+  right: 0.85rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Keyboard open: content and input first. The header offers Hide keyboard. */
+:root.kb-open .nav {
+  display: none;
+}
+@media (max-height: 520px) {
+  :root.kb-open .ctx__computer {
+    display: none;
+  }
+}
+
+/* Short for the text size (large text, a phone on its side; see keyboard.ts):
+   each pinned bar keeps to one line of essentials, so the content keeps a
+   readable share of the screen. Nothing is removed that isn't one tap away. */
+:root.app-tight .app {
+  /* The pill and one line of label; never below a touch target. */
+  --nav-h: max(48px, calc(2.55rem + 6px));
+}
+:root.app-tight .nav__tab {
+  gap: 0;
+  padding: 2px 0 var(--s1);
+}
+:root.app-tight .nav__pill {
+  height: 1.625rem;
+}
+
+/* If a screen's own pinned parts still outgrow it, the screen scrolls as a
+   whole rather than letting them spill over the safety strip; its body keeps
+   a readable minimum. */
+:root.app-tight .screen {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+:root.app-tight .screen__body {
+  min-height: min(10rem, 45%);
+}
+:root.app-tight .ctx__computer {
+  display: none;
+}
+/* Without the computer's line the header needs only its touch target. */
+:root.app-tight .ctx {
+  min-height: calc(var(--target) + var(--safe-top));
+}
+
+/* Narrow for the text size (large text on a phone; see keyboard.ts): a
+   screen bar keeps Back and its actions on one row and gives the title the
+   full width below, and the attention entry stacks its time under the
+   chevron beside the label. */
+:root.app-narrow .bar {
+  flex-wrap: wrap;
+}
+:root.app-narrow .bar__titles {
+  flex: 1 0 100%;
+  order: 2;
+  padding: 0 var(--s3) var(--s2);
+}
+:root.app-narrow .bar__title {
+  font-size: var(--text-md);
+}
+:root.app-narrow .bar__subtitle {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+:root.app-narrow .bar__actions {
+  margin-left: auto;
+}
+
+/* In the scroll, the footer is the end of the content rather than a bar. */
+.screen__footer--flow {
+  margin-top: var(--s2);
+}
+
+/* Wide screens (tablets, landscape, desktop windows): a side rail. */
+@media (min-width: 900px) {
+  .app {
+    grid-template: "nav notice" auto "nav main" minmax(0, 1fr) "nav safety" auto / 5.5rem minmax(0, 1fr);
+  }
+  .nav {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    container-type: normal;
+    grid-auto-rows: 4.5rem;
+    align-content: start;
+    padding: calc(var(--safe-top) + var(--s4)) 0 var(--safe-bottom) var(--safe-left);
+    border-top: 0;
+    border-right: 1px solid var(--line);
+  }
+  :root.kb-open .nav {
+    display: grid;
+  }
+}
+
+/* A phone on its side, on every tab: navigation and the safety rail share
+   the bottom row, so the content keeps most of the short height. */
+@media (max-height: 480px) and (min-width: 700px) {
+  .app__notice {
+    /* Leave room below the screen header and tabs, even at 200% text. */
+    max-height: 20dvh;
+  }
+  .app {
+    grid-template: "notice" auto "main" minmax(0, 1fr) "safety" auto "nav" auto / minmax(0, 1fr);
+  }
+  .app:has(> .app__safety > .safety-rail) {
+    grid-template: "notice notice" auto "main main" minmax(0, 1fr) "nav safety" auto / auto minmax(0, 1fr);
+  }
+  .nav {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    /* Sized by its labels here, so it can't be measured as a container, and
+       spaced so five of them don't run together. */
+    container-type: normal;
+    column-gap: var(--s2);
+    grid-auto-rows: auto;
+    align-content: stretch;
+    padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+    border-top: 1px solid var(--line);
+    border-right: 0;
+  }
+  .nav__pill {
+    width: 2.75rem;
+  }
+  :root.kb-open .nav {
+    display: none;
+  }
+}
+
+/* ---- Toasts ---------------------------------------------------------------- */
+
+/* Toasts belong to the main area, so the safety rail and navigation below it
+   stay uncovered and clickable at every size. They rise above a pinned
+   footer and never cover it: the footer holds the field being typed into and
+   the screen's confirm action, while the content above scrolls and is only
+   covered for the few seconds a toast shows (its text is announced and
+   recorded elsewhere too). Where the room above the footer is short for the
+   newest toast, its text scrolls inside it; an older toast is cut at the top,
+   and on a short screen or with the keyboard up only the newest shows. */
+.toasts {
+  position: absolute;
+  grid-area: main;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3);
+  overflow: hidden;
+  pointer-events: none;
+}
+.toasts::after {
+  content: "";
+  flex: none;
+  height: var(--screen-footer-h, 0px);
+  margin-top: calc(-1 * var(--s2));
+}
+.toast {
+  display: grid;
+  flex: none;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "icon text action close";
+  align-items: center;
+  column-gap: var(--s2);
+  width: 100%;
+  max-width: 34rem;
+  min-height: min(3rem, 100%);
+  padding: var(--s1) var(--s1) var(--s1) var(--s4);
+  /* The same raised surface and shape as a list, lifted off the ground with
+     a violet edge; the texture along its end is in material.css. */
+  border-radius: var(--r-sm) var(--r-lg) var(--r-lg) var(--r-sm);
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--toast-edge), var(--shadow-float);
+  --toast-edge: color-mix(in srgb, var(--bloom) 45%, var(--line));
+  font-size: var(--text-sm);
+  pointer-events: auto;
+  animation: toast-in var(--dur-2) var(--ease);
+}
+.toast:last-of-type {
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+:root:is(.app-tight, .kb-open) .toast:not(:last-of-type) {
+  display: none;
+}
+.toast__icon {
+  grid-area: icon;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--bloom);
+}
+.toast--stop {
+  --toast-edge: var(--error);
+  box-shadow: inset 0 0 0 2px var(--toast-edge), var(--shadow-float);
+  font-size: var(--text-error);
+  font-weight: 560;
+}
+.toast--stop .toast__icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: var(--error-text);
+}
+.toast--good {
+  --toast-edge: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ok-text);
+  box-shadow: inset 0 0 0 2px var(--toast-edge), var(--shadow-float);
+}
+.toast--good .toast__icon {
+  color: var(--ok);
+}
+.toast__text {
+  grid-area: text;
+  max-height: 100%;
+  margin: 0;
+  padding: var(--s2) 0 var(--s2) var(--s1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.toast__action {
+  grid-area: action;
+  min-height: 2.5rem;
+  padding: 0 var(--s3);
+  border-radius: var(--r-sm);
+  font-weight: 650;
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.toast__close {
+  grid-area: close;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+}
+.toast__close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.toast__action:focus-visible,
+.toast__close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+/* Narrow for its text size: the text keeps the width and the action takes
+   its own line under it. */
+:root.app-narrow .toast {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "icon text close"
+    ". action action";
+  align-items: start;
+}
+:root.app-narrow .toast__icon {
+  margin-top: calc(var(--s2) + 0.2em);
+}
+:root.app-narrow .toast__action {
+  justify-self: start;
+  margin-left: calc(-1 * var(--s3) + var(--s1));
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+.app:has(> .app__safety > .safety-rail--expanded) > .toasts {
+  visibility: hidden;
+}
+
+/* ---- Shared bits used by shell sheets ------------------------------------- */
+
+.row__pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s1);
+  flex: none;
+  max-width: 45%;
+}
+/* A last-reported state is longer than a live one. It may take the row's
+   whole width, under the title, and wrap there instead of spilling past it. */
+.row__pills:has(> .row__reported) {
+  max-width: 100%;
+}
+.row__reported {
+  white-space: normal;
+}
+.row__check {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--accent-text);
+}
+.row__icon--warn {
+  background: var(--warn-soft);
+  color: var(--warn-text);
+}
+.row__icon--stop {
+  background: var(--stop-soft);
+  color: var(--stop-text);
+}
+.row__icon--ok {
+  background: var(--ok-soft);
+  color: var(--ok-text);
+}
+.row__icon--accent {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.fine {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  line-height: 1.45;
+  margin-top: var(--s3);
+}
+
+/* Centred while it fits; a long error at a large text size starts at the top
+   and scrolls here, since the page does not. */
+.boot {
+  display: grid;
+  place-content: center;
+  place-content: safe center;
+  gap: var(--s3);
+  height: 100%;
+  padding: var(--s6);
+  text-align: center;
+  overflow-wrap: anywhere;
+  overflow-y: auto;
+}
+.boot__title {
+  font-size: var(--text-xl);
+  font-weight: 650;
+}
+
+:root[data-reduce-motion="true"] .toast {
+  animation: none;
+}
+.row__subtitle--clip {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Device failures remain reachable above either pairing or the connected shell. */
+.platform-notices {
+  position: fixed;
+  z-index: 90;
+  inset: max(8px, env(safe-area-inset-top)) 12px auto;
+  max-height: 45dvh;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  max-width: 40rem;
+  margin-inline: auto;
+}
+.platform-notices .notice__body { overflow-wrap: break-word; }
+
+/* Attention belongs to Work; safety keeps a single rail above navigation. */
+.nav__count { position: absolute; top: 0; right: 0; min-width: 1.4em; padding: 0 var(--s1); border-radius: var(--r-full); background: var(--warn-soft); color: var(--warn-text); font-size: var(--text-xs); font-weight: 700; line-height: 1.5; text-align: center; }
+
+/* The collapsed safety rail reserves space for the current screen's action.
+   Expanding it reveals full task names and every other intervention. */
+:root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
+  padding-block: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Beside navigation the rail's Stop has two lines. The action word stays
+   whole: the task name is cut short on the first line, and the display it
+   uses takes the second, so neither is cut to a fragment of the other. */
+@media (max-height: 480px) and (min-width: 700px) {
+  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop .named-stop__button .btn__label {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    column-gap: 0.3em;
+    white-space: nowrap;
+  }
+  :root.app-tight .safety-rail:not(.safety-rail--expanded) :is(.named-stop__task, .named-stop__display) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__display { grid-column: 1 / -1; }
+  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__sep { display: none; }
+}
+
+/* Expanded safety owns the space above navigation. Only its content scrolls,
+   with an explicit More controls affordance; tabs never cover the last row. */
+.app__safety:has(.safety-rail--expanded) {
+  grid-row: main-start / safety-end;
+  z-index: 3;
+  min-height: 0;
+  overflow: hidden;
+}
+.app:has(> .app__safety > .safety-rail--expanded) > .app__main { visibility: hidden; }
+
+/* The open sheet owns the reachable safety controls; don't show a second copy
+   through its scrim. Keep dialogs opened from the rail itself visible. */
+:root:has(.sheet[open]) .app__safety { visibility: hidden; }
+.sheet[open] { visibility: visible; }
+
+/* On tablets the expanded rail overlays only the room its controls need. */
+@media (min-width: 700px) {
+  .app__safety:has(.safety-rail--expanded) {
+    align-self: end;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    max-height: min(75dvh, 42rem, 100%);
+  }
+  .app__safety > .safety-rail--expanded {
+    height: auto;
+    max-height: min(75dvh, 42rem);
+  }
+  .app:has(> .app__safety > .safety-rail--expanded) > .app__main { visibility: visible; }
+}
+
+/* Unread results by a project's name, and a dot on the switcher when
+   another project has something waiting. */
+.unread-count { display: inline-block; margin-inline-start: var(--s2); min-width: 1.4em; padding: 0 var(--s1); border-radius: var(--r-full); background: var(--accent-soft); color: var(--accent-text); font-size: var(--text-xs); font-weight: 700; line-height: 1.5; text-align: center; vertical-align: 0.15em; }
+.ctx__elsewhere > [aria-hidden] { display: block; flex: none; width: 0.5rem; height: 0.5rem; border-radius: var(--r-full); background: var(--accent); }
+
+/* ---- Focused destinations (focus.ts) -------------------------------------- */
+
+/* A destination opened for one purpose takes the screen like a modal: no
+   tabs, and the running-tasks rail only while a display needs attention.
+   The bottom inset moves to whatever is last. */
+.app.app--focused,
+.app.app--focused:has(> .app__safety > .safety-rail) {
+  grid-template: "notice" auto "main" minmax(0, 1fr) "safety" auto / minmax(0, 1fr);
+}
+.app--focused > .app__safety > .safety-rail {
+  padding-bottom: max(var(--s2), var(--safe-bottom));
+}
+.app--focused:not(:has(> .app__safety > .safety-rail)) .screen__footer {
+  padding-bottom: var(--safe-bottom);
+}
+
+/* The tucked rail's running tasks, beside the connection dot. */
+.rail-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  min-height: var(--target);
+  min-width: var(--target);
+  padding: 0 var(--s3);
+  border-radius: var(--r-full);
+  font-size: var(--text-sm);
+  font-weight: 640;
+  color: var(--stop-text);
+  transition: background-color var(--dur-1) var(--ease);
+}
+.rail-count:active {
+  background: var(--surface-pressed);
+}
+.rail-count__icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: currentColor;
+}
+.rail-count--input {
+  color: var(--ink-2);
+}
+.rail-count__state {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* A one-off's row, with its delete button beside it. */
+.project-row { display: flex; align-items: center; padding-inline-end: var(--s1); }
+.project-row > .row { flex: 1; min-width: 0; }

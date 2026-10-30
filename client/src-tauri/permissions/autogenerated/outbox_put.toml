@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-outbox-put"
+description = "Enables the outbox_put command without any pre-configured scope."
+commands.allow = ["outbox_put"]
+
+[[permission]]
+identifier = "deny-outbox-put"
+description = "Denies the outbox_put command without any pre-configured scope."
+commands.deny = ["outbox_put"]

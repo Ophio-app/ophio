@@ -1,0 +1,96 @@
+[
+  {
+    "name": "m2-queue-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["click", "Move down"],
+      ["wait", 400],
+      [
+        "eval",
+        "if(window.__sim.host.queue.items.find(i=>i.item_id==='0192f7a1-0000-7000-8000-000000002201').authorization!=='ask_before_start') throw Error('Authorization was not revoked')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.work-queue li')].find(e=>e.textContent.includes('Polish empty states') && e.querySelector('h2').textContent==='Polish empty states').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 200]
+    ]
+  },
+  {
+    "name": "m2-queue-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["click", "Move down"],
+      ["wait", 400],
+      [
+        "eval",
+        "if(window.__sim.host.queue.items.find(i=>i.item_id==='0192f7a1-0000-7000-8000-000000002201').authorization!=='ask_before_start') throw Error('Authorization was not revoked')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.work-queue li')].find(e=>e.textContent.includes('Polish empty states') && e.querySelector('h2').textContent==='Polish empty states').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 200]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-queue-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["click", "Move down"],
+      ["wait", 400],
+      [
+        "eval",
+        "if(window.__sim.host.queue.items.find(i=>i.item_id==='0192f7a1-0000-7000-8000-000000002201').authorization!=='ask_before_start') throw Error('Authorization was not revoked')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.work-queue li')].find(e=>e.textContent.includes('Polish empty states') && e.querySelector('h2').textContent==='Polish empty states').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 200]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-queue-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["click", "Move down"],
+      ["wait", 400],
+      [
+        "eval",
+        "if(window.__sim.host.queue.items.find(i=>i.item_id==='0192f7a1-0000-7000-8000-000000002201').authorization!=='ask_before_start') throw Error('Authorization was not revoked')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.work-queue li')].find(e=>e.textContent.includes('Polish empty states') && e.querySelector('h2').textContent==='Polish empty states').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 200]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

@@ -1,0 +1,75 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.launch-screen,
+.launch-sheet {
+  overflow-wrap: break-word;
+}
+.launch-row__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--ink-2);
+}
+.launch-row__from {
+  display: block;
+  margin-top: var(--s1);
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+.launch-sheet__desc {
+  margin: 0 0 var(--s4);
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.launch-sheet__facts {
+  display: grid;
+  gap: var(--s3);
+  margin: 0 0 var(--s4);
+}
+.launch-sheet__facts dt {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+.launch-sheet__facts dd {
+  margin: var(--s1) 0 0;
+  min-width: 0;
+}
+.launch-problems {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+.launch-problems summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.launch-problems ul {
+  margin: 0;
+  padding-inline-start: var(--s5);
+  display: grid;
+  gap: var(--s1);
+}
+
+/* ---- Library's agents and skills (library/Library.tsx, D-057) ---- */
+.library-body,
+.agents-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s3);
+}
+.agents-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.agents-row > .iconbtn {
+  margin-inline-end: var(--s2);
+  color: var(--ink-3);
+}
+/* The segments stay at the top while their list scrolls under them. */
+.agents-parts {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}

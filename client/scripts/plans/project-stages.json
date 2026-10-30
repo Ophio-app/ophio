@@ -1,0 +1,783 @@
+[
+  {
+    "name": "work-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "stages-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "work-dark",
+    "dark": true,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "stages-dark",
+    "dark": true,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "work-large",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "stages-large",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "work-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "stages-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "work-landscape",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "stages-landscape",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "review-large",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "clickSel",
+        "input[value=implementation]"
+      ],
+      [
+        "fill",
+        "Note (optional)",
+        "Scope reviewed. Start work only after a separate request."
+      ],
+      [
+        "click",
+        "Review stage"
+      ]
+    ]
+  },
+  {
+    "name": "picker-dark",
+    "dark": true,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Change stage"
+      ]
+    ]
+  },
+  {
+    "name": "review-landscape",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "clickSel",
+        "input[value=implementation]"
+      ],
+      [
+        "fill",
+        "Note (optional)",
+        "Scope reviewed. Start work only after a separate request."
+      ],
+      [
+        "click",
+        "Review stage"
+      ]
+    ]
+  },
+  {
+    "name": "stale-refusal",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "clickSel",
+        "input[value=implementation]"
+      ],
+      [
+        "fill",
+        "Note (optional)",
+        "Scope reviewed. Start work only after a separate request."
+      ],
+      [
+        "click",
+        "Review stage"
+      ],
+      [
+        "eval",
+        "window.__sim.host.stages.anotherDevice('review')"
+      ],
+      [
+        "click",
+        "Confirm stage change"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "refused"
+      ],
+      [
+        "click",
+        "Review stage"
+      ],
+      [
+        "click",
+        "Confirm stage change"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "unset-and-planning",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.stages.unset()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "shot",
+        "work-unset"
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "empty"
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "clickSel",
+        "input[value=planning]"
+      ],
+      [
+        "fill",
+        "Note (optional)",
+        "Agree on the scope before design."
+      ],
+      [
+        "click",
+        "Review stage"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "eval",
+        "window.__sim.latency(1800)"
+      ],
+      [
+        "click",
+        "Confirm stage change"
+      ],
+      [
+        "shot",
+        "pending"
+      ],
+      [
+        "wait",
+        2100
+      ]
+    ]
+  },
+  {
+    "name": "offline-history",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "revoked-history",
+    "dark": true,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "no-settings-grant",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({admin:false})"
+      ],
+      [
+        "wait",
+        1800
+      ]
+    ]
+  },
+  {
+    "name": "history-error",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.stages.failQuery=true"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "permission-refusal",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "clickSel",
+        "input[value=implementation]"
+      ],
+      [
+        "fill",
+        "Note (optional)",
+        "Scope reviewed. Start work only after a separate request."
+      ],
+      [
+        "click",
+        "Review stage"
+      ],
+      [
+        "eval",
+        "window.__sim.host.stages.failChange=true"
+      ],
+      [
+        "click",
+        "Confirm stage change"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "lost-receipt",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "clickSel",
+        "input[value=implementation]"
+      ],
+      [
+        "fill",
+        "Note (optional)",
+        "Scope reviewed. Start work only after a separate request."
+      ],
+      [
+        "click",
+        "Review stage"
+      ],
+      [
+        "eval",
+        "window.__sim.dropNextReceipt()"
+      ],
+      [
+        "click",
+        "Confirm stage change"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "dialog[open] .sheet__header button:last-child"
+      ]
+    ]
+  },
+  {
+    "name": "settings-entry",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".work-screen .screen__meta button"
+      ],
+      [
+        "shot",
+        "settings"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button:has-text(\"Project stages\")"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "draft-reopen",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "clickSel",
+        "input[value=implementation]"
+      ],
+      [
+        "fill",
+        "Note (optional)",
+        "Scope reviewed. Start work only after a separate request."
+      ],
+      [
+        "press",
+        "Escape"
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] textarea').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "storage-failure",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Change stage"
+      ],
+      [
+        "clickSel",
+        "input[value=implementation]"
+      ],
+      [
+        "fill",
+        "Note (optional)",
+        "Keep this note until storage is available."
+      ],
+      [
+        "click",
+        "Review stage"
+      ],
+      [
+        "eval",
+        "Storage.prototype.setItem = () => { throw new Error('Storage is full'); }"
+      ],
+      [
+        "click",
+        "Confirm stage change"
+      ],
+      [
+        "shot",
+        "not-sent"
+      ],
+      [
+        "click",
+        "Back to choices"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] textarea').scrollIntoView({block:'center'})"
+      ]
+    ]
+  }
+]

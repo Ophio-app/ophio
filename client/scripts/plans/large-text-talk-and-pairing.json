@@ -1,0 +1,558 @@
+[
+  {
+    "name": "composer-typing-360x780-100",
+    "width": 360,
+    "height": 780,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["clickSel", ".composer textarea"],
+      ["type", "Please also check the retry path"],
+      ["height", 420],
+      ["wait", 500],
+      ["eval", "document.activeElement.scrollIntoView({block:'nearest'})"],
+      ["wait", 200],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=r(document.querySelector('.app__main'));const c=r(document.querySelector('.composer'));const f=r(document.querySelector('.composer textarea'));const hidden=[...document.querySelectorAll('.composer button, .composer textarea, .composer summary')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=r(e);return b.bottom>main.bottom+1||b.top<main.top-1}).map(e=>(e.getAttribute('aria-label')||e.innerText).trim());return 'field '+Math.round(100*f.width/c.width)+'% of the composer; out of view: '+(hidden.join(', ')||'none')})()"]
+    ]
+  },
+  {
+    "name": "composer-typing-390x844-100",
+    "width": 390,
+    "height": 844,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["clickSel", ".composer textarea"],
+      ["type", "Please also check the retry path"],
+      ["height", 460],
+      ["wait", 500],
+      ["eval", "document.activeElement.scrollIntoView({block:'nearest'})"],
+      ["wait", 200],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=r(document.querySelector('.app__main'));const c=r(document.querySelector('.composer'));const f=r(document.querySelector('.composer textarea'));const hidden=[...document.querySelectorAll('.composer button, .composer textarea, .composer summary')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=r(e);return b.bottom>main.bottom+1||b.top<main.top-1}).map(e=>(e.getAttribute('aria-label')||e.innerText).trim());return 'field '+Math.round(100*f.width/c.width)+'% of the composer; out of view: '+(hidden.join(', ')||'none')})()"]
+    ]
+  },
+  {
+    "name": "composer-typing-390x844-100-dark",
+    "width": 390,
+    "height": 844,
+    "dark": true,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["clickSel", ".composer textarea"],
+      ["type", "Please also check the retry path"],
+      ["height", 460],
+      ["wait", 500],
+      ["eval", "document.activeElement.scrollIntoView({block:'nearest'})"],
+      ["wait", 200],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=r(document.querySelector('.app__main'));const c=r(document.querySelector('.composer'));const f=r(document.querySelector('.composer textarea'));const hidden=[...document.querySelectorAll('.composer button, .composer textarea, .composer summary')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=r(e);return b.bottom>main.bottom+1||b.top<main.top-1}).map(e=>(e.getAttribute('aria-label')||e.innerText).trim());return 'field '+Math.round(100*f.width/c.width)+'% of the composer; out of view: '+(hidden.join(', ')||'none')})()"]
+    ]
+  },
+  {
+    "name": "composer-typing-390x844-130",
+    "width": 390,
+    "height": 844,
+    "text": 1.3,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["clickSel", ".composer textarea"],
+      ["type", "Please also check the retry path"],
+      ["height", 460],
+      ["wait", 500],
+      ["eval", "document.activeElement.scrollIntoView({block:'nearest'})"],
+      ["wait", 200],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=r(document.querySelector('.app__main'));const c=r(document.querySelector('.composer'));const f=r(document.querySelector('.composer textarea'));const hidden=[...document.querySelectorAll('.composer button, .composer textarea, .composer summary')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=r(e);return b.bottom>main.bottom+1||b.top<main.top-1}).map(e=>(e.getAttribute('aria-label')||e.innerText).trim());return 'field '+Math.round(100*f.width/c.width)+'% of the composer; out of view: '+(hidden.join(', ')||'none')})()"]
+    ]
+  },
+  {
+    "name": "composer-typing-360x780-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["clickSel", ".composer textarea"],
+      ["type", "Please also check the retry path"],
+      ["height", 420],
+      ["wait", 500],
+      ["eval", "document.activeElement.scrollIntoView({block:'nearest'})"],
+      ["wait", 200],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=r(document.querySelector('.app__main'));const c=r(document.querySelector('.composer'));const f=r(document.querySelector('.composer textarea'));const hidden=[...document.querySelectorAll('.composer button, .composer textarea, .composer summary')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=r(e);return b.bottom>main.bottom+1||b.top<main.top-1}).map(e=>(e.getAttribute('aria-label')||e.innerText).trim());return 'field '+Math.round(100*f.width/c.width)+'% of the composer; out of view: '+(hidden.join(', ')||'none')})()"]
+    ]
+  },
+  {
+    "name": "composer-typing-844x390-100",
+    "width": 844,
+    "height": 390,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["clickSel", ".composer textarea"],
+      ["type", "Please also check the retry path"],
+      ["height", 200],
+      ["wait", 500],
+      ["eval", "document.activeElement.scrollIntoView({block:'nearest'})"],
+      ["wait", 200],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=r(document.querySelector('.app__main'));const c=r(document.querySelector('.composer'));const f=r(document.querySelector('.composer textarea'));const hidden=[...document.querySelectorAll('.composer button, .composer textarea, .composer summary')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=r(e);return b.bottom>main.bottom+1||b.top<main.top-1}).map(e=>(e.getAttribute('aria-label')||e.innerText).trim());return 'field '+Math.round(100*f.width/c.width)+'% of the composer; out of view: '+(hidden.join(', ')||'none')})()"]
+    ]
+  },
+  {
+    "name": "composer-typing-844x390-200",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["clickSel", ".composer textarea"],
+      ["type", "Please also check the retry path"],
+      ["height", 200],
+      ["wait", 500],
+      ["eval", "document.activeElement.scrollIntoView({block:'nearest'})"],
+      ["wait", 200],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=r(document.querySelector('.app__main'));const c=r(document.querySelector('.composer'));const f=r(document.querySelector('.composer textarea'));const hidden=[...document.querySelectorAll('.composer button, .composer textarea, .composer summary')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=r(e);return b.bottom>main.bottom+1||b.top<main.top-1}).map(e=>(e.getAttribute('aria-label')||e.innerText).trim());return 'field '+Math.round(100*f.width/c.width)+'% of the composer; out of view: '+(hidden.join(', ')||'none')})()"]
+    ]
+  },
+  {
+    "name": "composer-typing-1280x800-100",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["clickSel", ".composer textarea"],
+      ["type", "Please also check the retry path"],
+      ["height", 440],
+      ["wait", 500],
+      ["eval", "document.activeElement.scrollIntoView({block:'nearest'})"],
+      ["wait", 200],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=r(document.querySelector('.app__main'));const c=r(document.querySelector('.composer'));const f=r(document.querySelector('.composer textarea'));const hidden=[...document.querySelectorAll('.composer button, .composer textarea, .composer summary')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const b=r(e);return b.bottom>main.bottom+1||b.top<main.top-1}).map(e=>(e.getAttribute('aria-label')||e.innerText).trim());return 'field '+Math.round(100*f.width/c.width)+'% of the composer; out of view: '+(hidden.join(', ')||'none')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-360x780",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-390x844",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-844x390",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-844x390-dark",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000204');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-approval-360x780",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000201');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-approval-390x844",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000201');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-approval-844x390",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000201');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-approval-844x390-dark",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000201');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-blocked-360x780",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-blocked-390x844",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-blocked-844x390",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-blocked-844x390-dark",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-new-360x780",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null);ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-new-390x844",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null);ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-new-844x390",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null);ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-talk-new-844x390-dark",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null);ui.reset('talk',[]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-review-360x780",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null);ui.saveDraft('0192f7a1-0000-7000-8000-000000000101',null,{text:\"Add a retry budget to the payments client and cover it with a test\"});ui.reset('talk',[{screen:'review',projectId:'0192f7a1-0000-7000-8000-000000000101',taskId:null,intent:'new_task'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-review-390x844",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null);ui.saveDraft('0192f7a1-0000-7000-8000-000000000101',null,{text:\"Add a retry budget to the payments client and cover it with a test\"});ui.reset('talk',[{screen:'review',projectId:'0192f7a1-0000-7000-8000-000000000101',taskId:null,intent:'new_task'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-review-844x390",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null);ui.saveDraft('0192f7a1-0000-7000-8000-000000000101',null,{text:\"Add a retry budget to the payments client and cover it with a test\"});ui.reset('talk',[{screen:'review',projectId:'0192f7a1-0000-7000-8000-000000000101',taskId:null,intent:'new_task'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-review-844x390-dark",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null);ui.saveDraft('0192f7a1-0000-7000-8000-000000000101',null,{text:\"Add a retry budget to the payments client and cover it with a test\"});ui.reset('talk',[{screen:'review',projectId:'0192f7a1-0000-7000-8000-000000000101',taskId:null,intent:'new_task'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-receipt-360x780",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');ui.reset('talk',[{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000202'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-receipt-390x844",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');ui.reset('talk',[{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000202'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-receipt-844x390",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');ui.reset('talk',[{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000202'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "large-receipt-844x390-dark",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["eval", "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');ui.reset('talk',[{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000202'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"],
+      ["wait", 1500],
+      ["log", "(()=>{const r=e=>e.getBoundingClientRect();const main=document.querySelector('.app__main');const mb=r(main).bottom;const body=[...main.querySelectorAll('.screen__body')].filter(e=>e.getClientRects().length).pop();const pri=[...main.querySelectorAll('.btn--primary, .composer__send, .composer textarea')].filter(e=>e.getClientRects().length&&!e.closest('.screen__body')).map(e=>{const b=r(e);return (e.getAttribute('aria-label')||e.innerText||e.placeholder).trim()+(b.bottom>mb+1?' (out of view)':'')});return 'reading area '+(body?Math.round(r(body).height):0)+'px; pinned: '+pri.join(', ')})()"]
+    ]
+  },
+  {
+    "name": "pairing-refused-390x844-100",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Paste the link instead"],
+      ["wait", 300],
+      ["fill", "Pairing link", "https://example.com/pair"],
+      ["click", "Continue"],
+      ["wait", 400],
+      ["log", "document.querySelector('[role=alert]').innerText"]
+    ]
+  },
+  {
+    "name": "pairing-refused-390x844-100-dark",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "dark": true,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Paste the link instead"],
+      ["wait", 300],
+      ["fill", "Pairing link", "https://example.com/pair"],
+      ["click", "Continue"],
+      ["wait", 400],
+      ["log", "document.querySelector('[role=alert]').innerText"]
+    ]
+  },
+  {
+    "name": "pairing-refused-360x780-200",
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Paste the link instead"],
+      ["wait", 300],
+      ["fill", "Pairing link", "https://example.com/pair"],
+      ["click", "Continue"],
+      ["wait", 400],
+      ["log", "document.querySelector('[role=alert]').innerText"]
+    ]
+  },
+  {
+    "name": "pairing-refused-844x390-200",
+    "path": "/?unpaired",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Paste the link instead"],
+      ["wait", 300],
+      ["fill", "Pairing link", "https://example.com/pair"],
+      ["click", "Continue"],
+      ["wait", 400],
+      ["log", "document.querySelector('[role=alert]').innerText"]
+    ]
+  },
+  {
+    "name": "pairing-refused-844x390-100",
+    "path": "/?unpaired",
+    "width": 844,
+    "height": 390,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Paste the link instead"],
+      ["wait", 300],
+      ["fill", "Pairing link", "https://example.com/pair"],
+      ["click", "Continue"],
+      ["wait", 400],
+      ["log", "document.querySelector('[role=alert]').innerText"]
+    ]
+  },
+  {
+    "name": "pairing-refused-1280x800-100",
+    "path": "/?unpaired",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Paste the link instead"],
+      ["wait", 300],
+      ["fill", "Pairing link", "https://example.com/pair"],
+      ["click", "Continue"],
+      ["wait", 400],
+      ["log", "document.querySelector('[role=alert]').innerText"]
+    ]
+  },
+  {
+    "name": "pairing-incomplete",
+    "path": "/?unpaired",
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Paste the link instead"],
+      ["wait", 300],
+      ["fill", "Pairing link", "ophio://pair?d=abc"],
+      ["click", "Continue"],
+      ["wait", 400],
+      ["log", "document.querySelector('[role=alert]').innerText"]
+    ]
+  },
+  {
+    "name": "pairing-confirm-390x844-100",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Scan the code"],
+      ["wait", 1800],
+      ["log", "'suggested name: '+document.querySelector('.welcome input').value"]
+    ]
+  },
+  {
+    "name": "pairing-confirm-360x780-200",
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Scan the code"],
+      ["wait", 1800],
+      ["log", "'suggested name: '+document.querySelector('.welcome input').value"]
+    ]
+  },
+  {
+    "name": "pairing-confirm-844x390-200",
+    "path": "/?unpaired",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "steps": [
+      ["click", "Pair a computer"],
+      ["wait", 400],
+      ["click", "Scan the code"],
+      ["wait", 1800],
+      ["log", "'suggested name: '+document.querySelector('.welcome input').value"]
+    ]
+  }
+]

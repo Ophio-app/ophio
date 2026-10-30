@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-app-lock-screen-ready"
+description = "Enables the app_lock_screen_ready command without any pre-configured scope."
+commands.allow = ["app_lock_screen_ready"]
+
+[[permission]]
+identifier = "deny-app-lock-screen-ready"
+description = "Denies the app_lock_screen_ready command without any pre-configured scope."
+commands.deny = ["app_lock_screen_ready"]

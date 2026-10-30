@@ -1,0 +1,3865 @@
+[
+ {
+  "name": "u29-1-recovered-review-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const o=h.command.bind(h);let armed=false;h.command=c=>{if(c.body.command!=='create_task'&&!armed)s.dropNextReceipt();if(c.body.command==='create_task')armed=true;return o(c)}})()"
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    4800
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "u29-1-recovered-review-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const o=h.command.bind(h);let armed=false;h.command=c=>{if(c.body.command!=='create_task'&&!armed)s.dropNextReceipt();if(c.body.command==='create_task')armed=true;return o(c)}})()"
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    4800
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "u29-1-recovered-review-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const o=h.command.bind(h);let armed=false;h.command=c=>{if(c.body.command!=='create_task'&&!armed)s.dropNextReceipt();if(c.body.command==='create_task')armed=true;return o(c)}})()"
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    4800
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "u29-1-recovered-review-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const o=h.command.bind(h);let armed=false;h.command=c=>{if(c.body.command!=='create_task'&&!armed)s.dropNextReceipt();if(c.body.command==='create_task')armed=true;return o(c)}})()"
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    4800
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "u29-1-queued-start-library-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(1500)})()"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Start only this task/,0)"
+   ],
+   [
+    "wait",
+    100
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(4)"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0)})()"
+   ],
+   [
+    "shot",
+    "library"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "u29-1-queued-start-library-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(1500)})()"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Start only this task/,0)"
+   ],
+   [
+    "wait",
+    100
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(4)"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0)})()"
+   ],
+   [
+    "shot",
+    "library"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "u29-1-queued-start-library-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(1500)})()"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Start only this task/,0)"
+   ],
+   [
+    "wait",
+    100
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(4)"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0)})()"
+   ],
+   [
+    "shot",
+    "library"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "u29-1-queued-start-library-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(1500)})()"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Start only this task/,0)"
+   ],
+   [
+    "wait",
+    100
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(4)"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0)})()"
+   ],
+   [
+    "shot",
+    "library"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "u29-2-pinned-start-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "u29-2-pinned-start-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "u29-2-pinned-start-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "u29-2-pinned-start-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "u29-3-paused-input-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Pause/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const b=document.querySelector('.talk .screen__body');if(b)b.scrollTop=b.scrollHeight"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ]
+ },
+ {
+  "name": "u29-3-paused-input-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Pause/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const b=document.querySelector('.talk .screen__body');if(b)b.scrollTop=b.scrollHeight"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ]
+ },
+ {
+  "name": "u29-3-paused-input-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Pause/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const b=document.querySelector('.talk .screen__body');if(b)b.scrollTop=b.scrollHeight"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ]
+ },
+ {
+  "name": "u29-3-paused-input-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Pause/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const b=document.querySelector('.talk .screen__body');if(b)b.scrollTop=b.scrollHeight"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ]
+ },
+ {
+  "name": "u29-3-paused-input-landscape-light",
+  "width": 844,
+  "height": 390,
+  "steps": [
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Pause/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const b=document.querySelector('.talk .screen__body');if(b)b.scrollTop=b.scrollHeight"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ]
+ },
+ {
+  "name": "u29-3-paused-input-landscape-dark",
+  "width": 844,
+  "height": 390,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Pause/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Safety/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const b=document.querySelector('.talk .screen__body');if(b)b.scrollTop=b.scrollHeight"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ]
+ },
+ {
+  "name": "u29-4-restart-labels-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Start only this task/,0)"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Review keyboard navigation/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.restart()})()"
+   ],
+   [
+    "wait",
+    7000
+   ]
+  ]
+ },
+ {
+  "name": "u29-4-restart-labels-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Start only this task/,0)"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Review keyboard navigation/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.restart()})()"
+   ],
+   [
+    "wait",
+    7000
+   ]
+  ]
+ },
+ {
+  "name": "u29-4-restart-labels-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Start only this task/,0)"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Review keyboard navigation/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.restart()})()"
+   ],
+   [
+    "wait",
+    7000
+   ]
+  ]
+ },
+ {
+  "name": "u29-4-restart-labels-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const kb=h.queue.items.find(i=>h.tasks.find(t=>t.task_id===i.task_id)?.title==='Review keyboard navigation');const rest=h.queue.items.filter(i=>i!==kb);h.queue={...h.queue,paused:true,pause_reason:'Automatic starts are paused.',writer:null,items:[{...kb,depends_on:[]},...rest].map((i,n)=>({...i,position:n})),revision:h.queue.revision+1};h.projects=h.projects.map(p=>({...p,active_writer:null}));for(const p of h.projects)h.emit({type:'project_upserted',project:p});h.emit({type:'queue_changed',queue:h.queue})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and start/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Start only this task/,0)"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Review keyboard navigation/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.restart()})()"
+   ],
+   [
+    "wait",
+    7000
+   ]
+  ]
+ },
+ {
+  "name": "u29-5-try-again-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(1500)})()"
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.offline('Wi-Fi dropped')})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0);s.online()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^tidewater-api/,0)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='field-notes').click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelector('.composer__notice').scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send again/,0)"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "u29-5-try-again-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(1500)})()"
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.offline('Wi-Fi dropped')})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0);s.online()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^tidewater-api/,0)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='field-notes').click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelector('.composer__notice').scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send again/,0)"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "u29-5-try-again-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(1500)})()"
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.offline('Wi-Fi dropped')})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0);s.online()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^tidewater-api/,0)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='field-notes').click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelector('.composer__notice').scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send again/,0)"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "u29-5-try-again-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(1500)})()"
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.offline('Wi-Fi dropped')})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0);s.online()})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^tidewater-api/,0)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='field-notes').click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelector('.composer__notice').scrollIntoView({block:'end'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send again/,0)"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "u29-6-work-after-stop-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));const t=h.tasks.find(t=>t.task_id==='0192f7a1-0000-7000-8000-000000000202');h.command({command_id:crypto.randomUUID(),expected_revision:t.revision,body:{command:'resume_task',task_id:t.task_id,text:'Also cover Retry-After'}})})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.command({command_id:crypto.randomUUID(),expected_revision:null,body:{command:'stop_task',task_id:'0192f7a1-0000-7000-8000-000000000202'}})})()"
+   ],
+   [
+    "wait",
+    4000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(e=>/Run 1 finished/.test(e.textContent)).scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "ready"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2,h3')].find(e=>e.textContent.trim()==='Recent').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-6-work-after-stop-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));const t=h.tasks.find(t=>t.task_id==='0192f7a1-0000-7000-8000-000000000202');h.command({command_id:crypto.randomUUID(),expected_revision:t.revision,body:{command:'resume_task',task_id:t.task_id,text:'Also cover Retry-After'}})})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.command({command_id:crypto.randomUUID(),expected_revision:null,body:{command:'stop_task',task_id:'0192f7a1-0000-7000-8000-000000000202'}})})()"
+   ],
+   [
+    "wait",
+    4000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(e=>/Run 1 finished/.test(e.textContent)).scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "ready"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2,h3')].find(e=>e.textContent.trim()==='Recent').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-6-work-after-stop-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));const t=h.tasks.find(t=>t.task_id==='0192f7a1-0000-7000-8000-000000000202');h.command({command_id:crypto.randomUUID(),expected_revision:t.revision,body:{command:'resume_task',task_id:t.task_id,text:'Also cover Retry-After'}})})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.command({command_id:crypto.randomUUID(),expected_revision:null,body:{command:'stop_task',task_id:'0192f7a1-0000-7000-8000-000000000202'}})})()"
+   ],
+   [
+    "wait",
+    4000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(e=>/Run 1 finished/.test(e.textContent)).scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "ready"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2,h3')].find(e=>e.textContent.trim()==='Recent').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-6-work-after-stop-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));const t=h.tasks.find(t=>t.task_id==='0192f7a1-0000-7000-8000-000000000202');h.command({command_id:crypto.randomUUID(),expected_revision:t.revision,body:{command:'resume_task',task_id:t.task_id,text:'Also cover Retry-After'}})})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.command({command_id:crypto.randomUUID(),expected_revision:null,body:{command:'stop_task',task_id:'0192f7a1-0000-7000-8000-000000000202'}})})()"
+   ],
+   [
+    "wait",
+    4000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(e=>/Run 1 finished/.test(e.textContent)).scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "ready"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2,h3')].find(e=>e.textContent.trim()==='Recent').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-7-active-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s*Start something separate/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2,h3')].find(e=>e.textContent.trim()==='Active in this project').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.command({command_id:crypto.randomUUID(),expected_revision:h.queue.revision,body:{command:'queue_move',item_id:'0192f7a1-0000-7000-8000-000000002203',position:1}})})()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const a=h.approvals.find(a=>a.approval_id==='0192f7a1-0000-7000-8000-000000000401');h.command({command_id:crypto.randomUUID(),expected_revision:a.revision,body:{command:'resolve_approval',approval_id:a.approval_id,decision:{decision:'allow'}}})})()"
+   ],
+   [
+    "wait",
+    17000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "work"
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=\"Open Next up\"]').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "work-row"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('span,div')].find(e=>e.offsetParent&&e.children.length<=1&&e.textContent.trim()==='Needs your go-ahead').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-7-active-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s*Start something separate/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2,h3')].find(e=>e.textContent.trim()==='Active in this project').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.command({command_id:crypto.randomUUID(),expected_revision:h.queue.revision,body:{command:'queue_move',item_id:'0192f7a1-0000-7000-8000-000000002203',position:1}})})()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const a=h.approvals.find(a=>a.approval_id==='0192f7a1-0000-7000-8000-000000000401');h.command({command_id:crypto.randomUUID(),expected_revision:a.revision,body:{command:'resolve_approval',approval_id:a.approval_id,decision:{decision:'allow'}}})})()"
+   ],
+   [
+    "wait",
+    17000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "work"
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=\"Open Next up\"]').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "work-row"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('span,div')].find(e=>e.offsetParent&&e.children.length<=1&&e.textContent.trim()==='Needs your go-ahead').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-7-active-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s*Start something separate/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2,h3')].find(e=>e.textContent.trim()==='Active in this project').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.command({command_id:crypto.randomUUID(),expected_revision:h.queue.revision,body:{command:'queue_move',item_id:'0192f7a1-0000-7000-8000-000000002203',position:1}})})()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const a=h.approvals.find(a=>a.approval_id==='0192f7a1-0000-7000-8000-000000000401');h.command({command_id:crypto.randomUUID(),expected_revision:a.revision,body:{command:'resolve_approval',approval_id:a.approval_id,decision:{decision:'allow'}}})})()"
+   ],
+   [
+    "wait",
+    17000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "work"
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=\"Open Next up\"]').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "work-row"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('span,div')].find(e=>e.offsetParent&&e.children.length<=1&&e.textContent.trim()==='Needs your go-ahead').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-7-active-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s*Start something separate/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2,h3')].find(e=>e.textContent.trim()==='Active in this project').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.command({command_id:crypto.randomUUID(),expected_revision:h.queue.revision,body:{command:'queue_move',item_id:'0192f7a1-0000-7000-8000-000000002203',position:1}})})()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;const a=h.approvals.find(a=>a.approval_id==='0192f7a1-0000-7000-8000-000000000401');h.command({command_id:crypto.randomUUID(),expected_revision:a.revision,body:{command:'resolve_approval',approval_id:a.approval_id,decision:{decision:'allow'}}})})()"
+   ],
+   [
+    "wait",
+    17000
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent.trim()==='Needs you').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "work"
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=\"Open Next up\"]').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "work-row"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open Next up$/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('span,div')].find(e=>e.offsetParent&&e.children.length<=1&&e.textContent.trim()==='Needs your go-ahead').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-8-review-message-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.previews=h.previews.map(p=>p.preview_id==='sim-preview-unknown'?{...p,project_id:'0192f7a1-0000-7000-8000-000000000101'}:p);for(const id of ['0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000102'])h.emit({type:'previews_changed',project_id:id,previews:h.previews.filter(p=>p.project_id===id)})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review/,0)"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.review__sub')].find(e=>/travels with the markup/.test(e.textContent)).scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-8-review-message-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.previews=h.previews.map(p=>p.preview_id==='sim-preview-unknown'?{...p,project_id:'0192f7a1-0000-7000-8000-000000000101'}:p);for(const id of ['0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000102'])h.emit({type:'previews_changed',project_id:id,previews:h.previews.filter(p=>p.project_id===id)})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review/,0)"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.review__sub')].find(e=>/travels with the markup/.test(e.textContent)).scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-8-review-message-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.previews=h.previews.map(p=>p.preview_id==='sim-preview-unknown'?{...p,project_id:'0192f7a1-0000-7000-8000-000000000101'}:p);for(const id of ['0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000102'])h.emit({type:'previews_changed',project_id:id,previews:h.previews.filter(p=>p.project_id===id)})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review/,0)"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.review__sub')].find(e=>/travels with the markup/.test(e.textContent)).scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-8-review-message-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.previews=h.previews.map(p=>p.preview_id==='sim-preview-unknown'?{...p,project_id:'0192f7a1-0000-7000-8000-000000000101'}:p);for(const id of ['0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000102'])h.emit({type:'previews_changed',project_id:id,previews:h.previews.filter(p=>p.project_id===id)})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review/,0)"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('.review__sub')].find(e=>/travels with the markup/.test(e.textContent)).scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-9-picture-after-finish-tablet-light",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.previews=h.previews.map(p=>p.preview_id==='sim-preview-unknown'?{...p,project_id:'0192f7a1-0000-7000-8000-000000000101'}:p);for(const id of ['0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000102'])h.emit({type:'previews_changed',project_id:id,previews:h.previews.filter(p=>p.project_id===id)})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    7500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "type",
+    "Also check the legend colours"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(8000)})()"
+   ],
+   [
+    "clickSel",
+    ".composer__send"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft .notice').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0)})()"
+   ],
+   [
+    "wait",
+    12000
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-9-picture-after-finish-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.previews=h.previews.map(p=>p.preview_id==='sim-preview-unknown'?{...p,project_id:'0192f7a1-0000-7000-8000-000000000101'}:p);for(const id of ['0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000102'])h.emit({type:'previews_changed',project_id:id,previews:h.previews.filter(p=>p.project_id===id)})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    7500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "type",
+    "Also check the legend colours"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(8000)})()"
+   ],
+   [
+    "clickSel",
+    ".composer__send"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft .notice').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0)})()"
+   ],
+   [
+    "wait",
+    12000
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-9-picture-after-finish-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.previews=h.previews.map(p=>p.preview_id==='sim-preview-unknown'?{...p,project_id:'0192f7a1-0000-7000-8000-000000000101'}:p);for(const id of ['0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000102'])h.emit({type:'previews_changed',project_id:id,previews:h.previews.filter(p=>p.project_id===id)})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    7500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "type",
+    "Also check the legend colours"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(8000)})()"
+   ],
+   [
+    "clickSel",
+    ".composer__send"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft .notice').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0)})()"
+   ],
+   [
+    "wait",
+    12000
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u29-9-picture-after-finish-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;h.previews=h.previews.map(p=>p.preview_id==='sim-preview-unknown'?{...p,project_id:'0192f7a1-0000-7000-8000-000000000101'}:p);for(const id of ['0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000102'])h.emit({type:'previews_changed',project_id:id,previews:h.previews.filter(p=>p.project_id===id)})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Open$/,2)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take picture/,0)"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{document.querySelector('.an-bar textarea').focus();await new Promise(r=>setTimeout(r,200));[...document.querySelectorAll('*')].find(e=>e.offsetParent&&e.children.length===0&&e.textContent.trim()==='General comment').click()})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "What should change?",
+    "Tighten the spacing"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Add comment/,0)"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review and send/,0)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".review-foot .btn--primary"
+   ],
+   [
+    "wait",
+    7500
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(1)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "type",
+    "Also check the legend colours"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(8000)})()"
+   ],
+   [
+    "clickSel",
+    ".composer__send"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],summary')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Annotate picture/,0)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft .notice').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "eval",
+    "(()=>{const s=window.__sim,h=s.host;s.latency(0)})()"
+   ],
+   [
+    "wait",
+    12000
+   ],
+   [
+    "eval",
+    "document.querySelector('.preview-draft').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ }
+]

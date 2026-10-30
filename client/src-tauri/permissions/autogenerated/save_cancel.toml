@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-cancel"
+description = "Enables the save_cancel command without any pre-configured scope."
+commands.allow = ["save_cancel"]
+
+[[permission]]
+identifier = "deny-save-cancel"
+description = "Denies the save_cancel command without any pre-configured scope."
+commands.deny = ["save_cancel"]

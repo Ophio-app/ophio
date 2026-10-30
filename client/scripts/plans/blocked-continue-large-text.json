@@ -1,0 +1,655 @@
+[
+  {
+    "name": "U26-preview-retry",
+    "width": 780,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.receipt);ui.reset(\"talk\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;await h.work.pictures();const m=structuredClone(h.journal.findLast(e=>e.event.type==='timeline_appended'&&e.event.task_id===workIds.receipt&&e.event.item.item.kind==='user_message'&&e.event.item.item.bundle).event.item);m.seq=h.seq+1;m.item.text='Only change spacing in Today. Do not edit typography or the Next card.';m.item.delivery='failed';const b=m.item.bundle;b.sources.forEach(s=>s.origin={kind:'preview_capture',capture_id:'u26-picture',host_id:ids.host,computer_name:'studio',preview_id:'sim-preview-unknown',preview_label:'Notes',captured_at:s.captured_at});localStorage.setItem('u26-message',JSON.stringify(m));localStorage.setItem('preview-deliveries.sim-studio',JSON.stringify({'u26-picture':{taskId:workIds.receipt,taskTitle:'Tighten checkout layout',at:m.at,bundleId:b.bundle_id,revision:b.revision,messageSeq:m.seq,state:'failed',request:m.item}}));const {previewDrafts}=await import('/src/screens/control/previewDrafts.ts');const canvas=document.createElement('canvas');canvas.width=390;canvas.height=260;const c=canvas.getContext('2d');c.fillStyle='#eeeeff';c.fillRect(0,0,390,260);c.fillStyle='#222';c.font='24px sans-serif';c.fillText('Today',24,60);c.fillText('Next card',24,180);const blob=await new Promise(r=>canvas.toBlob(r));await previewDrafts.put({id:'u26-picture',profileId:'sim-studio',previewId:'sim-preview-unknown',previewLabel:'Notes',computerId:ids.host,computerName:'studio',projectId:ids.pTide,taskId:workIds.receipt,at:m.at,blob,artifactId:b.sources[0].artifact_id});const {annotationStore}=await import('/src/state/annotations.ts');const store=annotationStore('sim-studio');const a=store.create(ids.pTide,workIds.receipt);store.update(a.id,d=>({...d,sources:b.sources.map(s=>({key:s.key,blobKey:null,artifactId:s.artifact_id,sha256:s.sha256,mediaType:s.media_type,width:s.width,height:s.height,durationMs:null,origin:s.origin,capturedAt:s.captured_at,derivedFrom:null,derivation:null})),marks:b.marks,comments:b.comments}));const {previewDeliveries}=await import('/src/screens/control/previewDelivery.ts');previewDeliveries('sim-studio').set(JSON.parse(localStorage.getItem('preview-deliveries.sim-studio')));h.emit({type:'timeline_appended',task_id:workIds.receipt,item:m});})()"
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(2)"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Send again"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "const value=document.querySelector('.composer textarea')?.value;if(value!=='Only change spacing in Today. Do not edit typography or the Next card.')throw Error('Retry lost text');"
+      ]
+    ]
+  },
+  {
+    "name": "U26-draft-choice",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 1,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.receipt);ui.reset(\"talk\");ui.saveDraft(ids.pTide,workIds.receipt,{text:\"Keep my separate draft about keyboard navigation\"});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;await h.work.pictures();const m=structuredClone(h.journal.findLast(e=>e.event.type==='timeline_appended'&&e.event.task_id===workIds.receipt&&e.event.item.item.kind==='user_message'&&e.event.item.item.bundle).event.item);m.seq=h.seq+1;m.item.text='Only change spacing in Today. Do not edit typography or the Next card.';m.item.delivery='failed';const b=m.item.bundle;b.sources.forEach(s=>s.origin={kind:'preview_capture',capture_id:'u26-picture',host_id:ids.host,computer_name:'studio',preview_id:'sim-preview-unknown',preview_label:'Notes',captured_at:s.captured_at});localStorage.setItem('u26-message',JSON.stringify(m));localStorage.setItem('preview-deliveries.sim-studio',JSON.stringify({'u26-picture':{taskId:workIds.receipt,taskTitle:'Tighten checkout layout',at:m.at,bundleId:b.bundle_id,revision:b.revision,messageSeq:m.seq,state:'failed',request:m.item}}));const {previewDrafts}=await import('/src/screens/control/previewDrafts.ts');const canvas=document.createElement('canvas');canvas.width=390;canvas.height=260;const c=canvas.getContext('2d');c.fillStyle='#eeeeff';c.fillRect(0,0,390,260);c.fillStyle='#222';c.font='24px sans-serif';c.fillText('Today',24,60);c.fillText('Next card',24,180);const blob=await new Promise(r=>canvas.toBlob(r));await previewDrafts.put({id:'u26-picture',profileId:'sim-studio',previewId:'sim-preview-unknown',previewLabel:'Notes',computerId:ids.host,computerName:'studio',projectId:ids.pTide,taskId:workIds.receipt,at:m.at,blob,artifactId:b.sources[0].artifact_id});const {annotationStore}=await import('/src/state/annotations.ts');const store=annotationStore('sim-studio');const a=store.create(ids.pTide,workIds.receipt);store.update(a.id,d=>({...d,sources:b.sources.map(s=>({key:s.key,blobKey:null,artifactId:s.artifact_id,sha256:s.sha256,mediaType:s.media_type,width:s.width,height:s.height,durationMs:null,origin:s.origin,capturedAt:s.captured_at,derivedFrom:null,derivation:null})),marks:b.marks,comments:b.comments}));const {previewDeliveries}=await import('/src/screens/control/previewDelivery.ts');previewDeliveries('sim-studio').set(JSON.parse(localStorage.getItem('preview-deliveries.sim-studio')));h.emit({type:'timeline_appended',task_id:workIds.receipt,item:m});})()"
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(2)"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Send again"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog[open]').textContent.includes('Keep my separate draft'))throw Error('Draft choice missing')"
+      ]
+    ]
+  },
+  {
+    "name": "U26-online-light",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset(\"talk\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "log",
+        "Object.fromEntries(['.talk .screen__body','.talk','.composer','.safety-strip'].map(s=>[s,document.querySelector(s)?.getBoundingClientRect().height]))"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').clientHeight<190)throw Error('Conversation collapsed');if(getComputedStyle(document.querySelector('.composer')).overflowY==='auto')throw Error('Composer scrolls inside');"
+      ],
+      [
+        "log",
+        "document.fonts.check('16px \"Inter Variable\"')"
+      ]
+    ]
+  },
+  {
+    "name": "U26-offline-light",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset(\"talk\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "Object.fromEntries(['.talk .screen__body','.talk','.composer','.safety-strip'].map(s=>[s,document.querySelector(s)?.getBoundingClientRect().height]))"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').clientHeight<190)throw Error('Conversation collapsed');if(getComputedStyle(document.querySelector('.composer')).overflowY==='auto')throw Error('Composer scrolls inside');"
+      ],
+      [
+        "log",
+        "document.fonts.check('16px \"Inter Variable\"')"
+      ]
+    ]
+  },
+  {
+    "name": "U26-online-dark",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset(\"talk\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "log",
+        "Object.fromEntries(['.talk .screen__body','.talk','.composer','.safety-strip'].map(s=>[s,document.querySelector(s)?.getBoundingClientRect().height]))"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').clientHeight<190)throw Error('Conversation collapsed');if(getComputedStyle(document.querySelector('.composer')).overflowY==='auto')throw Error('Composer scrolls inside');"
+      ],
+      [
+        "log",
+        "document.fonts.check('16px \"Inter Variable\"')"
+      ]
+    ]
+  },
+  {
+    "name": "U26-offline-dark",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset(\"talk\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "Object.fromEntries(['.talk .screen__body','.talk','.composer','.safety-strip'].map(s=>[s,document.querySelector(s)?.getBoundingClientRect().height]))"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').clientHeight<190)throw Error('Conversation collapsed');if(getComputedStyle(document.querySelector('.composer')).overflowY==='auto')throw Error('Composer scrolls inside');"
+      ],
+      [
+        "log",
+        "document.fonts.check('16px \"Inter Variable\"')"
+      ]
+    ]
+  },
+  {
+    "name": "U26-ask-light",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset(\"talk\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const task=h.tasks.find(t=>t.task_id===ids.tFlaky);task.state='working';task.mode='ask';task.status_line='Checking the spacing';h.emit({type:'task_upserted',task});const run=h.runs.find(r=>r.run_id===task.current_run);run.state='working';h.emit({type:'run_upserted',run});for(const a of h.approvals){a.state='resolved_elsewhere';h.emit({type:'approval_upserted',approval:a})}h.emit({type:'timeline_appended',task_id:task.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:run.run_id,item:{kind:'agent_message',text:'I found the Today card. Its spacing is independent of typography and the Next card. I am checking the layout.',partial:false}}});})()"
+      ],
+      [
+        "log",
+        "Object.fromEntries(['.talk .screen__body','.talk','.composer','.safety-strip'].map(s=>[s,document.querySelector(s)?.getBoundingClientRect().height]))"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').clientHeight<190)throw Error('Conversation collapsed');if(getComputedStyle(document.querySelector('.composer')).overflowY==='auto')throw Error('Composer scrolls inside');"
+      ],
+      [
+        "log",
+        "document.fonts.check('16px \"Inter Variable\"')"
+      ],
+      [
+        "shot",
+        "online"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "offline"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        460
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').clientHeight<190)throw Error('Keyboard collapsed conversation');const s=document.querySelector('.talk');s.scrollTop=s.scrollHeight"
+      ],
+      [
+        "shot",
+        "keyboard"
+      ],
+      [
+        "height",
+        780
+      ],
+      [
+        "eval",
+        "document.activeElement.blur();document.querySelector('.talk').scrollTop=0"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U26-ask-dark",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset(\"talk\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const task=h.tasks.find(t=>t.task_id===ids.tFlaky);task.state='working';task.mode='ask';task.status_line='Checking the spacing';h.emit({type:'task_upserted',task});const run=h.runs.find(r=>r.run_id===task.current_run);run.state='working';h.emit({type:'run_upserted',run});for(const a of h.approvals){a.state='resolved_elsewhere';h.emit({type:'approval_upserted',approval:a})}h.emit({type:'timeline_appended',task_id:task.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:run.run_id,item:{kind:'agent_message',text:'I found the Today card. Its spacing is independent of typography and the Next card. I am checking the layout.',partial:false}}});})()"
+      ],
+      [
+        "log",
+        "Object.fromEntries(['.talk .screen__body','.talk','.composer','.safety-strip'].map(s=>[s,document.querySelector(s)?.getBoundingClientRect().height]))"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').clientHeight<190)throw Error('Conversation collapsed');if(getComputedStyle(document.querySelector('.composer')).overflowY==='auto')throw Error('Composer scrolls inside');"
+      ],
+      [
+        "log",
+        "document.fonts.check('16px \"Inter Variable\"')"
+      ],
+      [
+        "shot",
+        "online"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "offline"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        460
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').clientHeight<190)throw Error('Keyboard collapsed conversation');const s=document.querySelector('.talk');s.scrollTop=s.scrollHeight"
+      ],
+      [
+        "shot",
+        "keyboard"
+      ],
+      [
+        "height",
+        780
+      ],
+      [
+        "eval",
+        "document.activeElement.blur();document.querySelector('.talk').scrollTop=0"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U26-queue-two-projects",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 1,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset(\"work\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const h=window.__sim.host;for(const a of h.attention){a.resolved_at=Date.now();h.emit({type:'attention_resolved',attention_id:a.attention_id})}for(const pid of [ids.pTide,ids.pNotes]){const project=h.projects.find(p=>p.project_id===pid);project.active_writer=null;h.emit({type:'project_upserted',project});const task={...h.tasks.find(t=>t.task_id===ids.tReadme),task_id:crypto.randomUUID(),project_id:pid,title:pid===ids.pTide?'Review the API docs':'Review Today spacing',state:'accepted',attention_count:0};h.tasks.push(task);h.emit({type:'task_upserted',task});const q=h.talk.queue(pid);q.items=[];q.paused=false;q.writer=null;h.talk.put(q);h.talk.enqueue(task,task.title,null,{mode:'queue',position:null,authorization:'ask_before_start'});}})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.attention.filter(a=>a.resolved_at===null).length!==2)throw Error('Expected two go-aheads');if(document.querySelector('.nav__count').textContent!=='2')throw Error('Work badge disagrees');if(!document.querySelector('.work-screen').textContent.includes('1 in field-notes'))throw Error('Other project badge missing');"
+      ],
+      [
+        "shot",
+        "needs-you"
+      ],
+      [
+        "click",
+        "Review the API docs"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.queue-review')){const text=document.querySelector('.tab:not(.is-hidden)').textContent;if(!text.includes('Review the API docs')||!text.includes('Start'))throw Error('Wrong queue review')}"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(3)"
+      ],
+      [
+        "click",
+        "1 in field-notes"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].filter(e=>e.textContent==='Needs you').at(-1).scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "U26-slow-send",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 1,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pGarden);ui.saveDraft(ids.pGarden,null,{text:\"Check the garden spacing\",mode:\"ask\"});ui.reset(\"control\",[{screen:\"review\",projectId:ids.pGarden,taskId:null,intent:\"new_task\"}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "eval",
+        "window.__sim.latency(1500);window.__sim.pace(50)"
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(1)"
+      ],
+      [
+        "wait",
+        2200
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(2)"
+      ],
+      [
+        "eval",
+        "const front=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden)');if(!front?.querySelector('.control-screen')||front.querySelector('.review-screen'))throw Error('Review stranded in Control');"
+      ]
+    ]
+  },
+  {
+    "name": "U26-slow-message",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 1,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const {annotationStore}=await import('/src/state/annotations.ts');const store=annotationStore('sim-studio');const a=store.create(ids.pTide,ids.tDash);store.update(a.id,d=>({...d,generalNote:'Only spacing'}));ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Keep the typography',annotationId:a.id});ui.reset('control',[{screen:'annotate',annotationId:a.id},{screen:'review',projectId:ids.pTide,taskId:ids.tDash,intent:'next_turn'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "eval",
+        "window.__sim.latency(1500);window.__sim.pace(50)"
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(1)"
+      ],
+      [
+        "wait",
+        2200
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(2)"
+      ],
+      [
+        "eval",
+        "const front=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden)');if(!front?.querySelector('.control-screen')||front.querySelector('.review-screen'))throw Error('Review stranded in Control');"
+      ]
+    ]
+  },
+  {
+    "name": "U26-blocked-continue",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.saveDraft(ids.pTide,ids.tHeaders,{text:\"Check the spacing once more\"});ui.reset(\"talk\");ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2500
+      ],
+      [
+        "log",
+        "Object.fromEntries(['.talk .screen__body','.talk','.composer','.safety-strip'].map(s=>[s,document.querySelector(s)?.getBoundingClientRect().height]))"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk').scrollTop=99999"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "log",
+        "({blocker:document.querySelector('.composer__blocker').getBoundingClientRect().toJSON(),action:document.querySelector('.composer__send').getBoundingClientRect().toJSON(),composer:document.querySelector('.composer').getBoundingClientRect().toJSON()})"
+      ],
+      [
+        "eval",
+        "const blocker=document.querySelector('.composer__blocker').getBoundingClientRect();const button=document.querySelector('.composer__send').getBoundingClientRect();const frame=document.querySelector('.talk').getBoundingClientRect();if(blocker.top<frame.top||button.bottom>frame.bottom||blocker.bottom>button.top)throw Error('Blocker and Continue are not visible together');if(getComputedStyle(document.querySelector('.composer')).overflowY==='auto')throw Error('Composer still scrolls inside');"
+      ]
+    ]
+  },
+  {
+    "name": "U26-ended-terminal",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "clickSel",
+        ".nav button:nth-child(2)"
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Command",
+        "exit 7"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "log",
+        "[...document.querySelectorAll('textarea')].map(e=>({label:e.getAttribute('aria-label'),tabIndex:e.tabIndex,hidden:e.getAttribute('aria-hidden'),disabled:e.disabled}))"
+      ],
+      [
+        "eval",
+        "const input=document.querySelector('textarea[aria-label=\"Terminal input\"]');if(!input.hidden||!input.disabled||input.tabIndex!==-1)throw Error('Ended terminal retains input')"
+      ]
+    ]
+  },
+  {
+    "name": "U26-sheet-stop",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 1,
+    "dark": false,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset(\"work\",[{screen:\"tasks\",filter:\"all\"}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        2500
+      ],
+      [
+        "click",
+        "Actions for Check the staging"
+      ],
+      [
+        "click",
+        "Archive"
+      ],
+      [
+        "log",
+        "[...document.querySelectorAll('dialog[open] button')].map(e=>e.getAttribute('aria-label')||e.textContent)"
+      ],
+      [
+        "eval",
+        "const names=[...document.querySelectorAll('dialog[open] button')].map(e=>e.getAttribute('aria-label')||'');if(!names.some(s=>s.startsWith('Stop \u00b7')&&s.endsWith('DP-1')))throw Error('Sheet Stop missing display')"
+      ]
+    ]
+  }
+]

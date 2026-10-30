@@ -1,0 +1,177 @@
+/* SPDX-License-Identifier: Apache-2.0
+ *
+ * Control's root (ControlRoot.tsx, D-055): the computer's header, segments
+ * with one kind of thing at a time, and the live picture first, saying once
+ * who has its input.
+ */
+
+/* The computer's name is a heading, not a picker. */
+/* Who has a display's input, said once, under its picture. */
+.control-state {
+  font-weight: 600;
+}
+.control-state--neutral { color: var(--ink-3); font-weight: 400; }
+.control-state--accent { color: var(--accent-text); }
+.control-state--agent { color: var(--ink); }
+.control-state--warn { color: var(--warn-text); }
+/* A part with nothing in it says so in one quiet line. */
+.control-none {
+  padding: var(--s2) var(--s1);
+}
+.control-part .group .row__subtitle .mono {
+  font-size: var(--text-xs);
+}
+.control-unlock {
+  display: block;
+  padding: var(--s2) var(--s3);
+}
+
+/* Compact previews are rows whose Open sits at their end; anything a card
+   has to say goes under it. */
+.preview-card--compact {
+  display: block;
+}
+.preview-card--compact .preview-content:not(:has(> *)) {
+  display: none;
+}
+.preview-card--compact .preview-content {
+  padding: 0 var(--s3) var(--s3);
+}
+.preview-card--compact + .preview-card--compact,
+.group > .row + .preview-card--compact,
+.group > .preview-card--compact + .row {
+  border-top: 1px solid var(--line);
+}
+
+/* The segments stay at the top while the list scrolls under them. */
+.control-parts {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Displays are chips in one row that scrolls sideways, as a messenger's
+   folders do, so a long window title never wraps. */
+.control-displays {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: calc(-1 * var(--s3));
+  padding: var(--s1) var(--s3);
+}
+.control-displays::-webkit-scrollbar { display: none; }
+.control-displays .chip {
+  flex: none;
+  max-width: 70%;
+}
+.control-displays .chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The picture first, its state and hands-on buttons under it. */
+.control-live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.control-live__picture {
+  position: relative;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+/* The picture takes the screen's width, as a call's video does. */
+.control-live__picture .live-picture--compact .picture-surface {
+  width: 100%;
+  height: auto;
+  max-height: 46dvh;
+}
+.control-live__open {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  border-radius: inherit;
+}
+.control-live__open:focus-visible {
+  outline: 3px solid var(--focus, var(--accent));
+  outline-offset: -3px;
+}
+.control-live__blocked {
+  background: var(--surface-sunken);
+  display: grid;
+  place-items: center;
+  min-height: 10rem;
+  margin: 0;
+}
+.control-live__state {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 0;
+  padding-inline: var(--s1);
+  font-size: var(--text-sm);
+}
+/* On its side the picture keeps its shape at most of the height, rather than
+   a wide letterbox. */
+@media (orientation: landscape) {
+  .control-live__picture {
+    align-self: center;
+    max-width: 100%;
+  }
+  .control-live__picture .live-picture--compact .picture-surface {
+    width: auto;
+    height: 60dvh;
+    max-width: 100%;
+    align-self: center;
+  }
+}
+
+/* The picture's freshness sits on it, as a call's Live badge does, and the
+   display's name is left to its chip when there are several. Only the live
+   display's own picture: Resume agent's review opens from here with its own. */
+.control-live__picture .picture-caption {
+  position: absolute;
+  inset: var(--s2) var(--s2) auto;
+  z-index: 1;
+  width: auto;
+  pointer-events: none;
+  color: #fff;
+  font-size: var(--text-xs);
+}
+.control-live__picture .picture-caption > span {
+  padding: 2px var(--s2);
+  border-radius: var(--r-full);
+  background: rgb(0 0 0 / 0.6);
+}
+.control-live__picture .picture-caption > span:last-child {
+  margin-inline-start: auto;
+}
+.control-live__picture .picture-caption__stale {
+  background: var(--warn-soft);
+  color: var(--warn-text);
+}
+.control-displays + .control-live .control-live__picture .picture-caption > span:first-child {
+  display: none;
+}
+
+/* Other projects' terminals or previews, shown on request under the chosen
+   project's, each under its name. */
+.control-elsewhere {
+  margin: var(--s3) 0 0;
+}
+.control-elsewhere__project {
+  margin-top: var(--s3);
+}
+.control-elsewhere__name {
+  margin: 0 0 var(--s2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+/* At large text Voice, Settings and the status dot take the 48px floor, as
+   Chat's header does, so a short project name stays whole beside them. */
+:root.app-narrow .control-screen .ctx { --target: 48px; }

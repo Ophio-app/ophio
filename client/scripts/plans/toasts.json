@@ -1,0 +1,1914 @@
+[
+ {
+  "name": "u2-toast-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('Added to Next up',{tone:'info'}))"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const hit=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;const toasts=[...document.querySelectorAll('.toast')];if(!toasts.length)throw Error('No toast');const stops=[...document.querySelectorAll('.app__safety .named-stop__button')];if(!stops.length)throw Error('No rail Stop');const footer=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen > .screen__footer');for(const t of toasts){if(footer&&hit(r(t),r(footer)))throw Error('Toast covers the pinned footer')}for(const s of stops){const b=r(s);if(b.top<0||b.bottom>innerHeight+1)throw Error('Stop off screen');for(const t of toasts)if(hit(r(t),b))throw Error('Toast covers Stop');if(!s.contains(document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2)))throw Error('Stop does not receive the click')}})()"
+   ]
+  ]
+ },
+ {
+  "name": "u2-toast-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const hit=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;const toasts=[...document.querySelectorAll('.toast')];if(!toasts.length)throw Error('No toast');const stops=[...document.querySelectorAll('.app__safety .named-stop__button')];if(!stops.length)throw Error('No rail Stop');const footer=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen > .screen__footer');for(const t of toasts){if(footer&&hit(r(t),r(footer)))throw Error('Toast covers the pinned footer')}for(const s of stops){const b=r(s);if(b.top<0||b.bottom>innerHeight+1)throw Error('Stop off screen');for(const t of toasts)if(hit(r(t),b))throw Error('Toast covers Stop');if(!s.contains(document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2)))throw Error('Stop does not receive the click')}})()"
+   ]
+  ]
+ },
+ {
+  "name": "u2-toast-390-light",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const hit=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;const toasts=[...document.querySelectorAll('.toast')];if(!toasts.length)throw Error('No toast');const stops=[...document.querySelectorAll('.app__safety .named-stop__button')];if(!stops.length)throw Error('No rail Stop');const footer=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen > .screen__footer');for(const t of toasts){if(footer&&hit(r(t),r(footer)))throw Error('Toast covers the pinned footer')}for(const s of stops){const b=r(s);if(b.top<0||b.bottom>innerHeight+1)throw Error('Stop off screen');for(const t of toasts)if(hit(r(t),b))throw Error('Toast covers Stop');if(!s.contains(document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2)))throw Error('Stop does not receive the click')}})()"
+   ]
+  ]
+ },
+ {
+  "name": "u2-toast-390-work-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Work')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('Added to Next up',{tone:'info'}))"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const hit=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;const toasts=[...document.querySelectorAll('.toast')];if(!toasts.length)throw Error('No toast');const stops=[...document.querySelectorAll('.app__safety .named-stop__button')];if(!stops.length)throw Error('No rail Stop');const footer=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen > .screen__footer');for(const t of toasts){if(footer&&hit(r(t),r(footer)))throw Error('Toast covers the pinned footer')}for(const s of stops){const b=r(s);if(b.top<0||b.bottom>innerHeight+1)throw Error('Stop off screen');for(const t of toasts)if(hit(r(t),b))throw Error('Toast covers Stop');if(!s.contains(document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2)))throw Error('Stop does not receive the click')}})()"
+   ]
+  ]
+ },
+ {
+  "name": "u2-toast-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const hit=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;const toasts=[...document.querySelectorAll('.toast')];if(!toasts.length)throw Error('No toast');const stops=[...document.querySelectorAll('.app__safety .named-stop__button')];if(!stops.length)throw Error('No rail Stop');const footer=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen > .screen__footer');for(const t of toasts){if(footer&&hit(r(t),r(footer)))throw Error('Toast covers the pinned footer')}for(const s of stops){const b=r(s);if(b.top<0||b.bottom>innerHeight+1)throw Error('Stop off screen');for(const t of toasts)if(hit(r(t),b))throw Error('Toast covers Stop');if(!s.contains(document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2)))throw Error('Stop does not receive the click')}})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-talk-100-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-work-100-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Work')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-control-100-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-talk-100-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-work-100-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Work')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-control-100-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-talk-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-work-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Work')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-control-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-talk-200-light",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-work-200-light",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Work')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-control-200-light",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-toast-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();const hit=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;const toasts=[...document.querySelectorAll('.toast')];if(!toasts.length)throw Error('No toast');const stops=[...document.querySelectorAll('.app__safety .named-stop__button')];if(!stops.length)throw Error('No rail Stop');const footer=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen > .screen__footer');for(const t of toasts){if(footer&&hit(r(t),r(footer)))throw Error('Toast covers the pinned footer')}for(const s of stops){const b=r(s);if(b.top<0||b.bottom>innerHeight+1)throw Error('Stop off screen');for(const t of toasts)if(hit(r(t),b))throw Error('Toast covers Stop');if(!s.contains(document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2)))throw Error('Stop does not receive the click')}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-expanded-200-light",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>{if(!e)return null;const b=e.getBoundingClientRect();return [Math.round(b.left),Math.round(b.top),Math.round(b.right),Math.round(b.bottom)]};return {main:r(document.querySelector('.app__main')),rail:r(document.querySelector('.app__safety')),stop:[...document.querySelectorAll('.app__safety .named-stop__button')].map(r),toast:[...document.querySelectorAll('.toast')].map(r),nav:r(document.querySelector('.nav')),footer:r(document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen__footer')),body:r(document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen__body')),vh:innerHeight,vw:innerWidth}})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-talk-932-200-light",
+  "width": 932,
+  "height": 430,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u3-land-work-932-200-dark",
+  "width": 932,
+  "height": 430,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Work')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-offline-waiting-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const hb=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-handback');if(!hb)throw Error('No hand-back notice');const r=e=>e.getBoundingClientRect();const p=r(hb.querySelector('p')),b=r(hb.querySelector('.btn'));if(p.width>1&&!(p.top<b.bottom&&b.top<p.bottom))throw Error('Notice takes two rows');const talk=hb.closest('.talk');const body=r(talk.querySelector(':scope > .screen__body')),main=r(document.querySelector('.app__main'));const line=[...talk.querySelectorAll(':scope > .screen__body p')].find(e=>!hb.contains(e));const lh=parseFloat(getComputedStyle(line).lineHeight);const seen=r(hb).top-Math.max(body.top,main.top);if(seen<2.5*lh)throw Error('Conversation shows '+(seen/lh).toFixed(1)+' lines')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-waiting-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const hb=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-handback');if(!hb)throw Error('No hand-back notice');const r=e=>e.getBoundingClientRect();const p=r(hb.querySelector('p')),b=r(hb.querySelector('.btn'));if(p.width>1&&!(p.top<b.bottom&&b.top<p.bottom))throw Error('Notice takes two rows');const talk=hb.closest('.talk');const body=r(talk.querySelector(':scope > .screen__body')),main=r(document.querySelector('.app__main'));const line=[...talk.querySelectorAll(':scope > .screen__body p')].find(e=>!hb.contains(e));const lh=parseFloat(getComputedStyle(line).lineHeight);const seen=r(hb).top-Math.max(body.top,main.top);if(seen<2.5*lh)throw Error('Conversation shows '+(seen/lh).toFixed(1)+' lines')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-offline-waiting-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const hb=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-handback');if(!hb)throw Error('No hand-back notice');const r=e=>e.getBoundingClientRect();const p=r(hb.querySelector('p')),b=r(hb.querySelector('.btn'));if(p.width>1&&!(p.top<b.bottom&&b.top<p.bottom))throw Error('Notice takes two rows');const talk=hb.closest('.talk');const body=r(talk.querySelector(':scope > .screen__body')),main=r(document.querySelector('.app__main'));const line=[...talk.querySelectorAll(':scope > .screen__body p')].find(e=>!hb.contains(e));const lh=parseFloat(getComputedStyle(line).lineHeight);const seen=r(hb).top-Math.max(body.top,main.top);if(seen<2.5*lh)throw Error('Conversation shows '+(seen/lh).toFixed(1)+' lines')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-waiting-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const hb=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-handback');if(!hb)throw Error('No hand-back notice');const r=e=>e.getBoundingClientRect();const p=r(hb.querySelector('p')),b=r(hb.querySelector('.btn'));if(p.width>1&&!(p.top<b.bottom&&b.top<p.bottom))throw Error('Notice takes two rows');const talk=hb.closest('.talk');const body=r(talk.querySelector(':scope > .screen__body')),main=r(document.querySelector('.app__main'));const line=[...talk.querySelectorAll(':scope > .screen__body p')].find(e=>!hb.contains(e));const lh=parseFloat(getComputedStyle(line).lineHeight);const seen=r(hb).top-Math.max(body.top,main.top);if(seen<2.5*lh)throw Error('Conversation shows '+(seen/lh).toFixed(1)+' lines')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-waiting-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const hb=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-handback');if(!hb)throw Error('No hand-back notice');const r=e=>e.getBoundingClientRect();const p=r(hb.querySelector('p')),b=r(hb.querySelector('.btn'));if(p.width>1&&!(p.top<b.bottom&&b.top<p.bottom))throw Error('Notice takes two rows');const talk=hb.closest('.talk');const body=r(talk.querySelector(':scope > .screen__body')),main=r(document.querySelector('.app__main'));const line=[...talk.querySelectorAll(':scope > .screen__body p')].find(e=>!hb.contains(e));const lh=parseFloat(getComputedStyle(line).lineHeight);const seen=r(hb).top-Math.max(body.top,main.top);if(seen<2.5*lh)throw Error('Conversation shows '+(seen/lh).toFixed(1)+' lines')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-offline-waiting-390-light",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const hb=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-handback');if(!hb)throw Error('No hand-back notice');const r=e=>e.getBoundingClientRect();const p=r(hb.querySelector('p')),b=r(hb.querySelector('.btn'));if(p.width>1&&!(p.top<b.bottom&&b.top<p.bottom))throw Error('Notice takes two rows');const talk=hb.closest('.talk');const body=r(talk.querySelector(':scope > .screen__body')),main=r(document.querySelector('.app__main'));const line=[...talk.querySelectorAll(':scope > .screen__body p')].find(e=>!hb.contains(e));const lh=parseFloat(getComputedStyle(line).lineHeight);const seen=r(hb).top-Math.max(body.top,main.top);if(seen<2.5*lh)throw Error('Conversation shows '+(seen/lh).toFixed(1)+' lines')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-offline-waiting-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const hb=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-handback');if(!hb)throw Error('No hand-back notice');const r=e=>e.getBoundingClientRect();const p=r(hb.querySelector('p')),b=r(hb.querySelector('.btn'));if(p.width>1&&!(p.top<b.bottom&&b.top<p.bottom))throw Error('Notice takes two rows');const talk=hb.closest('.talk');const body=r(talk.querySelector(':scope > .screen__body')),main=r(document.querySelector('.app__main'));const line=[...talk.querySelectorAll(':scope > .screen__body p')].find(e=>!hb.contains(e));const lh=parseFloat(getComputedStyle(line).lineHeight);const seen=r(hb).top-Math.max(body.top,main.top);if(seen<2.5*lh)throw Error('Conversation shows '+(seen/lh).toFixed(1)+' lines')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-offline-waiting-land-100-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const r=e=>e.getBoundingClientRect();const b=r(t.querySelector('.talk-handback .btn')),body=r(t.querySelector(':scope > .screen__body')),foot=r(t.querySelector(':scope > .screen__footer'));if(b.top<body.top-1||b.bottom>Math.min(body.bottom,foot.top)+1)throw Error('Hand-back button hidden: '+[b.top,b.bottom,body.top,foot.top].map(Math.round))})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-offline-waiting-land-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const r=e=>e.getBoundingClientRect();const b=r(t.querySelector('.talk-handback .btn')),body=r(t.querySelector(':scope > .screen__body')),foot=r(t.querySelector(':scope > .screen__footer'));if(b.top<body.top-1||b.bottom>Math.min(body.bottom,foot.top)+1)throw Error('Hand-back button hidden: '+[b.top,b.bottom,body.top,foot.top].map(Math.round))})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-waiting-land-200-light",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=e=>e.getBoundingClientRect();for(const s of document.querySelectorAll('.app__safety .named-stop__button')){const b=r(s);if(b.top<0||b.left<0||b.bottom>innerHeight+1||b.right>innerWidth+1)throw Error('Stop off screen')}const main=r(document.querySelector('.app__main'));if(main.height<0.6*innerHeight)throw Error('Main is '+Math.round(main.height)+'px');const talk=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');if(!talk)return;const rem=parseFloat(getComputedStyle(document.documentElement).fontSize);const body=r(talk.querySelector(':scope > .screen__body'));const foot=r(talk.querySelector(':scope > .screen__footer'));const comp=r(talk.querySelector('.composer'));if(comp.top<main.top||comp.bottom>main.bottom+1)throw Error('Composer out of view');const seen=Math.min(body.bottom,foot.top)-Math.max(body.top,main.top);if(seen<3*rem)throw Error('Conversation shows '+Math.round(seen)+'px')})()"
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const r=e=>e.getBoundingClientRect();const b=r(t.querySelector('.talk-handback .btn')),body=r(t.querySelector(':scope > .screen__body')),foot=r(t.querySelector(':scope > .screen__footer'));if(b.top<body.top-1||b.bottom>Math.min(body.bottom,foot.top)+1)throw Error('Hand-back button hidden: '+[b.top,b.bottom,body.top,foot.top].map(Math.round))})()"
+   ]
+  ]
+ },
+ {
+  "name": "u4-offline-details-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');Object.assign(t,{state:'awaiting_decision',status_line:'You took over'});h.emit({type:'task_upserted',task:{...t}});const c=h.control[0];Object.assign(c,{input_state:'ready',lease:null});h.emit({type:'control_changed',view:{...c}})})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".composer__connection summary"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "u5-deny-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Deny\u2026"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "Reason (optional)",
+    "Run targeted retry tests first; the full suite is mostly unrelated."
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const body=t.querySelector(':scope > .screen__body');const f=document.activeElement;const d=f.getBoundingClientRect().bottom-body.getBoundingClientRect().bottom;body.scrollTop+=d+4;body.dispatchEvent(new Event('scroll'))})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');const r=e=>{const b=e.getBoundingClientRect();return [b.left,b.top,b.right,b.bottom].map(Math.round)};const f=document.activeElement;return {focus:f.tagName+' '+(f.labels?.[0]?.textContent??''),field:r(f),jump:j&&getComputedStyle(j).display!=='none'?r(j):null}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');if(!j||getComputedStyle(j).display==='none')return;const a=j.getBoundingClientRect(),b=document.activeElement.getBoundingClientRect();if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)throw Error('Latest covers the focused field')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u5-deny-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Deny\u2026"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "Reason (optional)",
+    "Run targeted retry tests first; the full suite is mostly unrelated."
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const body=t.querySelector(':scope > .screen__body');const f=document.activeElement;const d=f.getBoundingClientRect().bottom-body.getBoundingClientRect().bottom;body.scrollTop+=d+4;body.dispatchEvent(new Event('scroll'))})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');const r=e=>{const b=e.getBoundingClientRect();return [b.left,b.top,b.right,b.bottom].map(Math.round)};const f=document.activeElement;return {focus:f.tagName+' '+(f.labels?.[0]?.textContent??''),field:r(f),jump:j&&getComputedStyle(j).display!=='none'?r(j):null}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');if(!j||getComputedStyle(j).display==='none')return;const a=j.getBoundingClientRect(),b=document.activeElement.getBoundingClientRect();if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)throw Error('Latest covers the focused field')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u5-deny-390-dark",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Deny\u2026"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "Reason (optional)",
+    "Run targeted retry tests first; the full suite is mostly unrelated."
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const body=t.querySelector(':scope > .screen__body');const f=document.activeElement;const d=f.getBoundingClientRect().bottom-body.getBoundingClientRect().bottom;body.scrollTop+=d+4;body.dispatchEvent(new Event('scroll'))})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');const r=e=>{const b=e.getBoundingClientRect();return [b.left,b.top,b.right,b.bottom].map(Math.round)};const f=document.activeElement;return {focus:f.tagName+' '+(f.labels?.[0]?.textContent??''),field:r(f),jump:j&&getComputedStyle(j).display!=='none'?r(j):null}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');if(!j||getComputedStyle(j).display==='none')return;const a=j.getBoundingClientRect(),b=document.activeElement.getBoundingClientRect();if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)throw Error('Latest covers the focused field')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u5-deny-land-200-light",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Deny\u2026"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "Reason (optional)",
+    "Run targeted retry tests first; the full suite is mostly unrelated."
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const body=t.querySelector(':scope > .screen__body');const f=document.activeElement;const d=f.getBoundingClientRect().bottom-body.getBoundingClientRect().bottom;body.scrollTop+=d+4;body.dispatchEvent(new Event('scroll'))})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');const r=e=>{const b=e.getBoundingClientRect();return [b.left,b.top,b.right,b.bottom].map(Math.round)};const f=document.activeElement;return {focus:f.tagName+' '+(f.labels?.[0]?.textContent??''),field:r(f),jump:j&&getComputedStyle(j).display!=='none'?r(j):null}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');if(!j||getComputedStyle(j).display==='none')return;const a=j.getBoundingClientRect(),b=document.activeElement.getBoundingClientRect();if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)throw Error('Latest covers the focused field')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u5-deny-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Deny\u2026"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "Reason (optional)",
+    "Run targeted retry tests first; the full suite is mostly unrelated."
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const body=t.querySelector(':scope > .screen__body');const f=document.activeElement;const d=f.getBoundingClientRect().bottom-body.getBoundingClientRect().bottom;body.scrollTop+=d+4;body.dispatchEvent(new Event('scroll'))})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');const r=e=>{const b=e.getBoundingClientRect();return [b.left,b.top,b.right,b.bottom].map(Math.round)};const f=document.activeElement;return {focus:f.tagName+' '+(f.labels?.[0]?.textContent??''),field:r(f),jump:j&&getComputedStyle(j).display!=='none'?r(j):null}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');if(!j||getComputedStyle(j).display==='none')return;const a=j.getBoundingClientRect(),b=document.activeElement.getBoundingClientRect();if(a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom)throw Error('Latest covers the focused field')})()"
+   ]
+  ]
+ },
+ {
+  "name": "u5-deny-blur-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Deny\u2026"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "fill",
+    "Reason (optional)",
+    "Run targeted retry tests first; the full suite is mostly unrelated."
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "eval",
+    "(()=>{const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk');const body=t.querySelector(':scope > .screen__body');const f=document.activeElement;const d=f.getBoundingClientRect().bottom-body.getBoundingClientRect().bottom;body.scrollTop+=d+4;body.dispatchEvent(new Event('scroll'))})()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "document.activeElement.blur()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const j=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .talk-jump');const r=e=>{const b=e.getBoundingClientRect();return [b.left,b.top,b.right,b.bottom].map(Math.round)};const f=document.activeElement;return {focus:f.tagName+' '+(f.labels?.[0]?.textContent??''),field:r(f),jump:j&&getComputedStyle(j).display!=='none'?r(j):null}})()"
+   ]
+  ]
+ },
+ {
+  "name": "u6-blocked-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Add rate-limit headers"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .composer__blocker .btn');if(!b)throw Error('No blocker');const name=b.getAttribute('aria-label')??b.textContent.trim();if(b.textContent.trim()!=='Open the blocking task'||name!==b.textContent.trim())throw Error('Blocker button reads '+JSON.stringify(b.textContent)+' named '+JSON.stringify(name));b.scrollIntoView({block:'nearest'});const r=b.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!b.contains(hit))throw Error('Blocker button covered by '+(hit&&hit.className))})()"
+   ]
+  ]
+ },
+ {
+  "name": "u6-blocked-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Add rate-limit headers"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .composer__blocker .btn');if(!b)throw Error('No blocker');const name=b.getAttribute('aria-label')??b.textContent.trim();if(b.textContent.trim()!=='Open the blocking task'||name!==b.textContent.trim())throw Error('Blocker button reads '+JSON.stringify(b.textContent)+' named '+JSON.stringify(name));b.scrollIntoView({block:'nearest'});const r=b.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!b.contains(hit))throw Error('Blocker button covered by '+(hit&&hit.className))})()"
+   ]
+  ]
+ },
+ {
+  "name": "u6-blocked-390-light",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Add rate-limit headers"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .composer__blocker .btn');if(!b)throw Error('No blocker');const name=b.getAttribute('aria-label')??b.textContent.trim();if(b.textContent.trim()!=='Open the blocking task'||name!==b.textContent.trim())throw Error('Blocker button reads '+JSON.stringify(b.textContent)+' named '+JSON.stringify(name));b.scrollIntoView({block:'nearest'});const r=b.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!b.contains(hit))throw Error('Blocker button covered by '+(hit&&hit.className))})()"
+   ]
+  ]
+ },
+ {
+  "name": "u6-blocked-land-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Add rate-limit headers"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .composer__blocker .btn');if(!b)throw Error('No blocker');const name=b.getAttribute('aria-label')??b.textContent.trim();if(b.textContent.trim()!=='Open the blocking task'||name!==b.textContent.trim())throw Error('Blocker button reads '+JSON.stringify(b.textContent)+' named '+JSON.stringify(name));b.scrollIntoView({block:'nearest'});const r=b.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!b.contains(hit))throw Error('Blocker button covered by '+(hit&&hit.className))})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-sheet-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    "section:has(#control-terminals) .btn:has-text('New')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.sheet[open] .sheet__footer .btn').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".sheet[open] .sheet__footer .btn"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-sheet-360-200-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    "section:has(#control-terminals) .btn:has-text('New')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.sheet[open] .sheet__footer .btn').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".sheet[open] .sheet__footer .btn"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-sheet-390-light",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    "section:has(#control-terminals) .btn:has-text('New')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.sheet[open] .sheet__footer .btn').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".sheet[open] .sheet__footer .btn"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-sheet-land-200-dark",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    "section:has(#control-terminals) .btn:has-text('New')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.sheet[open] .sheet__footer .btn').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".sheet[open] .sheet__footer .btn"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-sheet-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    "section:has(#control-terminals) .btn:has-text('New')"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.sheet[open] .sheet__footer .btn').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".sheet[open] .sheet__footer .btn"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.sheet[open] .sheet__footer .btn');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-gone-360-200-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "window.__sim.host.terminals = []"
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening a terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-gone-390-light",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "window.__sim.host.terminals = []"
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening a terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-gone-land-200-light",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": false,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "window.__sim.host.terminals = []"
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening a terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ },
+ {
+  "name": "u7-gone-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "scale": 1,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "clickSel",
+    ".nav__tab:has-text('Control')"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "window.__sim.host.terminals = []"
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary').getBoundingClientRect();window.__u7=[r.width,r.height]})()"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(8000)"
+   ],
+   [
+    "clickSel",
+    ".tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary');const r=b.getBoundingClientRect();return {text:b.textContent,before:window.__u7,after:[r.width,r.height]}})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-recovery .btn--primary');const r=b.getBoundingClientRect();const [w,h]=window.__u7;if(b.textContent!=='Opening a terminal\u2026'||b.getAttribute('aria-busy')!=='true')throw Error('Button reads '+JSON.stringify(b.textContent));if(Math.abs(r.height-h)>0.5||Math.abs(r.width-w)>4)throw Error('Button resized from '+[w,h]+' to '+[r.width,r.height])})()"
+   ]
+  ]
+ }
+]

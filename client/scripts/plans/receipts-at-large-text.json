@@ -1,0 +1,714 @@
+[
+ {
+  "name": "receipts-done-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-failed-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002002');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002002'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-unknown-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002003');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002003'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-flaky-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000201');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000201'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-headers-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000202'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-readme-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000203');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000203'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-long-title-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-receipt-head h1').textContent='Fix PaymentMethodSelectorContainer overflow'"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-brief-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "Portable brief\u2026"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(null)"
+   ],
+   [
+    "click",
+    "Regenerate\u2026"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(null)"
+   ],
+   [
+    "click",
+    "Keep edits"
+   ],
+   [
+    "click",
+    "Choose destination"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(null)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-work-360-zoom",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "click",
+    "Work"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(null)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-done-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-failed-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002002');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002002'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-unknown-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002003');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002003'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-flaky-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000201');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000201'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-headers-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000202');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000202'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-readme-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000000203');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000000203'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-long-title-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-receipt-head h1').textContent='Fix PaymentMethodSelectorContainer overflow'"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-brief-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "Portable brief\u2026"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(null)"
+   ],
+   [
+    "click",
+    "Regenerate\u2026"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(null)"
+   ],
+   [
+    "click",
+    "Keep edits"
+   ],
+   [
+    "click",
+    "Choose destination"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(null)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-work-412-zoom",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const s=document.createElement('style');s.textContent=':root{--text-xs:24px;--text-sm:26px;--text-md:30px;--text-lg:34px;--text-xl:40px;--text-2xl:52px;--text-3xl:68px}';document.head.append(s)})()"
+   ],
+   [
+    "click",
+    "Work"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(null)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-done-412",
+  "width": 412,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(false)"
+   ]
+  ]
+ },
+ {
+  "name": "receipts-done-360",
+  "width": 360,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__a=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__a.ui.selectTask('0192f7a1-0000-7000-8000-000000000101','0192f7a1-0000-7000-8000-000000002001');window.__a.ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002001'},'work')"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "((stacked)=>{\nconst W=document.documentElement.clientWidth, bad=[];\nconst name=e=>e.tagName.toLowerCase()+'.'+[...e.classList].join('.');\nfor(const e of document.querySelectorAll('.screen__body *, .sheet *')){const r=e.getBoundingClientRect();\n if(r.width>0&&r.right>W+1&&!e.closest('[data-scroll-x], .cmd, pre, .xterm, .cm-editor, .chips'))bad.push('past the edge: '+name(e)+' '+Math.round(r.right));}\nconst room=(el)=>(el.closest('dl, header, .work-actions, .work-review, .work-stack, .sheet')??el.parentElement).clientWidth*0.85;\nconst split=(el)=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let n;(n=w.nextNode());){const re=/[^\\s\\-\u2013\u2014\\/]+/g;let m;\n while((m=re.exec(n.data))){const g=document.createRange();g.setStart(n,m.index);g.setEnd(n,m.index+m[0].length);\n  const rs=[...g.getClientRects()].filter(x=>x.width>0);const lines=new Set(rs.map(x=>Math.round(x.bottom)));\n  const width=rs.reduce((a,x)=>a+x.width,0);if(lines.size>1&&width<=room(el))bad.push('split word: '+JSON.stringify(m[0])+' in '+name(el));}}};\ndocument.querySelectorAll('.work-facts dt, .work-facts dd, .work-receipt-head h1, .work-screen .btn, .work-sheet .btn, .sheet .btn').forEach(split);\nfor(const b of document.querySelectorAll('.work-screen .btn, .work-sheet .btn, .sheet .btn')){const l=b.querySelector('.btn__label')??b;\n const br=b.getBoundingClientRect(),lr=l.getBoundingClientRect();if(br.width&&(lr.left<br.left-1||lr.right>br.right+1||b.scrollWidth>b.clientWidth+1))bad.push('label spills: '+JSON.stringify(b.textContent));}\nif(stacked!==null)for(const row of document.querySelectorAll('.work-facts > div')){const t=row.querySelector('dt').getBoundingClientRect(),d=row.querySelector('dd').getBoundingClientRect();\n if((d.top>=t.bottom-1)!==stacked)bad.push((stacked?'value beside ':'value under ')+JSON.stringify(row.querySelector('dt').textContent));}\nif(bad.length)throw Error([...new Set(bad)].slice(0,8).join('; '));\nreturn 'ok: '+document.querySelectorAll('.work-facts > div').length+' facts, '+document.querySelectorAll('.work-screen .btn, .sheet .btn').length+' buttons';\n})(true)"
+   ]
+  ]
+ }
+]

@@ -1,0 +1,796 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.an-screen {
+  --an-max: var(--content-max);
+}
+.an-screen .screen__inner {
+  max-width: var(--an-max);
+  padding-top: var(--s2);
+}
+.an-stack {
+  display: grid;
+  gap: var(--s3);
+  min-width: 0;
+}
+/* The screen's hidden file inputs are placed against its content, not the
+   route outside the scrolling body; "Add a source" keeps its hidden
+   "Capturing…" inside its sheet's scrolling body the same way. */
+:is(.screen__body, .screen__inner, .sheet__body) > .an-stack {
+  position: relative;
+}
+/* The screens "Capture the computer" can take, listed under it rather than as
+   more buttons that look like other sources. */
+.an-capture {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+.an-capture__label {
+  padding-inline: var(--s1);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--ink-2);
+}
+.an-capture__note {
+  padding: 0 var(--s3) var(--s3);
+}
+.group > .an-capture__note {
+  border-top: 0;
+}
+.an-capture .row.is-busy:disabled {
+  opacity: 1;
+}
+.an-capture__busy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.an-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+.an-wrap > * {
+  max-width: 100%;
+}
+.an-sources {
+  display: flex;
+  overflow-x: auto;
+  gap: var(--s2);
+  padding: var(--s1) 2px var(--s2);
+}
+.an-source {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2);
+  /* Gives a little so one source and "Add source" fit a phone's width. */
+  flex: 0 1 13rem;
+  min-width: min(10rem, 70vw);
+  min-height: var(--target);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  text-align: left;
+}
+.an-source.is-selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.an-source img,
+.an-source > svg {
+  width: 3.5rem;
+  height: 3rem;
+  flex: none;
+  border-radius: var(--r-sm);
+}
+/* The whole picture, framed: a cropped middle of a light page reads as blank
+   on the card's own light surface. */
+.an-source img {
+  object-fit: contain;
+  background: var(--surface-sunken);
+  outline: 1px solid var(--line);
+  outline-offset: -1px;
+}
+.an-source__text {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+.an-source__text strong {
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+.an-add-source {
+  flex: none;
+  white-space: nowrap;
+  border-radius: var(--r-md);
+}
+.an-source-caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s1);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+.an-source-caption strong {
+  color: var(--ink-2);
+}
+.an-targets {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.an-targets legend {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--s2);
+  color: var(--ink-2);
+}
+.an-chip-source {
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+}
+.an-targets .chip__label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+/* A full-width bar, like Review's footer, so the content scrolling under it
+   never shows at its sides; its contents line up with the content column. */
+.an-review {
+  --gutter: max(var(--s4), calc((100% - var(--an-max)) / 2 + var(--s4)));
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3) max(var(--gutter), var(--safe-right)) var(--s3)
+    max(var(--gutter), var(--safe-left));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+  flex: none;
+}
+.an-review p { margin: 0; }
+.an-review .fine {
+  margin: 0;
+}
+.an-card,
+.an-comment {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  padding: var(--s3);
+  min-width: 0;
+}
+.an-card.is-selected {
+  border-color: var(--accent);
+}
+.an-comment--unresolved {
+  border-color: var(--warn);
+}
+.an-comment__body {
+  display: grid;
+  gap: var(--s2);
+  text-align: left;
+  width: 100%;
+  min-height: var(--target);
+  overflow-wrap: anywhere;
+}
+.an-comment__targets {
+  color: var(--accent-text);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+.an-comment--unresolved .an-comment__targets {
+  color: var(--warn-text);
+}
+.an-marks,
+.an-steps {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--s3);
+}
+.an-links {
+  padding-left: var(--s5);
+  color: var(--ink-2);
+  display: grid;
+  gap: var(--s2);
+}
+.an-step-heading {
+  font-weight: 650;
+  margin-bottom: var(--s3);
+}
+.an-video {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+}
+.an-screen input[type="range"] {
+  min-height: var(--target);
+  width: 100%;
+  accent-color: var(--accent);
+}
+.an-screen summary {
+  min-height: var(--target);
+  padding-block: var(--s3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.an-check {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--target);
+}
+.an-paragraph {
+  margin-top: var(--s4);
+}
+.an-revision {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.an-recording {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3);
+  border: 1px solid var(--stop);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+.an-recording > p:first-child {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-weight: 600;
+}
+.an-recording svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+.an-recording meter {
+  width: 100%;
+  height: 12px;
+}
+.an-screen .segmented__opt {
+  min-height: var(--target);
+}
+.an-outgoing {
+  display: grid;
+  gap: var(--s3);
+  min-width: 0;
+}
+.an-reviewed-image {
+  margin: 0;
+  min-width: 0;
+}
+.an-reviewed-image img {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.an-reviewed-image figcaption {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  padding-top: var(--s2);
+  overflow-wrap: anywhere;
+}
+.an-outgoing-steps {
+  display: grid;
+  gap: var(--s3);
+  padding-left: var(--s6);
+  overflow-wrap: anywhere;
+}
+
+/* At enlarged text, give the origin the card's full width below the image. */
+:root.app-narrow .an-source { flex-direction: column; align-items: stretch; }
+:root.app-narrow .an-source img { width: 100%; }
+:root.app-narrow .an-source__text { width: 100%; }
+:root.app-narrow .an-source__text > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* ---- Steps ---------------------------------------------------------------
+   A scrolling page with Review pinned under it; the tab bar gives way, and
+   the control safety strip keeps its row: stopping an agent that holds a
+   desktop is never more than one tap away. */
+.app:has(.tab:not(.is-hidden) .route:not(.is-hidden) > .an-screen:not(.an-screen--full)) {
+  grid-template: "main" minmax(0, 1fr) "safety" auto / minmax(0, 1fr);
+}
+.app:has(.tab:not(.is-hidden) .route:not(.is-hidden) > .an-screen:not(.an-screen--full)) .nav {
+  display: none;
+}
+:root.app-tight .an-screen:not(.an-screen--full) { overflow: hidden; }
+:root.app-tight .an-screen:not(.an-screen--full) .screen__body { min-height: 0; }
+.an-screen > .screen__footer { flex: none; }
+@media (max-height: 500px) and (min-width: 600px) {
+  .an-review {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  .an-review .btn {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+}
+
+/* ---- Marking, full screen ------------------------------------------------
+   As a display under control: the picture as large as the screen allows, on
+   black, and the controls on dark glass over it with white text that reads
+   over any picture. The picture is fitted to the room the controls leave
+   clear, and can be zoomed out past them. */
+.an-screen--full {
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color-scheme: dark;
+}
+.an-screen--full > .screen__body {
+  position: relative;
+  overflow: hidden;
+}
+.an-stage {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+.an-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+.an-canvas svg {
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.an-canvas__message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: rgb(255 255 255 / 0.8);
+}
+
+.an-overlay {
+  --glass: rgb(18 14 22 / 0.56);
+  --glass-strong: rgb(18 14 22 / 0.8);
+  --glass-line: rgb(255 255 255 / 0.16);
+  --glass-ink: #fff;
+  --glass-quiet: rgb(255 255 255 / 0.8);
+  --pad: var(--s2);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template:
+    "top" auto
+    "room" minmax(0, 1fr)
+    "tools" auto
+    "bar" auto / minmax(0, 1fr);
+  gap: var(--s2);
+  padding: max(var(--pad), var(--safe-top)) max(var(--pad), var(--safe-right)) max(var(--pad), var(--safe-bottom))
+    max(var(--pad), var(--safe-left));
+  color: var(--glass-ink);
+  /* Only the controls take touches; the rest is the picture. */
+  pointer-events: none;
+}
+.an-overlay > * {
+  pointer-events: auto;
+}
+.an-overlay > :is(.an-room, .an-notes) {
+  pointer-events: none;
+}
+.an-overlay > :is(.an-room, .an-notes) > * {
+  pointer-events: auto;
+}
+.an-screen--full :is(button, a):focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+.an-glass,
+.an-tools,
+.an-bar {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: inset 0 0 0 1px var(--glass-line), 0 2px 10px rgb(0 0 0 / 0.25);
+  color: var(--glass-ink);
+}
+
+/* Back, what this draft holds, other tasks' Stops, and Review. */
+.an-top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+}
+.an-draft {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  min-height: 48px;
+  padding: var(--s1) var(--s2) var(--s1) var(--s3);
+  border: 0;
+  border-radius: var(--r-full);
+  font: inherit;
+  text-align: left;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+  cursor: pointer;
+}
+.an-draft:active {
+  background: var(--glass-strong);
+}
+.an-draft__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+.an-draft__text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.an-draft__text strong {
+  font-size: var(--text-sm);
+}
+.an-draft__text > span {
+  color: var(--glass-quiet);
+  font-size: var(--text-xs);
+}
+.an-draft__warn {
+  color: #ffcf7a;
+}
+.an-draft > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+.an-send {
+  flex: none;
+  min-height: 48px;
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: var(--r-lg) var(--r-lg) var(--r-lg) var(--r-sm);
+  background: var(--signal);
+  color: #120c0a;
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+}
+.an-send:active {
+  background: var(--signal-pressed);
+}
+/* Not ready says so, and a tap says why. */
+.an-send[aria-disabled="true"] {
+  background: var(--glass-strong);
+  color: var(--glass-quiet);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+}
+
+/* Notes over the top of the picture, without moving it. */
+.an-notes {
+  grid-area: room;
+  align-self: start;
+  justify-self: center;
+  display: grid;
+  gap: var(--s2);
+  width: min(100%, 32rem);
+  z-index: 1;
+}
+.an-notes:empty,
+.an-notes__spoken:empty {
+  display: none;
+}
+.an-notes__spoken {
+  display: grid;
+  gap: var(--s2);
+}
+.an-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s1) var(--s3);
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-md);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+  color: var(--glass-ink);
+  font-size: var(--text-sm);
+}
+.an-note__close {
+  min-height: var(--target);
+  padding: 0 var(--s2);
+  border: 0;
+  background: none;
+  color: var(--signal);
+  font: inherit;
+  font-weight: 650;
+}
+
+.an-room {
+  grid-area: room;
+  position: relative;
+  min-height: 0;
+}
+.an-watch {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--s2);
+}
+.an-watch .an-source-caption {
+  color: var(--glass-quiet);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+}
+.an-watch .an-source-caption strong {
+  color: var(--glass-ink);
+}
+.an-watch .an-video {
+  min-height: 0;
+  max-height: 100%;
+  border-radius: var(--r-md);
+  background: #000;
+}
+
+.an-start {
+  grid-area: room;
+  place-self: center;
+  display: grid;
+  justify-items: start;
+  gap: var(--s3);
+  width: min(100%, 26rem);
+  padding: var(--s5);
+  border-radius: var(--r-lg);
+}
+.an-start h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.an-start p {
+  margin: 0;
+  color: var(--glass-quiet);
+}
+
+/* The tools: big, labelled, and one tap each. */
+.an-tools {
+  grid-area: tools;
+  justify-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  padding: var(--s1);
+  border-radius: var(--r-lg);
+}
+/* One row on a 360px phone; two only once large text needs it. */
+.an-tools .full-tool {
+  flex: 1 0 auto;
+  min-width: clamp(44px, 12vw, 60px);
+  padding-inline: 4px;
+}
+.an-tools__gap {
+  align-self: stretch;
+  width: 1px;
+  margin: var(--s1) 2px;
+  background: var(--glass-line);
+}
+
+/* Speak, type, and add the comment. */
+.an-bar {
+  grid-area: bar;
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+  padding: var(--s2);
+  border-radius: var(--r-lg);
+  background: var(--glass-strong);
+}
+.an-bar__recording:empty {
+  display: none;
+}
+.an-bar__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s2);
+  min-width: 0;
+}
+.an-bar__row > .full-tool {
+  min-height: var(--target);
+}
+.an-bar__field {
+  flex: 1;
+  min-width: 0;
+}
+.an-bar .field__input {
+  border-color: var(--glass-line);
+  background: rgb(255 255 255 / 0.1);
+  color: var(--glass-ink);
+}
+.an-bar .field__input::placeholder {
+  color: var(--glass-quiet);
+}
+.an-bar .field__input:focus {
+  border-color: var(--signal);
+  box-shadow: none;
+}
+.an-bar__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+.an-bar__foot .fine {
+  flex: 1;
+  margin: 0;
+  color: var(--glass-quiet);
+}
+.an-bar .btn--secondary {
+  background: var(--glass);
+  color: var(--glass-ink);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+}
+.an-bar .an-targets legend,
+.an-bar .an-chip-source {
+  color: var(--glass-quiet);
+}
+/* One row that scrolls sideways, so the field keeps its place over the
+   keyboard however many marks there are. */
+.an-bar .an-targets .an-wrap {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 2px;
+}
+.an-bar .an-targets .an-wrap > * {
+  flex: none;
+}
+.an-bar .chip {
+  background: rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+  color: var(--glass-ink);
+}
+.an-bar .chip.is-selected {
+  background: var(--signal);
+  box-shadow: none;
+  color: #120c0a;
+}
+.an-bar .chip.is-selected .an-chip-source {
+  color: inherit;
+}
+.an-bar .an-recording {
+  border-color: var(--stop);
+  background: var(--glass-strong);
+  color: var(--glass-ink);
+}
+.an-bar .an-recording .btn {
+  min-height: var(--target-intervention);
+}
+
+/* At the foot of the picture's room: the selected mark's Delete, and Fit
+   once zoomed in. */
+.an-pills {
+  position: absolute;
+  display: flex;
+  gap: var(--s2);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.an-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-full);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.an-pill svg {
+  width: 18px;
+  height: 18px;
+}
+.an-pill:active {
+  background: var(--glass-strong);
+}
+/* For a keyboard or a screen reader only: zoom, pan and a centred mark. */
+.an-quiet:not(:focus-visible),
+.an-keys:not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.an-keys:focus-within {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s1);
+  width: min(90%, 28rem);
+  padding: var(--s2);
+  border-radius: var(--r-lg);
+  background: rgb(18 14 22 / 0.86);
+  transform: translate(-50%, -50%);
+}
+.an-keys button {
+  min-height: var(--target);
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-md);
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  font: inherit;
+  font-size: var(--text-sm);
+}
+.an-keys button:disabled {
+  opacity: 0.4;
+}
+
+/* Typing: the tools give way to the field and its targets; the picture stays
+   in view above the keyboard. */
+.an-screen--full.is-composing :is(.an-tools, .an-pills) {
+  display: none;
+}
+
+/* Landscape has height to spare at the side, not below. */
+@media (orientation: landscape) and (min-aspect-ratio: 4/3) {
+  .an-overlay {
+    grid-template:
+      "tools top" auto
+      "tools room" minmax(0, 1fr)
+      "tools bar" auto / auto minmax(0, 1fr);
+  }
+  .an-tools {
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-self: center;
+    justify-self: start;
+    max-height: 100%;
+  }
+  .an-tools__gap {
+    width: auto;
+    height: 1px;
+    margin: 2px var(--s1);
+  }
+  .an-bar {
+    justify-self: center;
+    width: min(100%, 44rem);
+  }
+}

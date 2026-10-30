@@ -1,0 +1,275 @@
+[
+  {
+    "name": "U17-1-confirmed-save-home",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "fill",
+        "Markdown source",
+        "# Windows notes\nKeep the line endings.\n"
+      ],
+      [
+        "click",
+        "Review changes"
+      ],
+      [
+        "click",
+        "Save on computer"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Saved on computer'))throw Error('Save not confirmed');"
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.library-screen');if(!s?.textContent.includes('No retained saves')||s.textContent.includes('Needs checking'))throw Error('Confirmed save left a recovery anomaly');"
+      ]
+    ]
+  },
+  {
+    "name": "U17-2-removed-blank-line",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "fill",
+        "Markdown source",
+        "# Windows notes\nKeep the line endings.\n"
+      ],
+      [
+        "click",
+        "Review changes"
+      ],
+      [
+        "eval",
+        "const line=document.querySelector('.diff__line--remove');const code=line?.querySelector('.diff__text');if(code?.textContent!=='Removed: blank line'||[...code.children].some(c=>!c.matches('.visually-hidden')))throw Error('Blank cell is not empty and named');if(getComputedStyle(line).textDecorationLine.includes('line-through')||getComputedStyle(code).textDecorationLine.includes('line-through'))throw Error('Blank line is struck through');const other=document.querySelector('.diff__line--same');if(Math.abs(line.getBoundingClientRect().height-other.getBoundingClientRect().height)>1)throw Error('Blank row lost its normal height');"
+      ]
+    ]
+  },
+  {
+    "name": "U17-3-recent-human-decision",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const {delayedDecision}=await import('/src/dev/sim/talkWork.ts');const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const id=delayedDecision(h);const t=h.tasks.find(t=>t.task_id===id);const r=h.runs.find(r=>r.run_id===t.current_run);localStorage.setItem('sim.human-decisions',JSON.stringify({[r.run_id]:{resolution:'mark_completed',at:Date.now(),by:{kind:'device',device_id:ids.device}}}));const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,id);ui.selectTab('talk');ui.persistNow();setTimeout(()=>location.reload(),100)})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const row=[...document.querySelectorAll('.talk-new button.row')].find(b=>b.textContent.includes('Recover the interrupted migration'));if(row?.querySelector('.pill')?.textContent!=='Marked completed')throw Error('Recent task has the wrong label');row.scrollIntoView({block:'center'});"
+      ]
+    ]
+  },
+  {
+    "name": "U17-5-next-up-paused-1280",
+    "width": 1280,
+    "height": 800,
+    "dark": true,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.queue.paused=true;h.queue.pause_reason=null;h.emit({type:'queue_changed',queue:h.queue});"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Next up"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const pill=[...document.querySelectorAll('.work-screen .pill')].find(p=>['Paused','Running'].includes(p.textContent));if(!pill)throw Error('Queue state missing');pill.scrollIntoView({block:'center'});const r=pill.getBoundingClientRect(),parent=pill.parentElement.getBoundingClientRect();if(r.width>=parent.width/2)throw Error('Queue state still stretches: '+r.width);"
+      ],
+      [
+        "log",
+        "const pill=[...document.querySelectorAll('.work-screen .pill')].find(p=>['Paused','Running'].includes(p.textContent));({label:pill.textContent,width:pill.getBoundingClientRect().width,container:pill.parentElement.getBoundingClientRect().width,fonts:[...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family)})"
+      ]
+    ]
+  },
+  {
+    "name": "U17-5-next-up-running-1280",
+    "width": 1280,
+    "height": 800,
+    "dark": true,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.queue.paused=false;h.queue.pause_reason=null;h.emit({type:'queue_changed',queue:h.queue});"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Next up"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const pill=[...document.querySelectorAll('.work-screen .pill')].find(p=>['Paused','Running'].includes(p.textContent));if(!pill)throw Error('Queue state missing');pill.scrollIntoView({block:'center'});const r=pill.getBoundingClientRect(),parent=pill.parentElement.getBoundingClientRect();if(r.width>=parent.width/2)throw Error('Queue state still stretches: '+r.width);"
+      ],
+      [
+        "log",
+        "const pill=[...document.querySelectorAll('.work-screen .pill')].find(p=>['Paused','Running'].includes(p.textContent));({label:pill.textContent,width:pill.getBoundingClientRect().width,container:pill.parentElement.getBoundingClientRect().width,fonts:[...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family)})"
+      ]
+    ]
+  },
+  {
+    "name": "U17-5-next-up-paused-390",
+    "width": 390,
+    "height": 844,
+    "dark": true,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.queue.paused=true;h.queue.pause_reason=null;h.emit({type:'queue_changed',queue:h.queue});"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Next up"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const pill=[...document.querySelectorAll('.work-screen .pill')].find(p=>['Paused','Running'].includes(p.textContent));if(!pill)throw Error('Queue state missing');pill.scrollIntoView({block:'center'});const r=pill.getBoundingClientRect(),parent=pill.parentElement.getBoundingClientRect();if(r.width>=parent.width/2)throw Error('Queue state still stretches: '+r.width);"
+      ],
+      [
+        "log",
+        "const pill=[...document.querySelectorAll('.work-screen .pill')].find(p=>['Paused','Running'].includes(p.textContent));({label:pill.textContent,width:pill.getBoundingClientRect().width,container:pill.parentElement.getBoundingClientRect().width,fonts:[...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family)})"
+      ]
+    ]
+  },
+  {
+    "name": "U17-5-next-up-running-390",
+    "width": 390,
+    "height": 844,
+    "dark": true,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.queue.paused=false;h.queue.pause_reason=null;h.emit({type:'queue_changed',queue:h.queue});"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Next up"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const pill=[...document.querySelectorAll('.work-screen .pill')].find(p=>['Paused','Running'].includes(p.textContent));if(!pill)throw Error('Queue state missing');pill.scrollIntoView({block:'center'});const r=pill.getBoundingClientRect(),parent=pill.parentElement.getBoundingClientRect();if(r.width>=parent.width/2)throw Error('Queue state still stretches: '+r.width);"
+      ],
+      [
+        "log",
+        "const pill=[...document.querySelectorAll('.work-screen .pill')].find(p=>['Paused','Running'].includes(p.textContent));({label:pill.textContent,width:pill.getBoundingClientRect().width,container:pill.parentElement.getBoundingClientRect().width,fonts:[...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family)})"
+      ]
+    ]
+  }
+]

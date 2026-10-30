@@ -1,0 +1,531 @@
+[
+  {
+    "name": "talk-light",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.safety-rail .named-stop__button')?.textContent.includes(document.querySelector('.talk-bar__title-text').textContent)) throw Error('Stop targets another task')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "talk-dark",
+    "dark": true,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ]
+    ]
+  },
+  {
+    "name": "talk-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "const b=document.querySelector('.named-stop__button .btn__label');const line=parseFloat(getComputedStyle(b).lineHeight);if(b.getBoundingClientRect().height>line*2+1)throw Error('Stop exceeds two lines');if(b.scrollHeight>b.clientHeight+1)throw Error('Stop clipped')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "talk-landscape",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "log",
+        "document.querySelector('.talk .screen__body').getBoundingClientRect().height"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.talk .screen__body').getBoundingClientRect().height<innerHeight*.4)throw Error('Conversation is less than 40%')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "talk-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "wait",
+        1200
+      ]
+    ]
+  },
+  {
+    "name": "next-up",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.named-stop__button')].filter(b=>b.getBoundingClientRect().height); if(b.length!==1)throw Error('Expected one Stop, got '+b.length)"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "control-list",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "desktop-leave",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.latency(2000); window.__sim.pace(10)"
+      ],
+      [
+        "click",
+        "Leave control"
+      ],
+      [
+        "eval",
+        "const b=document.querySelector('.control-footer button');if(!b.disabled||!b.textContent.includes('Leaving control'))throw Error('Leave is still live')"
+      ],
+      [
+        "shot",
+        "pending"
+      ],
+      [
+        "wait",
+        2600
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "computer-use",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Check the staging dashboard"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const nav=document.querySelector('.nav').getBoundingClientRect();for(const b of document.querySelectorAll('.agent-screen .control-footer button')){const r=b.getBoundingClientRect();if(r.width<48||r.height<48||nav.top-r.bottom<8)throw Error('Unsafe touch area');const hit=document.elementFromPoint(r.x+r.width/2,nav.top+2);if(hit?.closest('.control-footer'))throw Error('Tab tap hits safety control')}"
+      ],
+      [
+        "shot",
+        "hit-areas"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.toast')?.textContent.includes('Pause requested'))throw Error('Tab tap hit Pause')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "ignored-stop",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "const s=window.__sim; s.stops.ignore(s.host.tasks.find(t=>t.kind==='computer_use'&&t.state==='working').task_id)"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "const b=document.querySelector('.named-stop__button');if(b.disabled||!b.textContent.includes('Stop again'))throw Error('Stop stayed disabled')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "offline-stop",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "stop-bound",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "const s=window.__sim;s.stops.ignore(s.host.tasks.find(t=>t.kind==='computer_use'&&t.state==='working').task_id,false)"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "accepted"
+      ],
+      [
+        "eval",
+        "window.__firstStop=[...window.__sim.host.receipts.keys()].at(-1)"
+      ],
+      [
+        "wait",
+        20000
+      ],
+      [
+        "eval",
+        "const b=document.querySelector('.named-stop__button');if(b.disabled||!b.textContent.includes('Stop again'))throw Error('Bound did not reopen Stop')"
+      ],
+      [
+        "shot",
+        "again"
+      ],
+      [
+        "click",
+        "Stop again \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if([...window.__sim.host.receipts.keys()].at(-1)===window.__firstStop)throw Error('Reused admission')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "stop-reload",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "const s=window.__sim;s.stops.ignore(s.host.tasks.find(t=>t.kind==='computer_use'&&t.state==='working').task_id,false)"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "location.reload()"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "const b=document.querySelector('.named-stop__button');if(b.disabled||b.textContent.includes('Stop requested'))throw Error('Reload retained disabled Stop')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "stop-restart",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "const s=window.__sim;window.__stopping=s.host.tasks.find(t=>t.kind==='computer_use'&&t.state==='working').task_id;s.stops.ignore(window.__stopping,false)"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.stops.restart(window.__stopping)"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "const b=document.querySelector('.named-stop__button');if(b.disabled||b.textContent.includes('Stop requested'))throw Error('Restart retained disabled Stop')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "control-empty",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.control.empty()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "stop-error",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "const s=window.__sim; s.host.tasks=s.host.tasks.filter(t=>t.kind!=='computer_use')"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.stop-status--refused'))throw Error('Missing refusal')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "stop-revoked",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.named-stop__button').disabled)throw Error('Revoked Stop remained active')"
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "control-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "computer-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "click",
+        "Check the staging dashboard"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "settle": 1200
+  },
+  {
+    "name": "stop-permission-denied",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk did not load')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({tasks:false})"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.named-stop__button').disabled)throw Error('Stop ignored task permission')"
+      ]
+    ]
+  }
+]

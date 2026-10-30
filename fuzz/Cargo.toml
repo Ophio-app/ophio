@@ -1,0 +1,51 @@
+[package]
+name = "fuzz"
+description = "Coverage-guided fuzz targets for parsers of input from outside the owner's control"
+version = "0.0.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.10"
+library = { path = "../crates/library" }
+ports = { path = "../crates/ports" }
+protocol = { path = "../crates/protocol" }
+serde = "1.0"
+serde_json = "1.0"
+
+# Built only by `cargo fuzz` with a nightly toolchain, apart from the product
+# workspace and its lockfile.
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "frames"
+path = "fuzz_targets/frames.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "binary_frames"
+path = "fuzz_targets/binary_frames.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "library_path"
+path = "fuzz_targets/library_path.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tool_approval"
+path = "fuzz_targets/tool_approval.rs"
+test = false
+doc = false
+bench = false

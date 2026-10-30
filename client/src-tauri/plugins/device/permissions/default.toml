@@ -1,0 +1,3 @@
+# Native operations are called from Rust, never granted to JavaScript.
+[default]
+permissions = []

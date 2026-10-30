@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Expressions are parsed, not substring-matched. An OR selects one permitted
+# branch; every AND operand must pass. All original notices are still retained.
+allowed = [
+  "0BSD", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "MIT", "ISC",
+  "BSD-2-Clause", "BSD-3-Clause", "Zlib", "BSL-1.0", "CC0-1.0", "Unlicense",
+  "Unicode-3.0", "Unicode-DFS-2016", "CDLA-Permissive-2.0", "OFL-1.1", "IJG", "blessing",
+  "ZPL-2.1",
+  # Named texts retained in packaging/licenses, each reviewed per linked object
+  # in packaging/windows/runtime-objects.toml.
+  "LicenseRef-MinGW-public-domain", "LicenseRef-gdtoa-Lucent",
+]
+review = ["MPL-2.0", "LGPL-2.0-only", "LGPL-2.0-or-later", "LGPL-2.1-only", "LGPL-2.1-or-later", "LGPL-3.0-only", "LGPL-3.0-or-later"]
+# Exceptions must specify an exact purl, original expression, replacement
+# expression, and evidence-backed reason. No blanket unknown-licence exemptions.
+exceptions = []

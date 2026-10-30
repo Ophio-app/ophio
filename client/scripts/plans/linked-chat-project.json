@@ -1,0 +1,2915 @@
+[
+ {
+  "name": "U31-1-390-light",
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "cards"
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "if(window.__sim.host.identities.find(i=>i.id==='sim-chat-discord').project_id!==window.__sim.host.projects[1].project_id) throw Error('Project was not set')"
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ],
+  "width": 390,
+  "height": 844
+ },
+ {
+  "name": "U31-1-390-dark",
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "cards"
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "if(window.__sim.host.identities.find(i=>i.id==='sim-chat-discord').project_id!==window.__sim.host.projects[1].project_id) throw Error('Project was not set')"
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ],
+  "width": 390,
+  "height": 844,
+  "dark": true
+ },
+ {
+  "name": "U31-1-360-200",
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "cards"
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "if(window.__sim.host.identities.find(i=>i.id==='sim-chat-discord').project_id!==window.__sim.host.projects[1].project_id) throw Error('Project was not set')"
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ],
+  "width": 360,
+  "height": 780,
+  "text": 2
+ },
+ {
+  "name": "U31-1-tablet",
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "cards"
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "if(window.__sim.host.identities.find(i=>i.id==='sim-chat-discord').project_id!==window.__sim.host.projects[1].project_id) throw Error('Project was not set')"
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ],
+  "width": 1280,
+  "height": 800,
+  "scale": 1
+ },
+ {
+  "name": "U31-3-390-light",
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002002'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(h=>h.textContent==='Steps').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U31-3-390-dark",
+  "settle": 900,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002002'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(h=>h.textContent==='Steps').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U31-3-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002002'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(h=>h.textContent==='Steps').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U31-3-tablet",
+  "settle": 900,
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002002'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(h=>h.textContent==='Steps').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U31-4-390-light",
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.state==='reconciliation_required');ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "shot",
+    "mark"
+   ],
+   [
+    "click",
+    "Mark failed"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "recorded"
+   ],
+   [
+    "wait",
+    2200
+   ]
+  ]
+ },
+ {
+  "name": "U31-4-390-dark",
+  "settle": 900,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.state==='reconciliation_required');ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "shot",
+    "mark"
+   ],
+   [
+    "click",
+    "Mark failed"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "recorded"
+   ],
+   [
+    "wait",
+    2200
+   ]
+  ]
+ },
+ {
+  "name": "U31-4-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.state==='reconciliation_required');ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "shot",
+    "mark"
+   ],
+   [
+    "click",
+    "Mark failed"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "recorded"
+   ],
+   [
+    "wait",
+    2200
+   ]
+  ]
+ },
+ {
+  "name": "U31-4-tablet",
+  "settle": 900,
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.state==='reconciliation_required');ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "shot",
+    "mark"
+   ],
+   [
+    "click",
+    "Mark failed"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "recorded"
+   ],
+   [
+    "wait",
+    2200
+   ]
+  ]
+ },
+ {
+  "name": "U31-4-844x390",
+  "settle": 900,
+  "width": 844,
+  "height": 390,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.state==='reconciliation_required');ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "shot",
+    "mark"
+   ],
+   [
+    "click",
+    "Mark failed"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "recorded"
+   ],
+   [
+    "wait",
+    2200
+   ]
+  ]
+ },
+ {
+  "name": "U31-5-390-light",
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectTask(p,a.task_id);ui.push({screen:'talk'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('.approval')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "card"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('.talk-quick-approval')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs-you"
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-attention-group')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "group"
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "U31-5-390-dark",
+  "settle": 900,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectTask(p,a.task_id);ui.push({screen:'talk'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('.approval')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "card"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('.talk-quick-approval')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs-you"
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-attention-group')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "group"
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "U31-5-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectTask(p,a.task_id);ui.push({screen:'talk'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('.approval')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "card"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('.talk-quick-approval')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs-you"
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-attention-group')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "group"
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "U31-5-tablet",
+  "settle": 900,
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectTask(p,a.task_id);ui.push({screen:'talk'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('.approval')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "card"
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('.talk-quick-approval')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "needs-you"
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-attention-group')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "group"
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "U31-6-tablet",
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "height",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input"
+   ],
+   [
+    "height",
+    440
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link-keyboard"
+   ],
+   [
+    "height",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "clickSel",
+    "dialog[open] .approval__actions .btn--secondary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    "dialog[open] textarea"
+   ],
+   [
+    "height",
+    440
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review-keyboard"
+   ],
+   [
+    "height",
+    800
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'tasks',filter:'active'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    "button[aria-label^='Actions for']"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    "dialog[open] .work-stack > .btn"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "rename"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input"
+   ],
+   [
+    "height",
+    440
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "rename-keyboard"
+   ]
+  ]
+ },
+ {
+  "name": "U31-6-360-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "settle": 900,
+  "steps": [
+   [
+    "height",
+    780
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input"
+   ],
+   [
+    "height",
+    430
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link-keyboard"
+   ],
+   [
+    "height",
+    780
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "clickSel",
+    "dialog[open] .approval__actions .btn--secondary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    "dialog[open] textarea"
+   ],
+   [
+    "height",
+    430
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review-keyboard"
+   ],
+   [
+    "height",
+    780
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'tasks',filter:'active'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    "button[aria-label^='Actions for']"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    "dialog[open] .work-stack > .btn"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "rename"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input"
+   ],
+   [
+    "height",
+    430
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "rename-keyboard"
+   ],
+   [
+    "height",
+    780
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "clickSel",
+    "dialog[open] .safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review-rail-expanded"
+   ]
+  ]
+ },
+ {
+  "name": "U31-6-844x390",
+  "width": 844,
+  "height": 390,
+  "settle": 900,
+  "steps": [
+   [
+    "height",
+    390
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input"
+   ],
+   [
+    "height",
+    235
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link-keyboard"
+   ],
+   [
+    "height",
+    390
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "clickSel",
+    "dialog[open] .approval__actions .btn--secondary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    "dialog[open] textarea"
+   ],
+   [
+    "height",
+    235
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review-keyboard"
+   ],
+   [
+    "height",
+    390
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'tasks',filter:'active'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    "button[aria-label^='Actions for']"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    "dialog[open] .work-stack > .btn"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "rename"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input"
+   ],
+   [
+    "height",
+    235
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "rename-keyboard"
+   ]
+  ]
+ },
+ {
+  "name": "U31-6-390-light",
+  "settle": 900,
+  "steps": [
+   [
+    "height",
+    844
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input"
+   ],
+   [
+    "height",
+    462
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link-keyboard"
+   ],
+   [
+    "height",
+    844
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "clickSel",
+    "dialog[open] .approval__actions .btn--secondary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    "dialog[open] textarea"
+   ],
+   [
+    "height",
+    462
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "document.activeElement?.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review-keyboard"
+   ]
+  ]
+ },
+ {
+  "name": "U31-6-390-dark",
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "height",
+    844
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link"
+   ],
+   [
+    "height",
+    844
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "U31-6-844x390-200",
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "settle": 900,
+  "steps": [
+   [
+    "height",
+    390
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "link"
+   ],
+   [
+    "height",
+    390
+   ],
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.approvals[0];const p=h.tasks.find(t=>t.task_id===a.task_id).project_id;ui.selectProject(p);ui.push({screen:'work'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const h=window.__sim.host;const a=h.approvals[0];const it=h.attention.find(x=>x.approval_id===a.approval_id);const g={...a,kind:'tool',title:'Use Grep',detail:'Pattern: fn retry_\\\\w+\\nPath: crates/payments-client/src',detail_lines:[{label:'Pattern',text:'fn retry_\\\\w+',code:true},{label:'Path',text:'crates/payments-client/src',code:true}],approval_id:crypto.randomUUID(),native_request_id:'toolu_grep',requested_at:Date.now()};h.emit({type:'approval_upserted',approval:g});h.emit({type:'attention_upserted',item:{...it,attention_id:crypto.randomUUID(),approval_id:g.approval_id,created_at:Date.now()}})})()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "clickSel",
+    ".work-attention-group > summary"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "clickSel",
+    ".work-attention-group button.row"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(()=>{const d=[...document.querySelectorAll('dialog[open]')].at(-1);const p=d.querySelector('.sheet__panel').getBoundingClientRect();const u=d.querySelector('.sheet__urgent')?.getBoundingClientRect();if(!u||!u.height)throw new Error('no urgent controls');if(u.bottom>Math.min(p.bottom,innerHeight)+1)throw new Error(`urgent controls end at ${u.bottom}, past the sheet (${p.bottom}) or screen (${innerHeight})`);if(u.top-p.top<100)throw new Error(`only ${u.top-p.top}px above the urgent controls`);const f=document.activeElement;if(f&&d.contains(f)&&f.matches('input,textarea')){const r=f.getBoundingClientRect();if(r.top>=u.top-1||r.bottom<=p.top)throw new Error('the focused field is out of view');}const s=d.querySelector('.sheet__footer--stop');let own='';if(s&&getComputedStyle(s).position==='sticky'&&d.querySelector('.sheet__body').getClientRects().length){const m=d.querySelector('.sheet__main').getBoundingClientRect();const r=s.getBoundingClientRect();if(r.top-m.top<r.height)throw new Error(`the pinned Stop leaves ${r.top-m.top}px for content`);own=`, own Stop pinned at ${Math.round(r.top)}`}return `urgent ${Math.round(u.top)}-${Math.round(u.bottom)} of ${innerHeight}${own} ${document.documentElement.className}`})()"
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "U31-7-844x390",
+  "settle": 900,
+  "width": 844,
+  "height": 390,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "fill",
+    "Command",
+    "ls -la"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "git status"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "cargo test -q"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "document.activeElement?.blur()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const f=document.querySelector('.terminal-frame').getBoundingClientRect();const lh=document.querySelector('.terminal-output .xterm-rows > div').getBoundingClientRect().height;const k=Math.floor((Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top)-8)/lh);if(k<5)throw new Error('output lines in view: '+k)})()"
+   ],
+   [
+    "shot",
+    "attached"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(600000)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));const r=btn.getBoundingClientRect();if(true&&(r.top<b.top||r.bottom>Math.min(b.bottom,innerHeight)))throw new Error('Reconnect cut: '+[r.top,r.bottom,b.top,b.bottom]);const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);if(!btn.contains(hit))throw new Error('Reconnect covered by '+hit?.className)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const f=document.querySelector('.terminal-frame').getBoundingClientRect();const lh=document.querySelector('.terminal-output .xterm-rows > div').getBoundingClientRect().height;const k=Math.floor((Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top)-8)/lh);if(k<2)throw new Error('output lines in view: '+k)})()"
+   ],
+   [
+    "shot",
+    "reconnect"
+   ]
+  ]
+ },
+ {
+  "name": "U31-7-844x390-200",
+  "settle": 900,
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "fill",
+    "Command",
+    "ls -la"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "git status"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "cargo test -q"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "document.activeElement?.blur()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "shot",
+    "attached"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(600000)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));const r=btn.getBoundingClientRect();if(true&&(r.top<b.top||r.bottom>Math.min(b.bottom,innerHeight)))throw new Error('Reconnect cut: '+[r.top,r.bottom,b.top,b.bottom]);const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);if(!btn.contains(hit))throw new Error('Reconnect covered by '+hit?.className)})()"
+   ],
+   [
+    "shot",
+    "reconnect"
+   ]
+  ]
+ },
+ {
+  "name": "U31-7-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "fill",
+    "Command",
+    "ls -la"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "git status"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "cargo test -q"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "document.activeElement?.blur()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const f=document.querySelector('.terminal-frame').getBoundingClientRect();const lh=document.querySelector('.terminal-output .xterm-rows > div').getBoundingClientRect().height;const k=Math.floor((Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top)-8)/lh);if(k<2)throw new Error('output lines in view: '+k)})()"
+   ],
+   [
+    "shot",
+    "attached"
+   ],
+   [
+    "clickSel",
+    ".terminal-composer textarea"
+   ],
+   [
+    "height",
+    430
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const r=document.querySelector('.terminal-composer textarea').getBoundingClientRect();if(r.bottom>innerHeight)throw new Error('command field under the keyboard: '+r.bottom+' > '+innerHeight)})()"
+   ],
+   [
+    "shot",
+    "keyboard"
+   ],
+   [
+    "eval",
+    "document.activeElement?.blur()"
+   ],
+   [
+    "height",
+    780
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(600000)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));const r=btn.getBoundingClientRect();if(false&&(r.top<b.top||r.bottom>Math.min(b.bottom,innerHeight)))throw new Error('Reconnect cut: '+[r.top,r.bottom,b.top,b.bottom]);const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);if(!btn.contains(hit))throw new Error('Reconnect covered by '+hit?.className)})()"
+   ],
+   [
+    "shot",
+    "reconnect"
+   ]
+  ]
+ },
+ {
+  "name": "U31-7-tablet",
+  "settle": 900,
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "fill",
+    "Command",
+    "ls -la"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "git status"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "cargo test -q"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "document.activeElement?.blur()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const f=document.querySelector('.terminal-frame').getBoundingClientRect();const lh=document.querySelector('.terminal-output .xterm-rows > div').getBoundingClientRect().height;const k=Math.floor((Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top)-8)/lh);if(k<10)throw new Error('output lines in view: '+k)})()"
+   ],
+   [
+    "shot",
+    "attached"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(600000)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));const r=btn.getBoundingClientRect();if(true&&(r.top<b.top||r.bottom>Math.min(b.bottom,innerHeight)))throw new Error('Reconnect cut: '+[r.top,r.bottom,b.top,b.bottom]);const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);if(!btn.contains(hit))throw new Error('Reconnect covered by '+hit?.className)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const f=document.querySelector('.terminal-frame').getBoundingClientRect();const lh=document.querySelector('.terminal-output .xterm-rows > div').getBoundingClientRect().height;const k=Math.floor((Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top)-8)/lh);if(k<10)throw new Error('output lines in view: '+k)})()"
+   ],
+   [
+    "shot",
+    "reconnect"
+   ]
+  ]
+ },
+ {
+  "name": "U31-7-390-dark",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Attach"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "fill",
+    "Command",
+    "ls -la"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "git status"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "fill",
+    "Command",
+    "cargo test -q"
+   ],
+   [
+    "click",
+    "Send line"
+   ],
+   [
+    "wait",
+    250
+   ],
+   [
+    "eval",
+    "document.activeElement?.blur()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const f=document.querySelector('.terminal-frame').getBoundingClientRect();const lh=document.querySelector('.terminal-output .xterm-rows > div').getBoundingClientRect().height;const k=Math.floor((Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top)-8)/lh);if(k<5)throw new Error('output lines in view: '+k)})()"
+   ],
+   [
+    "shot",
+    "attached"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(600000)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const R=e=>{if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.terminal-screen .screen__body');const b=body.getBoundingClientRect();const f=q('.terminal-frame').getBoundingClientRect();const row=q('.terminal-output .xterm-rows > div');const lh=row?row.getBoundingClientRect().height:0;const seen=Math.max(0,Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top));const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));return JSON.stringify({vh:innerHeight,body:R(body),frame:R(q('.terminal-frame')),outputSeen:Math.round(seen),lines:lh?Math.floor((seen-8)/lh):null,reconnect:R(btn),input:R(q('.terminal-composer textarea')),footer:R(q('.terminal-screen .screen__footer')),cls:document.documentElement.className})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const btn=[...document.querySelectorAll('.terminal-recovery button')].find(x=>/Reconnect/.test(x.textContent));const r=btn.getBoundingClientRect();if(true&&(r.top<b.top||r.bottom>Math.min(b.bottom,innerHeight)))throw new Error('Reconnect cut: '+[r.top,r.bottom,b.top,b.bottom]);const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);if(!btn.contains(hit))throw new Error('Reconnect covered by '+hit?.className)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();const f=document.querySelector('.terminal-frame').getBoundingClientRect();const lh=document.querySelector('.terminal-output .xterm-rows > div').getBoundingClientRect().height;const k=Math.floor((Math.min(f.bottom,b.bottom,innerHeight)-Math.max(f.top,b.top)-8)/lh);if(k<3)throw new Error('output lines in view: '+k)})()"
+   ],
+   [
+    "shot",
+    "reconnect"
+   ]
+  ]
+ },
+ {
+  "name": "U31-9-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-120})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-120"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-400"
+   ],
+   [
+    "log",
+    "(()=>{const body=document.querySelector('.talk .screen__body');const band=document.querySelector('.talk-jump');body.scrollTop=body.scrollHeight;const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);let bottom=0,n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects())bottom=Math.max(bottom,t.bottom)}const top=band.getBoundingClientRect().top;if(bottom>top+0.5)throw new Error('last line under Latest: '+bottom+' > '+top);return 'last line '+Math.round(bottom)+' band '+Math.round(top)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "click",
+    "Latest"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(()=>{if(document.querySelector('.talk-jump'))throw new Error('Latest still shown at the end');const b=document.querySelector('.talk .screen__body');if(b.scrollHeight-b.scrollTop-b.clientHeight>1)throw new Error('not at the end')})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ]
+  ]
+ },
+ {
+  "name": "U31-9-360-200-dark",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-120})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-120"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-400"
+   ],
+   [
+    "log",
+    "(()=>{const body=document.querySelector('.talk .screen__body');const band=document.querySelector('.talk-jump');body.scrollTop=body.scrollHeight;const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);let bottom=0,n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects())bottom=Math.max(bottom,t.bottom)}const top=band.getBoundingClientRect().top;if(bottom>top+0.5)throw new Error('last line under Latest: '+bottom+' > '+top);return 'last line '+Math.round(bottom)+' band '+Math.round(top)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "click",
+    "Latest"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(()=>{if(document.querySelector('.talk-jump'))throw new Error('Latest still shown at the end');const b=document.querySelector('.talk .screen__body');if(b.scrollHeight-b.scrollTop-b.clientHeight>1)throw new Error('not at the end')})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ]
+  ]
+ },
+ {
+  "name": "U31-9-390",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "steps": [
+   [
+    "log",
+    "(()=>{const h=window.__sim.host;const text=document.querySelector('.talk').textContent;const t=h.tasks.find(x=>x.title&&text.includes(x.title));if(!t)throw new Error('no task in Talk');for(let i=0;i<14;i++)h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:t.current_run,item:{kind:'agent_message',text:'Chart check '+(i+1)+': the labels and both latency lines remain visible.',partial:false}}});return t.title})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-120})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-120"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-400"
+   ],
+   [
+    "log",
+    "(()=>{const body=document.querySelector('.talk .screen__body');const band=document.querySelector('.talk-jump');body.scrollTop=body.scrollHeight;const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);let bottom=0,n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects())bottom=Math.max(bottom,t.bottom)}const top=band.getBoundingClientRect().top;if(bottom>top+0.5)throw new Error('last line under Latest: '+bottom+' > '+top);return 'last line '+Math.round(bottom)+' band '+Math.round(top)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "click",
+    "Latest"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(()=>{if(document.querySelector('.talk-jump'))throw new Error('Latest still shown at the end');const b=document.querySelector('.talk .screen__body');if(b.scrollHeight-b.scrollTop-b.clientHeight>1)throw new Error('not at the end')})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ]
+  ]
+ },
+ {
+  "name": "U31-9-tablet",
+  "settle": 900,
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "steps": [
+   [
+    "log",
+    "(()=>{const h=window.__sim.host;const text=document.querySelector('.talk').textContent;const t=h.tasks.find(x=>x.title&&text.includes(x.title));if(!t)throw new Error('no task in Talk');for(let i=0;i<14;i++)h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:t.current_run,item:{kind:'agent_message',text:'Chart check '+(i+1)+': the labels and both latency lines remain visible.',partial:false}}});return t.title})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-120})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-120"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-400"
+   ],
+   [
+    "log",
+    "(()=>{const body=document.querySelector('.talk .screen__body');const band=document.querySelector('.talk-jump');body.scrollTop=body.scrollHeight;const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);let bottom=0,n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects())bottom=Math.max(bottom,t.bottom)}const top=band.getBoundingClientRect().top;if(bottom>top+0.5)throw new Error('last line under Latest: '+bottom+' > '+top);return 'last line '+Math.round(bottom)+' band '+Math.round(top)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "click",
+    "Latest"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(()=>{if(document.querySelector('.talk-jump'))throw new Error('Latest still shown at the end');const b=document.querySelector('.talk .screen__body');if(b.scrollHeight-b.scrollTop-b.clientHeight>1)throw new Error('not at the end')})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ]
+  ]
+ },
+ {
+  "name": "U31-9-844x390",
+  "settle": 900,
+  "width": 844,
+  "height": 390,
+  "dark": true,
+  "steps": [
+   [
+    "log",
+    "(()=>{const h=window.__sim.host;const text=document.querySelector('.talk').textContent;const t=h.tasks.find(x=>x.title&&text.includes(x.title));if(!t)throw new Error('no task in Talk');for(let i=0;i<14;i++)h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:t.current_run,item:{kind:'agent_message',text:'Chart check '+(i+1)+': the labels and both latency lines remain visible.',partial:false}}});return t.title})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-120})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-120"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})()"
+   ],
+   [
+    "eval",
+    "(()=>{const band=document.querySelector('.talk-jump');if(!band)throw new Error('no Latest');const g=JSON.parse((()=>{const q=s=>document.querySelector(s);const pill=q('.talk-jump__pill');if(!pill)return 'no Latest';const band=q('.talk-jump');const R=e=>{const r=e.getBoundingClientRect();return [Math.round(r.top),Math.round(r.bottom)]};const body=q('.talk .screen__body');const b=body.getBoundingClientRect();const p=pill.getBoundingClientRect();const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);const shown=[];let n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects()){const top=Math.max(t.top,b.top),bot=Math.min(t.bottom,b.bottom);if(bot-top<2||t.right<=p.left||t.left>=p.right||bot<=p.top||top>=p.bottom)continue;const x=(Math.max(t.left,p.left)+Math.min(t.right,p.right))/2,y=(Math.max(top,p.top)+Math.min(bot,p.bottom))/2;if(!band.contains(document.elementFromPoint(x,y)))shown.push(n.textContent.trim().slice(0,24))}}return JSON.stringify({vh:innerHeight,body:R(body),band:R(band),pill:R(pill),composer:R(q('.talk .composer')),scroll:[Math.round(body.scrollTop),body.scrollHeight-body.clientHeight],shown})})());if(g.shown.length)throw new Error('text over Latest: '+g.shown);const c=getComputedStyle(band).backgroundColor;if(/rgba\\(.*,\\s*0(\\.\\d+)?\\)$/.test(c)||c==='transparent')throw new Error('band not opaque: '+c);const inner=band.parentElement,cs=getComputedStyle(inner),ir=inner.getBoundingClientRect(),br=band.getBoundingClientRect();if(br.left>ir.left+parseFloat(cs.paddingLeft)+0.5||br.right<ir.right-parseFloat(cs.paddingRight)-0.5)throw new Error('band narrower than the column')})()"
+   ],
+   [
+    "shot",
+    "up-400"
+   ],
+   [
+    "log",
+    "(()=>{const body=document.querySelector('.talk .screen__body');const band=document.querySelector('.talk-jump');body.scrollTop=body.scrollHeight;const w=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);let bottom=0,n;while(n=w.nextNode()){if(!n.textContent.trim()||band.contains(n))continue;const r=document.createRange();r.selectNodeContents(n);for(const t of r.getClientRects())bottom=Math.max(bottom,t.bottom)}const top=band.getBoundingClientRect().top;if(bottom>top+0.5)throw new Error('last line under Latest: '+bottom+' > '+top);return 'last line '+Math.round(bottom)+' band '+Math.round(top)})()"
+   ],
+   [
+    "eval",
+    "(()=>{const b=document.querySelector('.talk .screen__body');b.scrollTop=b.scrollHeight-b.clientHeight-400})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "click",
+    "Latest"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(()=>{if(document.querySelector('.talk-jump'))throw new Error('Latest still shown at the end');const b=document.querySelector('.talk .screen__body');if(b.scrollHeight-b.scrollTop-b.clientHeight>1)throw new Error('not at the end')})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ]
+  ]
+ }
+]

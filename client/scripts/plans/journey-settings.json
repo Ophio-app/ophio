@@ -1,0 +1,140 @@
+[
+  {
+    "name": "m3-settings-light",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 600],
+      ["click", "Export phone data"],
+      ["wait", 350],
+      [
+        "eval",
+        "if(!window.__sim.device.downloads.some(d=>d.name==='phone-data.json'&&d.size>0)) throw Error('Export was not saved'); document.querySelector('#settings-data').scrollIntoView({block:'center'})"
+      ],
+      ["shot", "export"],
+      ["click", "Export phone data"],
+      ["wait", 250],
+      [
+        "eval",
+        "if(!window.__sim.device.downloads.some(d=>d.name==='phone-data (1).json')) throw Error('Second export overwrote first')"
+      ],
+      ["click", "Open-source notices"],
+      ["wait", 400],
+      ["shot", "notices"],
+      ["clickSel", "dialog[open] .sheet__header .iconbtn"],
+      ["wait", 300],
+      [
+        "log",
+        "({focus:document.activeElement?.textContent,downloads:window.__sim.device.downloads})"
+      ]
+    ]
+  },
+  {
+    "name": "m3-settings-dark",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 600],
+      ["click", "Export phone data"],
+      ["wait", 350],
+      [
+        "eval",
+        "if(!window.__sim.device.downloads.some(d=>d.name==='phone-data.json'&&d.size>0)) throw Error('Export was not saved'); document.querySelector('#settings-data').scrollIntoView({block:'center'})"
+      ],
+      ["shot", "export"],
+      ["click", "Export phone data"],
+      ["wait", 250],
+      [
+        "eval",
+        "if(!window.__sim.device.downloads.some(d=>d.name==='phone-data (1).json')) throw Error('Second export overwrote first')"
+      ],
+      ["click", "Open-source notices"],
+      ["wait", 400],
+      ["shot", "notices"],
+      ["clickSel", "dialog[open] .sheet__header .iconbtn"],
+      ["wait", 300],
+      [
+        "log",
+        "({focus:document.activeElement?.textContent,downloads:window.__sim.device.downloads})"
+      ]
+    ]
+  },
+  {
+    "name": "m3-settings-large",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "settle": 900,
+    "text": 2,
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 600],
+      ["click", "Export phone data"],
+      ["wait", 350],
+      [
+        "eval",
+        "if(!window.__sim.device.downloads.some(d=>d.name==='phone-data.json'&&d.size>0)) throw Error('Export was not saved'); document.querySelector('#settings-data').scrollIntoView({block:'center'})"
+      ],
+      ["shot", "export"],
+      ["click", "Export phone data"],
+      ["wait", 250],
+      [
+        "eval",
+        "if(!window.__sim.device.downloads.some(d=>d.name==='phone-data (1).json')) throw Error('Second export overwrote first')"
+      ],
+      ["click", "Open-source notices"],
+      ["wait", 400],
+      ["shot", "notices"],
+      ["clickSel", "dialog[open] .sheet__header .iconbtn"],
+      ["wait", 300],
+      [
+        "log",
+        "({focus:document.activeElement?.textContent,downloads:window.__sim.device.downloads})"
+      ]
+    ]
+  },
+  {
+    "name": "m3-settings-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 600],
+      ["click", "Export phone data"],
+      ["wait", 350],
+      [
+        "eval",
+        "if(!window.__sim.device.downloads.some(d=>d.name==='phone-data.json'&&d.size>0)) throw Error('Export was not saved'); document.querySelector('#settings-data').scrollIntoView({block:'center'})"
+      ],
+      ["shot", "export"],
+      ["click", "Export phone data"],
+      ["wait", 250],
+      [
+        "eval",
+        "if(!window.__sim.device.downloads.some(d=>d.name==='phone-data (1).json')) throw Error('Second export overwrote first')"
+      ],
+      ["click", "Open-source notices"],
+      ["wait", 400],
+      ["shot", "notices"],
+      ["clickSel", "dialog[open] .sheet__header .iconbtn"],
+      ["wait", 300],
+      [
+        "log",
+        "({focus:document.activeElement?.textContent,downloads:window.__sim.device.downloads})"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,37 @@
+[package]
+name = "channels"
+description = "Telegram and Discord chat channel adapters"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+store = { path = "../store" }
+protocol.workspace = true
+services.workspace = true
+ports.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+uuid = { version = "1.26", features = ["v5", "v4"] }
+tokio-util = { version = "0.7.18", features = ["rt"] }
+reqwest = { version = "0.12.28", default-features = false, features = ["json", "rustls-tls"] }
+tokio-tungstenite = { version = "0.29.0", default-features = false, features = ["connect", "rustls-tls-webpki-roots"] }
+futures-util = { version = "0.3.31", features = ["sink"] }
+zeroize = "1.9"
+rusqlite = { version = "0.38.0", features = ["bundled"] }
+
+[dev-dependencies]
+axum = "0.8.8"
+tempfile = "3.24.0"
+services = { workspace = true, features = ["testing"] }
+tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

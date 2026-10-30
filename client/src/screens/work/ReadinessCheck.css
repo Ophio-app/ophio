@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.readiness-check { display: grid; gap: var(--s2); min-width: 0; }
+.readiness-check__actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s2); }
+.readiness-check > p { margin: 0; }
+/* Beside a section title the button shares the title's line, and moves
+   under it whole rather than breaking its label; what the check reports
+   runs the full width below both. */
+.section__head:has(> .readiness-check) { flex-wrap: wrap; }
+.section__head > .readiness-check { display: contents; }
+.section__head > .readiness-check > .readiness-check__actions { flex: none; max-width: 100%; }
+.section__head > .readiness-check > :not(.readiness-check__actions) { flex-basis: 100%; }

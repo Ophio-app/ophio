@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# cargo-audit reads this file when run from client/src-tauri (scripts/ci.sh
+# advisories). The repository root's .cargo/audit.toml covers the root lock.
+# Every ignore names the crate that pulls the advisory in and why it stands.
+
+[advisories]
+ignore = [
+    # paste 1.0.15, unmaintained; no fixed release exists. A compile-time
+    # proc-macro only, reached through the dev-host tool's path dependency on
+    # companion -> speech -> candle-core -> gemm, and through tokenizers.
+    "RUSTSEC-2024-0436",
+    # proc-macro-error 1.0.4, unmaintained; no fixed release exists. A
+    # compile-time proc-macro only, used by glib-macros and gtk3-macros 0.18,
+    # the final gtk3-rs line that Tauri's Linux runtime (tao, wry, muda) pins.
+    "RUSTSEC-2024-0370",
+    # glib 0.18.5, unsound VariantStrIter iterators; fixed only in glib 0.20,
+    # which is gtk4-rs and incompatible with the gtk 0.18 stack Tauri pins on
+    # Linux. Neither this workspace nor any locked dependency calls
+    # Variant::array_iter_str or VariantStrIter; glib is absent on Android.
+    "RUSTSEC-2024-0429",
+    # zip 7.2.0: ZipArchive::extract and ZipStreamReader::extract can write
+    # symlinks pointing outside the destination, set permissions through
+    # them and keep setuid bits; fixed only in zip 9. candle-core 0.9.2
+    # (crates/speech) requires ^7.2.0 and no candle release accepts 9.x
+    # (0.11.0 needs ^8.6). candle only reads named entries from .npz and
+    # PyTorch archives and never extracts; speech loads safetensors only.
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
+    # zvariant, zvariant_derive and zbus_names, unmaintained: merged into
+    # zbus 6, with no flaw reported. tauri-plugin-opener 2.7.2, the latest,
+    # still requires zbus 5, as does the dev-host tool's path dependency on
+    # companion through ashpd 0.13.13.
+    "RUSTSEC-2026-0370",
+    "RUSTSEC-2026-0371",
+    "RUSTSEC-2026-0372",
+]

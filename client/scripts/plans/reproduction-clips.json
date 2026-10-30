@@ -1,0 +1,746 @@
+[
+  {
+    "name": "repro-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      [
+        "eval",
+        "document.querySelector('.an-repro-range').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "clip-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "(async()=>{const v=document.querySelector('.an-clip-review video');if(!v)throw Error('Reviewed video missing');v.muted=true;await v.play();for(let i=0;i<100&&v.currentTime<0.15;i++)await new Promise(r=>setTimeout(r,50));v.pause();if(v.currentTime<0.15||v.error)throw Error('Reviewed video did not play');v.currentTime=0;})()"
+      ]
+    ]
+  },
+  {
+    "name": "repro-dark",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      [
+        "eval",
+        "document.querySelector('.an-repro-range').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "clip-dark",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "repro-large",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      [
+        "eval",
+        "document.querySelector('.an-repro-range').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "clip-large",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "repro-landscape",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      [
+        "eval",
+        "document.querySelector('.an-repro-range').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "clip-landscape",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "repro-wide",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      [
+        "eval",
+        "document.querySelector('.an-repro-range').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "clip-wide",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "repro-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "repro-undecodable",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["click", "Add source"],
+      ["eval", "window.__repro.undecodableFixture()"],
+      ["wait", 500],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Use screenshots instead'))throw Error('No screenshots fallback')"
+      ]
+    ]
+  },
+  {
+    "name": "clip-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["eval", "window.__sim.offline('Clip kept on phone')"],
+      ["wait", 400],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review .an-wrap').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "clip-denied",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["eval", "window.__sim.permissions({transfers:false})"],
+      ["wait", 400],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review .an-wrap').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "clip-mutated",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "(async()=>{await window.__repro.mutateClip(window.__v1app, window.__reproId)})()"
+      ],
+      ["click", "Send clip to computer"],
+      ["wait", 300],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('changed since review'))throw Error('Mutation not refused'); if(window.__sim.host.transfers.some(t=>t.name?.startsWith('reproduction-')))throw Error('Mutated bytes were sent')"
+      ]
+    ]
+  },
+  {
+    "name": "clip-send",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["click", "Send clip to computer"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review .an-wrap').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "review-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["click", "Add step from image"],
+      ["fill", "Describe step 1", "Open the menu and watch it disappear"],
+      ["click", "Mark S3"],
+      ["clickSel", ".an-tools [aria-label=\"Pin\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"],
+      ["eval", "location.reload()"],
+      ["wait", 1200],
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro=await import('/src/dev/sim/repro.ts');const m=await import('/src/state/annotations.ts');const ds=m.annotationStore(window.__v1app.profile.profileId).get();const d=Object.values(ds).find(d=>d.marks.some(m=>m.label==='A'));if(!d||d.clipEdits.S1.start!=='2'||d.clipEdits.S1.end!=='5'||d.steps[0]?.text!=='Open the menu and watch it disappear')throw Error('Draft lost after reload');window.__reproId=d.id;await window.__repro.assertions(window.__v1app,d.id);window.__v1app.ui.selectTask(d.projectId,d.taskId);window.__v1app.ui.push({screen:\"annotate\",annotationId:d.id});})()"
+      ],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "document.querySelector('.an-outgoing').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "review-dark",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["click", "Add step from image"],
+      ["fill", "Describe step 1", "Open the menu and watch it disappear"],
+      ["click", "Mark S3"],
+      ["clickSel", ".an-tools [aria-label=\"Pin\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"],
+      ["eval", "location.reload()"],
+      ["wait", 1200],
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro=await import('/src/dev/sim/repro.ts');const m=await import('/src/state/annotations.ts');const ds=m.annotationStore(window.__v1app.profile.profileId).get();const d=Object.values(ds).find(d=>d.marks.some(m=>m.label==='A'));if(!d||d.clipEdits.S1.start!=='2'||d.clipEdits.S1.end!=='5'||d.steps[0]?.text!=='Open the menu and watch it disappear')throw Error('Draft lost after reload');window.__reproId=d.id;await window.__repro.assertions(window.__v1app,d.id);window.__v1app.ui.selectTask(d.projectId,d.taskId);window.__v1app.ui.push({screen:\"annotate\",annotationId:d.id});})()"
+      ],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "document.querySelector('.an-outgoing').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "review-large",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["click", "Add step from image"],
+      ["fill", "Describe step 1", "Open the menu and watch it disappear"],
+      ["click", "Mark S3"],
+      ["clickSel", ".an-tools [aria-label=\"Pin\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"],
+      ["eval", "location.reload()"],
+      ["wait", 1200],
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro=await import('/src/dev/sim/repro.ts');const m=await import('/src/state/annotations.ts');const ds=m.annotationStore(window.__v1app.profile.profileId).get();const d=Object.values(ds).find(d=>d.marks.some(m=>m.label==='A'));if(!d||d.clipEdits.S1.start!=='2'||d.clipEdits.S1.end!=='5'||d.steps[0]?.text!=='Open the menu and watch it disappear')throw Error('Draft lost after reload');window.__reproId=d.id;await window.__repro.assertions(window.__v1app,d.id);window.__v1app.ui.selectTask(d.projectId,d.taskId);window.__v1app.ui.push({screen:\"annotate\",annotationId:d.id});})()"
+      ],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "document.querySelector('.an-outgoing').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "review-landscape",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["click", "Add step from image"],
+      ["fill", "Describe step 1", "Open the menu and watch it disappear"],
+      ["click", "Mark S3"],
+      ["clickSel", ".an-tools [aria-label=\"Pin\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"],
+      ["eval", "location.reload()"],
+      ["wait", 1200],
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro=await import('/src/dev/sim/repro.ts');const m=await import('/src/state/annotations.ts');const ds=m.annotationStore(window.__v1app.profile.profileId).get();const d=Object.values(ds).find(d=>d.marks.some(m=>m.label==='A'));if(!d||d.clipEdits.S1.start!=='2'||d.clipEdits.S1.end!=='5'||d.steps[0]?.text!=='Open the menu and watch it disappear')throw Error('Draft lost after reload');window.__reproId=d.id;await window.__repro.assertions(window.__v1app,d.id);window.__v1app.ui.selectTask(d.projectId,d.taskId);window.__v1app.ui.push({screen:\"annotate\",annotationId:d.id});})()"
+      ],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "document.querySelector('.an-outgoing').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "review-wide",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["click", "Add step from image"],
+      ["fill", "Describe step 1", "Open the menu and watch it disappear"],
+      ["click", "Mark S3"],
+      ["clickSel", ".an-tools [aria-label=\"Pin\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"],
+      ["eval", "location.reload()"],
+      ["wait", 1200],
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro=await import('/src/dev/sim/repro.ts');const m=await import('/src/state/annotations.ts');const ds=m.annotationStore(window.__v1app.profile.profileId).get();const d=Object.values(ds).find(d=>d.marks.some(m=>m.label==='A'));if(!d||d.clipEdits.S1.start!=='2'||d.clipEdits.S1.end!=='5'||d.steps[0]?.text!=='Open the menu and watch it disappear')throw Error('Draft lost after reload');window.__reproId=d.id;await window.__repro.assertions(window.__v1app,d.id);window.__v1app.ui.selectTask(d.projectId,d.taskId);window.__v1app.ui.push({screen:\"annotate\",annotationId:d.id});})()"
+      ],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "document.querySelector('.an-outgoing').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "clip-revoked",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      ["eval", "window.__sim.revoke()"],
+      ["wait", 400],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review .an-wrap').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "clip-large-actions",
+    "scale": 1,
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{for(let i=0;i<200;i++){const el=document.querySelector('.app');if(el){let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__v1app=f.memoizedProps.app;return;}}}await new Promise(r=>setTimeout(r,100));}throw Error('App did not open');})()"
+      ],
+      [
+        "eval",
+        "(async()=>{window.__repro = await import('/src/dev/sim/repro.ts'); window.__reproId = await window.__repro.openDraft(window.__v1app)})()"
+      ],
+      ["wait", 300],
+      ["eval", "(async()=>{await window.__repro.importFixture()})()"],
+      ["wait", 700],
+      ["fill", "Range start (seconds)", "2"],
+      ["fill", "Range end (seconds)", "5"],
+      ["click", "Create clip and key frames"],
+      ["wait", 2200],
+      ["eval", "window.__repro.assertions(window.__v1app, window.__reproId)"],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "document.querySelector('.an-clip-review .an-wrap').scrollIntoView({block:'center'})"
+      ],
+      ["click", "Save clip on this device"],
+      ["wait", 300]
+    ]
+  }
+]

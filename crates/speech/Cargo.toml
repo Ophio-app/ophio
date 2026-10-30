@@ -1,0 +1,32 @@
+[package]
+name = "speech"
+description = "Host-local speech recognition"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+protocol.workspace = true
+ports.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+candle-core = { version = "0.9.2", default-features = false }
+candle-nn = { version = "0.9.2", default-features = false }
+candle-transformers = { version = "0.9.2", default-features = false }
+tokenizers = { version = "0.22.2", default-features = false, features = ["fancy-regex"] }
+serde_json = { version = "1.0.150" }
+sha2 = "0.10.9"
+reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls", "stream"] }
+tempfile = "3.27.0"
+rayon = "1.11.0"
+rustfft = "6.4.1"
+
+[dev-dependencies]
+hound = "3.5.1"
+
+[lints]
+workspace = true

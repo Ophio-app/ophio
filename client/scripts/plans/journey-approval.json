@@ -1,0 +1,56 @@
+[
+  {
+    "name": "m2-approval-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".talk-bar__main"],
+      ["click", "Fix the flaky retry test"],
+      ["wait", 500],
+      ["click", "Allow"],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "m2-approval-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".talk-bar__main"],
+      ["click", "Fix the flaky retry test"],
+      ["wait", 500],
+      ["click", "Allow"],
+      ["wait", 800]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-approval-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".talk-bar__main"],
+      ["click", "Fix the flaky retry test"],
+      ["wait", 500],
+      ["click", "Allow"],
+      ["wait", 800]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-approval-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".talk-bar__main"],
+      ["click", "Fix the flaky retry test"],
+      ["wait", 500],
+      ["click", "Allow"],
+      ["wait", 800]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

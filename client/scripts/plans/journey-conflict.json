@@ -1,0 +1,160 @@
+[
+  {
+    "name": "m2-conflict-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project \u00b7 Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["click", "Save as a new copy"],
+      ["click", "Create new copy"],
+      ["wait", 500],
+      [
+        "eval",
+        "const f=window.__sim.host.files[\"0192f7a1-0000-7000-8000-000000000902\"]; if (!f[\"docs/guides/release (copy).md\"] || !f[\"docs/guides/release.md\"].includes(\"computer changed\")) throw new Error(\"Copy overwrote original\")"
+      ]
+    ]
+  },
+  {
+    "name": "m2-conflict-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project \u00b7 Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["click", "Save as a new copy"],
+      ["click", "Create new copy"],
+      ["wait", 500],
+      [
+        "eval",
+        "const f=window.__sim.host.files[\"0192f7a1-0000-7000-8000-000000000902\"]; if (!f[\"docs/guides/release (copy).md\"] || !f[\"docs/guides/release.md\"].includes(\"computer changed\")) throw new Error(\"Copy overwrote original\")"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-conflict-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project \u00b7 Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["click", "Save as a new copy"],
+      ["click", "Create new copy"],
+      ["wait", 500],
+      [
+        "eval",
+        "const f=window.__sim.host.files[\"0192f7a1-0000-7000-8000-000000000902\"]; if (!f[\"docs/guides/release (copy).md\"] || !f[\"docs/guides/release.md\"].includes(\"computer changed\")) throw new Error(\"Copy overwrote original\")"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-conflict-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project \u00b7 Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["click", "Save as a new copy"],
+      ["click", "Create new copy"],
+      ["wait", 500],
+      [
+        "eval",
+        "const f=window.__sim.host.files[\"0192f7a1-0000-7000-8000-000000000902\"]; if (!f[\"docs/guides/release (copy).md\"] || !f[\"docs/guides/release.md\"].includes(\"computer changed\")) throw new Error(\"Copy overwrote original\")"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

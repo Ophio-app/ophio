@@ -1,0 +1,955 @@
+[
+  {
+    "name": "library-light",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650]
+    ]
+  },
+  {
+    "name": "library-dark",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650]
+    ],
+    "dark": true
+  },
+  {
+    "name": "folder-dark",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450]
+    ],
+    "dark": true
+  },
+  {
+    "name": "folder-hidden",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      [
+        "eval",
+        "if ([...document.querySelectorAll(\".route:not(.is-hidden) .row__title\")].some(e=>e.textContent===\".hidden.md\")) throw new Error(\"Hidden file visible\")"
+      ],
+      ["clickSel", ".lib-check input"],
+      [
+        "eval",
+        "if (![...document.querySelectorAll(\".route:not(.is-hidden) .row__title\")].some(e=>e.textContent===\".hidden.md\")) throw new Error(\"Hidden toggle failed\")"
+      ]
+    ]
+  },
+  {
+    "name": "file-light",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "file-dark",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600]
+    ],
+    "dark": true
+  },
+  {
+    "name": "breadcrumbs",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["click", "Parent folders"],
+      ["shot", "menu"],
+      ["clickSel", "dialog[open] button.row:has-text(\"docs\")"],
+      ["wait", 450]
+    ]
+  },
+  {
+    "name": "draft-reopen-save",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      ["click", "Close editor"],
+      ["click", "Keep draft"],
+      ["click", "Back"],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 500],
+      ["shot", "offered"],
+      ["click", "Open draft"],
+      ["wait", 400],
+      ["click", "Review changes"],
+      ["shot", "review"],
+      ["click", "Save on computer"],
+      ["wait", 550],
+      [
+        "eval",
+        "if (!document.body.innerText.includes(\"Saved on computer\")) throw new Error(\"Save not confirmed\")"
+      ]
+    ]
+  },
+  {
+    "name": "conflict-light",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "conflict-dark",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600]
+    ],
+    "dark": true
+  },
+  {
+    "name": "conflict-merge",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["click", "Edit by hand"],
+      ["click", "Merge into a new draft"],
+      ["wait", 450],
+      [
+        "eval",
+        "if (!document.querySelector(\"dialog[open] .cm-content\")?.textContent.includes(\"<<<<<<<\")) throw new Error(\"Merge markers missing\")"
+      ]
+    ]
+  },
+  {
+    "name": "conflict-copy",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["click", "Save as a new copy"],
+      ["click", "Create new copy"],
+      ["wait", 500],
+      [
+        "eval",
+        "const f=window.__sim.host.files[\"0192f7a1-0000-7000-8000-000000000902\"]; if (!f[\"docs/guides/release (copy).md\"] || !f[\"docs/guides/release.md\"].includes(\"computer changed\")) throw new Error(\"Copy overwrote original\")"
+      ]
+    ]
+  },
+  {
+    "name": "unknown-receipt",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      ["click", "Review changes"],
+      ["eval", "window.__sim.dropNextReceipt()"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["shot", "unknown"],
+      [
+        "eval",
+        "if (!document.body.innerText.includes(\"Outcome unknown\")) throw new Error(\"Missing unknown state\")"
+      ],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1100],
+      ["clickSel", "dialog[open] button:has-text(\"Check again\")"],
+      ["wait", 500],
+      [
+        "eval",
+        "if (!document.body.innerText.includes(\"Saved on computer\")) throw new Error(\"Save not confirmed\")"
+      ]
+    ]
+  },
+  {
+    "name": "uncertain-save",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      ["click", "Review changes"],
+      ["eval", "window.__sim.library.uncertainNextSave()"],
+      ["click", "Save on computer"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "offline-draft",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "offline-folder",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "offline-library",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "empty-root",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "New notebook"],
+      ["wait", 450]
+    ]
+  },
+  {
+    "name": "read-error",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      [
+        "eval",
+        "window.__sim.library.deny(\"0192f7a1-0000-7000-8000-000000000902\")"
+      ],
+      ["click", "Project · Read and write"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "read-only",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Reference"],
+      ["wait", 500],
+      ["click", "handbook.md"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "large-file",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["click", "archive.md"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "non-markdown-download",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["click", "metrics.csv"],
+      ["wait", 450],
+      ["click", "Send to this device"],
+      ["wait", 1300],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      ["shot", "verified"],
+      ["click", "Save to phone"],
+      ["wait", 400]
+    ]
+  },
+  {
+    "name": "search",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["fill", "Search files", "release"],
+      ["wait", 550]
+    ]
+  },
+  {
+    "name": "transfers-light",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Transfers"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "transfers-dark",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Transfers"],
+      ["wait", 600]
+    ],
+    "dark": true
+  },
+  {
+    "name": "upload-collision",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Transfers"],
+      ["wait", 600],
+      [
+        "eval",
+        "const input=document.querySelector(\".route:not(.is-hidden) input[type=file]\"); const dt=new DataTransfer(); dt.items.add(new File([new Uint8Array(3*1024*1024).map((_,i)=>i%251)],\"sample.bin\",{type:\"application/octet-stream\"})); input.files=dt.files; input.dispatchEvent(new Event(\"change\",{bubbles:true}));"
+      ],
+      ["wait", 250],
+      ["clickSel", ".transfers-screen button.btn--primary"],
+      ["wait", 1800],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      ["shot", "first"],
+      ["clickSel", ".transfers-screen button.btn--primary"],
+      ["wait", 1800],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "eval",
+        "const t=window.__sim.host.transfers.filter(t=>t.name===\"sample.bin\"); if(t.length!==2 || !t[0].host_path.endsWith(\"sample (1).bin\")) throw new Error(\"Collision policy failed\")"
+      ]
+    ]
+  },
+  {
+    "name": "upload-resume",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Transfers"],
+      ["wait", 600],
+      ["eval", "window.__sim.transfers.chunkDelay(250)"],
+      [
+        "eval",
+        "const input=document.querySelector(\".route:not(.is-hidden) input[type=file]\"); const dt=new DataTransfer(); dt.items.add(new File([new Uint8Array(3*1024*1024).map((_,i)=>i%251)],\"sample.bin\",{type:\"application/octet-stream\"})); input.files=dt.files; input.dispatchEvent(new Event(\"change\",{bubbles:true}));"
+      ],
+      ["wait", 250],
+      ["clickSel", ".transfers-screen button.btn--primary"],
+      ["wait", 400],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      ["shot", "progress"],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 400],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      ["shot", "paused"],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1000],
+      ["clickSel", ".transfer-row button:has-text(\"Continue\")"],
+      ["wait", 3200],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.transfers[0].state.state!==\"completed\") throw new Error(\"Resume failed\")"
+      ]
+    ]
+  },
+  {
+    "name": "library-large-text",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["shot", "header"],
+      [
+        "eval",
+        "document.querySelector(\".library-screen .group\")?.scrollIntoView({block:\"start\"})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "library-wide",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "folder-large-text",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["shot", "header"],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .lib-entry\")?.scrollIntoView({block:\"start\"})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "folder-wide",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "file-large-text",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["shot", "header"],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .lib-document\")?.scrollIntoView({block:\"start\"})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "file-wide",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "conflict-large-text",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["shot", "header"],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .lib-diff\")?.scrollIntoView({block:\"start\"})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "conflict-wide",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "transfers-large-text",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Transfers"],
+      ["wait", 600]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "transfers-wide",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Transfers"],
+      ["wait", 600]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "diff-large-text",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      ["click", "Review changes"]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "file-landscape",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "offline-reconnect-save",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 250],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1000],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 450]
+    ]
+  },
+  {
+    "name": "revoked-file",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["eval", "window.__sim.revoke()"],
+      ["wait", 250]
+    ]
+  },
+  {
+    "name": "file-source",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", "button[role=radio]:has-text(\"Source\")"]
+    ]
+  },
+  {
+    "name": "create-rename-delete",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "New notebook"],
+      ["wait", 400],
+      ["click", "New file"],
+      ["fill", "File name", "fresh.md"],
+      ["click", "Create file"],
+      ["wait", 350],
+      ["click", "Actions for fresh.md"],
+      ["click", "Rename…"],
+      ["fill", "File name", "renamed.md"],
+      ["click", "Rename file"],
+      ["wait", 350],
+      ["click", "Actions for renamed.md"],
+      ["click", "Delete…"],
+      ["shot", "delete-review"],
+      ["click", "Delete renamed.md"],
+      ["wait", 350],
+      [
+        "eval",
+        "if (Object.keys(window.__sim.host.files[\"sim-empty\"]).length) throw new Error(\"Delete not confirmed\")"
+      ]
+    ]
+  },
+  {
+    "name": "upload-large-text",
+    "scale": 1,
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Transfers"],
+      ["wait", 600],
+      [
+        "eval",
+        "const input=document.querySelector(\".route:not(.is-hidden) input[type=file]\"); const dt=new DataTransfer(); dt.items.add(new File([new Uint8Array(3*1024*1024).map((_,i)=>i%251)],\"sample.bin\",{type:\"application/octet-stream\"})); input.files=dt.files; input.dispatchEvent(new Event(\"change\",{bubbles:true}));"
+      ],
+      ["wait", 250],
+      ["clickSel", ".transfers-screen button.btn--primary"],
+      ["wait", 1600],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  },
+  {
+    "name": "text-project-folder",
+    "scale": 1,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Transfers"],
+      ["wait", 600],
+      ["clickSel", "button[role=radio]:has-text(\"Text\")"],
+      ["fill", "File text", "# Phone notes\n\nKeep this draft."],
+      ["clickSel", "input[type=radio] >> nth=1"],
+      ["click", "Choose folder"],
+      ["clickSel", "dialog[open] button.row:has-text(\"docs\")"],
+      ["wait", 350],
+      ["click", "Use this folder"],
+      ["shot", "destination"],
+      ["clickSel", ".transfers-screen button.btn--primary"],
+      ["wait", 600],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,8 @@
+Øphio surface textures
+
+grain.png is original Øphio artwork adopted from its Fruiting design.
+mycelium.svg is original Øphio edge artwork.
+mat-dark.svg, mat-light.svg and reach-1.svg to reach-3.svg are original Øphio
+textures, generated from fixed seeds by scripts/hyphae.mjs.
+Copyright 2026 the contributors. Licensed under Apache-2.0; see root LICENSE.
+These textures are not screenshots or evidence of computer activity.

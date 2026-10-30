@@ -1,0 +1,996 @@
+[
+  {
+    "name": "editor-light",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        350
+      ]
+    ]
+  },
+  {
+    "name": "editor-dark",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        350
+      ]
+    ]
+  },
+  {
+    "name": "editor-large-keyboard",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "clickSel",
+        ".cm-content"
+      ],
+      [
+        "height",
+        460
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "const d=document.querySelector('dialog[open]'),body=d.querySelector('.sheet__body').getBoundingClientRect(),text=d.querySelector('.cm-content').getBoundingClientRect(),stop=d.querySelector('.named-stop__button').getBoundingClientRect();if(Math.min(body.bottom,text.bottom)-Math.max(body.top,text.top)<160||stop.bottom>innerHeight||stop.top<0||stop.height<56)throw Error('Editor or Stop lacks room');console.info('Editor visible '+(Math.min(body.bottom,text.bottom)-Math.max(body.top,text.top))+'px; Stop bottom '+stop.bottom);const button=d.querySelector('.named-stop__button'),hit=document.elementFromPoint(stop.x+stop.width/2,stop.y+stop.height/2);if(button.disabled||!button.contains(hit))throw Error('Stop is covered or disabled')"
+      ]
+    ]
+  },
+  {
+    "name": "editor-wide",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        350
+      ]
+    ]
+  },
+  {
+    "name": "editor-landscape",
+    "width": 800,
+    "height": 360,
+    "text": 1,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        350
+      ]
+    ]
+  },
+  {
+    "name": "connections-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.getElementById('settings-phones').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": false
+  },
+  {
+    "name": "welcome-light",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "eval",
+        "document.querySelector('.steps').scrollIntoView({block:'start'});const c=[...document.querySelectorAll('.welcome code')].find(e=>e.textContent==='ophio pair');if(c.scrollWidth>c.clientWidth+1||getComputedStyle(c).whiteSpace==='nowrap')throw Error('Pair command cannot wrap')"
+      ],
+      [
+        "shot",
+        "install"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.welcome code')].find(e=>e.textContent==='ophio pair').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": false
+  },
+  {
+    "name": "connections-dark",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.getElementById('settings-phones').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": true
+  },
+  {
+    "name": "welcome-dark",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "eval",
+        "document.querySelector('.steps').scrollIntoView({block:'start'});const c=[...document.querySelectorAll('.welcome code')].find(e=>e.textContent==='ophio pair');if(c.scrollWidth>c.clientWidth+1||getComputedStyle(c).whiteSpace==='nowrap')throw Error('Pair command cannot wrap')"
+      ],
+      [
+        "shot",
+        "install"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.welcome code')].find(e=>e.textContent==='ophio pair').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": true
+  },
+  {
+    "name": "connections-large",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.getElementById('settings-phones').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": false
+  },
+  {
+    "name": "welcome-large",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "eval",
+        "document.querySelector('.steps').scrollIntoView({block:'start'});const c=[...document.querySelectorAll('.welcome code')].find(e=>e.textContent==='ophio pair');if(c.scrollWidth>c.clientWidth+1||getComputedStyle(c).whiteSpace==='nowrap')throw Error('Pair command cannot wrap')"
+      ],
+      [
+        "shot",
+        "install"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.welcome code')].find(e=>e.textContent==='ophio pair').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": false
+  },
+  {
+    "name": "connections-wide",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.getElementById('settings-phones').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "dark": false
+  },
+  {
+    "name": "welcome-wide",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "eval",
+        "document.querySelector('.steps').scrollIntoView({block:'start'});const c=[...document.querySelectorAll('.welcome code')].find(e=>e.textContent==='ophio pair');if(c.scrollWidth>c.clientWidth+1||getComputedStyle(c).whiteSpace==='nowrap')throw Error('Pair command cannot wrap')"
+      ],
+      [
+        "shot",
+        "install"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.welcome code')].find(e=>e.textContent==='ophio pair').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "path": "/?unpaired",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "dark": false
+  },
+  {
+    "name": "sheet-first-touch",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Rename Pixel 9"
+      ],
+      [
+        "fill",
+        "Device name",
+        "Tablet draft"
+      ],
+      [
+        "eval",
+        "const d=document.querySelector('dialog[open]'),f=d.querySelector('input');f.focus();d.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));d.focus();d.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));d.click();if(!d.open||f.value!=='Tablet draft')throw Error('First touch lost draft')"
+      ],
+      [
+        "shot",
+        "kept"
+      ],
+      [
+        "eval",
+        "const d=document.querySelector('dialog[open]');d.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));d.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));d.click()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(document.querySelector('dialog[open]'))throw Error('Second tap did not close')"
+      ],
+      [
+        "click",
+        "Rename Pixel 9"
+      ]
+    ],
+    "width": 390,
+    "height": 844
+  },
+  {
+    "name": "editor-access-change",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "clickSel",
+        ".cm-content"
+      ],
+      [
+        "press",
+        "Control+End"
+      ],
+      [
+        "type",
+        "\nA note from this device."
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({library_write:false})"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .sheet__footer').scrollTop=10000;const d=document.querySelector('dialog[open]');if(!d.textContent.includes('library-write')||![...d.querySelectorAll('button')].find(b=>b.textContent==='Review changes').disabled)throw Error('Missing denial')"
+      ],
+      [
+        "shot",
+        "denied"
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({library_write:true})"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "if([...document.querySelectorAll('dialog[open] button')].find(b=>b.textContent==='Review changes').disabled)throw Error('Review did not restore')"
+      ]
+    ]
+  },
+  {
+    "name": "uncertain-save-discard",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "fill",
+        "Markdown source",
+        "Draft saved despite a lost result"
+      ],
+      [
+        "eval",
+        "window.__sim.library.uncertainNextSave()"
+      ],
+      [
+        "click",
+        "Review changes"
+      ],
+      [
+        "click",
+        "Save on computer"
+      ],
+      [
+        "wait",
+        1100
+      ],
+      [
+        "click",
+        "Close editor"
+      ],
+      [
+        "eval",
+        "const d=[...document.querySelectorAll('dialog[open]')].at(-1);if(!d.textContent.includes('earlier save may already have changed')||d.textContent.includes('file stays unchanged'))throw Error('False discard claim')"
+      ],
+      [
+        "shot",
+        "warning"
+      ],
+      [
+        "click",
+        "Discard draft for windows.md"
+      ],
+      [
+        "eval",
+        "document.querySelector('.notice--unknown').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "still-unconfirmed"
+      ],
+      [
+        "click",
+        "Check computer file"
+      ],
+      [
+        "wait",
+        900
+      ]
+    ]
+  },
+  {
+    "name": "move-device-draft",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"folder\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Markdown source",
+        "Move this device draft with its file"
+      ],
+      [
+        "click",
+        "Close editor"
+      ],
+      [
+        "click",
+        "Keep draft"
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Actions for windows.md"
+      ],
+      [
+        "click",
+        "Move\u2026"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "dialog[open] .row"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Choose this folder"
+      ],
+      [
+        "click",
+        "Move file"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "guides"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "windows.md"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Continue editing draft"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.cm-content').textContent.includes('Move this device draft'))throw Error('Draft stranded');const s=JSON.parse(localStorage.getItem('library.v1.sim-studio')).state;if(s.recent.some(r=>r.path==='docs/windows.md'))throw Error('Dead recent entry')"
+      ]
+    ]
+  },
+  {
+    "name": "connections-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.emit({type:'devices_changed',devices:[]});h.emit({type:'channel_identities_changed',identities:[]});"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "eval",
+        "document.getElementById('settings-phones').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('.settings-screen').textContent;if(t.includes('No chats linked')||t.includes('No devices have been reported')||!t.includes('Not loaded while offline'))throw Error('Offline absence stated as fact')"
+      ]
+    ]
+  },
+  {
+    "name": "connections-stale-device",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.devices=h.devices.map(d=>d.name==='Old tablet'?{...d,last_seen_at:null}:d);h.emit({type:'devices_changed',devices:h.devices})"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.settings-card')].find(e=>e.textContent.includes('Old tablet')).scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "pair-again",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Already paired with studio since'))throw Error('Missing repeat pairing warning')"
+      ]
+    ]
+  },
+  {
+    "name": "library-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"folder\", \"rootId\": \"sim-empty\", \"path\": \"\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ]
+  },
+  {
+    "name": "library-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"folder\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "window.__sim.library.deny('0192f7a1-0000-7000-8000-000000000902');window.__sim.offline()"
+      ],
+      [
+        "wait",
+        100
+      ],
+      [
+        "eval",
+        "window.__sim.online()"
+      ],
+      [
+        "wait",
+        1600
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "editor-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ]
+    ]
+  },
+  {
+    "name": "editor-revoked",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ]
+    ]
+  },
+  {
+    "name": "moved-draft-conflict",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {libraryStore}=await import('/src/screens/library/drafts.ts');const s=libraryStore('sim-studio');const {file}=await window.__sim.host.query({kind:'library_read',root_id:'0192f7a1-0000-7000-8000-000000000902',path:'docs/windows.md'});s.saveDraft({base:{...file,path:'old.md'},text:'Keep this older device draft',updatedAt:Date.now(),phase:'draft',movedTo:'docs/windows.md'});})()"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.notice')].find(e=>e.textContent.includes('old location')).scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "notice"
+      ],
+      [
+        "click",
+        "Open old draft"
+      ]
+    ]
+  },
+  {
+    "name": "install-commands-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "path": "/?unpaired",
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "clickSel",
+        ".welcome__install summary"
+      ],
+      [
+        "eval",
+        "document.querySelector('.welcome__install').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "welcome-invalid-link",
+    "scale": 1,
+    "path": "/?unpaired",
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Paste the link instead"
+      ],
+      [
+        "fill",
+        "Pairing link",
+        "invalid pairing code"
+      ],
+      [
+        "click",
+        "Continue"
+      ]
+    ]
+  },
+  {
+    "name": "terminal-baseline-phone",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"control\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}, {\"screen\": \"terminal\", \"terminalId\": \"0192f7a1-0000-7000-8000-000000000a01\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "clickSel",
+        "[aria-label=\"Terminal input mode\"] button:nth-child(2)"
+      ],
+      [
+        "shot",
+        "start"
+      ],
+      [
+        "eval",
+        "document.querySelector('.terminal-keys').scrollLeft=10000"
+      ],
+      [
+        "wait",
+        150
+      ]
+    ]
+  },
+  {
+    "name": "terminal-baseline-tablet",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"control\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}, {\"screen\": \"terminal\", \"terminalId\": \"0192f7a1-0000-7000-8000-000000000a01\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "clickSel",
+        "[aria-label=\"Terminal input mode\"] button:nth-child(2)"
+      ],
+      [
+        "shot",
+        "start"
+      ],
+      [
+        "eval",
+        "document.querySelector('.terminal-keys').scrollLeft=10000"
+      ],
+      [
+        "wait",
+        150
+      ]
+    ]
+  },
+  {
+    "name": "terminal-baseline-large-tablet",
+    "width": 2000,
+    "height": 1117,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"control\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}, {\"screen\": \"terminal\", \"terminalId\": \"0192f7a1-0000-7000-8000-000000000a01\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "clickSel",
+        "[aria-label=\"Terminal input mode\"] button:nth-child(2)"
+      ],
+      [
+        "shot",
+        "start"
+      ],
+      [
+        "eval",
+        "document.querySelector('.terminal-keys').scrollLeft=10000"
+      ],
+      [
+        "wait",
+        150
+      ]
+    ]
+  }
+]

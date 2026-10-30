@@ -1,0 +1,112 @@
+[
+  {
+    "name": "m2-transfer-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project \u00b7 Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["click", "metrics.csv"],
+      ["wait", 450],
+      ["click", "Send to this device"],
+      ["wait", 1300],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      ["wait", 400],
+      ["shot", "verified"],
+      ["click", "Save to phone"],
+      ["wait", 700],
+      ["log", "window.__sim.device.downloads"]
+    ]
+  },
+  {
+    "name": "m2-transfer-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project \u00b7 Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["click", "metrics.csv"],
+      ["wait", 450],
+      ["click", "Send to this device"],
+      ["wait", 1300],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      ["wait", 400],
+      ["shot", "verified"],
+      ["click", "Save to phone"],
+      ["wait", 700],
+      ["log", "window.__sim.device.downloads"]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-transfer-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project \u00b7 Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["click", "metrics.csv"],
+      ["wait", 450],
+      ["click", "Send to this device"],
+      ["wait", 1300],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      ["wait", 400],
+      ["shot", "verified"],
+      ["click", "Save to phone"],
+      ["wait", 700],
+      ["log", "window.__sim.device.downloads"]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-transfer-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project \u00b7 Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["click", "metrics.csv"],
+      ["wait", 450],
+      ["click", "Send to this device"],
+      ["wait", 1300],
+      [
+        "eval",
+        "document.querySelector(\".route:not(.is-hidden) .transfer-row\")?.scrollIntoView({block:\"center\"})"
+      ],
+      ["wait", 400],
+      ["shot", "verified"],
+      ["click", "Save to phone"],
+      ["wait", 700],
+      ["log", "window.__sim.device.downloads"]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

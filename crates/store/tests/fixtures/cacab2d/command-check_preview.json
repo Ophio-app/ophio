@@ -1,0 +1,26 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-000000000029",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "check_preview",
+      "preview_id": "00000000-0000-4000-8000-000000000001"
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-000000000029",
+    "status": "accepted",
+    "seq": 41,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

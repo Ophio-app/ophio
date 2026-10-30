@@ -1,0 +1,15 @@
+/target/
+/dist/
+__pycache__/
+node_modules/
+/client/dist/
+/client/src-tauri/target/
+/client/src-tauri/gen/android/app/build/
+/client/src-tauri/gen/android/.gradle/
+/client/src-tauri/gen/schemas/
+*.apk
+*.aab
+*.keystore
+*.jks
+.env
+.env.*

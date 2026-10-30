@@ -1,0 +1,382 @@
+[
+  {
+    "name": "U21-1-other-project",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pNotes);ui.selectTab('work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "needs-you"
+      ],
+      [
+        "click",
+        "Switch project"
+      ]
+    ]
+  },
+  {
+    "name": "U21-2-restart-approval",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.selectTab('work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .approval .btn--primary"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.restart();window.__sim.online()"
+      ],
+      [
+        "wait",
+        2200
+      ],
+      [
+        "eval",
+        "if(document.querySelector('dialog[open]').textContent.includes('Accepted by studio'))throw Error('Old decision visible');"
+      ],
+      [
+        "shot",
+        "request"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .approval__who button"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const p=document.querySelector('.talk-working');if(!p?.textContent.includes('Waiting for your approval')||p.querySelector('.stateline__spinner'))throw Error('Approval shows working');p.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "U21-3-review-refused-200",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const {annotationStore}=await import('/src/state/annotations.ts');const id=await seedAnnotation(window.__sim.host,'comments');annotationStore('sim-studio').update(id,d=>({...d,projectId:ids.pNotes}));ui.selectProject(ids.pTide);ui.saveDraft(ids.pNotes,null,{text:'',annotationId:id});ui.push({screen:'review',projectId:ids.pNotes,taskId:null,intent:'new_task'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "prefilled"
+      ],
+      [
+        "fill",
+        "What you\u2019re asking",
+        ""
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "eval",
+        "if(document.activeElement.tagName!=='TEXTAREA')throw Error('Request not focused');"
+      ],
+      [
+        "shot",
+        "focused"
+      ],
+      [
+        "eval",
+        "const button=[...document.querySelectorAll('.review-foot button')].find(e=>e.textContent==='Start task');const r=button.getBoundingClientRect();const limit=document.querySelector('.app__safety').getBoundingClientRect().top;if(r.bottom>limit+1)throw Error('Start task is obscured');"
+      ]
+    ]
+  },
+  {
+    "name": "U21-5-effort-round-trip",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,null);ui.selectTab('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "clickSel",
+        ".composer__chip"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .row:has-text(\"Codex\")"
+      ],
+      [
+        "click",
+        "GPT-6-Sol"
+      ],
+      [
+        "click",
+        "Medium"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .row:has-text(\"Claude Code\")"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .row:has-text(\"Codex\")"
+      ],
+      [
+        "eval",
+        "const el=[...document.querySelectorAll('button')].find(e=>e.textContent==='Medium');if(el.getAttribute('aria-pressed')!=='true')throw Error('Medium lost');el.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "U21-8-library-folder-200",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTab('library');ui.push({screen:'folder',rootId:ids.rootNotes,path:''});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const row=[...document.querySelectorAll('.lib-entry .row__title')].find(e=>e.textContent==='2026-09-26 standup.md');if(row.getBoundingClientRect().bottom>document.querySelector('.app__safety').getBoundingClientRect().top)throw Error('First file is below the fold');"
+      ]
+    ]
+  },
+  {
+    "name": "U21-8-library-file-200",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTab('library');ui.push({screen:'file',rootId:ids.rootNotes,path:'2026-09-26 standup.md'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ]
+    ]
+  },
+  {
+    "name": "U21-10-talk-header-200",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.selectTab('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const title=document.querySelector('.talk-bar__title-text');if(title.getBoundingClientRect().height<50)throw Error('Task title cannot wrap');const project=document.querySelector('.talk .ctx__project-name');if(project.scrollWidth>project.clientWidth)throw Error('Project name clipped');"
+      ]
+    ]
+  },
+  {
+    "name": "U21-10-annotate-typing-200",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');ui.selectProject(ids.pTide);ui.push({screen:'annotate',annotationId:id});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "fill",
+        "What should change?",
+        "A little more space"
+      ],
+      [
+        "click",
+        "General comment"
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('button')].find(e=>(e.getAttribute('aria-label')||e.textContent.trim())==='Review and send');if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')throw Error('Review unavailable while typing');"
+      ],
+      [
+        "eval",
+        "const button=[...document.querySelectorAll('button')].find(e=>(e.getAttribute('aria-label')||e.textContent.trim())==='Review and send');const r=button.getBoundingClientRect();const safety=document.querySelector('.app__safety').getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if((safety.height&&r.bottom>safety.top+1)||!button.contains(hit))throw Error('Review action is obscured');"
+      ]
+    ]
+  },
+  {
+    "name": "U21-10-preview-delivery-confirmed",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog[open] iframe'))throw Error('Preview closed after capture')"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .btn--primary"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "fill",
+        "Your message",
+        "Check the layout in this preview picture."
+      ],
+      [
+        "eval",
+        "window.__sim.pace(0.05)"
+      ],
+      [
+        "click",
+        "Continue"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.talk-log p')].find(e=>e.textContent.includes('Taken from the Notes preview on studio')); if(!p)throw Error('Missing preview provenance on sent receipt');p.scrollIntoView({block:'center'});"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.talk-log')?.textContent.includes('Delivered to the agent'))throw Error('Initial prompt not delivered')"
+      ],
+      [
+        "shot",
+        "talk-delivered"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.preview-draft p')].find(e=>e.textContent.includes('Sent with markup to'));if(!p)throw Error('Preview not delivered');p.scrollIntoView({block:'center'});"
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');if(window.__sim.host.tasks.find(t=>t.task_id===ids.tNotes).state!=='completed')throw Error('Task has not finished');if(document.querySelector('.preview-draft').textContent.includes('Waiting to send'))throw Error('Stale delivery words');})()"
+      ]
+    ],
+    "fresh": false
+  }
+]

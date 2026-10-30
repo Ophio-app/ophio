@@ -1,0 +1,1152 @@
+[
+  {
+    "name": "digest-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "digest-dark",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "digest-large",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-brief').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "digest-wide",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "receipt-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ]
+  },
+  {
+    "name": "receipt-dark",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "receipt-large",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "receipt-wide",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "after-picture-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-mark').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "after-picture-dark",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-mark').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "after-picture-large",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-mark').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "after-picture-wide",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-mark').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "checks-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Requested completion checks').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "checks-dark",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Requested completion checks').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "checks-large",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Requested completion checks').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "checks-wide",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Requested completion checks').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "diff-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "src/checkout.css"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "diff-dark",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "src/checkout.css"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "diff-large",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "src/checkout.css"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "diff-wide",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "src/checkout.css"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "brief-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "brief-dark",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "brief-large",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "brief-wide",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "agents-light",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Recently finished').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "agents-dark",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Recently finished').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "agents-large",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Recently finished').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 900,
+    "text": 2
+  },
+  {
+    "name": "agents-wide",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Recently finished').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "receipt-offline",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Evidence connection lost')"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "evidence-error",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host; const q=h.query.bind(h); h.query=async query=>{if(query.kind==='task_artifacts') throw {code:'not_found',message:'The computer could not load task evidence.'};return q(query)}"
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ]
+  },
+  {
+    "name": "empty-agents",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host; for(const t of h.tasks){t.state='archived'; t.current_run=null;h.emit({type:'task_upserted',task:t});} h.runs=[]; for(const item of h.attention){item.resolved_at=Date.now(); h.emit({type:'attention_resolved',attention_id:item.attention_id});}"
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Running and unresolved').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "brief-save-and-review",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "fill",
+        "Brief Markdown",
+        "# Follow-up brief\n\nKeep the public API unchanged.\n\n## Checks\n\ncargo test\n"
+      ],
+      [
+        "click",
+        "Save to phone"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "shot",
+        "saved"
+      ],
+      [
+        "click",
+        "Choose destination"
+      ],
+      [
+        "eval",
+        "const select=document.querySelector('dialog[open] select'); select.value='0192f7a1-0000-7000-8000-000000000102'; select.dispatchEvent(new Event('change',{bubbles:true})); const agent=document.querySelectorAll('dialog[open] select')[1]; agent.value='claude_code'; agent.dispatchEvent(new Event('change',{bubbles:true}));"
+      ],
+      [
+        "shot",
+        "destination"
+      ],
+      [
+        "click",
+        "Review new task"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "eval",
+        "window.__beforeTasks=window.__sim.host.tasks.map(t=>t.task_id); if(window.__sim.device.downloads.length!==1)throw Error('Brief save was not confirmed');"
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "const t=window.__sim.host.tasks.find(t=>!window.__beforeTasks.includes(t.task_id)); if(!t||t.title!=='Follow-up: Refine the checkout page')throw Error('No fresh task created from the review');"
+      ]
+    ]
+  },
+  {
+    "name": "brief-offline",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Working from the saved brief')"
+      ],
+      [
+        "fill",
+        "Brief Markdown",
+        "# Offline edits\n\nKeep these edits."
+      ],
+      [
+        "click",
+        "Save to phone"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "diff-landscape",
+    "width": 800,
+    "height": 360,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "src/checkout.css"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "brief-preserved",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "fill",
+        "Brief Markdown",
+        "# My edited brief\n\nKeep this goal."
+      ],
+      [
+        "clickSel",
+        "dialog[open] button[aria-label=\"Close\"]"
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('dialog[open] textarea').value!=='# My edited brief\\n\\nKeep this goal.')throw Error('Edited brief was lost'); location.reload();"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('dialog[open] textarea').value!=='# My edited brief\\n\\nKeep this goal.')throw Error('Edited brief was lost after reload');"
+      ]
+    ]
+  },
+  {
+    "name": "receipt-permission-denied",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({transfers:false})"
+      ],
+      [
+        "wait",
+        800
+      ]
+    ]
+  },
+  {
+    "name": "brief-revoked",
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Refine the checkout page"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Portable brief"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Brief Markdown",
+        "# Local edits after disconnection"
+      ],
+      [
+        "click",
+        "Choose destination"
+      ]
+    ]
+  },
+  {
+    "name": "agents-observed-only",
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host; const q=h.query.bind(h);h.query=async query=>{const result=await q(query);return query.kind==='harnesses'?{...result,harnesses:result.harnesses.map(agent=>({...agent,integration:'terminal_only'}))}:result}; window.__sim.offline();window.__sim.online();"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.section__title')].find(e=>e.textContent==='Recently finished').closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  }
+]

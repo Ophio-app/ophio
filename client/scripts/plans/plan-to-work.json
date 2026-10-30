@@ -1,0 +1,1391 @@
+[
+  {
+    "name": "U25-plan-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Plan proposed"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "proposed"
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-work-review-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Plan proposed"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "proposed"
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "plan-attached"
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__permission').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "mode"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.review__permission')].at(-1).scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-plan-receipt-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002501'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('button')].find(e=>e.textContent==='Carry out this plan').scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-tools-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002502');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002502';h.tasks.push(t);t.current_run='0192f7a1-0000-7000-8000-000000002602';h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002602';r.task_id='0192f7a1-0000-7000-8000-000000002502';h.runs.push(r);h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);for(const [tool,input] of [['Bash',{command:'pwd'}],['Read',{file_path:'src/parser.rs'}],['Grep',{pattern:'parse_header',path:'src'}],['Agent',{description:'Check parser regressions'}]])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002602',item:{kind:'activity',tool,summary:tool,status:'succeeded',detail:JSON.stringify(input)}}});})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Agent"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "commands"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps__row:last-child').scrollIntoView({block:'end'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-recovery-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pNotes);ui.reset('library',[{screen:'library'},{screen:'library_recovery',rootId:ids.rootNotes,recoveryId:'sim-uncertain-save'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;h.libraryCompletion.seed();})()"
+      ],
+      [
+        "click",
+        "Refresh comparison"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.lib-recovery-choices label')].find(e=>e.textContent==='On disk now').querySelector('input').click();"
+      ],
+      [
+        "eval",
+        "document.querySelector('.lib-recovery-choices').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "choice"
+      ],
+      [
+        "eval",
+        "document.querySelector('.lib-footer').scrollIntoView({block:'end'})"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Keep what's on disk"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.sheet[open]'))throw Error('Unexpected editor');if(!document.body.textContent.includes('Recovery copy discarded'))throw Error('Recovery not resolved')"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-paused-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.waiting);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'stop_task',task_id:ids.tFlaky}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-queue-review-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.waiting);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'stop_task',task_id:ids.tFlaky}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Review queued task"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-rail-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "clickSel",
+        ".safety-rail__toggle"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-denied-receipt-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Deny\u2026"
+      ],
+      [
+        "fill",
+        "Reason (optional)",
+        "Please wait for the maintainer."
+      ],
+      [
+        "clickSel",
+        ".approval__actions .btn--primary"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "decision"
+      ],
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:1,body:{command:'resolve_approval',approval_id:ids.aTest,decision:{decision:'deny',reason:'Please wait for the maintainer.'}}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Approval decisions').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "decision-heading"
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-card .approval__settled-what').scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-plan-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Plan proposed"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "proposed"
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-work-review-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Plan proposed"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "proposed"
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "plan-attached"
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__permission').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "mode"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.review__permission')].at(-1).scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-plan-receipt-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002501'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('button')].find(e=>e.textContent==='Carry out this plan').scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-tools-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002502');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002502';h.tasks.push(t);t.current_run='0192f7a1-0000-7000-8000-000000002602';h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002602';r.task_id='0192f7a1-0000-7000-8000-000000002502';h.runs.push(r);h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);for(const [tool,input] of [['Bash',{command:'pwd'}],['Read',{file_path:'src/parser.rs'}],['Grep',{pattern:'parse_header',path:'src'}],['Agent',{description:'Check parser regressions'}]])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002602',item:{kind:'activity',tool,summary:tool,status:'succeeded',detail:JSON.stringify(input)}}});})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Agent"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "commands"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps__row:last-child').scrollIntoView({block:'end'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-recovery-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pNotes);ui.reset('library',[{screen:'library'},{screen:'library_recovery',rootId:ids.rootNotes,recoveryId:'sim-uncertain-save'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;h.libraryCompletion.seed();})()"
+      ],
+      [
+        "click",
+        "Refresh comparison"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.lib-recovery-choices label')].find(e=>e.textContent==='On disk now').querySelector('input').click();"
+      ],
+      [
+        "eval",
+        "document.querySelector('.lib-recovery-choices').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "choice"
+      ],
+      [
+        "eval",
+        "document.querySelector('.lib-footer').scrollIntoView({block:'end'})"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Keep what's on disk"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.sheet[open]'))throw Error('Unexpected editor');if(!document.body.textContent.includes('Recovery copy discarded'))throw Error('Recovery not resolved')"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-paused-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.waiting);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'stop_task',task_id:ids.tFlaky}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-queue-review-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.waiting);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'stop_task',task_id:ids.tFlaky}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Review queued task"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-rail-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "clickSel",
+        ".safety-rail__toggle"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-denied-receipt-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Deny\u2026"
+      ],
+      [
+        "fill",
+        "Reason (optional)",
+        "Please wait for the maintainer."
+      ],
+      [
+        "clickSel",
+        ".approval__actions .btn--primary"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "decision"
+      ],
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:1,body:{command:'resolve_approval',approval_id:ids.aTest,decision:{decision:'deny',reason:'Please wait for the maintainer.'}}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Approval decisions').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "decision-heading"
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-card .approval__settled-what').scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-plan-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Plan proposed"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "proposed"
+      ],
+      [
+        "click",
+        "Tools"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-work-review-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Plan proposed"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "proposed"
+      ],
+      [
+        "click",
+        "Tools"
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "plan-attached"
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__permission').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "mode"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.review__permission')].at(-1).scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-plan-receipt-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002501');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002501'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002501';h.tasks.push(t);Object.assign(t,{mode:'plan',harness:'claude_code',model:'claude-opus-5-5',title:'Plan the parser fix',current_run:'0192f7a1-0000-7000-8000-000000002601'});h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002601';r.task_id='0192f7a1-0000-7000-8000-000000002501';h.runs.push(r);Object.assign(r,{harness:'claude_code',native_session:'plan-session',actual_model:'claude-opus-5-5',outcome:{summary:'A plan is ready for review.',changed_files:[],checks:[],still_active:[],unknowns:[],usage:null}});h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);const add=item=>h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002601',item}});const plan='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement the fix and run the tests.';add({kind:'agent_message',text:plan,partial:false});add({kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:plan});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('button')].find(e=>e.textContent==='Carry out this plan').scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-tools-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002502');ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002502';h.tasks.push(t);t.current_run='0192f7a1-0000-7000-8000-000000002602';h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002602';r.task_id='0192f7a1-0000-7000-8000-000000002502';h.runs.push(r);h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);for(const [tool,input] of [['Bash',{command:'pwd'}],['Read',{file_path:'src/parser.rs'}],['Grep',{pattern:'parse_header',path:'src'}],['Agent',{description:'Check parser regressions'}]])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002602',item:{kind:'activity',tool,summary:tool,status:'succeeded',detail:JSON.stringify(input)}}});})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Agent"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "commands"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps__row:last-child').scrollIntoView({block:'end'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-recovery-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pNotes);ui.reset('library',[{screen:'library'},{screen:'library_recovery',rootId:ids.rootNotes,recoveryId:'sim-uncertain-save'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;h.libraryCompletion.seed();})()"
+      ],
+      [
+        "click",
+        "Refresh comparison"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.lib-recovery-choices label')].find(e=>e.textContent==='On disk now').querySelector('input').click();"
+      ],
+      [
+        "eval",
+        "document.querySelector('.lib-recovery-choices').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "choice"
+      ],
+      [
+        "eval",
+        "document.querySelector('.lib-footer').scrollIntoView({block:'end'})"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Keep what's on disk"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.sheet[open]'))throw Error('Unexpected editor');if(!document.body.textContent.includes('Recovery copy discarded'))throw Error('Recovery not resolved')"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-paused-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.waiting);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'stop_task',task_id:ids.tFlaky}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-queue-review-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.waiting);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'stop_task',task_id:ids.tFlaky}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Review queued task"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-rail-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "clickSel",
+        ".safety-rail__toggle"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-denied-receipt-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Deny\u2026"
+      ],
+      [
+        "fill",
+        "Reason (optional)",
+        "Please wait for the maintainer."
+      ],
+      [
+        "clickSel",
+        ".approval__actions .btn--primary"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "decision"
+      ],
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:1,body:{command:'resolve_approval',approval_id:ids.aTest,decision:{decision:'deny',reason:'Please wait for the maintainer.'}}});})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Approval decisions').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "decision-heading"
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-card .approval__settled-what').scrollIntoView({block:'center'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-tool-receipt-phone",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002502');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002502'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002502';h.tasks.push(t);t.current_run='0192f7a1-0000-7000-8000-000000002602';h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002602';r.task_id='0192f7a1-0000-7000-8000-000000002502';h.runs.push(r);h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);for(const [tool,input] of [['Bash',{command:'pwd'}],['Read',{file_path:'src/parser.rs'}],['Grep',{pattern:'parse_header',path:'src'}],['Agent',{description:'Check parser regressions'}]])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002602',item:{kind:'activity',tool,summary:tool,status:'succeeded',detail:JSON.stringify(input)}}});})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Agent"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "commands"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps__row:last-child').scrollIntoView({block:'end'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-tool-receipt-tablet",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002502');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002502'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002502';h.tasks.push(t);t.current_run='0192f7a1-0000-7000-8000-000000002602';h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002602';r.task_id='0192f7a1-0000-7000-8000-000000002502';h.runs.push(r);h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);for(const [tool,input] of [['Bash',{command:'pwd'}],['Read',{file_path:'src/parser.rs'}],['Grep',{pattern:'parse_header',path:'src'}],['Agent',{description:'Check parser regressions'}]])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002602',item:{kind:'activity',tool,summary:tool,status:'succeeded',detail:JSON.stringify(input)}}});})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Agent"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "commands"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps__row:last-child').scrollIntoView({block:'end'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U25-tool-receipt-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,'0192f7a1-0000-7000-8000-000000002502');ui.reset('work',[{screen:'work'},{screen:'receipt',taskId:'0192f7a1-0000-7000-8000-000000002502'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const h=window.__sim.host;for(const t of h.tasks.filter(t=>['working','awaiting_decision','dispatching'].includes(t.state))){t.state='completed';h.emit({type:'task_upserted',task:t})}for(const r of h.runs.filter(r=>!r.ended_at)){r.state='completed';r.ended_at=Date.now();r.holds_writer=false;h.emit({type:'run_upserted',run:r})}h.control=[];h.emit({type:'control_changed',view:{target_id:ids.tgDp1,desktop_lock:'unlocked',input_state:'ready',lease:null,model_observation:null,geometry_revision:3}});const p=h.projects.find(p=>p.project_id===ids.pTide);p.active_writer=null;h.emit({type:'project_upserted',project:p});h.queue.writer=null;const t=structuredClone(h.tasks.find(t=>t.task_id===ids.tHeaders));t.task_id='0192f7a1-0000-7000-8000-000000002502';h.tasks.push(t);t.current_run='0192f7a1-0000-7000-8000-000000002602';h.emit({type:'task_upserted',task:t});const r=structuredClone(h.runs.find(r=>r.run_id===ids.rHeaders));r.run_id='0192f7a1-0000-7000-8000-000000002602';r.task_id='0192f7a1-0000-7000-8000-000000002502';h.runs.push(r);h.emit({type:'run_upserted',run:r});h.journal=h.journal.filter(e=>e.event.type!=='timeline_appended'||e.event.task_id!==t.task_id);for(const [tool,input] of [['Bash',{command:'pwd'}],['Read',{file_path:'src/parser.rs'}],['Grep',{pattern:'parse_header',path:'src'}],['Agent',{description:'Check parser regressions'}]])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:'0192f7a1-0000-7000-8000-000000002602',item:{kind:'activity',tool,summary:tool,status:'succeeded',detail:JSON.stringify(input)}}});})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Agent"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "commands"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-steps__row:last-child').scrollIntoView({block:'end'})"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,325 @@
+[
+  {
+    "name": "notifications-light",
+    "height": 1000,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-notifications').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "versions-light",
+    "height": 1000,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-versions').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "inbox-light",
+    "height": 1000,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.share([{id:'test-share',name:'Screenshot idea',mime:'text/plain',text:'Check the spacing around the project selector.'}])"
+      ],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 700],
+      ["click", "Capture inbox"],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "platform-error-light",
+    "height": 1000,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "notifications-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-notifications').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "versions-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-versions').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "inbox-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.share([{id:'test-share',name:'Screenshot idea',mime:'text/plain',text:'Check the spacing around the project selector.'}])"
+      ],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 700],
+      ["click", "Capture inbox"],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "platform-error-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "notifications-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-notifications').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "versions-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-versions').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "inbox-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.share([{id:'test-share',name:'Screenshot idea',mime:'text/plain',text:'Check the spacing around the project selector.'}])"
+      ],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 700],
+      ["click", "Capture inbox"],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "platform-error-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "notifications-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-notifications').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750],
+      ["shot", "top"],
+      [
+        "eval",
+        "document.querySelector('#settings-notifications').closest('section').querySelector('input[type=checkbox]').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "versions-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-versions').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "inbox-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.share([{id:'test-share',name:'Screenshot idea',mime:'text/plain',text:'Check the spacing around the project selector.'}])"
+      ],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 700],
+      ["click", "Capture inbox"],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "platform-error-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "notifications-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-notifications').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750],
+      ["shot", "top"],
+      [
+        "eval",
+        "document.querySelector('#settings-notifications').closest('section').querySelector('input[type=checkbox]').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "versions-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 700],
+      [
+        "eval",
+        "document.querySelector('#settings-versions').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "inbox-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.share([{id:'test-share',name:'Screenshot idea',mime:'text/plain',text:'Check the spacing around the project selector.'}])"
+      ],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 700],
+      ["click", "Capture inbox"],
+      ["wait", 750]
+    ]
+  },
+  {
+    "name": "platform-error-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');window.__sim.device.error('Keep screen awake','The phone couldn\u2019t keep the screen awake. Check your battery settings.');"
+      ],
+      ["wait", 750]
+    ]
+  }
+]

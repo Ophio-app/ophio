@@ -1,0 +1,5322 @@
+[
+ {
+  "name": "u32-1-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'take_over',target_id:ids.tgDp1,geometry_revision:3}})})()"
+   ],
+   [
+    "wait",
+    1100
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const lease=h.control.find(v=>v.target_id===ids.tgDp1).lease;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'release_lease',lease_id:lease.lease_id}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:ids.tDash,text:'Zoom the chart to the last 15 minutes.',bundle:null,delivery:'steer'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "rail"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Watch DP-1"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "dp1"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(0)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-needs-you"
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(1)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-1-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'take_over',target_id:ids.tgDp1,geometry_revision:3}})})()"
+   ],
+   [
+    "wait",
+    1100
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const lease=h.control.find(v=>v.target_id===ids.tgDp1).lease;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'release_lease',lease_id:lease.lease_id}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:ids.tDash,text:'Zoom the chart to the last 15 minutes.',bundle:null,delivery:'steer'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "rail"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Watch DP-1"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "dp1"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(0)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-needs-you"
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(1)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-1-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'take_over',target_id:ids.tgDp1,geometry_revision:3}})})()"
+   ],
+   [
+    "wait",
+    1100
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const lease=h.control.find(v=>v.target_id===ids.tgDp1).lease;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'release_lease',lease_id:lease.lease_id}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:ids.tDash,text:'Zoom the chart to the last 15 minutes.',bundle:null,delivery:'steer'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "rail"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Watch DP-1"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "dp1"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(0)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-needs-you"
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(1)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-1-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'take_over',target_id:ids.tgDp1,geometry_revision:3}})})()"
+   ],
+   [
+    "wait",
+    1100
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const lease=h.control.find(v=>v.target_id===ids.tgDp1).lease;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'release_lease',lease_id:lease.lease_id}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:ids.tDash,text:'Zoom the chart to the last 15 minutes.',bundle:null,delivery:'steer'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "rail"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Watch DP-1"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "dp1"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(0)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-needs-you"
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(1)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-1-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'take_over',target_id:ids.tgDp1,geometry_revision:3}})})()"
+   ],
+   [
+    "wait",
+    1100
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const lease=h.control.find(v=>v.target_id===ids.tgDp1).lease;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'release_lease',lease_id:lease.lease_id}})})()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:ids.tDash,text:'Zoom the chart to the last 15 minutes.',bundle:null,delivery:'steer'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "eval",
+    "document.querySelector('[aria-label=Conversation]')?.parentElement?.scrollTo?.(0,1e6)"
+   ],
+   [
+    "shot",
+    "talk"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "rail"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(2)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Watch DP-1"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "dp1"
+   ],
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(0)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-needs-you"
+   ],
+   [
+    "log",
+    "((n)=>{const els=[...document.querySelectorAll('main *')].filter(e=>e.children.length===0&&/Waiting for input on DP-1/.test(e.textContent));const el=els[n];el?.scrollIntoView({block:'center'});return els.length})(1)"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "work-now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-2-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Open Next up"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('.work-queue li')[2].scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const c=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});const {ids}=await import('/src/dev/sim/scenario.ts');await c({command:'stop_task',task_id:ids.tFlaky})})()"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue li .btn--primary').click()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Start only this task"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "document.querySelector('main h1, .screen__title')?.textContent"
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-2-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Open Next up"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('.work-queue li')[2].scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const c=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});const {ids}=await import('/src/dev/sim/scenario.ts');await c({command:'stop_task',task_id:ids.tFlaky})})()"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue li .btn--primary').click()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Start only this task"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "document.querySelector('main h1, .screen__title')?.textContent"
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-2-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Open Next up"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('.work-queue li')[2].scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const c=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});const {ids}=await import('/src/dev/sim/scenario.ts');await c({command:'stop_task',task_id:ids.tFlaky})})()"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue li .btn--primary').click()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Start only this task"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "document.querySelector('main h1, .screen__title')?.textContent"
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-2-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Open Next up"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('.work-queue li')[2].scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const c=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});const {ids}=await import('/src/dev/sim/scenario.ts');await c({command:'stop_task',task_id:ids.tFlaky})})()"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue li .btn--primary').click()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Start only this task"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "document.querySelector('main h1, .screen__title')?.textContent"
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-2-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Open Next up"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('.work-queue li')[2].scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const c=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});const {ids}=await import('/src/dev/sim/scenario.ts');await c({command:'stop_task',task_id:ids.tFlaky})})()"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue li .btn--primary').click()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Start only this task"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "document.querySelector('main h1, .screen__title')?.textContent"
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-2-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "click",
+    "Open Next up"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('.work-queue li')[2].scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const c=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});const {ids}=await import('/src/dev/sim/scenario.ts');await c({command:'stop_task',task_id:ids.tFlaky})})()"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.work-queue li')].map(li=>li.querySelector('h2').textContent+' | '+li.querySelector('.work-queue-state').textContent+' | '+li.querySelector('.btn--primary')?.textContent).join('\\n')"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "eval",
+    "document.querySelector('.work-queue li .btn--primary').click()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Start only this task"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.review-foot')?.textContent"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "document.querySelector('main h1, .screen__title')?.textContent"
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-3-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pGarden,null);ui.saveDraft(ids.pGarden,null,{text:'Tidy the planting notes',mode:'work'});ui.reset('talk',[{screen:'review',projectId:ids.pGarden,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "click",
+    "Start task"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting-late"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-3-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pGarden,null);ui.saveDraft(ids.pGarden,null,{text:'Tidy the planting notes',mode:'work'});ui.reset('talk',[{screen:'review',projectId:ids.pGarden,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "click",
+    "Start task"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting-late"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-3-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pGarden,null);ui.saveDraft(ids.pGarden,null,{text:'Tidy the planting notes',mode:'work'});ui.reset('talk',[{screen:'review',projectId:ids.pGarden,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "click",
+    "Start task"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting-late"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-3-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pGarden,null);ui.saveDraft(ids.pGarden,null,{text:'Tidy the planting notes',mode:'work'});ui.reset('talk',[{screen:'review',projectId:ids.pGarden,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "click",
+    "Start task"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting-late"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-3-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pGarden,null);ui.saveDraft(ids.pGarden,null,{text:'Tidy the planting notes',mode:'work'});ui.reset('talk',[{screen:'review',projectId:ids.pGarden,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "click",
+    "Start task"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.review-foot .btn--primary')].map(b=>b.textContent).join(' / ')"
+   ],
+   [
+    "shot",
+    "starting-late"
+   ],
+   [
+    "wait",
+    3000
+   ],
+   [
+    "shot",
+    "closed"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "settled"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "settled"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "settled"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "settled"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(1500)"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "window.__sim.offline()"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "offline"
+   ],
+   [
+    "eval",
+    "window.__sim.online()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].some(li=>li.textContent.includes('Zoom the chart'))?'message shown':'no message'].join(' | ')"
+   ],
+   [
+    "shot",
+    "settled"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4u-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.dropNextReceipt()"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "press",
+    "End"
+   ],
+   [
+    "type",
+    " Also the legend."
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "unknown"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4u-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.dropNextReceipt()"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "press",
+    "End"
+   ],
+   [
+    "type",
+    " Also the legend."
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "unknown"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4u-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.dropNextReceipt()"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "press",
+    "End"
+   ],
+   [
+    "type",
+    " Also the legend."
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "unknown"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4u-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.dropNextReceipt()"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "press",
+    "End"
+   ],
+   [
+    "type",
+    " Also the legend."
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "unknown"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ]
+  ]
+ },
+ {
+  "name": "u32-4u-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.saveDraft(ids.pTide,ids.tDash,{text:'Zoom the chart to the last 15 minutes.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.dropNextReceipt()"
+   ],
+   [
+    "clickSel",
+    ".composer__send:not([disabled])"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "clickSel",
+    ".composer textarea"
+   ],
+   [
+    "press",
+    "End"
+   ],
+   [
+    "type",
+    " Also the legend."
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "unknown"
+   ],
+   [
+    "wait",
+    5000
+   ],
+   [
+    "log",
+    "[document.querySelector('.composer .notice__title')?.textContent??'no notice', [...document.querySelectorAll('.composer__send')].map(b=>b.disabled?'Send disabled':'Send enabled').join(' '), document.querySelector('.composer textarea')?.value??'', [...document.querySelectorAll('.talk-log__list li')].filter(li=>li.textContent.includes('Zoom the chart')).length+' in conversation'].join(' | ')"
+   ],
+   [
+    "shot",
+    "reconnected"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5f-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.stops.ignore(ids.tDash)})()"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Force stop"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "click",
+    "Force stop on"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5f-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.stops.ignore(ids.tDash)})()"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Force stop"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "click",
+    "Force stop on"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5f-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');window.__sim.stops.ignore(ids.tDash)})()"
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Force stop"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "click",
+    "Force stop on"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5x-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5x-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-5x-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "window.__sim.latency(900)"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "clickSel",
+    ".safety-rail .named-stop__button"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "pressed"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ],
+   [
+    "shot",
+    "stopped"
+   ],
+   [
+    "clickSel",
+    ".safety-rail__toggle"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[document.querySelector('.toasts')?.textContent ?? 'no toast', document.querySelector('.safety-rail .named-stop__button')?.textContent ?? 'no rail Stop']"
+   ]
+  ]
+ },
+ {
+  "name": "u32-6-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "click",
+    "What happened"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent===\"Stop receipt\").scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('[aria-label=\"Stop outcomes\"] li')].map(l=>l.textContent)"
+   ],
+   [
+    "shot",
+    "stop"
+   ],
+   [
+    "eval",
+    "document.querySelector('.agent-facts li:last-child').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "held"
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.closest('section')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.receipt-request')].map(l=>l.closest('section').querySelector('h2')?.textContent+' | '+l.textContent)"
+   ]
+  ]
+ },
+ {
+  "name": "u32-6-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "click",
+    "What happened"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent===\"Stop receipt\").scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('[aria-label=\"Stop outcomes\"] li')].map(l=>l.textContent)"
+   ],
+   [
+    "shot",
+    "stop"
+   ],
+   [
+    "eval",
+    "document.querySelector('.agent-facts li:last-child').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "held"
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.closest('section')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.receipt-request')].map(l=>l.closest('section').querySelector('h2')?.textContent+' | '+l.textContent)"
+   ]
+  ]
+ },
+ {
+  "name": "u32-6-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "click",
+    "What happened"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent===\"Stop receipt\").scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('[aria-label=\"Stop outcomes\"] li')].map(l=>l.textContent)"
+   ],
+   [
+    "shot",
+    "stop"
+   ],
+   [
+    "eval",
+    "document.querySelector('.agent-facts li:last-child').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "held"
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.closest('section')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.receipt-request')].map(l=>l.closest('section').querySelector('h2')?.textContent+' | '+l.textContent)"
+   ]
+  ]
+ },
+ {
+  "name": "u32-6-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "click",
+    "What happened"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent===\"Stop receipt\").scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('[aria-label=\"Stop outcomes\"] li')].map(l=>l.textContent)"
+   ],
+   [
+    "shot",
+    "stop"
+   ],
+   [
+    "eval",
+    "document.querySelector('.agent-facts li:last-child').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "held"
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.closest('section')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.receipt-request')].map(l=>l.closest('section').querySelector('h2')?.textContent+' | '+l.textContent)"
+   ]
+  ]
+ },
+ {
+  "name": "u32-6-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "click",
+    "What happened"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent===\"Stop receipt\").scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('[aria-label=\"Stop outcomes\"] li')].map(l=>l.textContent)"
+   ],
+   [
+    "shot",
+    "stop"
+   ],
+   [
+    "eval",
+    "document.querySelector('.agent-facts li:last-child').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "held"
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.closest('section')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.receipt-request')].map(l=>l.closest('section').querySelector('h2')?.textContent+' | '+l.textContent)"
+   ]
+  ]
+ },
+ {
+  "name": "u32-6-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "click",
+    "What happened"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('h2')].find(e=>e.textContent===\"Stop receipt\").scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('[aria-label=\"Stop outcomes\"] li')].map(l=>l.textContent)"
+   ],
+   [
+    "shot",
+    "stop"
+   ],
+   [
+    "eval",
+    "document.querySelector('.agent-facts li:last-child').scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "held"
+   ],
+   [
+    "eval",
+    "document.querySelector('.receipt-request')?.closest('section')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.receipt-request')].map(l=>l.closest('section').querySelector('h2')?.textContent+' | '+l.textContent)"
+   ]
+  ]
+ },
+ {
+  "name": "u32-7-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Put back in composer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "once"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent==='Put back in composer')?.click()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[document.querySelector('dialog[open]')?.textContent ?? 'no sheet', document.querySelector('textarea')?.value]"
+   ],
+   [
+    "clickSel",
+    "textarea"
+   ],
+   [
+    "press",
+    "Control+End"
+   ],
+   [
+    "type",
+    " Thanks."
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "edited"
+   ]
+  ]
+ },
+ {
+  "name": "u32-7-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Put back in composer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "once"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent==='Put back in composer')?.click()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[document.querySelector('dialog[open]')?.textContent ?? 'no sheet', document.querySelector('textarea')?.value]"
+   ],
+   [
+    "clickSel",
+    "textarea"
+   ],
+   [
+    "press",
+    "Control+End"
+   ],
+   [
+    "type",
+    " Thanks."
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "edited"
+   ]
+  ]
+ },
+ {
+  "name": "u32-7-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Put back in composer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "once"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent==='Put back in composer')?.click()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[document.querySelector('dialog[open]')?.textContent ?? 'no sheet', document.querySelector('textarea')?.value]"
+   ],
+   [
+    "clickSel",
+    "textarea"
+   ],
+   [
+    "press",
+    "Control+End"
+   ],
+   [
+    "type",
+    " Thanks."
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "edited"
+   ]
+  ]
+ },
+ {
+  "name": "u32-7-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Put back in composer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "once"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent==='Put back in composer')?.click()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[document.querySelector('dialog[open]')?.textContent ?? 'no sheet', document.querySelector('textarea')?.value]"
+   ],
+   [
+    "clickSel",
+    "textarea"
+   ],
+   [
+    "press",
+    "Control+End"
+   ],
+   [
+    "type",
+    " Thanks."
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "edited"
+   ]
+  ]
+ },
+ {
+  "name": "u32-7-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Put back in composer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "once"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent==='Put back in composer')?.click()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[document.querySelector('dialog[open]')?.textContent ?? 'no sheet', document.querySelector('textarea')?.value]"
+   ],
+   [
+    "clickSel",
+    "textarea"
+   ],
+   [
+    "press",
+    "Control+End"
+   ],
+   [
+    "type",
+    " Thanks."
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "edited"
+   ]
+  ]
+ },
+ {
+  "name": "u32-7-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Put back in composer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "once"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent==='Put back in composer')?.click()"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[document.querySelector('dialog[open]')?.textContent ?? 'no sheet', document.querySelector('textarea')?.value]"
+   ],
+   [
+    "clickSel",
+    "textarea"
+   ],
+   [
+    "press",
+    "Control+End"
+   ],
+   [
+    "type",
+    " Thanks."
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "eval",
+    "(() => { document.activeElement?.blur(); const h = document.querySelector('.talk-held'); if (!h) return; h.scrollIntoView({block:'center'}); let s = h.parentElement; while (s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s = s.parentElement; const pill = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Latest')); if (s && pill && pill.getBoundingClientRect().top < h.getBoundingClientRect().bottom) s.scrollTop += h.getBoundingClientRect().bottom - pill.getBoundingClientRect().top + 8; })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.talk-held')].map(h=>h.textContent)"
+   ],
+   [
+    "shot",
+    "edited"
+   ]
+  ]
+ },
+ {
+  "name": "u32-8-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "choose"
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "picked"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "change"
+   ]
+  ]
+ },
+ {
+  "name": "u32-8-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "choose"
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "picked"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "change"
+   ]
+  ]
+ },
+ {
+  "name": "u32-8-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "choose"
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "picked"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "change"
+   ]
+  ]
+ },
+ {
+  "name": "u32-8-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "choose"
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "picked"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "change"
+   ]
+  ]
+ },
+ {
+  "name": "u32-8-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "choose"
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "picked"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "change"
+   ]
+  ]
+ },
+ {
+  "name": "u32-8-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "document.querySelector('#settings-chat').scrollIntoView({block:'start'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Choose project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "choose"
+   ],
+   [
+    "eval",
+    "const s=document.querySelector('dialog[open] select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,window.__sim.host.projects[1].project_id);s.dispatchEvent(new Event('change',{bubbles:true}))"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "picked"
+   ],
+   [
+    "click",
+    "Use field-notes"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Change project for Alex Chen"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(() => { const d = document.querySelector('dialog[open]'); const s = d.querySelector('select'); const b = [...d.querySelectorAll('button')].find(b => b.textContent.startsWith('Use')); return [s.value, s.selectedOptions[0]?.textContent, b?.textContent, b?.disabled]; })()"
+   ],
+   [
+    "shot",
+    "change"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9a-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.route:not(.is-hidden) .composer')?.querySelector('button')?.textContent"
+   ],
+   [
+    "shot",
+    "chip"
+   ],
+   [
+    "eval",
+    "(() => { const bs = [...document.querySelectorAll('.route:not(.is-hidden) button')]; const b = bs.find(b => b.getAttribute('aria-label') === 'Mark up a screenshot' && b.offsetParent); if (b) return b.click(); bs.find(b => (b.getAttribute('aria-label') || b.textContent) === 'Tools').click(); })()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...(document.querySelector('dialog[open]')?.querySelectorAll('button') ?? [])].find(b => b.textContent.includes('Mark up a screenshot'))?.click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Add source"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture the computer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture DP-1"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Review and send"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "(() => { const r = document.querySelector('.route:not(.is-hidden)'); const p = [...r.querySelectorAll('.review__permission')].find(p => p.querySelector('.review__strong')); p?.scrollIntoView({block:'center'}); return p?.textContent; })()"
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9a-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.route:not(.is-hidden) .composer')?.querySelector('button')?.textContent"
+   ],
+   [
+    "shot",
+    "chip"
+   ],
+   [
+    "eval",
+    "(() => { const bs = [...document.querySelectorAll('.route:not(.is-hidden) button')]; const b = bs.find(b => b.getAttribute('aria-label') === 'Mark up a screenshot' && b.offsetParent); if (b) return b.click(); bs.find(b => (b.getAttribute('aria-label') || b.textContent) === 'Tools').click(); })()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...(document.querySelector('dialog[open]')?.querySelectorAll('button') ?? [])].find(b => b.textContent.includes('Mark up a screenshot'))?.click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Add source"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture the computer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture DP-1"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Review and send"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "(() => { const r = document.querySelector('.route:not(.is-hidden)'); const p = [...r.querySelectorAll('.review__permission')].find(p => p.querySelector('.review__strong')); p?.scrollIntoView({block:'center'}); return p?.textContent; })()"
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9a-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.route:not(.is-hidden) .composer')?.querySelector('button')?.textContent"
+   ],
+   [
+    "shot",
+    "chip"
+   ],
+   [
+    "eval",
+    "(() => { const bs = [...document.querySelectorAll('.route:not(.is-hidden) button')]; const b = bs.find(b => b.getAttribute('aria-label') === 'Mark up a screenshot' && b.offsetParent); if (b) return b.click(); bs.find(b => (b.getAttribute('aria-label') || b.textContent) === 'Tools').click(); })()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...(document.querySelector('dialog[open]')?.querySelectorAll('button') ?? [])].find(b => b.textContent.includes('Mark up a screenshot'))?.click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Add source"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture the computer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture DP-1"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Review and send"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "(() => { const r = document.querySelector('.route:not(.is-hidden)'); const p = [...r.querySelectorAll('.review__permission')].find(p => p.querySelector('.review__strong')); p?.scrollIntoView({block:'center'}); return p?.textContent; })()"
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9a-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.route:not(.is-hidden) .composer')?.querySelector('button')?.textContent"
+   ],
+   [
+    "shot",
+    "chip"
+   ],
+   [
+    "eval",
+    "(() => { const bs = [...document.querySelectorAll('.route:not(.is-hidden) button')]; const b = bs.find(b => b.getAttribute('aria-label') === 'Mark up a screenshot' && b.offsetParent); if (b) return b.click(); bs.find(b => (b.getAttribute('aria-label') || b.textContent) === 'Tools').click(); })()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...(document.querySelector('dialog[open]')?.querySelectorAll('button') ?? [])].find(b => b.textContent.includes('Mark up a screenshot'))?.click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Add source"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture the computer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture DP-1"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Review and send"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "(() => { const r = document.querySelector('.route:not(.is-hidden)'); const p = [...r.querySelectorAll('.review__permission')].find(p => p.querySelector('.review__strong')); p?.scrollIntoView({block:'center'}); return p?.textContent; })()"
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9a-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.route:not(.is-hidden) .composer')?.querySelector('button')?.textContent"
+   ],
+   [
+    "shot",
+    "chip"
+   ],
+   [
+    "eval",
+    "(() => { const bs = [...document.querySelectorAll('.route:not(.is-hidden) button')]; const b = bs.find(b => b.getAttribute('aria-label') === 'Mark up a screenshot' && b.offsetParent); if (b) return b.click(); bs.find(b => (b.getAttribute('aria-label') || b.textContent) === 'Tools').click(); })()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...(document.querySelector('dialog[open]')?.querySelectorAll('button') ?? [])].find(b => b.textContent.includes('Mark up a screenshot'))?.click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Add source"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture the computer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture DP-1"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Review and send"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "(() => { const r = document.querySelector('.route:not(.is-hidden)'); const p = [...r.querySelectorAll('.review__permission')].find(p => p.querySelector('.review__strong')); p?.scrollIntoView({block:'center'}); return p?.textContent; })()"
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9a-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "document.querySelector('.route:not(.is-hidden) .composer')?.querySelector('button')?.textContent"
+   ],
+   [
+    "shot",
+    "chip"
+   ],
+   [
+    "eval",
+    "(() => { const bs = [...document.querySelectorAll('.route:not(.is-hidden) button')]; const b = bs.find(b => b.getAttribute('aria-label') === 'Mark up a screenshot' && b.offsetParent); if (b) return b.click(); bs.find(b => (b.getAttribute('aria-label') || b.textContent) === 'Tools').click(); })()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...(document.querySelector('dialog[open]')?.querySelectorAll('button') ?? [])].find(b => b.textContent.includes('Mark up a screenshot'))?.click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Add source"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture the computer"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Capture DP-1"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "click",
+    "Review and send"
+   ],
+   [
+    "wait",
+    1000
+   ],
+   [
+    "log",
+    "(() => { const r = document.querySelector('.route:not(.is-hidden)'); const p = [...r.querySelectorAll('.review__permission')].find(p => p.querySelector('.review__strong')); p?.scrollIntoView({block:'center'}); return p?.textContent; })()"
+   ],
+   [
+    "shot",
+    "review"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9b-390",
+  "width": 390,
+  "height": 844,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:t.task_id,text:'Keep the retry count at three.',bundle:null,delivery:'next_turn'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('dialog[open] .row, dialog[open] [class*=row]')].slice(0,4).map(r=>r.textContent)"
+   ],
+   [
+    "shot",
+    "tasks"
+   ],
+   [
+    "eval",
+    "document.querySelector('dialog[open]').querySelector('button[aria-label=Close]').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')][2].click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(() => { const h = [...document.querySelectorAll('.route:not(.is-hidden) h2, .route:not(.is-hidden) .section__title')].find(e => e.textContent.trim().startsWith('Now')); h?.scrollIntoView({block:'start'}); return [...(h?.closest('section')?.querySelectorAll('.work-row-state, .work-row-line') ?? [])].map(e => e.textContent); })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9b-360x2-light",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:t.task_id,text:'Keep the retry count at three.',bundle:null,delivery:'next_turn'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('dialog[open] .row, dialog[open] [class*=row]')].slice(0,4).map(r=>r.textContent)"
+   ],
+   [
+    "shot",
+    "tasks"
+   ],
+   [
+    "eval",
+    "document.querySelector('dialog[open]').querySelector('button[aria-label=Close]').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')][2].click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(() => { const h = [...document.querySelectorAll('.route:not(.is-hidden) h2, .route:not(.is-hidden) .section__title')].find(e => e.textContent.trim().startsWith('Now')); h?.scrollIntoView({block:'start'}); return [...(h?.closest('section')?.querySelectorAll('.work-row-state, .work-row-line') ?? [])].map(e => e.textContent); })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9b-360x2-dark",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:t.task_id,text:'Keep the retry count at three.',bundle:null,delivery:'next_turn'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('dialog[open] .row, dialog[open] [class*=row]')].slice(0,4).map(r=>r.textContent)"
+   ],
+   [
+    "shot",
+    "tasks"
+   ],
+   [
+    "eval",
+    "document.querySelector('dialog[open]').querySelector('button[aria-label=Close]').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')][2].click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(() => { const h = [...document.querySelectorAll('.route:not(.is-hidden) h2, .route:not(.is-hidden) .section__title')].find(e => e.textContent.trim().startsWith('Now')); h?.scrollIntoView({block:'start'}); return [...(h?.closest('section')?.querySelectorAll('.work-row-state, .work-row-line') ?? [])].map(e => e.textContent); })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9b-844-light",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": false,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:t.task_id,text:'Keep the retry count at three.',bundle:null,delivery:'next_turn'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('dialog[open] .row, dialog[open] [class*=row]')].slice(0,4).map(r=>r.textContent)"
+   ],
+   [
+    "shot",
+    "tasks"
+   ],
+   [
+    "eval",
+    "document.querySelector('dialog[open]').querySelector('button[aria-label=Close]').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')][2].click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(() => { const h = [...document.querySelectorAll('.route:not(.is-hidden) h2, .route:not(.is-hidden) .section__title')].find(e => e.textContent.trim().startsWith('Now')); h?.scrollIntoView({block:'start'}); return [...(h?.closest('section')?.querySelectorAll('.work-row-state, .work-row-line') ?? [])].map(e => e.textContent); })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9b-844-dark",
+  "width": 844,
+  "height": 390,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:t.task_id,text:'Keep the retry count at three.',bundle:null,delivery:'next_turn'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('dialog[open] .row, dialog[open] [class*=row]')].slice(0,4).map(r=>r.textContent)"
+   ],
+   [
+    "shot",
+    "tasks"
+   ],
+   [
+    "eval",
+    "document.querySelector('dialog[open]').querySelector('button[aria-label=Close]').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')][2].click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(() => { const h = [...document.querySelectorAll('.route:not(.is-hidden) h2, .route:not(.is-hidden) .section__title')].find(e => e.textContent.trim().startsWith('Now')); h?.scrollIntoView({block:'start'}); return [...(h?.closest('section')?.querySelectorAll('.work-row-state, .work-row-line') ?? [])].map(e => e.textContent); })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "now"
+   ]
+  ]
+ },
+ {
+  "name": "u32-9b-tablet-dark",
+  "width": 1280,
+  "height": 800,
+  "text": 1,
+  "dark": true,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='awaiting_decision');await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'send_message',task_id:t.task_id,text:'Keep the retry count at three.',bundle:null,delivery:'next_turn'}})})()"
+   ],
+   [
+    "wait",
+    5500
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('dialog[open] .row, dialog[open] [class*=row]')].slice(0,4).map(r=>r.textContent)"
+   ],
+   [
+    "shot",
+    "tasks"
+   ],
+   [
+    "eval",
+    "document.querySelector('dialog[open]').querySelector('button[aria-label=Close]').click()"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('nav.nav button')][2].click()"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "log",
+    "(() => { const h = [...document.querySelectorAll('.route:not(.is-hidden) h2, .route:not(.is-hidden) .section__title')].find(e => e.textContent.trim().startsWith('Now')); h?.scrollIntoView({block:'start'}); return [...(h?.closest('section')?.querySelectorAll('.work-row-state, .work-row-line') ?? [])].map(e => e.textContent); })()"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "now"
+   ]
+  ]
+ }
+]

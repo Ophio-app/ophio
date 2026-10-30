@@ -1,0 +1,92 @@
+[
+  {
+    "name": "m2-pair-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["wait", 400],
+      ["shot", "intro"],
+      ["click", "Pair a computer"],
+      ["click", "Scan the code"],
+      ["wait", 1400],
+      ["wait", 400],
+      ["shot", "confirm"],
+      ["clickSel", ".welcome__actions .btn--primary"],
+      ["wait", 1100],
+      ["wait", 400],
+      ["shot", "grants"],
+      ["click", "Continue"],
+      ["wait", 900]
+    ],
+    "path": "/?unpaired"
+  },
+  {
+    "name": "m2-pair-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["wait", 400],
+      ["shot", "intro"],
+      ["click", "Pair a computer"],
+      ["click", "Scan the code"],
+      ["wait", 1400],
+      ["wait", 400],
+      ["shot", "confirm"],
+      ["clickSel", ".welcome__actions .btn--primary"],
+      ["wait", 1100],
+      ["wait", 400],
+      ["shot", "grants"],
+      ["click", "Continue"],
+      ["wait", 900]
+    ],
+    "path": "/?unpaired",
+    "dark": true
+  },
+  {
+    "name": "m2-pair-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["wait", 400],
+      ["shot", "intro"],
+      ["click", "Pair a computer"],
+      ["click", "Scan the code"],
+      ["wait", 1400],
+      ["wait", 400],
+      ["shot", "confirm"],
+      ["clickSel", ".welcome__actions .btn--primary"],
+      ["wait", 1100],
+      ["wait", 400],
+      ["shot", "grants"],
+      ["click", "Continue"],
+      ["wait", 900]
+    ],
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-pair-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["wait", 400],
+      ["shot", "intro"],
+      ["click", "Pair a computer"],
+      ["click", "Scan the code"],
+      ["wait", 1400],
+      ["wait", 400],
+      ["shot", "confirm"],
+      ["clickSel", ".welcome__actions .btn--primary"],
+      ["wait", 1100],
+      ["wait", 400],
+      ["shot", "grants"],
+      ["click", "Continue"],
+      ["wait", 900]
+    ],
+    "path": "/?unpaired",
+    "width": 1280,
+    "height": 800
+  }
+]

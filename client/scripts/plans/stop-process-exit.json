@@ -1,0 +1,489 @@
+[
+  {
+    "name": "U16-1-stop-process-ended",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "const s=window.__sim; s.stops.ignore(s.host.tasks.find(t=>t.kind==='computer_use'&&t.state==='working').task_id,false,true)"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        6000
+      ],
+      [
+        "click",
+        "What happened"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const r=document.querySelector('.screen');if(!r?.textContent.includes('Agent process ended on the computer'))throw Error('Missing process receipt');document.querySelector('.work-body .notice')?.scrollIntoView({block:'center'});const heading=[...document.querySelectorAll('h2,h3')].find(e=>e.textContent==='Stop receipt');heading?.scrollIntoView({block:'start'});"
+      ]
+    ]
+  },
+  {
+    "name": "U16-2-preview-queued_for_boundary",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('control');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        "dialog[open] button[aria-label=\"Close\"]"
+      ],
+      [
+        "eval",
+        "(async()=>{const {previewDrafts}=await import('/src/screens/control/previewDrafts.ts');const {previewDeliveries}=await import('/src/screens/control/previewDelivery.ts');const h=window.__sim.host;let d;for(const p of h.previews){d=(await previewDrafts.list('sim-studio',p.preview_id))[0];if(d)break;}if(!d)throw Error('Picture missing');const task=h.tasks.find(t=>t.task_id===d.taskId);task.title='wait';task.state=\"queued_for_boundary\"==='failed'?'interrupted':'working';h.emit({type:'task_upserted',task:{...task}});previewDeliveries('sim-studio').set({[d.id]:{taskId:task.task_id,taskTitle:'wait',at:Date.now(),bundleId:'shot-bundle',revision:1,state:'host_accepted'}});h.emit({type:'timeline_appended',task_id:task.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:task.current_run,item:{kind:'user_message',text:'Please review this picture',delivery:\"queued_for_boundary\",bundle:{bundle_id:'shot-bundle',revision:1,sources:[],marks:[],comments:[],steps:[],general_note:null,speech:null}}}});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.preview-draft p')].find(e=>e.textContent.includes(\"Waiting to send to wait\"));if(!p)throw Error('Wrong picture status');p.scrollIntoView({block:'center'});if(false && !p.closest('.preview-draft').textContent.includes('Send again'))throw Error('No resend action');"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U16-2-preview-failed",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('control');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        "dialog[open] button[aria-label=\"Close\"]"
+      ],
+      [
+        "eval",
+        "(async()=>{const {previewDrafts}=await import('/src/screens/control/previewDrafts.ts');const {previewDeliveries}=await import('/src/screens/control/previewDelivery.ts');const h=window.__sim.host;let d;for(const p of h.previews){d=(await previewDrafts.list('sim-studio',p.preview_id))[0];if(d)break;}if(!d)throw Error('Picture missing');const task=h.tasks.find(t=>t.task_id===d.taskId);task.title='wait';task.state=\"failed\"==='failed'?'interrupted':'working';h.emit({type:'task_upserted',task:{...task}});previewDeliveries('sim-studio').set({[d.id]:{taskId:task.task_id,taskTitle:'wait',at:Date.now(),bundleId:'shot-bundle',revision:1,state:'host_accepted'}});h.emit({type:'timeline_appended',task_id:task.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:task.current_run,item:{kind:'user_message',text:'Please review this picture',delivery:\"failed\",bundle:{bundle_id:'shot-bundle',revision:1,sources:[],marks:[],comments:[],steps:[],general_note:null,speech:null}}}});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.preview-draft p')].find(e=>e.textContent.includes(\"Not delivered to wait \\u00b7 task stopped\"));if(!p)throw Error('Wrong picture status');p.scrollIntoView({block:'center'});if(true && !p.closest('.preview-draft').textContent.includes('Send again'))throw Error('No resend action');"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U16-2-preview-cancelled",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('control');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        "dialog[open] button[aria-label=\"Close\"]"
+      ],
+      [
+        "eval",
+        "(async()=>{const {previewDrafts}=await import('/src/screens/control/previewDrafts.ts');const {previewDeliveries}=await import('/src/screens/control/previewDelivery.ts');const h=window.__sim.host;let d;for(const p of h.previews){d=(await previewDrafts.list('sim-studio',p.preview_id))[0];if(d)break;}if(!d)throw Error('Picture missing');const task=h.tasks.find(t=>t.task_id===d.taskId);task.title='wait';task.state=\"cancelled\"==='failed'?'interrupted':'working';h.emit({type:'task_upserted',task:{...task}});previewDeliveries('sim-studio').set({[d.id]:{taskId:task.task_id,taskTitle:'wait',at:Date.now(),bundleId:'shot-bundle',revision:1,state:'host_accepted'}});h.emit({type:'timeline_appended',task_id:task.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:task.current_run,item:{kind:'user_message',text:'Please review this picture',delivery:\"cancelled\",bundle:{bundle_id:'shot-bundle',revision:1,sources:[],marks:[],comments:[],steps:[],general_note:null,speech:null}}}});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.preview-draft p')].find(e=>e.textContent.includes(\"Not delivered to wait \\u00b7 cancelled\"));if(!p)throw Error('Wrong picture status');p.scrollIntoView({block:'center'});if(true && !p.closest('.preview-draft').textContent.includes('Send again'))throw Error('No resend action');"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U16-2-preview-native_delivered",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('control');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        "dialog[open] button[aria-label=\"Close\"]"
+      ],
+      [
+        "eval",
+        "(async()=>{const {previewDrafts}=await import('/src/screens/control/previewDrafts.ts');const {previewDeliveries}=await import('/src/screens/control/previewDelivery.ts');const h=window.__sim.host;let d;for(const p of h.previews){d=(await previewDrafts.list('sim-studio',p.preview_id))[0];if(d)break;}if(!d)throw Error('Picture missing');const task=h.tasks.find(t=>t.task_id===d.taskId);task.title='wait';task.state=\"native_delivered\"==='failed'?'interrupted':'working';h.emit({type:'task_upserted',task:{...task}});previewDeliveries('sim-studio').set({[d.id]:{taskId:task.task_id,taskTitle:'wait',at:Date.now(),bundleId:'shot-bundle',revision:1,state:'host_accepted'}});h.emit({type:'timeline_appended',task_id:task.task_id,item:{seq:h.seq+1,at:Date.now(),run_id:task.current_run,item:{kind:'user_message',text:'Please review this picture',delivery:\"native_delivered\",bundle:{bundle_id:'shot-bundle',revision:1,sources:[],marks:[],comments:[],steps:[],general_note:null,speech:null}}}});})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.preview-draft p')].find(e=>e.textContent.includes(\"Sent with markup to wait\"));if(!p)throw Error('Wrong picture status');p.scrollIntoView({block:'center'});if(false && !p.closest('.preview-draft').textContent.includes('Send again'))throw Error('No resend action');"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U16-3-picture-targets",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('control');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const {ids}=await import('/src/dev/sim/scenario.ts');const old=h.tasks.find(t=>t.task_id===ids.tNotes);Object.assign(old,{title:'wait',state:'interrupted',updated_at:Date.now()-600000});const running={...old,task_id:'running-wait',state:'working',updated_at:Date.now()};const recent={...old,task_id:'finished-wait',state:'completed',updated_at:Date.now()-300000};h.tasks.push(running,recent);for(const task of [old,running,recent])h.emit({type:'task_upserted',task});})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        "dialog[open] button[aria-label=\"Close\"]"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.preview-draft').scrollIntoView({block:'center'});if(!document.querySelector('.preview-draft').textContent.includes('Selected'))throw Error('Missing selection explanation');"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U16-4-leftover-pointer",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        "dialog[open] .btn--primary"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Box\"]"
+      ],
+      [
+        "eval",
+        "(async()=>{const s=document.querySelector('.an-canvas svg');const r=s.getBoundingClientRect();const i=s.querySelector('image');const x=r.x+Number(i.getAttribute('x'))+Number(i.getAttribute('width'))*.2;const y=r.y+Number(i.getAttribute('y'))+Number(i.getAttribute('height'))*.2;s.setPointerCapture=()=>{};for(const [type,id,primary,dx,dy] of [['pointerdown',41,false,0,0],['pointerdown',42,true,0,0],['pointermove',42,true,80,50],['pointerup',42,true,80,50]]){s.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:'touch',isPrimary:primary,clientX:x+dx,clientY:y+dy}));await new Promise(r=>setTimeout(r,30));}if(!s.getAttribute('aria-label').includes('1 marks'))throw Error('Primary touch did not recover');})()"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U16-6-terminal-ended-1280",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const status=document.querySelector('.terminal-recovery');if(!status.closest('.screen__inner'))throw Error('Status is outside column');"
+      ],
+      [
+        "shot",
+        "attached"
+      ],
+      [
+        "eval",
+        "window.__sim.host.terminals = []; window.__sim.control.dropTerminal(60000)"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Reconnect terminal"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.terminal-recovery button')].find(b=>b.textContent.includes('Open a new terminal'));const r=b?.getBoundingClientRect();if(!r||r.top<0||r.bottom>innerHeight)throw Error('Recovery outside viewport');if(!b.closest('.screen__inner'))throw Error('Recovery outside column');"
+      ]
+    ]
+  },
+  {
+    "name": "U16-6-terminal-ended-844",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const status=document.querySelector('.terminal-recovery');if(!status.closest('.screen__inner'))throw Error('Status is outside column');"
+      ],
+      [
+        "shot",
+        "attached"
+      ],
+      [
+        "eval",
+        "window.__sim.host.terminals = []; window.__sim.control.dropTerminal(60000)"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Reconnect terminal"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.terminal-recovery button')].find(b=>b.textContent.includes('Open a new terminal'));const r=b?.getBoundingClientRect();if(!r||r.top<0||r.bottom>innerHeight)throw Error('Recovery outside viewport');if(!b.closest('.screen__inner'))throw Error('Recovery outside column');"
+      ]
+    ]
+  }
+]

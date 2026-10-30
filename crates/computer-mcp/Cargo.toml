@@ -1,0 +1,37 @@
+[package]
+name = "computer-mcp"
+description = "Local MCP computer-use facade bound to broker-issued leases"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+protocol.workspace = true
+ports.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+harness-claude = { path = "../harness-claude" }
+test-support = { path = "../test-support" }
+tempfile = "3.23.0"
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "computer-mcp"
+path = "src/main.rs"
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "1.1.2", features = ["process"] }
+
+[target.'cfg(windows)'.dependencies]
+interprocess = { version = "2.4.4", features = ["tokio"] }
+widestring = "1.2.1"

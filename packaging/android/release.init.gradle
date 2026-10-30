@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: Apache-2.0
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+
+// This init script is supplied only to the staged release build, never installed
+// into a user's Gradle configuration. No signing credential is read.
+gradle.beforeProject { project ->
+    project.pluginManager.withPlugin('com.android.application') {
+        project.extensions.getByName('androidComponents').finalizeDsl { android ->
+            android.buildTypes.getByName('release').signingConfig = null
+            android.sourceSets.getByName('main').assets.srcDir(System.getenv('RELEASE_ANDROID_ASSETS'))
+        }
+    }
+}
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.findProject(':app')
+    if (app == null) return // Included buildSrc has no application project.
+    app.tasks.register('writeReleaseLicenseReport') {
+        doLast {
+            def configuration = app.configurations.getByName('universalReleaseRuntimeClasspath')
+            def artifacts = configuration.incoming.artifactView {
+                componentFilter { identifier -> identifier instanceof ModuleComponentIdentifier }
+            }.artifacts.artifacts
+            def rows = configuration.incoming.resolutionResult.allComponents.findAll {
+                it.id instanceof ModuleComponentIdentifier
+            }.collect { component ->
+                def id = component.id
+                def files = artifacts.findAll {
+                    it.id.componentIdentifier == id
+                }.collect { it.file.absolutePath }.sort()
+                def deps = component.dependencies.findAll {
+                    it instanceof ResolvedDependencyResult && it.selected.id instanceof ModuleComponentIdentifier
+                }.collect {
+                    def dep = it.selected.id
+                    "pkg:maven/${dep.group}/${dep.module}@${dep.version}"
+                }.sort()
+                [group: id.group, name: id.module, version: id.version, artifacts: files, dependencies: deps]
+            }.sort { a, b -> "${a.group}:${a.name}:${a.version}" <=> "${b.group}:${b.name}:${b.version}" }
+            def report = new File(System.getenv('RELEASE_GRADLE_REPORT'))
+            report.parentFile.mkdirs()
+            report.text = JsonOutput.prettyPrint(JsonOutput.toJson([
+                configuration: 'releaseRuntimeClasspath', variant: configuration.name, components: rows
+            ])) + '\n'
+        }
+    }
+}

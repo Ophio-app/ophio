@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.an-clip-review {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--s4);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.an-clip-review h3,
+.an-clip-facts {
+  margin: 0;
+}
+.an-clip-facts {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.an-clip-identity summary,
+.an-repro-range summary {
+  min-height: var(--target);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+.an-clip-identity dd {
+  margin: var(--s1) 0 var(--s3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+.an-clip-review .an-video {
+  max-height: 260px;
+}
+.an-repro-range .field {
+  min-width: 0;
+}
+.an-repro-range .field__input {
+  width: 100%;
+  min-width: 0;
+}
+.an-clip-busy {
+  display: grid;
+  gap: var(--s2);
+}
+.an-clip-busy p {
+  margin: 0;
+}

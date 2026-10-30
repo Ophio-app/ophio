@@ -1,0 +1,468 @@
+[
+  {
+    "name": "m2-annotate-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "click",
+        "Attach",
+        {
+          "exact": true
+        }
+      ],
+      [
+        "click",
+        "Mark up",
+        {
+          "starts": true,
+          "in": "dialog"
+        }
+      ],
+      [
+        "click",
+        "Add source"
+      ],
+      [
+        "click",
+        "Capture the computer"
+      ],
+      [
+        "click",
+        "DP-1"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Box\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add box in center');if(!b)throw Error('No Add box in center key');b.click()})()"
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "marks"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Make the labels legible."
+      ],
+      [
+        "click",
+        "Target A"
+      ],
+      [
+        "click",
+        "Target B"
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(!window.__sim.host.journal.some(e=>e.event.type==='timeline_appended'&&e.event.item.item.kind==='user_message'&&e.event.item.item.bundle?.marks.length===2)) throw Error('Annotated message was not admitted')"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.an-screen:not(.is-hidden *)')&&document.querySelector('.route:not(.is-hidden) .an-screen')) throw Error('Still in the annotation editor after sending')"
+      ],
+      [
+        "shot",
+        "sent"
+      ]
+    ]
+  },
+  {
+    "name": "m2-annotate-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "click",
+        "Attach",
+        {
+          "exact": true
+        }
+      ],
+      [
+        "click",
+        "Mark up",
+        {
+          "starts": true,
+          "in": "dialog"
+        }
+      ],
+      [
+        "click",
+        "Add source"
+      ],
+      [
+        "click",
+        "Capture the computer"
+      ],
+      [
+        "click",
+        "DP-1"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Box\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add box in center');if(!b)throw Error('No Add box in center key');b.click()})()"
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "marks"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Make the labels legible."
+      ],
+      [
+        "click",
+        "Target A"
+      ],
+      [
+        "click",
+        "Target B"
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(!window.__sim.host.journal.some(e=>e.event.type==='timeline_appended'&&e.event.item.item.kind==='user_message'&&e.event.item.item.bundle?.marks.length===2)) throw Error('Annotated message was not admitted')"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.an-screen:not(.is-hidden *)')&&document.querySelector('.route:not(.is-hidden) .an-screen')) throw Error('Still in the annotation editor after sending')"
+      ],
+      [
+        "shot",
+        "sent"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-annotate-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "click",
+        "Attach",
+        {
+          "exact": true
+        }
+      ],
+      [
+        "click",
+        "Mark up",
+        {
+          "starts": true,
+          "in": "dialog"
+        }
+      ],
+      [
+        "click",
+        "Add source"
+      ],
+      [
+        "click",
+        "Capture the computer"
+      ],
+      [
+        "click",
+        "DP-1"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Box\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add box in center');if(!b)throw Error('No Add box in center key');b.click()})()"
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "marks"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Make the labels legible."
+      ],
+      [
+        "click",
+        "Target A"
+      ],
+      [
+        "click",
+        "Target B"
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(!window.__sim.host.journal.some(e=>e.event.type==='timeline_appended'&&e.event.item.item.kind==='user_message'&&e.event.item.item.bundle?.marks.length===2)) throw Error('Annotated message was not admitted')"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.an-screen:not(.is-hidden *)')&&document.querySelector('.route:not(.is-hidden) .an-screen')) throw Error('Still in the annotation editor after sending')"
+      ],
+      [
+        "shot",
+        "sent"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-annotate-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "click",
+        "Attach",
+        {
+          "exact": true
+        }
+      ],
+      [
+        "click",
+        "Mark up",
+        {
+          "starts": true,
+          "in": "dialog"
+        }
+      ],
+      [
+        "click",
+        "Add source"
+      ],
+      [
+        "click",
+        "Capture the computer"
+      ],
+      [
+        "click",
+        "DP-1"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Box\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add box in center');if(!b)throw Error('No Add box in center key');b.click()})()"
+      ],
+      [
+        "clickSel",
+        ".an-tools [aria-label=\"Pin\"]"
+      ],
+      [
+        "eval",
+        "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "marks"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Make the labels legible."
+      ],
+      [
+        "click",
+        "Target A"
+      ],
+      [
+        "click",
+        "Target B"
+      ],
+      [
+        "click",
+        "Add comment"
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(!window.__sim.host.journal.some(e=>e.event.type==='timeline_appended'&&e.event.item.item.kind==='user_message'&&e.event.item.item.bundle?.marks.length===2)) throw Error('Annotated message was not admitted')"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.an-screen:not(.is-hidden *)')&&document.querySelector('.route:not(.is-hidden) .an-screen')) throw Error('Still in the annotation editor after sending')"
+      ],
+      [
+        "shot",
+        "sent"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

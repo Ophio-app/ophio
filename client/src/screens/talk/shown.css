@@ -1,0 +1,128 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* What an agent showed: it sits with the agent's words, quieter than a reply. */
+.talk-shown {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+  margin: 0;
+}
+.talk-shown__media,
+.talk-shown__poster {
+  display: block;
+  width: 100%;
+  max-height: 22rem;
+  object-fit: contain;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.talk-shown__poster {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.talk-shown__poster[role="status"] {
+  cursor: default;
+}
+.talk-shown__poster svg {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.6rem;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+}
+.talk-shown__caption {
+  display: grid;
+  gap: var(--s1);
+  margin: 0;
+}
+.talk-shown__text {
+  color: var(--ink);
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+.talk-shown__meta {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.talk-shown__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.talk-shown--ask {
+  padding: var(--s3) var(--s4);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+/* The task's pictures and videos. */
+.talk-media {
+  display: grid;
+  gap: var(--s3);
+  min-width: 0;
+}
+.talk-media__back {
+  justify-self: start;
+}
+.talk-media__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.talk-media__tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.talk-media__thumb {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  /* A screenshot reads from its top left. */
+  object-position: top left;
+  background: var(--surface-sunken);
+  color: var(--ink-2);
+}
+.talk-media__thumb--video svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.talk-media__tag {
+  position: absolute;
+  left: var(--s1);
+  bottom: var(--s1);
+  padding: 0 var(--s1);
+  border-radius: var(--r-sm);
+  background: var(--surface-raised);
+  color: var(--ink-2);
+  font-size: var(--text-xs);
+}
+/* The agent's questions about its preview, and the answers waiting to go. */
+.talk-shown__asked {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+.talk-shown__asked > p {
+  margin: 0;
+}
+.talk-shown__asks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}

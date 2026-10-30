@@ -1,0 +1,190 @@
+[
+  {
+    "name": "m3-input-unknown-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 500],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 600],
+      ["click", "Enable control"],
+      ["wait", 400],
+      ["clickSel", "[role=radio]:has-text('Direct')"],
+      ["eval", "window.__sim.control.uncertainInput()"],
+      ["clickSel", ".picture-surface"],
+      ["wait", 700],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Input owner unknown'))throw Error('Unconfirmed input lost its unknown state');if(window.__sim.host.control.find(v=>v.target_id===window.__sim.host.targets.find(t=>t.label==='HDMI-A-1').target_id)?.input_state!=='unknown')throw Error('Control was not fenced')"
+      ],
+      ["shot", "unknown"]
+    ]
+  },
+  {
+    "name": "m3-publication-unknown-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 400],
+      ["click", "Transfers"],
+      ["wait", 400],
+      ["clickSel", "button:has-text('Text')"],
+      ["fill", "File name", "review-note.txt"],
+      ["fill", "File text", "An uncertain publication."],
+      ["eval", "window.__sim.transfers.interruptPublication()"],
+      ["click", "Send"],
+      ["wait", 1100],
+      [
+        "eval",
+        "const row=[...document.querySelectorAll('.transfer-row')].find(e=>e.textContent.includes('review-note.txt'));if(!row)throw Error('Missing transfer');row.scrollIntoView({block:'center'});if(!row.textContent.includes('Check on the computer')||row.textContent.includes('Verified'))throw Error('Publication is not shown as unknown')"
+      ],
+      ["shot", "unknown"]
+    ]
+  },
+  {
+    "name": "m3-input-unknown-large",
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 500],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 600],
+      ["click", "Enable control"],
+      ["wait", 400],
+      ["clickSel", "[role=radio]:has-text('Direct')"],
+      ["eval", "window.__sim.control.uncertainInput()"],
+      ["clickSel", ".picture-surface"],
+      ["wait", 700],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Input owner unknown'))throw Error('Unconfirmed input lost its unknown state');if(window.__sim.host.control.find(v=>v.target_id===window.__sim.host.targets.find(t=>t.label==='HDMI-A-1').target_id)?.input_state!=='unknown')throw Error('Control was not fenced')"
+      ],
+      ["shot", "unknown"]
+    ]
+  },
+  {
+    "name": "m3-publication-unknown-large",
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 400],
+      ["click", "Transfers"],
+      ["wait", 400],
+      ["clickSel", "button:has-text('Text')"],
+      ["fill", "File name", "review-note.txt"],
+      ["fill", "File text", "An uncertain publication."],
+      ["eval", "window.__sim.transfers.interruptPublication()"],
+      ["click", "Send"],
+      ["wait", 1100],
+      [
+        "eval",
+        "const row=[...document.querySelectorAll('.transfer-row')].find(e=>e.textContent.includes('review-note.txt'));if(!row)throw Error('Missing transfer');row.scrollIntoView({block:'center'});if(!row.textContent.includes('Check on the computer')||row.textContent.includes('Verified'))throw Error('Publication is not shown as unknown')"
+      ],
+      ["shot", "unknown"]
+    ]
+  },
+  {
+    "name": "m3-input-unknown-dark",
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 500],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 600],
+      ["click", "Enable control"],
+      ["wait", 400],
+      ["clickSel", "[role=radio]:has-text('Direct')"],
+      ["eval", "window.__sim.control.uncertainInput()"],
+      ["clickSel", ".picture-surface"],
+      ["wait", 700],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Input owner unknown'))throw Error('Unconfirmed input lost its unknown state');if(window.__sim.host.control.find(v=>v.target_id===window.__sim.host.targets.find(t=>t.label==='HDMI-A-1').target_id)?.input_state!=='unknown')throw Error('Control was not fenced')"
+      ],
+      ["shot", "unknown"]
+    ]
+  },
+  {
+    "name": "m3-publication-unknown-dark",
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 400],
+      ["click", "Transfers"],
+      ["wait", 400],
+      ["clickSel", "button:has-text('Text')"],
+      ["fill", "File name", "review-note.txt"],
+      ["fill", "File text", "An uncertain publication."],
+      ["eval", "window.__sim.transfers.interruptPublication()"],
+      ["click", "Send"],
+      ["wait", 1100],
+      [
+        "eval",
+        "const row=[...document.querySelectorAll('.transfer-row')].find(e=>e.textContent.includes('review-note.txt'));if(!row)throw Error('Missing transfer');row.scrollIntoView({block:'center'});if(!row.textContent.includes('Check on the computer')||row.textContent.includes('Verified'))throw Error('Publication is not shown as unknown')"
+      ],
+      ["shot", "unknown"]
+    ]
+  },
+  {
+    "name": "m3-input-unknown-wide",
+    "scale": 1,
+    "settle": 900,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 500],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 600],
+      ["click", "Enable control"],
+      ["wait", 400],
+      ["clickSel", "[role=radio]:has-text('Direct')"],
+      ["eval", "window.__sim.control.uncertainInput()"],
+      ["clickSel", ".picture-surface"],
+      ["wait", 700],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Input owner unknown'))throw Error('Unconfirmed input lost its unknown state');if(window.__sim.host.control.find(v=>v.target_id===window.__sim.host.targets.find(t=>t.label==='HDMI-A-1').target_id)?.input_state!=='unknown')throw Error('Control was not fenced')"
+      ],
+      ["shot", "unknown"]
+    ]
+  },
+  {
+    "name": "m3-publication-unknown-wide",
+    "scale": 1,
+    "settle": 900,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 400],
+      ["click", "Transfers"],
+      ["wait", 400],
+      ["clickSel", "button:has-text('Text')"],
+      ["fill", "File name", "review-note.txt"],
+      ["fill", "File text", "An uncertain publication."],
+      ["eval", "window.__sim.transfers.interruptPublication()"],
+      ["click", "Send"],
+      ["wait", 1100],
+      [
+        "eval",
+        "const row=[...document.querySelectorAll('.transfer-row')].find(e=>e.textContent.includes('review-note.txt'));if(!row)throw Error('Missing transfer');row.scrollIntoView({block:'center'});if(!row.textContent.includes('Check on the computer')||row.textContent.includes('Verified'))throw Error('Publication is not shown as unknown')"
+      ],
+      ["shot", "unknown"]
+    ]
+  }
+]

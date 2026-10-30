@@ -1,0 +1,312 @@
+[
+  {
+    "name": "m2-desktop-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(window.__sim.control.inputs().length) throw Error('Opening sent input')"
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "[role=radio]:has-text('Direct')"
+      ],
+      [
+        "clickSel",
+        ".picture-surface"
+      ],
+      [
+        "eval",
+        "const c=window.__sim.control.inputs().filter(x=>x.action.action==='click'); if(c.length!==1 || Math.abs(c[0].action.at.x-.5)>.02 || Math.abs(c[0].action.at.y-.5)>.02) throw Error('Wrong click coordinates')"
+      ],
+      [
+        "shot",
+        "click"
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "A saved input draft"
+      ],
+      [
+        "shot",
+        "draft"
+      ],
+      [
+        "click",
+        "Leave control"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.control.some(x=>x.lease?.owner.kind==='human' && x.lease.state==='active')) throw Error('Lease not released')"
+      ]
+    ]
+  },
+  {
+    "name": "m2-desktop-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(window.__sim.control.inputs().length) throw Error('Opening sent input')"
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "[role=radio]:has-text('Direct')"
+      ],
+      [
+        "clickSel",
+        ".picture-surface"
+      ],
+      [
+        "eval",
+        "const c=window.__sim.control.inputs().filter(x=>x.action.action==='click'); if(c.length!==1 || Math.abs(c[0].action.at.x-.5)>.02 || Math.abs(c[0].action.at.y-.5)>.02) throw Error('Wrong click coordinates')"
+      ],
+      [
+        "shot",
+        "click"
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "A saved input draft"
+      ],
+      [
+        "shot",
+        "draft"
+      ],
+      [
+        "click",
+        "Leave control"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.control.some(x=>x.lease?.owner.kind==='human' && x.lease.state==='active')) throw Error('Lease not released')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-desktop-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(window.__sim.control.inputs().length) throw Error('Opening sent input')"
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "[role=radio]:has-text('Direct')"
+      ],
+      [
+        "clickSel",
+        ".picture-surface"
+      ],
+      [
+        "eval",
+        "const c=window.__sim.control.inputs().filter(x=>x.action.action==='click'); if(c.length!==1 || Math.abs(c[0].action.at.x-.5)>.02 || Math.abs(c[0].action.at.y-.5)>.02) throw Error('Wrong click coordinates')"
+      ],
+      [
+        "shot",
+        "click"
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "A saved input draft"
+      ],
+      [
+        "shot",
+        "draft"
+      ],
+      [
+        "click",
+        "Leave control"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.control.some(x=>x.lease?.owner.kind==='human' && x.lease.state==='active')) throw Error('Lease not released')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-desktop-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(window.__sim.control.inputs().length) throw Error('Opening sent input')"
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "[role=radio]:has-text('Direct')"
+      ],
+      [
+        "clickSel",
+        ".picture-surface"
+      ],
+      [
+        "eval",
+        "const c=window.__sim.control.inputs().filter(x=>x.action.action==='click'); if(c.length!==1 || Math.abs(c[0].action.at.x-.5)>.02 || Math.abs(c[0].action.at.y-.5)>.02) throw Error('Wrong click coordinates')"
+      ],
+      [
+        "shot",
+        "click"
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "A saved input draft"
+      ],
+      [
+        "shot",
+        "draft"
+      ],
+      [
+        "click",
+        "Leave control"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.control.some(x=>x.lease?.owner.kind==='human' && x.lease.state==='active')) throw Error('Lease not released')"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

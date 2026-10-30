@@ -1,0 +1,26 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-00000000002d",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "approve_channel_link",
+      "link_code": "synthetic"
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-00000000002d",
+    "status": "accepted",
+    "seq": 45,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

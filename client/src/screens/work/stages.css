@@ -1,0 +1,25 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.stages-current {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding-block: var(--s3);
+}
+.stages-current > svg { flex: none; width: 1.4rem; height: 1.4rem; margin-top: var(--s2); color: var(--ink-3); }
+.stages-current > div { min-width: 0; }
+.stages-current-name { font-size: var(--text-2xl); font-weight: 620; margin-block: var(--s1); }
+.stages-history { list-style: none; padding: 0; }
+.stages-history > li { border-top: 1px solid var(--line); padding: var(--s4) 0; display: grid; gap: var(--s1); }
+.stages-history-note { margin-top: var(--s2); font-size: var(--text-md); white-space: pre-wrap; }
+/* Positioned so the screen-reader-only "to" sits, and scrolls, with the line;
+   otherwise it is placed against the route, outside the scrolling body. */
+.stages-transition { position: relative; display: flex; flex-wrap: wrap; gap: var(--s2); align-items: baseline; font-size: var(--text-lg); }
+.stages-transition strong { font-weight: 620; }
+.stages-note { white-space: pre-wrap; padding: var(--s3); border-left: 2px solid var(--line-strong); }
+.stages-actions { display: grid; gap: var(--s2); max-width: var(--content-max); margin: auto; padding: var(--s3) var(--s4); }
+.stages-choices { border: 0; padding: 0; min-width: 0; }
+.stages-choices legend { font-weight: 600; margin-bottom: var(--s2); }
+.stages-choice { display: flex; align-items: center; gap: var(--s3); min-height: var(--target); padding: var(--s2) var(--s3); border-radius: var(--r-md); }
+.stages-choice:has(:checked) { background: var(--accent-soft); }
+.stages-choice > span { min-width: 0; }
+.stages-footer { width: 100%; display: grid; gap: var(--s2); }

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-link-close"
+description = "Enables the link_close command without any pre-configured scope."
+commands.allow = ["link_close"]
+
+[[permission]]
+identifier = "deny-link-close"
+description = "Denies the link_close command without any pre-configured scope."
+commands.deny = ["link_close"]

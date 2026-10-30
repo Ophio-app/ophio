@@ -1,0 +1,1264 @@
+[
+  {
+    "name": "fingerprint-360-text200-dark",
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const v=document.querySelector('.offer__fpvalue');if(v.textContent.replace(/\\s/g,'')!=='5F1C9A0E7D3B2A4C6E8F0A1B3C5D7E9F')throw Error('Fingerprint is not the first 128 bits');const lines=new Set([...v.children].map(s=>s.offsetTop));if(![2,4].includes(lines.size))throw Error('Fingerprint breaks unevenly: '+lines.size+' lines');v.closest('.offer').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "fingerprint-390-dark",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const v=document.querySelector('.offer__fpvalue');if(v.textContent.replace(/\\s/g,'')!=='5F1C9A0E7D3B2A4C6E8F0A1B3C5D7E9F')throw Error('Fingerprint is not the first 128 bits');const lines=new Set([...v.children].map(s=>s.offsetTop));if(![2,4].includes(lines.size))throw Error('Fingerprint breaks unevenly: '+lines.size+' lines');v.closest('.offer').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "fingerprint-360-text200-light",
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const v=document.querySelector('.offer__fpvalue');if(v.textContent.replace(/\\s/g,'')!=='5F1C9A0E7D3B2A4C6E8F0A1B3C5D7E9F')throw Error('Fingerprint is not the first 128 bits');const lines=new Set([...v.children].map(s=>s.offsetTop));if(![2,4].includes(lines.size))throw Error('Fingerprint breaks unevenly: '+lines.size+' lines');v.closest('.offer').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "fingerprint-390-light",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const v=document.querySelector('.offer__fpvalue');if(v.textContent.replace(/\\s/g,'')!=='5F1C9A0E7D3B2A4C6E8F0A1B3C5D7E9F')throw Error('Fingerprint is not the first 128 bits');const lines=new Set([...v.children].map(s=>s.offsetTop));if(![2,4].includes(lines.size))throw Error('Fingerprint breaks unevenly: '+lines.size+' lines');v.closest('.offer').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "fingerprint-tablet-light",
+    "path": "/?unpaired",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const v=document.querySelector('.offer__fpvalue');if(v.textContent.replace(/\\s/g,'')!=='5F1C9A0E7D3B2A4C6E8F0A1B3C5D7E9F')throw Error('Fingerprint is not the first 128 bits');const lines=new Set([...v.children].map(s=>s.offsetTop));if(![2,4].includes(lines.size))throw Error('Fingerprint breaks unevenly: '+lines.size+' lines');v.closest('.offer').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "fingerprint-landscape-dark",
+    "path": "/?unpaired",
+    "width": 844,
+    "height": 390,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const v=document.querySelector('.offer__fpvalue');if(v.textContent.replace(/\\s/g,'')!=='5F1C9A0E7D3B2A4C6E8F0A1B3C5D7E9F')throw Error('Fingerprint is not the first 128 bits');const lines=new Set([...v.children].map(s=>s.offsetTop));if(![2,4].includes(lines.size))throw Error('Fingerprint breaks unevenly: '+lines.size+' lines');v.closest('.offer').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "waiting-360-text200-dark",
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ]
+    ]
+  },
+  {
+    "name": "waiting-390-dark",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ]
+    ]
+  },
+  {
+    "name": "waiting-360-text200-light",
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ]
+    ]
+  },
+  {
+    "name": "waiting-390-light",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ]
+    ]
+  },
+  {
+    "name": "waiting-tablet-dark",
+    "path": "/?unpaired",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ]
+    ]
+  },
+  {
+    "name": "waiting-landscape-light",
+    "path": "/?unpaired",
+    "width": 844,
+    "height": 390,
+    "text": 1,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ]
+    ]
+  },
+  {
+    "name": "refused-390-dark",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ],
+      [
+        "eval",
+        "window.__sim.pairing.refuse()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "refused-360-text200-light",
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ],
+      [
+        "eval",
+        "window.__sim.pairing.refuse()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "refused-landscape-dark",
+    "path": "/?unpaired",
+    "width": 844,
+    "height": 390,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ],
+      [
+        "eval",
+        "window.__sim.pairing.refuse()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "expired-390-dark",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ],
+      [
+        "eval",
+        "window.__sim.pairing.expire()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "expired-360-text200-light",
+    "path": "/?unpaired",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ],
+      [
+        "eval",
+        "window.__sim.pairing.expire()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "expired-landscape-dark",
+    "path": "/?unpaired",
+    "width": 844,
+    "height": 390,
+    "text": 1,
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ],
+      [
+        "eval",
+        "window.__sim.pairing.expire()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "cancelled-390-light",
+    "path": "/?unpaired",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "dark": false,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pairing.hold()"
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "click",
+        "Pair"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.pair-code').textContent!=='482 913')throw Error('Code missing')"
+      ],
+      [
+        "click",
+        "Cancel"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.offer__fpvalue'))throw Error('Cancel did not return to the form')"
+      ]
+    ]
+  },
+  {
+    "name": "replace-360-text200-dark",
+    "scale": 1,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"library\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}, {\\\"screen\\\": \\\"connections\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(!again||!again.disabled)throw Error('Pair again is not held until the person chooses to replace');document.querySelector('.welcome .notice').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "notice"
+      ],
+      [
+        "clickSel",
+        ".welcome__check input"
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(again.disabled)throw Error('Replacing did not enable Pair again');document.querySelector('.welcome__check').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "replace-390-light",
+    "scale": 1,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"library\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}, {\\\"screen\\\": \\\"connections\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(!again||!again.disabled)throw Error('Pair again is not held until the person chooses to replace');document.querySelector('.welcome .notice').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "notice"
+      ],
+      [
+        "clickSel",
+        ".welcome__check input"
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(again.disabled)throw Error('Replacing did not enable Pair again');document.querySelector('.welcome__check').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "replace-390-dark",
+    "scale": 1,
+    "width": 390,
+    "height": 844,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"library\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}, {\\\"screen\\\": \\\"connections\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(!again||!again.disabled)throw Error('Pair again is not held until the person chooses to replace');document.querySelector('.welcome .notice').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "notice"
+      ],
+      [
+        "clickSel",
+        ".welcome__check input"
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(again.disabled)throw Error('Replacing did not enable Pair again');document.querySelector('.welcome__check').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "replace-tablet-light",
+    "scale": 1,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"library\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}, {\\\"screen\\\": \\\"connections\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(!again||!again.disabled)throw Error('Pair again is not held until the person chooses to replace');document.querySelector('.welcome .notice').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "notice"
+      ],
+      [
+        "clickSel",
+        ".welcome__check input"
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(again.disabled)throw Error('Replacing did not enable Pair again');document.querySelector('.welcome__check').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "replace-landscape-dark",
+    "scale": 1,
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"library\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}, {\\\"screen\\\": \\\"connections\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(!again||!again.disabled)throw Error('Pair again is not held until the person chooses to replace');document.querySelector('.welcome .notice').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "notice"
+      ],
+      [
+        "clickSel",
+        ".welcome__check input"
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(again.disabled)throw Error('Replacing did not enable Pair again');document.querySelector('.welcome__check').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "replace-360-text200-light",
+    "scale": 1,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"library\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}, {\\\"screen\\\": \\\"connections\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1700
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(!again||!again.disabled)throw Error('Pair again is not held until the person chooses to replace');document.querySelector('.welcome .notice').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "notice"
+      ],
+      [
+        "clickSel",
+        ".welcome__check input"
+      ],
+      [
+        "eval",
+        "const again=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pair again');if(again.disabled)throw Error('Replacing did not enable Pair again');document.querySelector('.welcome__check').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "mismatch-360-text200-dark",
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.impostor()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "bar"
+      ],
+      [
+        "clickSel",
+        ".ctx__end .status"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Another device answered at studio’s address'))throw Error('Missing mismatch warning');document.querySelector('dialog .notice')?.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "mismatch-390-light",
+    "scale": 1,
+    "settle": 900,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.impostor()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "bar"
+      ],
+      [
+        "clickSel",
+        ".ctx__end .status"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Another device answered at studio’s address'))throw Error('Missing mismatch warning');document.querySelector('dialog .notice')?.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "mismatch-390-dark",
+    "scale": 1,
+    "settle": 900,
+    "width": 390,
+    "height": 844,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.impostor()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "bar"
+      ],
+      [
+        "clickSel",
+        ".ctx__end .status"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Another device answered at studio’s address'))throw Error('Missing mismatch warning');document.querySelector('dialog .notice')?.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "mismatch-tablet-light",
+    "scale": 1,
+    "settle": 900,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.impostor()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "bar"
+      ],
+      [
+        "clickSel",
+        ".ctx__end .status"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Another device answered at studio’s address'))throw Error('Missing mismatch warning');document.querySelector('dialog .notice')?.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "mismatch-landscape-dark",
+    "scale": 1,
+    "settle": 900,
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.impostor()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "bar"
+      ],
+      [
+        "clickSel",
+        ".ctx__end .status"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Another device answered at studio’s address'))throw Error('Missing mismatch warning');document.querySelector('dialog .notice')?.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "mismatch-360-text200-light",
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.impostor()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "bar"
+      ],
+      [
+        "clickSel",
+        ".ctx__end .status"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Another device answered at studio’s address'))throw Error('Missing mismatch warning');document.querySelector('dialog .notice')?.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "mismatch-recovered-390-light",
+    "scale": 1,
+    "settle": 900,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.impostor()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "clickSel",
+        ".ctx__end .status"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.online()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "if(document.body.textContent.includes('Another device answered'))throw Error('Warning stayed after the computer answered');if(!document.body.textContent.includes('Computer identity verified'))throw Error('Not verified again')"
+      ]
+    ]
+  }
+]

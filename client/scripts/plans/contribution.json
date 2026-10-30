@@ -1,0 +1,851 @@
+[
+  {
+    "name": "c01-tasks-waiting",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        800
+      ]
+    ]
+  },
+  {
+    "name": "c02-choose-folder",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "shot",
+        "before"
+      ],
+      [
+        "click",
+        "Choose a folder"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Notes",
+        {
+          "starts": true,
+          "in": "dialog",
+          "role": "radio"
+        }
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "c03-review",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ]
+    ]
+  },
+  {
+    "name": "c03-review-dark",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "dark": true,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ]
+    ]
+  },
+  {
+    "name": "c04-rules",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "shot",
+        "top"
+      ],
+      [
+        "clickSel",
+        ".contribute-check input"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.contribute-check').scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "c05-progress",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "eval",
+        "window.__sim.host.contribution.hold = true"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".contribute-check input"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Trust rules and get source"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "c06-ready",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".contribute-check input"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Trust rules and get source"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "wait",
+        5000
+      ]
+    ]
+  },
+  {
+    "name": "c06-ready-dark",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "dark": true,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".contribute-check input"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Trust rules and get source"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "wait",
+        5000
+      ]
+    ]
+  },
+  {
+    "name": "c07-canceled",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "eval",
+        "window.__sim.host.contribution.hold = true"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".contribute-check input"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Trust rules and get source"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Cancel"
+      ],
+      [
+        "wait",
+        2500
+      ]
+    ]
+  },
+  {
+    "name": "c08-conflict",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "eval",
+        "window.__sim.host.contribution.next.prepare = 'workspace_conflict'"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".contribute-check input"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Trust rules and get source"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "c09-expired",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "eval",
+        "window.__sim.host.contribution.next.review = 'expired'"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ]
+    ]
+  },
+  {
+    "name": "c10-untrusted",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "eval",
+        "window.__sim.host.contribution.next.prepare = 'untrusted_packet'"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".contribute-check input"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Trust rules and get source"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "c11-offline",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ]
+    ],
+    "allowErrors": [
+      ".*"
+    ]
+  },
+  {
+    "name": "c12-unknown",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "eval",
+        "window.__sim.host.contribution.next.review = 'future_state'"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ]
+    ]
+  },
+  {
+    "name": "c13-review-200pct",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "text": 2,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ]
+    ]
+  },
+  {
+    "name": "c14-review-320",
+    "path": "/?handoff",
+    "width": 320,
+    "height": 700,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ]
+    ]
+  },
+  {
+    "name": "c15-rules-320-200pct",
+    "path": "/?handoff",
+    "width": 320,
+    "height": 700,
+    "text": 2,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "c16-ready-200pct",
+    "path": "/?handoff",
+    "width": 412,
+    "height": 915,
+    "steps": [
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "localStorage.setItem('contribution-folders.v1', JSON.stringify({'0192f7a1-0000-7000-8000-00000000a001': '0192f7a1-0000-7000-8000-000000000903'}))"
+      ],
+      [
+        "nav",
+        "Tasks"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Open fixture-browser from Clankerhub"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Review rules"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".contribute-check input"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Trust rules and get source"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "wait",
+        5000
+      ]
+    ],
+    "text": 2
+  }
+]

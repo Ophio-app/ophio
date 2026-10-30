@@ -1,0 +1,194 @@
+[
+  {
+    "name": "U13-1-cross-computer",
+    "path": "/?two-computers",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "dark": false,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.computer.privateStep('0192f7a1-0000-7000-8000-000000000601', true)"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "click",
+        "Switch to spare"
+      ],
+      [
+        "click",
+        "Leave control and switch"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "clickSel",
+        ".handoff-banner summary"
+      ],
+      [
+        "click",
+        "Return to studio"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const s=JSON.parse(localStorage.getItem('ui.sim-studio')).state;if(s.tab!=='control'||s.stacks.control.at(-1).screen!=='computer_use'||s.stacks.control.at(-1).taskId!=='0192f7a1-0000-7000-8000-000000000204')throw Error('Wrong Return route');if(!document.querySelector('#private-step'))throw Error('Recovery missing');"
+      ],
+      [
+        "eval",
+        "document.querySelector('#private-step').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "U13-1-same-computer",
+    "path": "/?two-computers",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "dark": true,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.computer.privateStep('0192f7a1-0000-7000-8000-000000000601', true)"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "click",
+        "Switch to spare"
+      ],
+      [
+        "click",
+        "Leave control and switch"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "click",
+        "Switch to studio"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".handoff-banner summary"
+      ],
+      [
+        "click",
+        "Return to studio"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const s=JSON.parse(localStorage.getItem('ui.sim-studio')).state;if(s.tab!=='control'||s.stacks.control.at(-1).screen!=='computer_use'||s.stacks.control.at(-1).taskId!=='0192f7a1-0000-7000-8000-000000000204')throw Error('Wrong Return route');if(!document.querySelector('#private-step'))throw Error('Recovery missing');"
+      ],
+      [
+        "clickSel",
+        ".handoff-banner summary"
+      ],
+      [
+        "eval",
+        "document.querySelector('#private-step').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "U13-1-desktop-fallback",
+    "path": "/?two-computers",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>v.target_id==='0192f7a1-0000-7000-8000-000000000601'?{...v,lease:null,model_observation:null}:v);h.computer.privateStep('0192f7a1-0000-7000-8000-000000000601',true)"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "click",
+        "Switch to spare"
+      ],
+      [
+        "click",
+        "Leave control and switch"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "clickSel",
+        ".handoff-banner summary"
+      ],
+      [
+        "click",
+        "Return to studio"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const s=JSON.parse(localStorage.getItem('ui.sim-studio')).state;if(s.tab!=='control'||s.stacks.control.at(-1).screen!=='desktop'||s.stacks.control.at(-1).targetId!=='0192f7a1-0000-7000-8000-000000000601')throw Error('Wrong Desktop fallback');"
+      ]
+    ]
+  }
+]

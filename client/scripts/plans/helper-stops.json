@@ -1,0 +1,1059 @@
+[
+  {
+    "name": "P3-helper-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "before"
+      ],
+      [
+        "click",
+        "Stop helper · Check small-screen spacing"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-background-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.background(true)"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.pace(0.2)"
+      ],
+      [
+        "click",
+        "Stop · Check the checkout build"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "clickSel",
+        ".agents-screen article:has(h3:text-is('Check the checkout build')) button:has-text('Open receipt')"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Stop receipt\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-outside-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review Stop · Claude Code 4242"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Stop process group 4242"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-observed-id='outside-fixture']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-codex-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.shadowedCodex()"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Agent readiness\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-helper-dark",
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "before"
+      ],
+      [
+        "click",
+        "Stop helper · Check small-screen spacing"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-background-dark",
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.background(true)"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.pace(0.2)"
+      ],
+      [
+        "click",
+        "Stop · Check the checkout build"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "clickSel",
+        ".agents-screen article:has(h3:text-is('Check the checkout build')) button:has-text('Open receipt')"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Stop receipt\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-outside-dark",
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review Stop · Claude Code 4242"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Stop process group 4242"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-observed-id='outside-fixture']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-codex-dark",
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.shadowedCodex()"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Agent readiness\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-helper-large",
+    "scale": 1,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "before"
+      ],
+      [
+        "click",
+        "Stop helper · Check small-screen spacing"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-background-large",
+    "scale": 1,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.background(true)"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.pace(0.2)"
+      ],
+      [
+        "click",
+        "Stop · Check the checkout build"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "clickSel",
+        ".agents-screen article:has(h3:text-is('Check the checkout build')) button:has-text('Open receipt')"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Stop receipt\").closest('section').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "summary"
+      ],
+      [
+        "eval",
+        "document.querySelector('.route:not(.is-hidden) .agent-fact--still_active').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-outside-large",
+    "scale": 1,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review Stop · Claude Code 4242"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "eval",
+        "document.querySelector('.agent-outside-confirm__actions').scrollIntoView({block:'end'})"
+      ],
+      [
+        "shot",
+        "actions"
+      ],
+      [
+        "click",
+        "Stop process group 4242"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-observed-id='outside-fixture']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-codex-large",
+    "scale": 1,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.shadowedCodex()"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Agent readiness\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-helper-wide",
+    "scale": 1,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "before"
+      ],
+      [
+        "click",
+        "Stop helper · Check small-screen spacing"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-background-wide",
+    "scale": 1,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.background(true)"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.pace(0.2)"
+      ],
+      [
+        "click",
+        "Stop · Check the checkout build"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "clickSel",
+        ".agents-screen article:has(h3:text-is('Check the checkout build')) button:has-text('Open receipt')"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Stop receipt\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-outside-wide",
+    "scale": 1,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review Stop · Claude Code 4242"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Stop process group 4242"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-observed-id='outside-fixture']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-codex-wide",
+    "scale": 1,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.shadowedCodex()"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Agent readiness\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-helper-offline",
+    "width": 360,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Offline drill')"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-outside-offline",
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Offline drill')"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-observed-id='outside-fixture']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-observer-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.children.observed.error='The computer could not refresh outside sessions.'; window.__sim.host.children.observed.sessions.forEach(s=>s.stop={state:'temporarily_unavailable',reason:'Refresh this observation before stopping the process.'})"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Outside the app\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host; for(const t of h.tasks){t.state='archived'; t.current_run=null;h.emit({type:'task_upserted',task:t});} for(const r of h.runs){r.children=[];h.emit({type:'run_upserted',run:r})} for(const a of h.attention){a.resolved_at=Date.now();h.emit({type:'attention_resolved',attention_id:a.attention_id})} h.children.observed.sessions=[];"
+      ],
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) .section__title')].find(e=>e.textContent===\"Running and unresolved\").closest('section').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-permission-denied",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({tasks:false,terminal:false})"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-revoked",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "P3-landscape",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review Stop · Claude Code 4242"
+      ]
+    ]
+  },
+  {
+    "name": "P3-unknown-stop",
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const runCommand = window.__sim.host.command.bind(window.__sim.host); window.__sim.host.command = envelope => { if (envelope.body.command === 'stop_child') { window.__sim.offline('Connection lost before Stop was confirmed'); return new Promise(() => {}); } return runCommand(envelope); }"
+      ],
+      [
+        "click",
+        "Stop helper · Check small-screen spacing"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "document.querySelector(\".agents-screen [data-child-id='0192f7a1-0000-7000-8000-000000002101-child']\").scrollIntoView({block:'start'})"
+      ]
+    ]
+  }
+]

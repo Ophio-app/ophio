@@ -1,0 +1,313 @@
+[
+  {
+    "name": "active-light",
+    "dark": false,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "log",
+        "({height:document.querySelector('.safety-rail')?.getBoundingClientRect().height,text:document.querySelector('.safety-rail')?.innerText})"
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "paused-light",
+    "dark": false,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host; const v=h.control[0]; h.emit({type:'control_changed',view:{...v,input_state:'paused',desktop_lock:'unlocked',lease:v.lease?{...v.lease,state:'revoked'}:null}})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "log",
+        "({height:document.querySelector('.safety-rail')?.getBoundingClientRect().height,text:document.querySelector('.safety-rail')?.innerText})"
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "locked-light",
+    "dark": false,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host; const v=h.control[0]; h.emit({type:'control_changed',view:{...v,input_state:'paused',desktop_lock:'locked',lease:v.lease?{...v.lease,state:'revoked'}:null}})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "log",
+        "({height:document.querySelector('.safety-rail')?.getBoundingClientRect().height,text:document.querySelector('.safety-rail')?.innerText})"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.safety-rail').innerText.includes('Computer locked')) throw Error('Lock state missing')"
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "active-dark",
+    "dark": true,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "log",
+        "({height:document.querySelector('.safety-rail')?.getBoundingClientRect().height,text:document.querySelector('.safety-rail')?.innerText})"
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "paused-dark",
+    "dark": true,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host; const v=h.control[0]; h.emit({type:'control_changed',view:{...v,input_state:'paused',desktop_lock:'unlocked',lease:v.lease?{...v.lease,state:'revoked'}:null}})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "log",
+        "({height:document.querySelector('.safety-rail')?.getBoundingClientRect().height,text:document.querySelector('.safety-rail')?.innerText})"
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "locked-dark",
+    "dark": true,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host; const v=h.control[0]; h.emit({type:'control_changed',view:{...v,input_state:'paused',desktop_lock:'locked',lease:v.lease?{...v.lease,state:'revoked'}:null}})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "log",
+        "({height:document.querySelector('.safety-rail')?.getBoundingClientRect().height,text:document.querySelector('.safety-rail')?.innerText})"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.safety-rail').innerText.includes('Computer locked')) throw Error('Lock state missing')"
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 800
+  },
+  {
+    "name": "landscape",
+    "width": 800,
+    "height": 360,
+    "scale": 1,
+    "settle": 800
+  },
+  {
+    "name": "offline",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "empty",
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.targets=[];h.emit({type:'targets_changed',targets:[]});for(const t of h.tasks)h.emit({type:'task_upserted',task:{...t,state:'completed',current_run:null}})"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "removed-target",
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;const v=h.control[0];h.emit({type:'control_changed',view:{...v,input_state:'unknown'}});h.targets=h.targets.filter(t=>t.target_id!==v.target_id);h.emit({type:'targets_changed',targets:h.targets});h.emit({type:'control_changed',view:{...v,input_state:'unknown',desktop_lock:'locked'}})"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.safety-rail')?.innerText.includes('Input needs checking')) throw Error('Orphan safety warning')"
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "stop-action",
+    "steps": [
+      [
+        "clickSel",
+        ".safety-rail .named-stop__button"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "expanded-locked",
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.control.lock(true)"
+      ],
+      [
+        "clickSel",
+        ".safety-rail__toggle"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ],
+    "settle": 800
+  },
+  {
+    "name": "revoked",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "input-unknown",
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;const v=h.control[0];h.emit({type:'control_changed',view:{...v,input_state:'unknown',lease:v.lease?{...v.lease,state:'revoked'}:null}})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "sharing-ended-light",
+    "dark": false,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "clickSel",
+        "[aria-label^=\"Watch \"]"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.targets=h.targets.map(t=>({...t,capture:{state:'revoked'},input:{state:'revoked'}}));h.emit({type:'targets_changed',targets:h.targets});for(const v of h.control)h.emit({type:'control_changed',view:{...v,input_state:'paused',lease:v.lease?{...v.lease,state:'revoked'}:null}})"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(document.body.innerText.includes('Pair this device again')) throw Error('Incorrect recovery advice')"
+      ]
+    ]
+  },
+  {
+    "name": "sharing-ended-dark",
+    "dark": true,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "clickSel",
+        "[aria-label^=\"Watch \"]"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.targets=h.targets.map(t=>({...t,capture:{state:'revoked'},input:{state:'revoked'}}));h.emit({type:'targets_changed',targets:h.targets});for(const v of h.control)h.emit({type:'control_changed',view:{...v,input_state:'paused',lease:v.lease?{...v.lease,state:'revoked'}:null}})"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(document.body.innerText.includes('Pair this device again')) throw Error('Incorrect recovery advice')"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clip-begin"
+description = "Enables the clip_begin command without any pre-configured scope."
+commands.allow = ["clip_begin"]
+
+[[permission]]
+identifier = "deny-clip-begin"
+description = "Denies the clip_begin command without any pre-configured scope."
+commands.deny = ["clip_begin"]

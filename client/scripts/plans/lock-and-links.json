@@ -1,0 +1,634 @@
+[
+  {
+    "name": "settings-light",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "settings-dark",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "dark": true,
+    "fresh": false
+  },
+  {
+    "name": "settings-large",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "width": 360,
+    "text": 2,
+    "fresh": false
+  },
+  {
+    "name": "settings-wide",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "appearance-change",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        "[role=radio]:has-text('Dark')"
+      ],
+      [
+        "shot",
+        "dark"
+      ],
+      [
+        "clickSel",
+        "[role=radio]:has-text('Light')"
+      ],
+      [
+        "shot",
+        "light"
+      ],
+      [
+        "clickSel",
+        "[role=radio]:has-text('System')"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "lock-light",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.lock()"
+      ]
+    ],
+    "path": "/?lock-test",
+    "fresh": false
+  },
+  {
+    "name": "lock-dark",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.lock()"
+      ]
+    ],
+    "path": "/?lock-test",
+    "dark": true,
+    "fresh": false
+  },
+  {
+    "name": "lock-large",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.lock()"
+      ]
+    ],
+    "path": "/?lock-test",
+    "width": 360,
+    "text": 2,
+    "fresh": false
+  },
+  {
+    "name": "unlock-link",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.lock()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/0192f7a1-0000-7000-8000-00000000a001/approval/0192f7a1-0000-7000-8000-000000000401')"
+      ],
+      [
+        "click",
+        "Unlock app"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.authenticate()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "preview"
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.app') || location.href === 'about:blank') throw new Error('Link left the app'); if (window.__sim.host.approvals.some(a => a.state !== 'pending')) throw new Error('Unlock answered approval')"
+      ]
+    ],
+    "path": "/?lock-test",
+    "fresh": false
+  },
+  {
+    "name": "link-preview-large",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/0192f7a1-0000-7000-8000-00000000a001/approval/0192f7a1-0000-7000-8000-000000000401')"
+      ],
+      [
+        "wait",
+        1200
+      ]
+    ],
+    "dark": true,
+    "width": 360,
+    "text": 2,
+    "fresh": false
+  },
+  {
+    "name": "link-unpaired",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/0192f7a1-0000-7000-8000-00000000a099/approval/0192f7a1-0000-7000-8000-000000000401')"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "link-error",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/malformed')"
+      ]
+    ],
+    "dark": true,
+    "fresh": false
+  },
+  {
+    "name": "offline-light",
+    "steps": [
+      [
+        "wait",
+        800
+      ]
+    ],
+    "path": "/?offline",
+    "fresh": false
+  },
+  {
+    "name": "offline-large",
+    "steps": [
+      [
+        "wait",
+        800
+      ]
+    ],
+    "path": "/?offline",
+    "width": 360,
+    "text": 2,
+    "fresh": false
+  },
+  {
+    "name": "offline-wide",
+    "steps": [
+      [
+        "wait",
+        800
+      ]
+    ],
+    "path": "/?offline",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "dark": true,
+    "fresh": false
+  },
+  {
+    "name": "versions-incompatible",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('#settings-versions').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "path": "/?incompatible",
+    "fresh": false
+  },
+  {
+    "name": "versions-dark",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('#settings-versions').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "dark": true,
+    "fresh": false
+  },
+  {
+    "name": "data-empty",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('#settings-data').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "text": 2,
+    "fresh": false
+  },
+  {
+    "name": "connections",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "path": "/?two-computers",
+    "fresh": false
+  },
+  {
+    "name": "switch-control",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host; const v=h.control[0]; v.input_state='human'; v.lease={lease_id:'0192f7a1-0000-7000-8000-000000000701',target_id:v.target_id,owner:{kind:'human',device_id:'0192f7a1-0000-7000-8000-00000000d001'},state:'active',generation:5,boot_epoch:h.bootEpoch,granted_at:Date.now(),renewal_window_ms:15000}; h.emit({type:'control_changed',view:v})"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Switch to spare"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Fixture computer offline')"
+      ],
+      [
+        "click",
+        "Leave control and switch"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "path": "/?two-computers",
+    "fresh": false
+  },
+  {
+    "name": "pair-install-light",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ]
+    ],
+    "path": "/?unpaired",
+    "fresh": false
+  },
+  {
+    "name": "pair-install-dark",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ]
+    ],
+    "path": "/?unpaired",
+    "dark": true,
+    "fresh": false
+  },
+  {
+    "name": "pair-install-large",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ]
+    ],
+    "path": "/?unpaired",
+    "width": 360,
+    "text": 2,
+    "fresh": false
+  },
+  {
+    "name": "pair-install-wide",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ]
+    ],
+    "path": "/?unpaired",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "pair-expiry",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Scan the code"
+      ],
+      [
+        "wait",
+        1500
+      ]
+    ],
+    "path": "/?unpaired",
+    "fresh": false
+  },
+  {
+    "name": "switch-control-large",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host; const v=h.control[0]; v.input_state='human'; v.lease={lease_id:'0192f7a1-0000-7000-8000-000000000701',target_id:v.target_id,owner:{kind:'human',device_id:'0192f7a1-0000-7000-8000-00000000d001'},state:'active',generation:5,boot_epoch:h.bootEpoch,granted_at:Date.now(),renewal_window_ms:15000}; h.emit({type:'control_changed',view:v})"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Switch to spare"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Fixture computer offline')"
+      ],
+      [
+        "click",
+        "Leave control and switch"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "path": "/?two-computers",
+    "fresh": false,
+    "width": 360,
+    "text": 2
+  },
+  {
+    "name": "switch-control-wide",
+    "steps": [
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host; const v=h.control[0]; v.input_state='human'; v.lease={lease_id:'0192f7a1-0000-7000-8000-000000000701',target_id:v.target_id,owner:{kind:'human',device_id:'0192f7a1-0000-7000-8000-00000000d001'},state:'active',generation:5,boot_epoch:h.bootEpoch,granted_at:Date.now(),renewal_window_ms:15000}; h.emit({type:'control_changed',view:v})"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Switch to spare"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Fixture computer offline')"
+      ],
+      [
+        "click",
+        "Leave control and switch"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "path": "/?two-computers",
+    "fresh": false,
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  }
+]

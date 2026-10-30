@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "intake"
+description = "Private signed problem-report intake and maintainer API"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+protocol.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["json"] }
+axum = "0.8.8"
+rusqlite = { version = "0.38.0", features = ["bundled"] }
+ed25519-dalek = "2.2"
+sha2 = "0.10.9"
+base64 = "0.22.1"
+subtle = "2.6.1"
+clap = { version = "4.5", features = ["derive"] }
+reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls", "json"] }
+uuid.workspace = true
+
+[dev-dependencies]
+tempfile = "3.23.0"
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "ophio-intake"
+path = "src/main.rs"

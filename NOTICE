@@ -1,0 +1,14 @@
+Øphio
+Copyright 2026 the contributors
+
+Product-owned source code is licensed under the Apache License, Version 2.0.
+See LICENSE. Third-party components retain their own licences and notices;
+see THIRD-PARTY-NOTICES.txt and sbom.cdx.json in each distribution.
+
+This software is based in part on the work of the Independent JPEG Group.
+
+Its table of HTML named character references is the HTML Living Standard's,
+https://html.spec.whatwg.org/multipage/named-characters.html,
+Copyright WHATWG (Apple, Google, Mozilla, Microsoft), licensed under the
+Creative Commons Attribution 4.0 International License,
+https://creativecommons.org/licenses/by/4.0/. It is reproduced in Rust form.

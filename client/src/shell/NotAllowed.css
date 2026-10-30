@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.permission-note { min-width: 0; }
+.permission-note .cmd { white-space: normal; overflow-wrap: anywhere; }
+.permission-note__switches { display: grid; gap: var(--s1); margin-top: var(--s2); }
+.permission-note__switch {
+  min-height: var(--target);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  font-weight: 600;
+}

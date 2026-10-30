@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.todo-heading { font-size: var(--text-lg); margin: var(--s4) 0; }
+.todo-project-link { display: block; border: 0; background: none; color: var(--ink-2); font: inherit; font-size: .875rem; text-align: start; text-decoration: underline; text-underline-offset: .2em; padding: .75rem; min-height: 2.75rem; overflow-wrap: anywhere; cursor: pointer; }
+.todo-all, .todo-agent-list { padding: 0; list-style: none; }
+.todo-agent-list { display: grid; gap: var(--s2); }
+.agent-work-entry { border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+.agent-work-entry__actions { display: flex; flex-wrap: wrap; padding: 0 var(--s3) var(--s2); }
+.todo-done { margin-top: var(--s5); }
+/* A waiting mark includes the task's title, not a clipped single-line label. */
+.todo-screen .cl-item__meta .pill { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: start; }
+.todo-screen .cl-item__title { overflow-wrap: anywhere; }

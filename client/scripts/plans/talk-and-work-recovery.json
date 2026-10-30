@@ -1,0 +1,2030 @@
+[
+  {
+    "name": "talk-light",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ]
+    ]
+  },
+  {
+    "name": "talk-dark",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "talk-large",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "talk-wide",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "talk-landscape",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "scale": 1
+  },
+  {
+    "name": "work-light",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "summary"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "name": "work-dark",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "summary"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView()"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "work-large",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "summary"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView()"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "work-wide",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "work-landscape",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "scale": 1
+  },
+  {
+    "name": "tasks-light",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Finished"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('input[type=search]'))throw Error('Tasks not loaded')"
+      ]
+    ]
+  },
+  {
+    "name": "tasks-dark",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Finished"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('input[type=search]'))throw Error('Tasks not loaded')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "tasks-large",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Finished"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('input[type=search]'))throw Error('Tasks not loaded')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "tasks-wide",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Finished"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('input[type=search]'))throw Error('Tasks not loaded')"
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "tasks-landscape",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Finished"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('input[type=search]'))throw Error('Tasks not loaded')"
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "scale": 1
+  },
+  {
+    "name": "receipt-light",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+'0192f7a1-0000-7000-8000-000000002001')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "receipt-dark",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+'0192f7a1-0000-7000-8000-000000002001')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "receipt-large",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+'0192f7a1-0000-7000-8000-000000002001')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "receipt-wide",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+'0192f7a1-0000-7000-8000-000000002001')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "receipt-landscape",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+'0192f7a1-0000-7000-8000-000000002001')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "scale": 1
+  },
+  {
+    "name": "review-light",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "fill",
+        "What should",
+        "Check that the checklist covers large text."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "shot",
+        "top"
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__agent').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "review-dark",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "fill",
+        "What should",
+        "Check that the checklist covers large text."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        350
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "review-large",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "fill",
+        "What should",
+        "Check that the checklist covers large text."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "shot",
+        "top"
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__agent').scrollIntoView({block:'center'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "review-wide",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "fill",
+        "What should",
+        "Check that the checklist covers large text."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        350
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "review-landscape",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "fill",
+        "What should",
+        "Check that the checklist covers large text."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "shot",
+        "top"
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__agent').scrollIntoView({block:'center'})"
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "scale": 1
+  },
+  {
+    "name": "stages-light",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "stages-dark",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "stages-large",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "stages-wide",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "stages-landscape",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "scale": 1
+  },
+  {
+    "name": "next-up-light",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "next-up-dark",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "next-up-large",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "next-up-wide",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "next-up-landscape",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "scale": 1
+  },
+  {
+    "name": "history-link-up",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');d.failHistoryOnce(window.__sim.host);})()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "eval",
+        "window.__sim.online()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "shot",
+        "failed"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "eval",
+        "window.__sim.online()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "if(document.body.textContent.includes('Couldn\u2019t load'))throw Error('Stale history error')"
+      ]
+    ]
+  },
+  {
+    "name": "history-cold-start",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "location.href='/?offline'"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "shot",
+        "offline"
+      ],
+      [
+        "eval",
+        "window.__sim.online()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "if(document.body.textContent.includes('Couldn\u2019t load'))throw Error('Stale history error after cold start')"
+      ]
+    ]
+  },
+  {
+    "name": "run-boundary",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');window.__runs=d.twoRuns(window.__sim.host);})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk .screen__body').scrollTop=99999"
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('.talk-log__list').textContent;if(t.indexOf('You have control.')>t.indexOf('Continued \u00b7 run 2'))throw Error('Old receipt under new run')"
+      ]
+    ]
+  },
+  {
+    "name": "receipt-earlier-run",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');window.__runs=d.twoRuns(window.__sim.host);})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+window.__runs.taskId)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Choose run: Latest run"
+      ],
+      [
+        "shot",
+        "picker"
+      ],
+      [
+        "click",
+        "Run 1 \u00b7 Stopped"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.work-receipt-state').textContent.startsWith('Stopped'))throw Error('Wrong historical outcome')"
+      ]
+    ]
+  },
+  {
+    "name": "attention-collapsed",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');d.repeatCompletions(window.__sim.host);})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if([...document.querySelectorAll('.row__title')].filter(e=>e.textContent==='Task finished').length!==1)throw Error('Duplicate completions')"
+      ],
+      [
+        "shot",
+        "before-open"
+      ],
+      [
+        "click",
+        "Task finished"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.attention.some(a=>a.task_id==='0192f7a1-0000-7000-8000-000000002001'&&a.kind==='completed'&&a.resolved_at===null))throw Error('Completion not settled')"
+      ]
+    ]
+  },
+  {
+    "name": "sent-bubble",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');d.longConversation(window.__sim.host);})()"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk .screen__body').scrollTop=0"
+      ],
+      [
+        "wait",
+        150
+      ],
+      [
+        "fill",
+        "Tell Claude Code",
+        "Keep this just-sent message visible."
+      ],
+      [
+        "clickSel",
+        ".composer__send"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.talk-user__text')].at(-1);const b=p.getBoundingClientRect();const v=document.querySelector('.talk .screen__body').getBoundingClientRect();if(b.bottom>v.bottom+1||b.top<v.top||document.querySelector('.talk-jump'))throw Error('Sent bubble obscured')"
+      ]
+    ]
+  },
+  {
+    "name": "composer-tools-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "eval",
+        "document.activeElement?.blur();const b=document.querySelector('.composer__tools-toggle');if(b.getBoundingClientRect().height<48||!b.textContent.includes('Tools'))throw Error('Tools hidden or unnamed')"
+      ],
+      [
+        "shot",
+        "before-focus"
+      ],
+      [
+        "click",
+        "Tools"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog[open]').textContent.includes('Agent, model and effort'))throw Error('Missing tools')"
+      ]
+    ]
+  },
+  {
+    "name": "agent-effort",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "clickSel",
+        ".composer__chip"
+      ],
+      [
+        "click",
+        "Fable (latest)"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('button[aria-pressed=true]')||![...document.querySelectorAll('button[aria-pressed=true]')].some(b=>b.textContent==='High'))throw Error('Lost supported effort')"
+      ]
+    ]
+  },
+  {
+    "name": "agent-effort-fallback",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "clickSel",
+        ".composer__chip"
+      ],
+      [
+        "clickSel",
+        "dialog[open] [aria-label=\"Agent\"] button:nth-child(2)"
+      ],
+      [
+        "clickSel",
+        "dialog[open] [aria-label=\"Effort\"] button:nth-child(4)"
+      ],
+      [
+        "click",
+        "GPT-6-Sol"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog[open]').textContent.includes('Effort changed to the agent\u2019s default'))throw Error('No effort explanation')"
+      ]
+    ]
+  },
+  {
+    "name": "offline-project-picker",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('dialog[open]').textContent;if(!t.includes('queued')||!t.includes('Last reported'))throw Error('Counts not qualified')"
+      ]
+    ]
+  },
+  {
+    "name": "stage-denied",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({admin:false})"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.permission-note').textContent.includes(' admin'))throw Error('Missing admin command')"
+      ],
+      [
+        "shot",
+        "denied"
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({admin:true})"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "if([...document.querySelectorAll('button')].find(b=>b.textContent==='Change stage').disabled)throw Error('Grant did not enable stage')"
+      ]
+    ]
+  },
+  {
+    "name": "stage-error",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.host.stages.failQuery=true"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "duration-decision",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');window.__durationTask=d.delayedDecision(window.__sim.host);})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+window.__durationTask)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "before"
+      ],
+      [
+        "click",
+        "Mark completed"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('At least 8 min 27 s'))throw Error('Duration changed')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Requested completion checks').scrollIntoView()"
+      ],
+      [
+        "eval",
+        "const s=[...document.querySelectorAll('section')].find(e=>e.textContent.includes('Requested completion checks'));if(s.querySelector('code'))throw Error('Prose rendered as command')"
+      ]
+    ]
+  },
+  {
+    "name": "queue-pause-receipt",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "eval",
+        "window.__sim.work.admitNextBeforePause()"
+      ],
+      [
+        "click",
+        "Pause queue"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.named-stop__button')].filter(b=>b.getBoundingClientRect().height);if(b.length!==1)throw Error('Duplicate Stop')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.notice__title')].find(e=>e.textContent==='Queue pause receipt').scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "name": "work-offline",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "work-revoked",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "tasks-empty",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Finished"
+      ],
+      [
+        "fill",
+        "Find a task",
+        "No matching title"
+      ]
+    ]
+  },
+  {
+    "name": "receipt-earlier-run-large",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');window.__runs=d.twoRuns(window.__sim.host);})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+window.__runs.taskId)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Choose run: Latest run"
+      ],
+      [
+        "shot",
+        "picker"
+      ],
+      [
+        "click",
+        "Run 1 \u00b7 Stopped"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.work-receipt-state').textContent.startsWith('Stopped'))throw Error('Wrong historical outcome')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "run-boundary-dark",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');window.__runs=d.twoRuns(window.__sim.host);})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk .screen__body').scrollTop=99999"
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('.talk-log__list').textContent;if(t.indexOf('You have control.')>t.indexOf('Continued \u00b7 run 2'))throw Error('Old receipt under new run')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "offline-project-picker-large",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('dialog[open]').textContent;if(!t.includes('queued')||!t.includes('Last reported'))throw Error('Counts not qualified')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "archived-discovery",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');d.queuedRequest(window.__sim.host);})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Remove\u2026"
+      ],
+      [
+        "click",
+        "Remove Polish empty states"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "press",
+        "Escape"
+      ],
+      [
+        "clickSel",
+        ".bar button[aria-label=Back]"
+      ],
+      [
+        "click",
+        "Finished"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        "[aria-label=\"Task filter\"] [role=radio]:nth-child(4)"
+      ],
+      [
+        "fill",
+        "Find a task",
+        "Polish empty states"
+      ],
+      [
+        "shot",
+        "found"
+      ],
+      [
+        "click",
+        "Polish empty states"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Archived'))throw Error('Archived task missing')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Saved request').scrollIntoView()"
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Polish the empty states shown in this screenshot.'))throw Error('Request lost')"
+      ]
+    ]
+  },
+  {
+    "name": "receipt-offline",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+'0192f7a1-0000-7000-8000-000000002001')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "review-offline",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "New task"
+      ],
+      [
+        "fill",
+        "What should",
+        "Check that the checklist covers large text."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__agent').scrollIntoView({block:'center'})"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "tasks-offline",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Finished"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('input[type=search]'))throw Error('Tasks not loaded')"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "stages-offline",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open project stages"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "next-up-offline",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "talk-revoked",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "receipt-error",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;window.__receiptQuery=h.query.bind(h);h.query=r=>r.kind==='task_timeline'&&r.task_id==='0192f7a1-0000-7000-8000-000000002001'?Promise.reject({code:'temporarily_unavailable',message:'Receipt history is unavailable.'}):window.__receiptQuery(r)"
+      ],
+      [
+        "eval",
+        "window.__sim.lifecycle.openLink('ophio-object://open/v1/'+window.__sim.host.host.host_id+'/task/'+'0192f7a1-0000-7000-8000-000000002001')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open item"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const n=[...document.querySelectorAll('.tab:not(.is-hidden) .route:not(.is-hidden) .notice')].find(e=>e.textContent.includes('Receipt history is unavailable.'));if(!n)throw Error('Receipt error missing');n.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "failed"
+      ],
+      [
+        "eval",
+        "window.__sim.host.query=window.__receiptQuery"
+      ],
+      [
+        "click",
+        "Reload evidence"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if([...document.querySelectorAll('.tab:not(.is-hidden) .route:not(.is-hidden) .notice')].some(e=>e.textContent.includes('Receipt history is unavailable.')))throw Error('Receipt error did not clear')"
+      ]
+    ]
+  },
+  {
+    "name": "work-check-it",
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<150;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const d=await import('/src/dev/sim/talkWork.ts');const id=d.delayedDecision(window.__sim.host);const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===id);const r=h.runs.find(r=>r.run_id===t.current_run);r.holds_writer=true;h.emit({type:'run_upserted',run:r});const project=h.projects.find(p=>p.project_id===t.project_id);project.active_writer=r.run_id;h.emit({type:'project_upserted',project});})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('button')].find(e=>e.textContent==='Check it').scrollIntoView({block:'center'})"
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('button')].find(e=>e.textContent==='Check it').querySelector('.lucide-chevron-right'))throw Error('Missing Check it chevron')"
+      ]
+    ]
+  }
+]

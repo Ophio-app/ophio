@@ -1,0 +1,28 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-000000000021",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "make_reusable",
+      "task_id": "00000000-0000-4000-8000-000000000001",
+      "kind": "skill",
+      "name": "synthetic"
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-000000000021",
+    "status": "accepted",
+    "seq": 33,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

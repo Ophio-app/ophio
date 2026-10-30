@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stop-screenshot-watch"
+description = "Enables the stop_screenshot_watch command without any pre-configured scope."
+commands.allow = ["stop_screenshot_watch"]
+
+[[permission]]
+identifier = "deny-stop-screenshot-watch"
+description = "Denies the stop_screenshot_watch command without any pre-configured scope."
+commands.deny = ["stop_screenshot_watch"]

@@ -1,0 +1,1193 @@
+[
+  {
+    "scale": 1,
+    "settle": 900,
+    "name": "status-light",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "shot",
+        "connection"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"On the computer\")?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "setup"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "agents"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "name": "agents-light",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "unavailable"
+      ],
+      [
+        "eval",
+        "window.__sim.host.tablet.repairOnCheck()"
+      ],
+      [
+        "click",
+        "Check again"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "name": "control-light",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.getElementById('control-agents')?.scrollIntoView();const b=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Start computer use'));if(!b?.disabled)throw Error('Unavailable computer use is enabled')"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "name": "work-empty-light",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000);window.__sim.host.tablet.emptyBrief()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "const h=[...document.querySelectorAll('.work-screen section')].find(s=>s.querySelector('h2')?.textContent==='Task results');h?.scrollIntoView();if(!document.querySelector('.work-brief')?.textContent.includes('No new task results to show.'))throw Error('Empty brief missing')"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "name": "terminal-light",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Key mode')"
+      ],
+      [
+        "shot",
+        "keys"
+      ],
+      [
+        "click",
+        "Show keyboard"
+      ],
+      [
+        "height",
+        480
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.terminal-modebar')?.textContent.includes('Hide keyboard'))throw Error('Keyboard visibility not reflected')"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.terminal-modebar button')].find(b=>b.textContent.includes('Hide keyboard'));const r=b?.getBoundingClientRect();const rail=document.querySelector('.safety-rail')?.getBoundingClientRect();if(!r||r.top<0||r.bottom>(rail?.top??innerHeight))throw Error('Keyboard control is covered')"
+      ],
+      [
+        "shot",
+        "keyboard"
+      ],
+      [
+        "clickSel",
+        ".terminal-modebar button:has-text('Hide keyboard')"
+      ],
+      [
+        "height",
+        844
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text mode')"
+      ],
+      [
+        "fill",
+        "Command for",
+        "echo hello"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "name": "status-dark",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "shot",
+        "connection"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"On the computer\")?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "setup"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "agents"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "name": "agents-dark",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "unavailable"
+      ],
+      [
+        "eval",
+        "window.__sim.host.tablet.repairOnCheck()"
+      ],
+      [
+        "click",
+        "Check again"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "name": "control-dark",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.getElementById('control-agents')?.scrollIntoView();const b=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Start computer use'));if(!b?.disabled)throw Error('Unavailable computer use is enabled')"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "name": "work-empty-dark",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000);window.__sim.host.tablet.emptyBrief()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "const h=[...document.querySelectorAll('.work-screen section')].find(s=>s.querySelector('h2')?.textContent==='Task results');h?.scrollIntoView();if(!document.querySelector('.work-brief')?.textContent.includes('No new task results to show.'))throw Error('Empty brief missing')"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "name": "terminal-dark",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Key mode')"
+      ],
+      [
+        "shot",
+        "keys"
+      ],
+      [
+        "click",
+        "Show keyboard"
+      ],
+      [
+        "height",
+        480
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.terminal-modebar')?.textContent.includes('Hide keyboard'))throw Error('Keyboard visibility not reflected')"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.terminal-modebar button')].find(b=>b.textContent.includes('Hide keyboard'));const r=b?.getBoundingClientRect();const rail=document.querySelector('.safety-rail')?.getBoundingClientRect();if(!r||r.top<0||r.bottom>(rail?.top??innerHeight))throw Error('Keyboard control is covered')"
+      ],
+      [
+        "shot",
+        "keyboard"
+      ],
+      [
+        "clickSel",
+        ".terminal-modebar button:has-text('Hide keyboard')"
+      ],
+      [
+        "height",
+        844
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text mode')"
+      ],
+      [
+        "fill",
+        "Command for",
+        "echo hello"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "name": "status-large",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "shot",
+        "connection"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"On the computer\")?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "setup"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "agents"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "name": "agents-large",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "unavailable"
+      ],
+      [
+        "eval",
+        "window.__sim.host.tablet.repairOnCheck()"
+      ],
+      [
+        "click",
+        "Check again"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "name": "control-large",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.getElementById('control-agents')?.scrollIntoView();const b=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Start computer use'));if(!b?.disabled)throw Error('Unavailable computer use is enabled')"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "name": "work-empty-large",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000);window.__sim.host.tablet.emptyBrief()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "const h=[...document.querySelectorAll('.work-screen section')].find(s=>s.querySelector('h2')?.textContent==='Task results');h?.scrollIntoView();if(!document.querySelector('.work-brief')?.textContent.includes('No new task results to show.'))throw Error('Empty brief missing')"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "name": "terminal-large",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Key mode')"
+      ],
+      [
+        "shot",
+        "keys"
+      ],
+      [
+        "click",
+        "Show keyboard"
+      ],
+      [
+        "height",
+        480
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.terminal-modebar')?.textContent.includes('Hide keyboard'))throw Error('Keyboard visibility not reflected')"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.terminal-modebar button')].find(b=>b.textContent.includes('Hide keyboard'));const r=b?.getBoundingClientRect();const rail=document.querySelector('.safety-rail')?.getBoundingClientRect();if(!r||r.top<0||r.bottom>(rail?.top??innerHeight))throw Error('Keyboard control is covered')"
+      ],
+      [
+        "shot",
+        "keyboard"
+      ],
+      [
+        "clickSel",
+        ".terminal-modebar button:has-text('Hide keyboard')"
+      ],
+      [
+        "height",
+        800
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text mode')"
+      ],
+      [
+        "fill",
+        "Command for",
+        "echo hello"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 1280,
+    "height": 800,
+    "name": "status-wide",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "shot",
+        "connection"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"On the computer\")?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "setup"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "agents"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 1280,
+    "height": 800,
+    "name": "agents-wide",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ],
+      [
+        "shot",
+        "unavailable"
+      ],
+      [
+        "eval",
+        "window.__sim.host.tablet.repairOnCheck()"
+      ],
+      [
+        "click",
+        "Check again"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 1280,
+    "height": 800,
+    "name": "control-wide",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.getElementById('control-agents')?.scrollIntoView();const b=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Start computer use'));if(!b?.disabled)throw Error('Unavailable computer use is enabled')"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 1280,
+    "height": 800,
+    "name": "work-empty-wide",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(1000);window.__sim.host.tablet.emptyBrief()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "const h=[...document.querySelectorAll('.work-screen section')].find(s=>s.querySelector('h2')?.textContent==='Task results');h?.scrollIntoView();if(!document.querySelector('.work-brief')?.textContent.includes('No new task results to show.'))throw Error('Empty brief missing')"
+      ]
+    ]
+  },
+  {
+    "scale": 1,
+    "settle": 900,
+    "width": 1280,
+    "height": 800,
+    "name": "terminal-wide",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Key mode')"
+      ],
+      [
+        "shot",
+        "keys"
+      ],
+      [
+        "click",
+        "Show keyboard"
+      ],
+      [
+        "height",
+        480
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.terminal-modebar')?.textContent.includes('Hide keyboard'))throw Error('Keyboard visibility not reflected')"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.terminal-modebar button')].find(b=>b.textContent.includes('Hide keyboard'));const r=b?.getBoundingClientRect();const rail=document.querySelector('.safety-rail')?.getBoundingClientRect();if(!r||r.top<0||r.bottom>(rail?.top??innerHeight))throw Error('Keyboard control is covered')"
+      ],
+      [
+        "shot",
+        "keyboard"
+      ],
+      [
+        "clickSel",
+        ".terminal-modebar button:has-text('Hide keyboard')"
+      ],
+      [
+        "height",
+        800
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text mode')"
+      ],
+      [
+        "fill",
+        "Command for",
+        "echo hello"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "status-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Connection lost')"
+      ],
+      [
+        "click",
+        "Connection details"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "name": "agents-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ],
+      [
+        "eval",
+        "window.__sim.host.tablet.failCheck=true"
+      ],
+      [
+        "click",
+        "Check again"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "name": "agents-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "clickSel",
+        "nav[aria-label=Main] button:has-text(\"Work\")"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "click",
+        "Live agents"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Connection lost')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.agents-screen section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "name": "talk-no-agent",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__r2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__r2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null)"
+      ],
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "click",
+        "Check again"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "review-no-agent",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__r2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__r2app.ui.selectTask('0192f7a1-0000-7000-8000-000000000101',null)"
+      ],
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable()"
+      ],
+      [
+        "eval",
+        "window.__r2app.ui.saveDraft('0192f7a1-0000-7000-8000-000000000101',null,{text:'Review the project'});window.__r2app.ui.push({screen:'review',projectId:'0192f7a1-0000-7000-8000-000000000101',taskId:null})"
+      ],
+      [
+        "click",
+        "Check again"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "control-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.control.empty()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "control-revoked",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ]
+    ]
+  },
+  {
+    "name": "terminal-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Connection lost')"
+      ]
+    ]
+  },
+  {
+    "name": "desktop-saved-text",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Caf\u00e9 \u65e5\u672c\u8a9e \u2014 a saved message"
+      ],
+      [
+        "eval",
+        "window.__sim.control.refuseText('\u00e9\u65e5\u672c\u8a9e', true)"
+      ],
+      [
+        "click",
+        "Send text"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const p=document.querySelector('.control-saved-text');if(!p)throw Error('Saved text missing');p.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "control-output-age",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const s=document.getElementById('control-terminals');if(!s)throw Error('Terminals missing');s.scrollIntoView();if(!s.closest('section').textContent.includes('Output'))throw Error('Output age missing')"
+      ]
+    ]
+  }
+]

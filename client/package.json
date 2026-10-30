@@ -1,0 +1,49 @@
+{
+  "name": "client",
+  "private": true,
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:sim": "vite --mode sim",
+    "build": "tsc --noEmit -p . && vite build && node scripts/css-order-check.mjs",
+    "build:sim": "tsc --noEmit -p . && vite build --mode sim && node scripts/css-order-check.mjs",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "sh scripts/test.sh",
+    "tauri": "tauri",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@codemirror/lang-markdown": "6.5.2",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.13",
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@tauri-apps/api": "2.12.0",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/xterm": "6.0.0",
+    "codemirror": "6.0.2",
+    "lucide-react": "1.48.0",
+    "mdast-util-from-markdown": "2.0.3",
+    "micromark-util-decode-string": "2.0.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.0",
+    "@testing-library/react": "16.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "jsdom": "30.1.1",
+    "playwright": "1.63.0",
+    "remark-parse": "11.0.0",
+    "typescript": "7.0.2",
+    "unified": "11.0.5",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

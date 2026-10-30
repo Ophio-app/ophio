@@ -1,0 +1,27 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-00000000000f",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "queue_set_dependencies",
+      "item_id": "00000000-0000-4000-8000-000000000001",
+      "depends_on": []
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-00000000000f",
+    "status": "accepted",
+    "seq": 15,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

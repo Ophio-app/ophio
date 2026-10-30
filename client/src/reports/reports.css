@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.report-stack { display: flex; flex-direction: column; gap: var(--s4); }
+.report-meta { color: var(--ink-2); font-size: var(--text-sm); line-height: 1.55; }
+.report-picture { position: relative; display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--surface); }
+.report-picture img { display: block; width: 100%; max-height: 180px; object-fit: contain; }
+.report-picture span { display: block; padding: 8px; color: var(--ink-2); font-size: var(--text-sm); }
+.report-receipt { font-size: var(--text-lg); line-height: 1.5; }
+.report-extras { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px; }
+.report-extras label { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+.report-extras input { flex-shrink: 0; width: 22px; height: 22px; }
+.report-bundle { overflow-wrap: anywhere; min-width: 0; }
+.report-bundle > details { border-top: 1px solid var(--line); padding: 12px 0; }
+.report-bundle summary { min-height: 44px; cursor: pointer; font-weight: 650; }
+.report-bundle dl > div { display: grid; gap: 4px; margin-block: 12px; }
+.report-bundle dt { color: var(--ink-2); font-size: var(--text-sm); }
+.report-bundle dd { margin: 0; }
+.report-bundle code { white-space: pre-wrap; font: inherit; }
+.report-markup { display: flex; flex-direction: column; min-height: 55dvh; }
+.report-markup .an-canvas { position: relative; inset: auto; flex: none; height: 50dvh; min-height: 250px; }
+.report-tools { display: flex; flex-wrap: wrap; gap: 4px; }
+/* The screenshot offer wears a toast, where toasts appear above the tabs. */
+.report-chip { position: fixed; bottom: calc(var(--safe-bottom, 0px) + 90px); left: 0; right: 0; z-index: 70; display: flex; justify-content: center; padding-inline: var(--s3); pointer-events: none; }
+.report-question { padding: 16px; display: grid; gap: 12px; }
+.report-question__choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.report-words textarea, .report-sheet textarea { width: 100%; min-height: 100px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font: inherit; resize: vertical; }
+.report-words { display: flex; flex-direction: column; gap: var(--s3); }
+.report-words textarea { display: block; }
+.report-words .an-speech { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s2); }

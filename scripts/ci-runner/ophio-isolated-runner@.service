@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+[Unit]
+Description=Ephemeral GitHub Actions runner %i for report branches
+After=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/ophio-ci/isolated-%i.env
+# The loop and supervisor are installed outside every job's writable mounts.
+ExecStart=/bin/bash -c 'while :; do %h/.local/libexec/ophio-ci/isolated-job.sh; sleep 15; done'
+Restart=always
+RestartSec=15
+Slice=ophio-ci.slice
+Nice=10
+MemoryMax=24G
+UMask=0077
+# Signal the supervisor and its children so its cleanup trap runs on stop.
+KillMode=control-group
+TimeoutStopSec=60
+
+[Install]
+WantedBy=default.target

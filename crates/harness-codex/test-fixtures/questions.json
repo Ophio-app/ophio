@@ -1,0 +1,435 @@
+[
+  {
+    "name": "multiple",
+    "input": {
+      "questions": [
+        {
+          "id": "color",
+          "header": "Color",
+          "question": "Which color?",
+          "options": [
+            {
+              "label": "Blue",
+              "description": "Cool"
+            },
+            {
+              "label": "Red",
+              "description": "Warm"
+            }
+          ]
+        },
+        {
+          "id": "tests",
+          "header": "Tests",
+          "question": "Run tests?",
+          "options": [
+            {
+              "label": "Yes",
+              "description": "Check changes"
+            },
+            {
+              "label": "No",
+              "description": "Skip checks"
+            }
+          ]
+        }
+      ]
+    },
+    "approval": {
+      "kind": "question",
+      "title": "Answer 2 questions",
+      "questions": [
+        {
+          "id": "ophio-question-0",
+          "header": "Color",
+          "question": "Which color?",
+          "options": [
+            {
+              "label": "Blue",
+              "description": "Cool"
+            },
+            {
+              "label": "Red",
+              "description": "Warm"
+            }
+          ]
+        },
+        {
+          "id": "ophio-question-1",
+          "header": "Tests",
+          "question": "Run tests?",
+          "options": [
+            {
+              "label": "Yes",
+              "description": "Check changes"
+            },
+            {
+              "label": "No",
+              "description": "Skip checks"
+            }
+          ]
+        }
+      ]
+    },
+    "decision": {
+      "decision": "answer",
+      "text": "Color: Blue; Tests: Yes",
+      "answers": [
+        {
+          "id": "ophio-question-0",
+          "question": "Which color?",
+          "choices": [
+            "Blue"
+          ]
+        },
+        {
+          "id": "ophio-question-1",
+          "question": "Run tests?",
+          "choices": [
+            "Yes"
+          ]
+        }
+      ]
+    },
+    "response": {
+      "answers": {
+        "color": {
+          "answers": [
+            "Blue"
+          ]
+        },
+        "tests": {
+          "answers": [
+            "Yes"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "single",
+    "input": {
+      "questions": [
+        {
+          "id": "color",
+          "header": "Color",
+          "question": "Which color?",
+          "options": [
+            {
+              "label": "Blue",
+              "description": "Cool"
+            },
+            {
+              "label": "Red",
+              "description": "Warm"
+            }
+          ]
+        }
+      ]
+    },
+    "approval": {
+      "kind": "question",
+      "title": "Which color?",
+      "questions": [
+        {
+          "id": "ophio-question-0",
+          "header": "Color",
+          "question": "Which color?",
+          "options": [
+            {
+              "label": "Blue",
+              "description": "Cool"
+            },
+            {
+              "label": "Red",
+              "description": "Warm"
+            }
+          ]
+        }
+      ]
+    },
+    "decision": {
+      "decision": "answer",
+      "text": "Red",
+      "answers": [
+        {
+          "id": "ophio-question-0",
+          "question": "Which color?",
+          "choices": [
+            "Red"
+          ]
+        }
+      ]
+    },
+    "response": {
+      "answers": {
+        "color": {
+          "answers": [
+            "Red"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "free text",
+    "input": {
+      "questions": [
+        {
+          "id": "note",
+          "header": "Note",
+          "question": "Any details?",
+          "options": null
+        }
+      ]
+    },
+    "approval": {
+      "kind": "question",
+      "title": "Any details?",
+      "questions": [
+        {
+          "id": "ophio-question-0",
+          "header": "Note",
+          "question": "Any details?",
+          "options": []
+        }
+      ]
+    },
+    "decision": {
+      "decision": "answer",
+      "text": "Use the quiet version",
+      "answers": [
+        {
+          "id": "ophio-question-0",
+          "question": "Any details?",
+          "choices": [
+            "Use the quiet version"
+          ]
+        }
+      ]
+    },
+    "response": {
+      "answers": {
+        "note": {
+          "answers": [
+            "Use the quiet version"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "same wording",
+    "input": {
+      "questions": [
+        {
+          "id": "first",
+          "header": "Color",
+          "question": "Which?",
+          "options": [
+            {
+              "label": "Blue",
+              "description": "Cool"
+            },
+            {
+              "label": "Red",
+              "description": "Warm"
+            }
+          ]
+        },
+        {
+          "id": "second",
+          "header": "Tests",
+          "question": "Which?",
+          "options": [
+            {
+              "label": "Yes",
+              "description": "Check changes"
+            },
+            {
+              "label": "No",
+              "description": "Skip checks"
+            }
+          ]
+        }
+      ]
+    },
+    "approval": {
+      "kind": "question",
+      "title": "Answer 2 questions",
+      "questions": [
+        {
+          "id": "ophio-question-0",
+          "header": "Color",
+          "question": "Which?",
+          "options": [
+            {
+              "label": "Blue",
+              "description": "Cool"
+            },
+            {
+              "label": "Red",
+              "description": "Warm"
+            }
+          ]
+        },
+        {
+          "id": "ophio-question-1",
+          "header": "Tests",
+          "question": "Which?",
+          "options": [
+            {
+              "label": "Yes",
+              "description": "Check changes"
+            },
+            {
+              "label": "No",
+              "description": "Skip checks"
+            }
+          ]
+        }
+      ]
+    },
+    "decision": {
+      "decision": "answer",
+      "text": "Color: Blue; Tests: Yes",
+      "answers": [
+        {
+          "id": "ophio-question-0",
+          "question": "Which?",
+          "choices": [
+            "Blue"
+          ]
+        },
+        {
+          "id": "ophio-question-1",
+          "question": "Which?",
+          "choices": [
+            "Yes"
+          ]
+        }
+      ]
+    },
+    "response": {
+      "answers": {
+        "first": {
+          "answers": [
+            "Blue"
+          ]
+        },
+        "second": {
+          "answers": [
+            "Yes"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "multiple with own words",
+    "input": {
+      "questions": [
+        {
+          "id": "color",
+          "header": "Color",
+          "question": "Which color?",
+          "options": [
+            {
+              "label": "Blue",
+              "description": "Cool"
+            },
+            {
+              "label": "Red",
+              "description": "Warm"
+            }
+          ]
+        },
+        {
+          "id": "tests",
+          "header": "Tests",
+          "question": "Run tests?",
+          "options": [
+            {
+              "label": "Yes",
+              "description": "Check changes"
+            },
+            {
+              "label": "No",
+              "description": "Skip checks"
+            }
+          ]
+        }
+      ]
+    },
+    "approval": {
+      "kind": "question",
+      "title": "Answer 2 questions",
+      "questions": [
+        {
+          "id": "ophio-question-0",
+          "header": "Color",
+          "question": "Which color?",
+          "options": [
+            {
+              "label": "Blue",
+              "description": "Cool"
+            },
+            {
+              "label": "Red",
+              "description": "Warm"
+            }
+          ]
+        },
+        {
+          "id": "ophio-question-1",
+          "header": "Tests",
+          "question": "Run tests?",
+          "options": [
+            {
+              "label": "Yes",
+              "description": "Check changes"
+            },
+            {
+              "label": "No",
+              "description": "Skip checks"
+            }
+          ]
+        }
+      ]
+    },
+    "decision": {
+      "decision": "answer",
+      "text": "Color: Purple; Tests: Yes",
+      "answers": [
+        {
+          "id": "ophio-question-0",
+          "question": "Which color?",
+          "choices": [
+            "Purple"
+          ]
+        },
+        {
+          "id": "ophio-question-1",
+          "question": "Run tests?",
+          "choices": [
+            "Yes"
+          ]
+        }
+      ]
+    },
+    "response": {
+      "answers": {
+        "color": {
+          "answers": [
+            "Purple"
+          ]
+        },
+        "tests": {
+          "answers": [
+            "Yes"
+          ]
+        }
+      }
+    }
+  }
+]

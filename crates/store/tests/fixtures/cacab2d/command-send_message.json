@@ -1,0 +1,43 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-000000000005",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "send_message",
+      "task_id": "00000000-0000-4000-8000-000000000001",
+      "text": "synthetic",
+      "bundle": {
+        "bundle_id": "00000000-0000-4000-8000-000000000001",
+        "revision": 1,
+        "sources": [],
+        "marks": [],
+        "comments": [],
+        "steps": [],
+        "general_note": "synthetic",
+        "speech": {
+          "session_id": "00000000-0000-4000-8000-000000000001",
+          "audio_artifact": "00000000-0000-4000-8000-000000000001",
+          "segments": [],
+          "transcript_revision": 1
+        }
+      },
+      "delivery": "steer"
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-000000000005",
+    "status": "accepted",
+    "seq": 5,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

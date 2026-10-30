@@ -1,0 +1,425 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.library-screen,
+.library-sheet {
+  overflow-wrap: anywhere;
+}
+.lib-stack {
+  display: grid;
+  gap: var(--s4);
+  min-width: 0;
+}
+.lib-path {
+  display: block;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.lib-meta {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.lib-snippet {
+  display: block;
+  margin-top: var(--s2);
+  color: var(--ink-2);
+}
+.lib-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.lib-filters .chip {
+  max-width: 100%;
+  padding-block: var(--s2);
+}
+.lib-filters .chip::before {
+  flex: none;
+}
+.lib-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--text-sm);
+}
+.lib-crumb {
+  display: contents;
+}
+.lib-crumbs .btn {
+  max-width: 100%;
+  text-align: start;
+}
+.lib-crumbs .btn__label {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.lib-toolbar,
+.lib-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.lib-check {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--target);
+  font-size: var(--text-sm);
+}
+.lib-sort {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+.lib-sort select {
+  min-height: var(--target);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-raised);
+  padding: var(--s2);
+  max-width: 100%;
+}
+.lib-entry {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-right: var(--s1);
+}
+.lib-entry > .row {
+  flex: 1;
+  min-width: 0;
+}
+.lib-entry > .iconbtn {
+  flex: none;
+}
+.lib-footer {
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  max-height: 38dvh;
+  overflow-y: auto;
+}
+.lib-footer > * {
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+.lib-identity {
+  display: grid;
+  gap: var(--s1);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--line);
+}
+.lib-document {
+  padding: var(--s4);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  min-width: 0;
+}
+.lib-document .md {
+  font-size: var(--text-md);
+  line-height: 1.7;
+}
+.lib-source {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  margin: 0;
+}
+.lib-editor {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  min-width: 0;
+}
+.lib-editor .lib-toolbar {
+  border-bottom: 1px solid var(--line);
+  padding-inline: var(--s2);
+  background: var(--surface);
+}
+.lib-editor .cm-editor {
+  min-width: 0;
+}
+.lib-editor .cm-content {
+  max-width: 100%;
+}
+.lib-diff-wrap {
+  display: grid;
+  gap: var(--s3);
+  min-width: 0;
+}
+.lib-versions {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+}
+.lib-versions h2,
+.lib-overlaps h2,
+.lib-details h2 {
+  font-size: var(--text-md);
+  font-weight: 620;
+}
+.lib-overlap {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+}
+.lib-overlap h3 {
+  font-size: var(--text-sm);
+  font-weight: 620;
+}
+.lib-overlap-side {
+  display: grid;
+  gap: var(--s1);
+}
+.lib-overlap .lib-source {
+  padding: var(--s3);
+  background: var(--surface);
+}
+.lib-overlap-removed {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.lib-details summary {
+  min-height: var(--target);
+  padding-block: var(--s3);
+  cursor: pointer;
+  color: var(--accent-text);
+}
+.lib-details section {
+  margin-block: var(--s4);
+  display: grid;
+  gap: var(--s2);
+}
+.library-sheet .sheet__title,
+.library-sheet .sheet__subtitle {
+  overflow-wrap: anywhere;
+}
+.library-sheet .sheet__footer {
+  max-height: 40dvh;
+  overflow-y: auto;
+}
+.library-sheet .btn,
+.library-screen .btn {
+  max-width: 100%;
+  white-space: normal;
+}
+.library-screen .section__head {
+  flex-wrap: wrap;
+}
+/* File names break anywhere, without a hyphen that isn't in the name. */
+.library-screen .row__title,
+.library-screen .row__subtitle,
+.library-sheet .row__title,
+.library-sheet .row__subtitle {
+  overflow-wrap: anywhere;
+  hyphens: manual;
+}
+@media (max-width: 380px) {
+  .lib-entry .row {
+    padding-inline: var(--s3);
+    gap: var(--s2);
+  }
+}
+
+.library-sheet .sheet__footer > .lib-stack {
+  width: 100%;
+}
+.library-screen .lib-footer > .btn {
+  max-width: var(--content-max);
+}
+:root.app-narrow .lib-entry :is(.row__icon, .row__chevron) {
+  display: none;
+}
+
+.lib-root-select {
+  display: grid;
+  gap: var(--s2);
+}
+.lib-root-select select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--target);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--r-sm);
+  padding: var(--s2);
+}
+
+.lib-recovery-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--s3);
+  min-width: 0;
+}
+.lib-recovery-choices legend {
+  padding-inline: var(--s2);
+  font-weight: 600;
+}
+.lib-recovery-choices label {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--target);
+}
+
+:root.app-narrow .lib-recovery-choices {
+  grid-template-columns: minmax(0, 1fr);
+}
+.lib-template textarea {
+  font-family: var(--font-mono);
+}
+
+/* Let the document scroll, while the existing intervention rail stays pinned. */
+.library-editor-sheet .sheet__panel {
+  overflow: hidden;
+}
+.library-editor-sheet .sheet__body {
+  min-height: 0;
+}
+:root.app-tight .library-editor-sheet .sheet__header {
+  padding: var(--s1) var(--s2);
+  align-items: center;
+}
+:root.app-tight .library-editor-sheet .sheet__titles {
+  padding-top: 0;
+}
+:root.app-tight .library-editor-sheet .sheet__title {
+  font-size: var(--text-md);
+}
+:root.app-tight .library-editor-sheet .sheet__body {
+  padding: var(--s2);
+}
+:root.app-tight .lib-editor-content {
+  display: flex;
+  flex-direction: column;
+}
+:root.app-tight .lib-editor-content > .lib-editor {
+  order: -1;
+  flex: none;
+}
+:root.app-tight .lib-editor {
+  display: flex;
+  flex-direction: column;
+}
+:root.app-tight .lib-editor > .lib-toolbar {
+  order: 1;
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+/* Paths and folder controls remain available without pushing files off screen. */
+.lib-options > summary { min-height: var(--target); display: flex; align-items: center; gap: var(--s2); cursor: pointer; color: var(--ink-2); }
+/* The second content gives the glyph empty alt text, so screen readers skip it. */
+.lib-options > summary::before { content: "+"; content: "+" / ""; }
+.lib-options[open] > summary::before { content: "−"; content: "−" / ""; }
+.lib-options[open] { display: grid; gap: var(--s3); }
+.lib-checked { display: grid; gap: var(--s2); }
+
+:root.app-narrow .lib-document { padding: var(--s3); }
+:root.app-narrow .lib-document .md > :first-child { margin-top: 0; }
+
+.lib-recovery-status > summary { min-height: var(--target); padding-block: var(--s2); color: var(--ink-3); font-size: var(--text-sm); }
+
+/* ---- Disable in Øphio (library/Disabled.tsx, D-071) ---- */
+.lib-disable {
+  display: grid;
+  gap: var(--s2);
+  justify-items: start;
+}
+.lib-disable--cannot {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  color: var(--ink-3);
+}
+.lib-disable__mark {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+  margin-top: 0.15em;
+}
+/* What is set aside rests on a sunken, dashed bed apart from the live lists:
+   the same rows, quieter, with their way back beside each. */
+.lib-disabled {
+  margin-top: var(--s4);
+}
+.lib-disabled__group {
+  background: var(--surface-sunken);
+  box-shadow: none;
+  border: 1.5px dashed color-mix(in srgb, var(--filament) 70%, transparent);
+}
+.lib-disabled__group > * + * {
+  border-top-style: dashed;
+}
+.lib-disabled__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s2);
+  padding-inline-end: var(--s3);
+}
+.lib-disabled__row .row__icon {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-3);
+}
+.lib-disabled__row .row__title {
+  color: var(--ink-2);
+}
+.lib-disabled__gone {
+  display: block;
+  color: var(--warn-text);
+}
+/* Still reading the computer: one ring turning, transform only. */
+.lib-checking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  min-height: 9rem;
+  color: var(--ink-2);
+  font-size: var(--text-md);
+}
+.lib-checking__spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  border-radius: 50%;
+  border: 2.5px solid var(--bloom);
+  border-right-color: transparent;
+  animation: spin 0.9s linear infinite;
+  will-change: transform;
+}
+.lib-checking--inline {
+  justify-content: flex-start;
+  min-height: 0;
+  gap: var(--s2);
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lib-checking__spinner { animation: none; border-right-color: color-mix(in srgb, var(--bloom) 35%, transparent); }
+}
+:root[data-reduce-motion="true"] .lib-checking__spinner {
+  animation: none;
+  border-right-color: color-mix(in srgb, var(--bloom) 35%, transparent);
+}

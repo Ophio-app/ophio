@@ -1,0 +1,240 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.settings-stack {
+  display: grid;
+  gap: var(--s3);
+  min-width: 0;
+}
+.settings-card {
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  min-width: 0;
+}
+/* The one card Settings leads with when the computer has a newer app. */
+.settings-card--update {
+  border-color: var(--accent);
+}
+.settings-card h3,
+.settings-card h4 {
+  font-weight: 650;
+  font-size: var(--text-lg);
+  overflow-wrap: break-word;
+}
+.settings-card > p + p,
+.settings-card > p + details {
+  margin-top: var(--s2);
+}
+.settings-meta {
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  overflow-wrap: break-word;
+}
+/* Where the export went, as the phone reported it (same as a saved transfer). */
+.settings-saved {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  font-size: var(--text-sm);
+  color: var(--ok-text);
+}
+/* One line tall, so the icon stays beside the first line when the path wraps. */
+.settings-saved svg {
+  flex: none;
+  width: 1em;
+  height: 1lh;
+}
+.settings-saved__path {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.settings-url {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.settings-facts {
+  display: grid;
+  gap: var(--s3);
+}
+.settings-facts > div {
+  display: grid;
+  gap: var(--s1);
+}
+.settings-facts dt {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+.settings-facts dd {
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.settings-computer {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.settings-computer > svg {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  color: var(--accent-text);
+}
+.settings-computer h2 {
+  font-size: var(--text-xl);
+  font-weight: 650;
+}
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.settings-actions > .btn {
+  max-width: 100%;
+}
+.settings-revoked {
+  color: var(--stop-text);
+  font-size: var(--text-sm);
+}
+.settings-capabilities {
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+.settings-capabilities li {
+  display: grid;
+  gap: var(--s1);
+  padding-block: var(--s3);
+  font-size: var(--text-sm);
+  overflow-wrap: break-word;
+}
+.settings-capabilities li + li {
+  border-top: 1px solid var(--line);
+}
+.settings-capabilities strong {
+  font-weight: 550;
+}
+.settings-capabilities span {
+  color: var(--ink-3);
+}
+/* Positioned so its screen-reader-only words sit, and scroll, with it. Without
+   a positioned ancestor inside the scrolling body they were placed against the
+   route instead and stretched the app frame below the screen. */
+.settings-screen summary {
+  position: relative;
+  min-height: var(--target);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--accent-text);
+  font-size: var(--text-sm);
+  font-weight: 550;
+}
+/* The second content gives the glyph empty alt text, so screen readers skip it. */
+.settings-screen summary::before {
+  content: "+";
+  content: "+" / "";
+  padding-right: var(--s2);
+}
+.settings-screen details[open] summary::before {
+  content: "−";
+  content: "−" / "";
+}
+.settings-project {
+  font-size: var(--text-md);
+  font-weight: 600;
+  padding-top: var(--s2);
+}
+fieldset.settings-stack {
+  grid-template-columns: minmax(0, 1fr);
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+fieldset.settings-stack .notice__body {
+  min-width: 0;
+}
+fieldset.settings-stack .cmd--inline {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+fieldset.settings-stack > legend {
+  padding: 0;
+  margin-bottom: var(--s2);
+}
+.settings-check {
+  min-height: var(--target);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.settings-warnings {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.settings-warnings > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: var(--target);
+}
+.settings-command-list {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.settings-command-list > div {
+  display: grid;
+  gap: var(--s1);
+  font-size: var(--text-xs);
+}
+.settings-screen .section + .section {
+  margin-top: var(--s2);
+}
+.settings-screen .btn,
+.settings-screen .notice {
+  overflow-wrap: break-word;
+}
+.settings-screen .settings-computer > div {
+  min-width: 0;
+}
+.settings-screen .settings-computer h2 {
+  overflow-wrap: break-word;
+}
+/* Licence texts keep their own line breaks; long URLs still wrap. */
+.settings-notices {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink-2);
+}
+
+.model-catalog { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+.model-catalog li { padding-block: var(--s3); border-bottom: 1px solid var(--line); }
+.model-catalog li:last-child { border-bottom: 0; }
+/* A page that is one section: the page's title names it already. */
+/* A page of one section: its heading repeats the page's title. */
+.settings-page--one .section__title {
+  display: none;
+}
+.settings-page--one .section__head:not(:has(> :not(.section__title))) {
+  display: none;
+}
+.settings-topic {
+  display: grid;
+  gap: var(--s1);
+}
+.settings-topic + .settings-topic {
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
+}

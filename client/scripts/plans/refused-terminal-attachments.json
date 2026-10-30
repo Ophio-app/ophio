@@ -1,0 +1,183 @@
+[
+  {
+    "name": "U14-1-terminal-gone-1280",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.host.terminals = []; window.__sim.control.dropTerminal(60000)"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "shot",
+        "refusal-ready"
+      ],
+      [
+        "click",
+        "Reconnect terminal"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.terminal-recovery button')].find(b=>b.textContent.includes('Open a new terminal')); const r=b?.getBoundingClientRect(); if(!r || r.top<0 || r.bottom>innerHeight) throw Error('Recovery action is outside viewport'); if(document.querySelector('.terminal-recovery').textContent.includes('Reconnect terminal'))throw Error('Gone terminal offers reconnect');"
+      ]
+    ]
+  },
+  {
+    "name": "U14-1-terminal-gone-844",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.host.terminals = []; window.__sim.control.dropTerminal(60000)"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "shot",
+        "refusal-ready"
+      ],
+      [
+        "click",
+        "Reconnect terminal"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.terminal-recovery button')].find(b=>b.textContent.includes('Open a new terminal')); const r=b?.getBoundingClientRect(); if(!r || r.top<0 || r.bottom>innerHeight) throw Error('Recovery action is outside viewport'); if(document.querySelector('.terminal-recovery').textContent.includes('Reconnect terminal'))throw Error('Gone terminal offers reconnect');"
+      ]
+    ]
+  },
+  {
+    "name": "U14-5-preview-sent",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "const host=window.__sim.host;const task=host.tasks.find(t=>t.task_id.endsWith('000000000205'));task.title='Draft a short status note';host.emit({type:'task_upserted',task:{...task}});"
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        "dialog[open] .btn--primary"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Your message",
+        "Please check the heading in this preview picture."
+      ],
+      [
+        "click",
+        "Continue"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.preview-draft p')].find(e=>e.textContent.includes('Sent with markup to Draft a short status note'));if(!p)throw Error('Missing sent preview status');const draft=p.closest('.preview-draft');if(draft.textContent.includes('Attach to this task')||draft.textContent.includes('Saved on this device'))throw Error('Sent picture looks unsent');p.scrollIntoView({block:'center'});const r=p.getBoundingClientRect();if(r.height===0||r.top<0||r.bottom>innerHeight)throw Error('Sent receipt is not visible');"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ],
+    "fresh": false
+  }
+]

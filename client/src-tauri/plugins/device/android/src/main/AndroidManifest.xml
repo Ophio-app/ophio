@@ -1,0 +1,32 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.DETECT_SCREEN_CAPTURE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Seeing the phone change networks, so alerts reconnect on the new one at once. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Updating the app to one a paired computer offers; from Android 12 without asking each time. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <application>
+        <service android:name="app.ophio.device.AlertService" android:exported="false" />
+        <receiver android:name="app.ophio.device.AlertStarter" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <service android:name="app.ophio.device.AlertCheck" android:exported="false" android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service android:name="app.ophio.device.AlertRedaction" android:exported="false" android:permission="android.permission.BIND_JOB_SERVICE" />
+        <receiver android:name="app.ophio.device.AppUpdate$Result" android:exported="false" />
+        <!-- An answer from a question's alert: only the alert's own intents reach it. -->
+        <receiver android:name="app.ophio.device.Answers" android:exported="false" />
+        <activity android:name="app.ophio.device.ScannerActivity" android:exported="false" android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+    </application>
+</manifest>

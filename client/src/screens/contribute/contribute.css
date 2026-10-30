@@ -1,0 +1,303 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* A handoff from Clankerhub, in Øphio's own system: no Clankerhub styling. */
+
+.contribute {
+  display: grid;
+  gap: var(--s4);
+  padding-top: var(--s2);
+}
+.contribute > .section {
+  margin: 0;
+}
+
+.contribute-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--s4);
+}
+/* At large text the title takes the whole line under the mark. */
+.contribute-head > div {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+.contribute-head__mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+  color: var(--ink-2);
+}
+.contribute-head__mark svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.contribute-head__title {
+  font-size: var(--text-2xl);
+  font-weight: 680;
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+.contribute-head__title:focus {
+  outline: none;
+}
+.contribute-head__lead {
+  margin-top: var(--s1);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.contribute-body {
+  line-height: var(--leading);
+}
+.contribute-panel {
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  color: var(--ink-2);
+  line-height: var(--leading);
+}
+.contribute-sheet__lead {
+  margin-bottom: var(--s3);
+  color: var(--ink-2);
+}
+
+/* Values from the handoff: data, set apart from the copy. Side by side
+   while both fit; at large text or on a narrow screen, the value goes under
+   its label rather than breaking a letter at a time. */
+.contribute-facts {
+  margin: 0;
+  container-type: inline-size;
+}
+.contribute-facts__row {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, auto) 1fr;
+  align-items: baseline;
+  gap: var(--s3);
+  min-height: var(--target);
+  padding: var(--s3) var(--s4);
+}
+.contribute-facts__row dt {
+  color: var(--ink-2);
+}
+.contribute-facts__row dd {
+  margin: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 22rem) {
+  .contribute-facts__row {
+    grid-template-columns: 1fr;
+    gap: var(--s1);
+  }
+  .contribute-facts__row dd {
+    text-align: start;
+  }
+}
+.contribute-facts__sub {
+  display: block;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+.contribute-facts__full {
+  font-size: var(--text-sm);
+}
+.contribute-facts__wait {
+  padding: var(--s4);
+  color: var(--ink-2);
+}
+
+.contribute-status {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+.contribute-spinner {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.9s linear infinite;
+  opacity: 0.8;
+}
+:root[data-reduce-motion="true"] .contribute-spinner {
+  animation: none;
+}
+
+.contribute-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.contribute-step {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--target);
+  padding: var(--s2) var(--s4);
+}
+.contribute-step__mark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--r-full);
+  box-shadow: inset 0 0 0 2px var(--line-strong);
+}
+.contribute-step__mark svg {
+  width: 1rem;
+  height: 1rem;
+}
+.contribute-step--done .contribute-step__mark {
+  background: var(--ok);
+  box-shadow: none;
+  color: var(--bg);
+}
+.contribute-step--now .contribute-step__mark {
+  box-shadow: none;
+  color: var(--accent-text);
+}
+.contribute-step--now .contribute-step__mark .contribute-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.contribute-step--waiting .contribute-step__label {
+  color: var(--ink-2);
+}
+.contribute-step__state {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+
+.contribute-badge {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--r-full);
+}
+.contribute-badge svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+.contribute-badge--warn {
+  background: var(--warn-soft);
+  color: var(--warn-text);
+}
+.contribute-badge--stop {
+  background: var(--stop-soft);
+  color: var(--stop-text);
+}
+
+.contribute-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.contribute-mark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: var(--r-full);
+}
+.contribute-mark svg {
+  width: 1rem;
+  height: 1rem;
+}
+.contribute-mark--ok {
+  background: var(--ok-soft);
+  color: var(--ok-text);
+}
+.contribute-mark--warn {
+  background: var(--warn-soft);
+  color: var(--warn-text);
+}
+.contribute-mark--none {
+  background: var(--surface-sunken);
+  color: var(--ink-3);
+}
+
+/* The person's own check: a native checkbox, the whole line its target. */
+.contribute-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  min-height: var(--target);
+  padding: var(--s3) 0;
+  cursor: pointer;
+  line-height: var(--leading);
+}
+.contribute-check input {
+  flex: none;
+  margin: 0.15rem 0 0;
+}
+
+.contribute-foot {
+  --gutter: max(var(--s4), calc((100% - var(--content-max)) / 2 + var(--s4)));
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3) max(var(--gutter), var(--safe-right)) max(var(--s3), var(--safe-bottom)) max(var(--gutter), var(--safe-left));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+.contribute-foot .btn {
+  min-height: var(--target);
+  white-space: normal;
+}
+.contribute-foot__note {
+  text-align: center;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+/* Why the action can't be taken: full contrast, never dimmed with the button. */
+.contribute-foot__reason {
+  text-align: center;
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+.screen__footer--flow .contribute-foot {
+  border-top: 0;
+  padding-inline: 0;
+}
+
+/* A status that wraps at large text instead of running off the row. */
+.contribute-wrap {
+  white-space: normal;
+  text-align: start;
+}
+
+/* An action that can't be taken yet, kept focusable for its reason. */
+.contribute-foot .btn--primary[aria-disabled="true"] {
+  background: var(--surface-sunken);
+  color: var(--ink-disabled);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  cursor: default;
+}
+
+/* A value that wraps reads from the left, as people compare it. */
+.contribute-facts__row dd:has(.contribute-facts__full) {
+  text-align: start;
+}
+
+.contribute-policy__text {
+  margin: 0;
+  padding: var(--s4);
+  max-height: 60dvh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: start;
+  unicode-bidi: plaintext;
+  font-size: var(--text-sm);
+}

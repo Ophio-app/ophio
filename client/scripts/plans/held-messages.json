@@ -1,0 +1,1552 @@
+[
+  {
+    "name": "U30-1-stop-held",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Withdrawn by Stop \u00b7 not sent')||!document.body.textContent.includes('1 held message withdrawn')) throw Error('Withdrawn state missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-held')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-1-dark-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Withdrawn by Stop \u00b7 not sent')||!document.body.textContent.includes('1 held message withdrawn')) throw Error('Withdrawn state missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-held button')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-1-light-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Withdrawn by Stop \u00b7 not sent')||!document.body.textContent.includes('1 held message withdrawn')) throw Error('Withdrawn state missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-held')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-1-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Withdrawn by Stop \u00b7 not sent')||!document.body.textContent.includes('1 held message withdrawn')) throw Error('Withdrawn state missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-held')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-1-landscape",
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Withdrawn by Stop \u00b7 not sent')||!document.body.textContent.includes('1 held message withdrawn')) throw Error('Withdrawn state missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-held')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-1-restored",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const ui=new UiStore('sim-studio');ui.selectTask(t.project_id,t.task_id);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.state==='working'&&t.harness==='claude_code');const send=(body)=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:t.task_id,text:'Also check the p99 line once the chart loads.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:t.task_id})})()"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Withdrawn by Stop \u00b7 not sent')||!document.body.textContent.includes('1 held message withdrawn')) throw Error('Withdrawn state missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-held')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Put back in composer"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('textarea')?.value.includes('p99')) throw Error('Composer not restored')"
+      ]
+    ]
+  },
+  {
+    "name": "U30-2-review-latest",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the header parser in `src/http/headers.rs`.\\n2. Add regression coverage for folded headers.\\n3. Implement the fix and run `cargo test -p http`.';for(const item of [{kind:'agent_message',text:'Here is the plan:\\n\\n'+p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u30task=t;window.u30run=r;const pr=h.projects.find(p=>p.project_id===t.project_id);pr.active_writer=null;h.emit({type:'project_upserted',project:{...pr}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__text').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "U30-2-review-earlier",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the header parser in `src/http/headers.rs`.\\n2. Add regression coverage for folded headers.\\n3. Implement the fix and run `cargo test -p http`.';for(const item of [{kind:'agent_message',text:'Here is the plan:\\n\\n'+p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u30task=t;window.u30run=r;const pr=h.projects.find(p=>p.project_id===t.project_id);pr.active_writer=null;h.emit({type:'project_upserted',project:{...pr}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host,t=window.u30task,r=window.u30run;const next={...r,run_id:crypto.randomUUID(),admitted_at:Date.now(),started_at:Date.now(),ended_at:Date.now(),outcome:null};h.runs.push(next);h.emit({type:'run_upserted',run:next});t.current_run=next.run_id;h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__text').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "U30-2-dark-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the header parser in `src/http/headers.rs`.\\n2. Add regression coverage for folded headers.\\n3. Implement the fix and run `cargo test -p http`.';for(const item of [{kind:'agent_message',text:'Here is the plan:\\n\\n'+p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u30task=t;window.u30run=r;const pr=h.projects.find(p=>p.project_id===t.project_id);pr.active_writer=null;h.emit({type:'project_upserted',project:{...pr}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.plan-quote').scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "U30-2-light-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the header parser in `src/http/headers.rs`.\\n2. Add regression coverage for folded headers.\\n3. Implement the fix and run `cargo test -p http`.';for(const item of [{kind:'agent_message',text:'Here is the plan:\\n\\n'+p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u30task=t;window.u30run=r;const pr=h.projects.find(p=>p.project_id===t.project_id);pr.active_writer=null;h.emit({type:'project_upserted',project:{...pr}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.plan-quote').scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "U30-2-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the header parser in `src/http/headers.rs`.\\n2. Add regression coverage for folded headers.\\n3. Implement the fix and run `cargo test -p http`.';for(const item of [{kind:'agent_message',text:'Here is the plan:\\n\\n'+p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u30task=t;window.u30run=r;const pr=h.projects.find(p=>p.project_id===t.project_id);pr.active_writer=null;h.emit({type:'project_upserted',project:{...pr}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host,t=window.u30task,r=window.u30run;const next={...r,run_id:crypto.randomUUID(),admitted_at:Date.now(),started_at:Date.now(),ended_at:Date.now(),outcome:null};h.runs.push(next);h.emit({type:'run_upserted',run:next});t.current_run=next.run_id;h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__text').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ]
+  },
+  {
+    "name": "U30-2-landscape",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the header parser in `src/http/headers.rs`.\\n2. Add regression coverage for folded headers.\\n3. Implement the fix and run `cargo test -p http`.';for(const item of [{kind:'agent_message',text:'Here is the plan:\\n\\n'+p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u30task=t;window.u30run=r;const pr=h.projects.find(p=>p.project_id===t.project_id);pr.active_writer=null;h.emit({type:'project_upserted',project:{...pr}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.plan-quote').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        200
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "dark": true
+  },
+  {
+    "name": "U30-2-sent",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the header parser in `src/http/headers.rs`.\\n2. Add regression coverage for folded headers.\\n3. Implement the fix and run `cargo test -p http`.';for(const item of [{kind:'agent_message',text:'Here is the plan:\\n\\n'+p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u30task=t;window.u30run=r;const pr=h.projects.find(p=>p.project_id===t.project_id);pr.active_writer=null;h.emit({type:'project_upserted',project:{...pr}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.review-screen textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(el,'Go ahead, but leave the public API alone.');el.dispatchEvent(new Event('input',{bubbles:true}))})()"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Start Work"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.talk-user__plan figcaption')?.textContent.includes('Plan from run 1')) throw Error('Plan figure missing')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.talk-user__plan')].at(-1).closest('.talk-user').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-2-sent-dark-large",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the header parser in `src/http/headers.rs`.\\n2. Add regression coverage for folded headers.\\n3. Implement the fix and run `cargo test -p http`.';for(const item of [{kind:'agent_message',text:'Here is the plan:\\n\\n'+p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u30task=t;window.u30run=r;const pr=h.projects.find(p=>p.project_id===t.project_id);pr.active_writer=null;h.emit({type:'project_upserted',project:{...pr}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.review-screen textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(el,'Go ahead, but leave the public API alone.');el.dispatchEvent(new Event('input',{bubbles:true}))})()"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Start Work"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.talk-user__plan figcaption')?.textContent.includes('Plan from run 1')) throw Error('Plan figure missing')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.talk-user__plan')].at(-1).closest('.talk-user').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true
+  },
+  {
+    "name": "U30-3-talk",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.state='completed';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';h.emit({type:'run_upserted',run:{...r}})})()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-3-work",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.state='completed';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';h.emit({type:'run_upserted',run:{...r}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.row__title')].filter(e=>e.textContent.trim()==='Add rate-limit headers to /v1/orders').at(0)?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-3-tasks",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');ui.push({screen:'tasks',filter:'done'},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.state='completed';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';h.emit({type:'run_upserted',run:{...r}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.row__title')].filter(e=>e.textContent.trim()==='Add rate-limit headers to /v1/orders').at(0)?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-3-receipt",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.state='completed';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';h.emit({type:'run_upserted',run:{...r}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "What happened"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "U30-3-talk-dark-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.state='completed';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';h.emit({type:'run_upserted',run:{...r}})})()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-3-work-light-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.state='completed';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';h.emit({type:'run_upserted',run:{...r}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.row__title')].filter(e=>e.textContent.trim()==='Add rate-limit headers to /v1/orders').at(0)?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-3-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.state='completed';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';h.emit({type:'run_upserted',run:{...r}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "U30-3-landscape",
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.state='completed';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';h.emit({type:'run_upserted',run:{...r}})})()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-4-collapsed",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');ui.push({screen:'receipt',taskId:ids.tHeaders},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';r.state='completed';const end=r.ended_at;const r2={...r,run_id:'u30-run-2',mode:'work',admitted_at:end+60000,ended_at:end+600000};const r3={...r,run_id:'u30-run-3',mode:'work',admitted_at:end+900000,ended_at:end+960000,state:'interrupted',outcome:null};h.runs.push(r2,r3);Object.assign(t,{mode:'work',state:'interrupted',current_run:r3.run_id});for(const x of [r,r2,r3])h.emit({type:'run_upserted',run:{...x}});h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "U30-4-sheet",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');ui.push({screen:'receipt',taskId:ids.tHeaders},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';r.state='completed';const end=r.ended_at;const r2={...r,run_id:'u30-run-2',mode:'work',admitted_at:end+60000,ended_at:end+600000};const r3={...r,run_id:'u30-run-3',mode:'work',admitted_at:end+900000,ended_at:end+960000,state:'interrupted',outcome:null};h.runs.push(r2,r3);Object.assign(t,{mode:'work',state:'interrupted',current_run:r3.run_id});for(const x of [r,r2,r3])h.emit({type:'run_upserted',run:{...x}});h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        "button[aria-label^=\"Choose\"]"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "U30-4-sheet-dark-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');ui.push({screen:'receipt',taskId:ids.tHeaders},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';r.state='completed';const end=r.ended_at;const r2={...r,run_id:'u30-run-2',mode:'work',admitted_at:end+60000,ended_at:end+600000};const r3={...r,run_id:'u30-run-3',mode:'work',admitted_at:end+900000,ended_at:end+960000,state:'interrupted',outcome:null};h.runs.push(r2,r3);Object.assign(t,{mode:'work',state:'interrupted',current_run:r3.run_id});for(const x of [r,r2,r3])h.emit({type:'run_upserted',run:{...x}});h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        "button[aria-label^=\"Choose\"]"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "U30-4-sheet-light-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');ui.push({screen:'receipt',taskId:ids.tHeaders},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';r.state='completed';const end=r.ended_at;const r2={...r,run_id:'u30-run-2',mode:'work',admitted_at:end+60000,ended_at:end+600000};const r3={...r,run_id:'u30-run-3',mode:'work',admitted_at:end+900000,ended_at:end+960000,state:'interrupted',outcome:null};h.runs.push(r2,r3);Object.assign(t,{mode:'work',state:'interrupted',current_run:r3.run_id});for(const x of [r,r2,r3])h.emit({type:'run_upserted',run:{...x}});h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        "button[aria-label^=\"Choose\"]"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "U30-4-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');ui.push({screen:'receipt',taskId:ids.tHeaders},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';r.state='completed';const end=r.ended_at;const r2={...r,run_id:'u30-run-2',mode:'work',admitted_at:end+60000,ended_at:end+600000};const r3={...r,run_id:'u30-run-3',mode:'work',admitted_at:end+900000,ended_at:end+960000,state:'interrupted',outcome:null};h.runs.push(r2,r3);Object.assign(t,{mode:'work',state:'interrupted',current_run:r3.run_id});for(const x of [r,r2,r3])h.emit({type:'run_upserted',run:{...x}});h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        "button[aria-label^=\"Choose\"]"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "U30-4-landscape",
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('work');ui.push({screen:'receipt',taskId:ids.tHeaders},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const t=h.tasks.find(t=>t.task_id===ids.tHeaders);const r=h.runs.find(r=>r.run_id===ids.rHeaders);r.mode='plan';r.state='completed';const end=r.ended_at;const r2={...r,run_id:'u30-run-2',mode:'work',admitted_at:end+60000,ended_at:end+600000};const r3={...r,run_id:'u30-run-3',mode:'work',admitted_at:end+900000,ended_at:end+960000,state:'interrupted',outcome:null};h.runs.push(r2,r3);Object.assign(t,{mode:'work',state:'interrupted',current_run:r3.run_id});for(const x of [r,r2,r3])h.emit({type:'run_upserted',run:{...x}});h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        "button[aria-label^=\"Choose\"]"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "U30-5-expired",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Link a chat"
+      ],
+      [
+        "fill",
+        "Chat link code",
+        "654-321"
+      ],
+      [
+        "click",
+        "Approve chat link"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-5-unknown",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Link a chat"
+      ],
+      [
+        "fill",
+        "Chat link code",
+        "000-000"
+      ],
+      [
+        "click",
+        "Approve chat link"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-5-expired-dark-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Link a chat"
+      ],
+      [
+        "fill",
+        "Chat link code",
+        "654-321"
+      ],
+      [
+        "click",
+        "Approve chat link"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-5-expired-light-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Link a chat"
+      ],
+      [
+        "fill",
+        "Chat link code",
+        "654-321"
+      ],
+      [
+        "click",
+        "Approve chat link"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-5-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Link a chat"
+      ],
+      [
+        "fill",
+        "Chat link code",
+        "654-321"
+      ],
+      [
+        "click",
+        "Approve chat link"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-5-landscape",
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Link a chat"
+      ],
+      [
+        "fill",
+        "Chat link code",
+        "654-321"
+      ],
+      [
+        "click",
+        "Approve chat link"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-card",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-row",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-sheet",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval').parentElement.querySelector('button').click()"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-sheet-open",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval').parentElement.querySelector('button').click()"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".work-sheet summary"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-sheet .approval__raw')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-card-dark-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval .approval__shortened')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-row-light-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval .approval__shortened')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-sheet-dark-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval').parentElement.querySelector('button').click()"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-sheet .approval__shortened')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval .approval__shortened')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-landscape",
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval .approval__shortened')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U30-6-settled",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.approval.shortened);const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input),state:'allowed',outcome:'allowed',resolved_at:Date.now()-5000};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval__shortened')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  }
+]

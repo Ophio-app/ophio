@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-alerts-viewing"
+description = "Enables the alerts_viewing command without any pre-configured scope."
+commands.allow = ["alerts_viewing"]
+
+[[permission]]
+identifier = "deny-alerts-viewing"
+description = "Denies the alerts_viewing command without any pre-configured scope."
+commands.deny = ["alerts_viewing"]

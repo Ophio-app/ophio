@@ -1,0 +1,806 @@
+[
+ {
+  "name": "U42-5-receipt-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.task_id===workIds.receipt);ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('.work-screen')].at(-1);const b=s.querySelector('.screen__body').getBoundingClientRect();const g=s.querySelector('.work-review');if(!g)throw Error('No review actions');const r=g.getBoundingClientRect();if(s.querySelector('.screen__footer'))throw Error('Review actions still in a footer');return JSON.stringify({body:[Math.round(b.top),Math.round(b.bottom)],review:[Math.round(r.top),Math.round(r.bottom)],whole:r.top>=b.top&&r.bottom<=b.bottom})})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-5-receipt-360-200-dark",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.task_id===workIds.receipt);ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('.work-screen')].at(-1);const b=s.querySelector('.screen__body').getBoundingClientRect();const g=s.querySelector('.work-review');if(!g)throw Error('No review actions');const r=g.getBoundingClientRect();if(s.querySelector('.screen__footer'))throw Error('Review actions still in a footer');return JSON.stringify({body:[Math.round(b.top),Math.round(b.bottom)],review:[Math.round(r.top),Math.round(r.bottom)],whole:r.top>=b.top&&r.bottom<=b.bottom})})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-5-receipt-390",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.task_id===workIds.receipt);ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('.work-screen')].at(-1);const b=s.querySelector('.screen__body').getBoundingClientRect();const g=s.querySelector('.work-review');if(!g)throw Error('No review actions');const r=g.getBoundingClientRect();if(s.querySelector('.screen__footer'))throw Error('Review actions still in a footer');return JSON.stringify({body:[Math.round(b.top),Math.round(b.bottom)],review:[Math.round(r.top),Math.round(r.bottom)],whole:r.top>=b.top&&r.bottom<=b.bottom})})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-5-receipt-390-dark",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.task_id===workIds.receipt);ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('.work-screen')].at(-1);const b=s.querySelector('.screen__body').getBoundingClientRect();const g=s.querySelector('.work-review');if(!g)throw Error('No review actions');const r=g.getBoundingClientRect();if(s.querySelector('.screen__footer'))throw Error('Review actions still in a footer');return JSON.stringify({body:[Math.round(b.top),Math.round(b.bottom)],review:[Math.round(r.top),Math.round(r.bottom)],whole:r.top>=b.top&&r.bottom<=b.bottom})})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-5-receipt-tablet",
+  "settle": 900,
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.task_id===workIds.receipt);ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('.work-screen')].at(-1);const b=s.querySelector('.screen__body').getBoundingClientRect();const g=s.querySelector('.work-review');if(!g)throw Error('No review actions');const r=g.getBoundingClientRect();if(s.querySelector('.screen__footer'))throw Error('Review actions still in a footer');return JSON.stringify({body:[Math.round(b.top),Math.round(b.bottom)],review:[Math.round(r.top),Math.round(r.bottom)],whole:r.top>=b.top&&r.bottom<=b.bottom})})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-5-receipt-landscape",
+  "settle": 900,
+  "width": 844,
+  "height": 390,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.task_id===workIds.receipt);ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('.work-screen')].at(-1);const b=s.querySelector('.screen__body').getBoundingClientRect();const g=s.querySelector('.work-review');if(!g)throw Error('No review actions');const r=g.getBoundingClientRect();if(s.querySelector('.screen__footer'))throw Error('Review actions still in a footer');return JSON.stringify({body:[Math.round(b.top),Math.round(b.bottom)],review:[Math.round(r.top),Math.round(r.bottom)],whole:r.top>=b.top&&r.bottom<=b.bottom})})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-5-reconcile-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.state==='reconciliation_required');ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('.work-screen')].at(-1);const b=s.querySelector('.screen__body').getBoundingClientRect();const g=s.querySelector('.work-review');if(!g)throw Error('No review actions');const r=g.getBoundingClientRect();if(s.querySelector('.screen__footer'))throw Error('Review actions still in a footer');return JSON.stringify({body:[Math.round(b.top),Math.round(b.bottom)],review:[Math.round(r.top),Math.round(r.bottom)],whole:r.top>=b.top&&r.bottom<=b.bottom})})()"
+   ],
+   [
+    "shot",
+    "mark"
+   ],
+   [
+    "click",
+    "Mark completed"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "shot",
+    "recorded"
+   ],
+   [
+    "wait",
+    2200
+   ]
+  ]
+ },
+ {
+  "name": "U42-5-reconcile-360-200-dark",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const t=window.__sim.host.tasks.find(t=>t.state==='reconciliation_required');ui.selectProject(t.project_id);ui.push({screen:'receipt',taskId:t.task_id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('.work-screen')].at(-1);const b=s.querySelector('.screen__body').getBoundingClientRect();const g=s.querySelector('.work-review');if(!g)throw Error('No review actions');const r=g.getBoundingClientRect();if(s.querySelector('.screen__footer'))throw Error('Review actions still in a footer');return JSON.stringify({body:[Math.round(b.top),Math.round(b.bottom)],review:[Math.round(r.top),Math.round(r.bottom)],whole:r.top>=b.top&&r.bottom<=b.bottom})})()"
+   ],
+   [
+    "shot",
+    "mark"
+   ],
+   [
+    "click",
+    "Mark completed"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "shot",
+    "recorded"
+   ],
+   [
+    "wait",
+    2200
+   ]
+  ]
+ },
+ {
+  "name": "U42-6-stop-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const send=body=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await send({command:'send_message',task_id:ids.tDash,text:'Then screenshot the legend.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const item=h.journal.map(e=>e.event).findLast(e=>e.type==='intervention_recorded'&&e.task_id===ids.tDash);h.emit({...item})})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const r=document.querySelector('.control-receipt');if(!r)throw Error('No computer receipt');const last=[...r.querySelectorAll('li')].at(-1).innerText.replace(/\\s+/g,' ');if(!last.startsWith('Held messages withdrawn \u00b7 2'))throw Error('Missing held line: '+last);[...r.querySelectorAll('li')].at(-1).scrollIntoView({block:'end'});return last})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U42-6-stop-360-200-dark",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const send=body=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await send({command:'send_message',task_id:ids.tDash,text:'Then screenshot the legend.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const item=h.journal.map(e=>e.event).findLast(e=>e.type==='intervention_recorded'&&e.task_id===ids.tDash);h.emit({...item})})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const r=document.querySelector('.control-receipt');if(!r)throw Error('No computer receipt');const last=[...r.querySelectorAll('li')].at(-1).innerText.replace(/\\s+/g,' ');if(!last.startsWith('Held messages withdrawn \u00b7 2'))throw Error('Missing held line: '+last);[...r.querySelectorAll('li')].at(-1).scrollIntoView({block:'end'});return last})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U42-6-stop-390",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const send=body=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await send({command:'send_message',task_id:ids.tDash,text:'Then screenshot the legend.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const item=h.journal.map(e=>e.event).findLast(e=>e.type==='intervention_recorded'&&e.task_id===ids.tDash);h.emit({...item})})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const r=document.querySelector('.control-receipt');if(!r)throw Error('No computer receipt');const last=[...r.querySelectorAll('li')].at(-1).innerText.replace(/\\s+/g,' ');if(!last.startsWith('Held messages withdrawn \u00b7 2'))throw Error('Missing held line: '+last);[...r.querySelectorAll('li')].at(-1).scrollIntoView({block:'end'});return last})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U42-6-stop-390-dark",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const send=body=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await send({command:'send_message',task_id:ids.tDash,text:'Then screenshot the legend.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const item=h.journal.map(e=>e.event).findLast(e=>e.type==='intervention_recorded'&&e.task_id===ids.tDash);h.emit({...item})})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const r=document.querySelector('.control-receipt');if(!r)throw Error('No computer receipt');const last=[...r.querySelectorAll('li')].at(-1).innerText.replace(/\\s+/g,' ');if(!last.startsWith('Held messages withdrawn \u00b7 2'))throw Error('Missing held line: '+last);[...r.querySelectorAll('li')].at(-1).scrollIntoView({block:'end'});return last})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U42-6-stop-tablet",
+  "settle": 900,
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const send=body=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await send({command:'send_message',task_id:ids.tDash,text:'Then screenshot the legend.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const item=h.journal.map(e=>e.event).findLast(e=>e.type==='intervention_recorded'&&e.task_id===ids.tDash);h.emit({...item})})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const r=document.querySelector('.control-receipt');if(!r)throw Error('No computer receipt');const last=[...r.querySelectorAll('li')].at(-1).innerText.replace(/\\s+/g,' ');if(!last.startsWith('Held messages withdrawn \u00b7 2'))throw Error('Missing held line: '+last);[...r.querySelectorAll('li')].at(-1).scrollIntoView({block:'end'});return last})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U42-6-stop-landscape",
+  "settle": 900,
+  "width": 844,
+  "height": 390,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const send=body=>h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body});await send({command:'send_message',task_id:ids.tDash,text:'Also check the p99 line.',bundle:null,delivery:'next_turn'});await send({command:'send_message',task_id:ids.tDash,text:'Then screenshot the legend.',bundle:null,delivery:'next_turn'});await send({command:'stop_task',task_id:ids.tDash})})()"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const item=h.journal.map(e=>e.event).findLast(e=>e.type==='intervention_recorded'&&e.task_id===ids.tDash);h.emit({...item})})()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "log",
+    "(()=>{const r=document.querySelector('.control-receipt');if(!r)throw Error('No computer receipt');const last=[...r.querySelectorAll('li')].at(-1).innerText.replace(/\\s+/g,' ');if(!last.startsWith('Held messages withdrawn \u00b7 2'))throw Error('Missing held line: '+last);[...r.querySelectorAll('li')].at(-1).scrollIntoView({block:'end'});return last})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U42-7-terminal-360-200",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');ui.push({screen:'terminal',terminalId:ids.term1});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const [l]=window.__sim.host.controlSim.terminalLinks;for(let i=1;i<=60;i++)l.input(new TextEncoder().encode('echo line '+i+'\\r'))})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const f=s.querySelector('.terminal-frame').getBoundingClientRect();const row=[...s.querySelectorAll('.xterm-rows > div')].filter(d=>d.textContent.trim()).at(-1);const r=row.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Latest row out of view: '+JSON.stringify([r.top,r.bottom,b.top,b.bottom]));if(f.bottom>b.bottom+0.5)throw Error('Output runs '+(f.bottom-b.bottom)+' px below the view');return 'latest row '+JSON.stringify(row.textContent.trim())+' at '+Math.round(r.bottom)+' of '+Math.round(b.bottom)})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(60000)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const btn=s.querySelector('.terminal-recovery .btn');if(!btn)throw Error('No Reconnect');const r=btn.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Reconnect clipped by '+(r.bottom-b.bottom)+' px');return btn.textContent+' whole, '+Math.round(b.bottom-r.bottom)+' px to spare'})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-7-terminal-360-200-dark",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');ui.push({screen:'terminal',terminalId:ids.term1});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const [l]=window.__sim.host.controlSim.terminalLinks;for(let i=1;i<=60;i++)l.input(new TextEncoder().encode('echo line '+i+'\\r'))})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const f=s.querySelector('.terminal-frame').getBoundingClientRect();const row=[...s.querySelectorAll('.xterm-rows > div')].filter(d=>d.textContent.trim()).at(-1);const r=row.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Latest row out of view: '+JSON.stringify([r.top,r.bottom,b.top,b.bottom]));if(f.bottom>b.bottom+0.5)throw Error('Output runs '+(f.bottom-b.bottom)+' px below the view');return 'latest row '+JSON.stringify(row.textContent.trim())+' at '+Math.round(r.bottom)+' of '+Math.round(b.bottom)})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(60000)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const btn=s.querySelector('.terminal-recovery .btn');if(!btn)throw Error('No Reconnect');const r=btn.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Reconnect clipped by '+(r.bottom-b.bottom)+' px');return btn.textContent+' whole, '+Math.round(b.bottom-r.bottom)+' px to spare'})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-7-terminal-390",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');ui.push({screen:'terminal',terminalId:ids.term1});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const [l]=window.__sim.host.controlSim.terminalLinks;for(let i=1;i<=60;i++)l.input(new TextEncoder().encode('echo line '+i+'\\r'))})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const f=s.querySelector('.terminal-frame').getBoundingClientRect();const row=[...s.querySelectorAll('.xterm-rows > div')].filter(d=>d.textContent.trim()).at(-1);const r=row.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Latest row out of view: '+JSON.stringify([r.top,r.bottom,b.top,b.bottom]));if(f.bottom>b.bottom+0.5)throw Error('Output runs '+(f.bottom-b.bottom)+' px below the view');return 'latest row '+JSON.stringify(row.textContent.trim())+' at '+Math.round(r.bottom)+' of '+Math.round(b.bottom)})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(60000)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const btn=s.querySelector('.terminal-recovery .btn');if(!btn)throw Error('No Reconnect');const r=btn.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Reconnect clipped by '+(r.bottom-b.bottom)+' px');return btn.textContent+' whole, '+Math.round(b.bottom-r.bottom)+' px to spare'})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-7-terminal-390-dark",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');ui.push({screen:'terminal',terminalId:ids.term1});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const [l]=window.__sim.host.controlSim.terminalLinks;for(let i=1;i<=60;i++)l.input(new TextEncoder().encode('echo line '+i+'\\r'))})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const f=s.querySelector('.terminal-frame').getBoundingClientRect();const row=[...s.querySelectorAll('.xterm-rows > div')].filter(d=>d.textContent.trim()).at(-1);const r=row.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Latest row out of view: '+JSON.stringify([r.top,r.bottom,b.top,b.bottom]));if(f.bottom>b.bottom+0.5)throw Error('Output runs '+(f.bottom-b.bottom)+' px below the view');return 'latest row '+JSON.stringify(row.textContent.trim())+' at '+Math.round(r.bottom)+' of '+Math.round(b.bottom)})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(60000)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const btn=s.querySelector('.terminal-recovery .btn');if(!btn)throw Error('No Reconnect');const r=btn.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Reconnect clipped by '+(r.bottom-b.bottom)+' px');return btn.textContent+' whole, '+Math.round(b.bottom-r.bottom)+' px to spare'})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-7-terminal-tablet",
+  "settle": 900,
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');ui.push({screen:'terminal',terminalId:ids.term1});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const [l]=window.__sim.host.controlSim.terminalLinks;for(let i=1;i<=60;i++)l.input(new TextEncoder().encode('echo line '+i+'\\r'))})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const f=s.querySelector('.terminal-frame').getBoundingClientRect();const row=[...s.querySelectorAll('.xterm-rows > div')].filter(d=>d.textContent.trim()).at(-1);const r=row.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Latest row out of view: '+JSON.stringify([r.top,r.bottom,b.top,b.bottom]));if(f.bottom>b.bottom+0.5)throw Error('Output runs '+(f.bottom-b.bottom)+' px below the view');return 'latest row '+JSON.stringify(row.textContent.trim())+' at '+Math.round(r.bottom)+' of '+Math.round(b.bottom)})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(60000)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const btn=s.querySelector('.terminal-recovery .btn');if(!btn)throw Error('No Reconnect');const r=btn.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Reconnect clipped by '+(r.bottom-b.bottom)+' px');return btn.textContent+' whole, '+Math.round(b.bottom-r.bottom)+' px to spare'})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-7-terminal-landscape",
+  "settle": 900,
+  "width": 844,
+  "height": 390,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');ui.push({screen:'terminal',terminalId:ids.term1});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const [l]=window.__sim.host.controlSim.terminalLinks;for(let i=1;i<=60;i++)l.input(new TextEncoder().encode('echo line '+i+'\\r'))})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const f=s.querySelector('.terminal-frame').getBoundingClientRect();const row=[...s.querySelectorAll('.xterm-rows > div')].filter(d=>d.textContent.trim()).at(-1);const r=row.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Latest row out of view: '+JSON.stringify([r.top,r.bottom,b.top,b.bottom]));if(f.bottom>b.bottom+0.5)throw Error('Output runs '+(f.bottom-b.bottom)+' px below the view');return 'latest row '+JSON.stringify(row.textContent.trim())+' at '+Math.round(r.bottom)+' of '+Math.round(b.bottom)})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(60000)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const btn=s.querySelector('.terminal-recovery .btn');if(!btn)throw Error('No Reconnect');const r=btn.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Reconnect clipped by '+(r.bottom-b.bottom)+' px');return btn.textContent+' whole, '+Math.round(b.bottom-r.bottom)+' px to spare'})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-7-terminal-landscape-200",
+  "settle": 900,
+  "width": 844,
+  "height": 390,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');ui.push({screen:'terminal',terminalId:ids.term1});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const [l]=window.__sim.host.controlSim.terminalLinks;for(let i=1;i<=60;i++)l.input(new TextEncoder().encode('echo line '+i+'\\r'))})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const f=s.querySelector('.terminal-frame').getBoundingClientRect();const row=[...s.querySelectorAll('.xterm-rows > div')].filter(d=>d.textContent.trim()).at(-1);const r=row.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Latest row out of view: '+JSON.stringify([r.top,r.bottom,b.top,b.bottom]));if(f.bottom>b.bottom+0.5)throw Error('Output runs '+(f.bottom-b.bottom)+' px below the view');return 'latest row '+JSON.stringify(row.textContent.trim())+' at '+Math.round(r.bottom)+' of '+Math.round(b.bottom)})()"
+   ],
+   [
+    "shot",
+    "latest"
+   ],
+   [
+    "eval",
+    "window.__sim.control.dropTerminal(60000)"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const btn=s.querySelector('.terminal-recovery .btn');if(!btn)throw Error('No Reconnect');const r=btn.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Reconnect clipped by '+(r.bottom-b.bottom)+' px');return btn.textContent+' whole, '+Math.round(b.bottom-r.bottom)+' px to spare'})()"
+   ]
+  ]
+ },
+ {
+  "name": "U42-7-terminal-360-200-typing",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');ui.push({screen:'terminal',terminalId:ids.term1});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "eval",
+    "(()=>{const [l]=window.__sim.host.controlSim.terminalLinks;for(let i=1;i<=60;i++)l.input(new TextEncoder().encode('echo line '+i+'\\r'))})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".terminal-composer textarea"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const s=document.querySelector('.terminal-screen');const b=s.querySelector('.screen__body').getBoundingClientRect();const f=s.querySelector('.terminal-frame').getBoundingClientRect();const row=[...s.querySelectorAll('.xterm-rows > div')].filter(d=>d.textContent.trim()).at(-1);const r=row.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom+0.5)throw Error('Latest row out of view: '+JSON.stringify([r.top,r.bottom,b.top,b.bottom]));if(f.bottom>b.bottom+0.5)throw Error('Output runs '+(f.bottom-b.bottom)+' px below the view');return 'latest row '+JSON.stringify(row.textContent.trim())+' at '+Math.round(r.bottom)+' of '+Math.round(b.bottom)})()"
+   ]
+  ]
+ }
+]

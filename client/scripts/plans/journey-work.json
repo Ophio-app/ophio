@@ -1,0 +1,116 @@
+[
+  {
+    "name": "m2-work-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "garden-planner"],
+      [
+        "fill",
+        "What should Claude Code",
+        "Add unit tests for the garden layout."
+      ],
+      ["click", "Review"],
+      ["wait", 400],
+      ["shot", "review"],
+      ["click", "Start task"],
+      ["wait", 2500],
+      ["wait", 400],
+      ["shot", "live"],
+      ["clickSel", ".talk-bar__stop"],
+      ["wait", 800],
+      [
+        "eval",
+        "if(!window.__sim.host.tasks.some(t=>t.title.includes('Add unit tests')&&t.state==='interrupted')) throw Error('Stop did not settle')"
+      ]
+    ]
+  },
+  {
+    "name": "m2-work-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "garden-planner"],
+      [
+        "fill",
+        "What should Claude Code",
+        "Add unit tests for the garden layout."
+      ],
+      ["click", "Review"],
+      ["wait", 400],
+      ["shot", "review"],
+      ["click", "Start task"],
+      ["wait", 2500],
+      ["wait", 400],
+      ["shot", "live"],
+      ["clickSel", ".talk-bar__stop"],
+      ["wait", 800],
+      [
+        "eval",
+        "if(!window.__sim.host.tasks.some(t=>t.title.includes('Add unit tests')&&t.state==='interrupted')) throw Error('Stop did not settle')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-work-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "garden-planner"],
+      [
+        "fill",
+        "What should Claude Code",
+        "Add unit tests for the garden layout."
+      ],
+      ["click", "Review"],
+      ["wait", 400],
+      ["shot", "review"],
+      ["click", "Start task"],
+      ["wait", 2500],
+      ["wait", 400],
+      ["shot", "live"],
+      ["clickSel", ".talk-bar__stop"],
+      ["wait", 800],
+      [
+        "eval",
+        "if(!window.__sim.host.tasks.some(t=>t.title.includes('Add unit tests')&&t.state==='interrupted')) throw Error('Stop did not settle')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-work-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "garden-planner"],
+      [
+        "fill",
+        "What should Claude Code",
+        "Add unit tests for the garden layout."
+      ],
+      ["click", "Review"],
+      ["wait", 400],
+      ["shot", "review"],
+      ["click", "Start task"],
+      ["wait", 2500],
+      ["wait", 400],
+      ["shot", "live"],
+      ["clickSel", ".talk-bar__stop"],
+      ["wait", 800],
+      [
+        "eval",
+        "if(!window.__sim.host.tasks.some(t=>t.title.includes('Add unit tests')&&t.state==='interrupted')) throw Error('Stop did not settle')"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

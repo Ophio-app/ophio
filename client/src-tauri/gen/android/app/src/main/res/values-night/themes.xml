@@ -1,0 +1,7 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<resources>
+    <style name="Theme.phone_shell" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/app_accent</item>
+        <item name="colorAccent">@color/app_accent</item>
+    </style>
+</resources>

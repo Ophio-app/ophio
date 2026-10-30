@@ -1,0 +1,124 @@
+[
+  {
+    "name": "m3-queue-offline-light",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["click", "Open Next up"],
+      ["wait", 600],
+      ["shot", "named-stops"],
+      [
+        "eval",
+        "window.__m3Desktop = window.__sim.host.tasks.find(t=>t.kind==='computer_use').task_id; window.__m3Writer = window.__sim.host.tasks.find(t=>t.title.startsWith('Fix the flaky')).task_id"
+      ],
+      ["clickSel", ".route:not(.is-hidden) .work-safety .btn--stop-outline"],
+      ["wait", 650],
+      [
+        "eval",
+        "const h=window.__sim.host;if(h.tasks.find(t=>t.task_id===window.__m3Writer).state!=='interrupted')throw Error('Writer did not stop'); if(h.tasks.find(t=>t.task_id===window.__m3Desktop).state==='interrupted')throw Error('Stopped the desktop task instead')"
+      ],
+      ["shot", "writer-stopped"],
+      ["eval", "window.__sim.offline('Network disconnected')"],
+      ["wait", 600],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Last known:')) throw Error('Missing stale ownership'); if(!document.querySelector('.app__safety')?.textContent.includes('Pause and Stop need a connection')) throw Error('Missing reachability note')"
+      ]
+    ]
+  },
+  {
+    "name": "m3-queue-offline-dark",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["click", "Open Next up"],
+      ["wait", 600],
+      ["shot", "named-stops"],
+      [
+        "eval",
+        "window.__m3Desktop = window.__sim.host.tasks.find(t=>t.kind==='computer_use').task_id; window.__m3Writer = window.__sim.host.tasks.find(t=>t.title.startsWith('Fix the flaky')).task_id"
+      ],
+      ["clickSel", ".route:not(.is-hidden) .work-safety .btn--stop-outline"],
+      ["wait", 650],
+      [
+        "eval",
+        "const h=window.__sim.host;if(h.tasks.find(t=>t.task_id===window.__m3Writer).state!=='interrupted')throw Error('Writer did not stop'); if(h.tasks.find(t=>t.task_id===window.__m3Desktop).state==='interrupted')throw Error('Stopped the desktop task instead')"
+      ],
+      ["shot", "writer-stopped"],
+      ["eval", "window.__sim.offline('Network disconnected')"],
+      ["wait", 600],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Last known:')) throw Error('Missing stale ownership'); if(!document.querySelector('.app__safety')?.textContent.includes('Pause and Stop need a connection')) throw Error('Missing reachability note')"
+      ]
+    ]
+  },
+  {
+    "name": "m3-queue-offline-large",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "settle": 900,
+    "text": 2,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["click", "Open Next up"],
+      ["wait", 600],
+      ["shot", "named-stops"],
+      [
+        "eval",
+        "window.__m3Desktop = window.__sim.host.tasks.find(t=>t.kind==='computer_use').task_id; window.__m3Writer = window.__sim.host.tasks.find(t=>t.title.startsWith('Fix the flaky')).task_id"
+      ],
+      ["clickSel", ".route:not(.is-hidden) .work-safety .btn--stop-outline"],
+      ["wait", 650],
+      [
+        "eval",
+        "const h=window.__sim.host;if(h.tasks.find(t=>t.task_id===window.__m3Writer).state!=='interrupted')throw Error('Writer did not stop'); if(h.tasks.find(t=>t.task_id===window.__m3Desktop).state==='interrupted')throw Error('Stopped the desktop task instead')"
+      ],
+      ["shot", "writer-stopped"],
+      ["eval", "window.__sim.offline('Network disconnected')"],
+      ["wait", 600],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Last known:')) throw Error('Missing stale ownership'); if(!document.querySelector('.app__safety')?.textContent.includes('Pause and Stop need a connection')) throw Error('Missing reachability note')"
+      ]
+    ]
+  },
+  {
+    "name": "m3-queue-offline-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["click", "Open Next up"],
+      ["wait", 600],
+      ["shot", "named-stops"],
+      [
+        "eval",
+        "window.__m3Desktop = window.__sim.host.tasks.find(t=>t.kind==='computer_use').task_id; window.__m3Writer = window.__sim.host.tasks.find(t=>t.title.startsWith('Fix the flaky')).task_id"
+      ],
+      ["clickSel", ".route:not(.is-hidden) .work-safety .btn--stop-outline"],
+      ["wait", 650],
+      [
+        "eval",
+        "const h=window.__sim.host;if(h.tasks.find(t=>t.task_id===window.__m3Writer).state!=='interrupted')throw Error('Writer did not stop'); if(h.tasks.find(t=>t.task_id===window.__m3Desktop).state==='interrupted')throw Error('Stopped the desktop task instead')"
+      ],
+      ["shot", "writer-stopped"],
+      ["eval", "window.__sim.offline('Network disconnected')"],
+      ["wait", 600],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Last known:')) throw Error('Missing stale ownership'); if(!document.querySelector('.app__safety')?.textContent.includes('Pause and Stop need a connection')) throw Error('Missing reachability note')"
+      ]
+    ]
+  }
+]

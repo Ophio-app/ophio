@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# Installed copy: ~/.config/systemd/user/ophio-actions-runner@.service, one
+# instance per runner folder: ophio-actions-runner@NAME runs
+# ~/.local/share/actions-runner/NAME (docs/operations/self-hosted-runner.md).
+[Unit]
+Description=GitHub Actions runner %i for this repository (bubblewrap, Ubuntu 24.04 root)
+After=network-online.target
+
+[Service]
+Type=simple
+# The sandbox is defined here, outside the folders jobs can write to.
+# Jobs see a read-only Ubuntu 24.04 root (built by
+# scripts/ci-runner/provision-rootfs.sh), none of the
+# host's /home, /run, /tmp or /etc, and only their runner's folder and the
+# runners' shared record of passed trees (/ci-shared) writable.
+# Network stays available.
+ExecStartPre=/usr/bin/mkdir -p %h/.local/share/actions-runner/ci-shared
+ExecStart=/usr/bin/bwrap \
+  --ro-bind %h/.local/share/actions-runner/ophio-rootfs / \
+  --ro-bind /etc/resolv.conf /etc/resolv.conf \
+  --dev /dev --proc /proc \
+  --tmpfs /tmp --tmpfs /run --tmpfs /var/tmp \
+  --bind %h/.local/share/actions-runner/%i /runner \
+  --bind %h/.local/share/actions-runner/ci-shared /ci-shared \
+  --clearenv \
+  --setenv HOME /runner/home \
+  --setenv USER runner \
+  --setenv PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin \
+  --setenv LANG C.UTF-8 \
+  --unshare-user --uid 1000 --gid 1000 \
+  --unshare-pid --unshare-ipc --unshare-uts --hostname ophio-ci \
+  --die-with-parent --new-session \
+  --chdir /runner \
+  /runner/run.sh
+# run.sh maps several Listener failures (including SIGKILL) to exit 0.
+# Restart clean exits too; an explicit systemctl stop still stays stopped.
+Restart=always
+RestartSec=15
+# Each runner may use up to 24 GB; ophio-ci.slice caps them together.
+Slice=ophio-ci.slice
+Nice=10
+MemoryMax=24G
+KillMode=mixed
+TimeoutStopSec=60
+
+[Install]
+WantedBy=default.target

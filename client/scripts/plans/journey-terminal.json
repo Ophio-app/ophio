@@ -1,0 +1,88 @@
+[
+  {
+    "name": "m2-terminal-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      ["fill", "Command for", "echo one\necho two"],
+      ["click", "Send line"],
+      ["wait", 400],
+      ["shot", "preview"],
+      ["click", "Paste into"],
+      ["wait", 500],
+      ["shot", "pasted"],
+      ["clickSel", "[role=radio]:has-text(\"Key mode\")"],
+      ["wait", 400]
+    ]
+  },
+  {
+    "name": "m2-terminal-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      ["fill", "Command for", "echo one\necho two"],
+      ["click", "Send line"],
+      ["wait", 400],
+      ["shot", "preview"],
+      ["click", "Paste into"],
+      ["wait", 500],
+      ["shot", "pasted"],
+      ["clickSel", "[role=radio]:has-text(\"Key mode\")"],
+      ["wait", 400]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-terminal-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      ["fill", "Command for", "echo one\necho two"],
+      ["click", "Send line"],
+      ["wait", 400],
+      ["shot", "preview"],
+      ["click", "Paste into"],
+      ["wait", 500],
+      ["shot", "pasted"],
+      ["clickSel", "[role=radio]:has-text(\"Key mode\")"],
+      ["wait", 400]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-terminal-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      ["fill", "Command for", "echo one\necho two"],
+      ["click", "Send line"],
+      ["wait", 400],
+      ["shot", "preview"],
+      ["click", "Paste into"],
+      ["wait", 500],
+      ["shot", "pasted"],
+      ["clickSel", "[role=radio]:has-text(\"Key mode\")"],
+      ["wait", 400]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

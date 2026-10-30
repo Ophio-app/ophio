@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-shell-theme"
+description = "Enables the shell_theme command without any pre-configured scope."
+commands.allow = ["shell_theme"]
+
+[[permission]]
+identifier = "deny-shell-theme"
+description = "Denies the shell_theme command without any pre-configured scope."
+commands.deny = ["shell_theme"]

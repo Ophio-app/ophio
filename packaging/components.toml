@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# Non-package inputs. Versions below identify the notice/source baseline.
+# Cargo/npm/Maven packages are discovered, never enumerated by hand here.
+
+[[component]]
+name = "Independent JPEG Group transform (Rust port in jpeg-encoder)"
+version = "0.6.1"
+purl = "pkg:generic/ijg-jpeg-encoder-transform@0.6.1"
+license = "IJG"
+artifacts = ["linux", "windows"]
+shipped = true
+texts = ["packaging/licenses/jpeg-encoder-IJG-NOTICE"]
+url = "https://github.com/vstroebel/jpeg-encoder/tree/v0.6.1"
+role = "Embedded transform in the default pure-Rust codec. Native libturbojpeg is not enabled by these packaging scripts."
+
+[[component]]
+name = "PipeWire system library"
+version = "1.6.9"
+purl = "pkg:generic/pipewire@1.6.9"
+license = "MIT"
+artifacts = ["linux"]
+shipped = false
+texts = ["packaging/licenses/pipewire-COPYING"]
+url = "https://gitlab.freedesktop.org/pipewire/pipewire"
+role = "External distribution-provided desktop capture library; version identifies the build baseline, not the user's runtime."
+
+[[component]]
+name = "LLVM compiler-rt and libunwind runtime"
+version = "23.1.2"
+purl = "pkg:generic/llvm-runtime@23.1.2"
+license = "Apache-2.0 WITH LLVM-exception"
+artifacts = ["windows"]
+shipped = true
+texts = ["packaging/licenses/llvm-LICENSE"]
+url = "https://github.com/llvm/llvm-project/tree/85ac560262434c9ccfc0c183ec22d4138ed647fb"
+role = "Statically linked compiler runtime from the LLVM/MinGW build toolchain."
+
+[[component]]
+name = "MinGW-w64 runtime"
+version = "15.0.0"
+purl = "pkg:generic/mingw-w64-runtime@15.0.0"
+license = "LicenseRef-MinGW-public-domain AND ZPL-2.1 AND LicenseRef-gdtoa-Lucent"
+artifacts = ["windows"]
+shipped = true
+texts = ["packaging/licenses/mingw-runtime-NOTICE"]
+url = "https://github.com/mingw-w64/mingw-w64"
+role = "Statically linked startup, stdio and gdtoa conversion objects. The licence covers the linked objects only, each reviewed in packaging/windows/runtime-objects.toml and enforced from the linker maps; the runtime's full notice is retained unchanged."

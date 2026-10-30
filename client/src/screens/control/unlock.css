@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Unlocking with the password, wherever a locked computer stops something. */
+.control-unlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+.control-unlock__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  align-self: stretch;
+}
+.control-unlock__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+}

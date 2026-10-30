@@ -1,0 +1,87 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/protocol",
+    "crates/report-pipeline",
+    "crates/report-fixer",
+    "crates/test-support",
+    "crates/domain",
+    "crates/ports",
+    "crates/store",
+    "crates/services",
+    "crates/media",
+    "crates/containment",
+    "crates/sandbox",
+    "crates/harness-claude",
+    "crates/harness-codex",
+    "crates/platform-linux",
+    "crates/platform-windows",
+    "crates/channels",
+    "crates/computer-mcp",
+    "crates/library",
+    "crates/terminal",
+    "crates/speech",
+    "crates/companion",
+    "crates/jev",
+    "crates/voice-control",
+    "crates/browser",
+    "crates/accounts",
+    "crates/intake",
+]
+# The Tauri client has its own Cargo workspace under client/src-tauri so that
+# mobile targets never pull host-only dependencies.
+exclude = ["client"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+license = "Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+protocol = { path = "crates/protocol" }
+domain = { path = "crates/domain" }
+ports = { path = "crates/ports" }
+accounts = { path = "crates/accounts" }
+store = { path = "crates/store" }
+services = { path = "crates/services" }
+media = { path = "crates/media" }
+containment = { path = "crates/containment" }
+sandbox = { path = "crates/sandbox" }
+harness-claude = { path = "crates/harness-claude" }
+harness-codex = { path = "crates/harness-codex" }
+platform-linux = { path = "crates/platform-linux" }
+platform-windows = { path = "crates/platform-windows" }
+channels = { path = "crates/channels" }
+computer-mcp = { path = "crates/computer-mcp" }
+library = { path = "crates/library" }
+terminal = { path = "crates/terminal" }
+speech = { path = "crates/speech" }
+
+serde = { version = "1.0.229", features = ["derive"] }
+# Correctly rounded float parsing: without it, a float serde_json writes can
+# read back one unit in the last place away.
+serde_json = { version = "1.0", features = ["float_roundtrip"] }
+schemars = { version = "1.2.2", features = ["uuid1"] }
+ts-rs = { version = "12.0.1", features = ["uuid-impl", "serde-json-impl", "no-serde-warnings"] }
+uuid = { version = "1.26", features = ["v7", "v4", "serde"] }
+thiserror = "2.0.21"
+async-trait = "0.1"
+tokio = { version = "1.53.3", features = ["full"] }
+tracing = "0.1.44"
+bytes = "1.11"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = "debuginfo"

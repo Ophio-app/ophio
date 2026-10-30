@@ -1,0 +1,374 @@
+[
+  {
+    "name": "U22-1-denial",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset('work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");for(const a of h.attention.filter(a=>a.approval_id!==ids.aTest)){a.resolved_at=Date.now();h.emit({type:'attention_resolved',attention_id:a.attention_id})}const a=h.approvals.find(a=>a.approval_id===ids.aTest);await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:a.revision,body:{command:'resolve_approval',approval_id:a.approval_id,decision:{decision:'deny',reason:null}}});})()"
+      ],
+      [
+        "wait",
+        7000
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "U22-2-helpers",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset('work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");for(const a of h.attention){a.resolved_at=Date.now();h.emit({type:'attention_resolved',attention_id:a.attention_id})}const t=h.tasks.find(t=>t.task_id===workIds.receipt);const r=h.runs.find(r=>r.run_id===t.current_run);r.children=['indexer','checker'].map(label=>({child_id:label,label,state:'unknown',started_at:Date.now(),ended_at:null,provenance:'native',native_ref:label}));h.emit({type:'run_upserted',run:r});for(const c of r.children){const item={attention_id:c.child_id,task_id:t.task_id,run_id:r.run_id,child_id:c.child_id,kind:'reconciliation_required',title:c.label+' \u00b7 Outcome unknown',body:null,priority:70,created_at:Date.now(),resolved_at:null,approval_id:null};h.attention.push(item);h.emit({type:'attention_upserted',item})}})()"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "U22-3-first-receipt",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.receipt);ui.reset('talk',[{screen:'receipt',taskId:workIds.receipt}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const items=h.journal.filter(e=>e.event.type==='timeline_appended'&&e.event.task_id===workIds.receipt);const m=items.find(e=>e.event.item.item.kind==='user_message'&&e.event.item.item.bundle);m.event.item.run_id=null;h.emit({type:'timeline_appended',task_id:workIds.receipt,item:{seq:h.seq+1,at:Date.now(),run_id:workIds.run,item:{kind:'delivery',message_seq:m.event.item.seq,state:'native_delivered'}}});h.emit({type:'timeline_appended',task_id:workIds.receipt,item:m.event.item});for(const a of h.work.artifacts()){a.links=[];h.emit({type:'artifact_created',artifact:a})}})()"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Your messages in this run').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "U22-4-undelivered-receipt",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.receipt);ui.reset('talk',[{screen:'receipt',taskId:workIds.receipt}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");const task=h.tasks.find(t=>t.task_id===workIds.receipt);const run=h.runs.find(r=>r.run_id===task.current_run);h.emit({type:\"run_upserted\",run:{...run,state:\"interrupted\"}});const m=h.journal.findLast(e=>e.event.type==='timeline_appended'&&e.event.task_id===workIds.receipt&&e.event.item.item.kind==='user_message'&&e.event.item.item.bundle).event.item;const b=structuredClone(m.item.bundle);b.bundle_id=\"undelivered-u22\";b.marks=b.marks.slice(0,1);b.sources.forEach(s=>s.origin={kind:'preview_capture',capture_id:'retry-picture',host_id:ids.host,computer_name:'studio',preview_id:'notes',preview_label:'Notes',captured_at:s.captured_at});h.emit({type:'timeline_appended',task_id:workIds.receipt,item:{...m,seq:m.seq,item:{...m.item,text:'Check this Notes picture',bundle:b,delivery:'failed'}}});})()"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Your messages in this run').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "U22-6-welcome-unconfigured",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "eval",
+        "document.querySelector('.welcome-download').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "(async()=>{const {companionDownload}=await import('/src/screens/welcome/companionDownload.ts');const c=companionDownload();const text=document.querySelector('.welcome-download').textContent;if(!text.includes(c.url?'Open download page':'This build has no download link for Øphio'))throw Error('Download configuration not reflected');})()"
+      ]
+    ],
+    "path": "/?unpaired"
+  },
+  {
+    "name": "U22-7-ended-terminal",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Command",
+        "exit 7"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.terminal-composer'))throw Error('Ended input remains');"
+      ]
+    ]
+  },
+  {
+    "name": "U22-8-blocked-continue",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.receipt);ui.saveDraft(ids.pTide,workIds.receipt,{text:'Please check the spacing again.'});ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const b=document.querySelector('.composer__blocker');const r=b.getBoundingClientRect();const limit=document.querySelector('.app__safety').getBoundingClientRect().top;if(r.bottom>limit)throw Error('Blocking task and remedy are clipped');"
+      ]
+    ]
+  },
+  {
+    "name": "U22-5-send-again-draft",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.reset('talk',[{screen:'receipt',taskId:ids.tNotes}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const {ids}=await import('/src/dev/sim/scenario.ts');const {previewDrafts}=await import('/src/screens/control/previewDrafts.ts');const {previewDeliveries}=await import('/src/screens/control/previewDelivery.ts');const preview=h.previews.find(p=>p.project_id===ids.pNotes);const a=h.work.artifacts()[0];const draft={id:'U22-retry',profileId:'sim-studio',previewId:preview.preview_id,previewLabel:'Notes',computerId:ids.host,computerName:'studio',projectId:ids.pNotes,taskId:ids.tNotes,blob:new Blob([h.artifactBytes.get(a.artifact_id)],{type:'image/png'}),at:Date.now(),artifactId:a.artifact_id};await previewDrafts.put(draft);previewDeliveries('sim-studio').set({'U22-retry':{taskId:ids.tNotes,taskTitle:'Summarize the project',at:Date.now(),state:'failed'}});})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Send again"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.bar__title')?.textContent==='Task receipt')throw Error('Receipt still on Talk stack');if(!document.querySelector('.composer__attach')||!document.querySelector('.composer__send')?.textContent.includes('Review'))throw Error('Retry draft or Review missing');document.querySelector('.composer').scrollTop=0;"
+      ]
+    ]
+  },
+  {
+    "name": "U22-9-preview-delivery-confirmed",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog[open] iframe'))throw Error('Preview closed after capture')"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .btn--primary"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "fill",
+        "Your message",
+        "Check the layout in this preview picture."
+      ],
+      [
+        "eval",
+        "window.__sim.pace(0.05)"
+      ],
+      [
+        "click",
+        "Continue"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.talk-log p')].find(e=>e.textContent.includes('Taken from the Notes preview on studio')); if(!p)throw Error('Missing preview provenance on sent receipt');p.scrollIntoView({block:'center'});"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.talk-log')?.textContent.includes('Delivered to the agent'))throw Error('Initial prompt not delivered')"
+      ],
+      [
+        "shot",
+        "talk-delivered"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.preview-draft p')].find(e=>e.textContent.includes('Sent with markup to'));if(!p)throw Error('Preview not delivered');p.scrollIntoView({block:'center'});"
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');if(window.__sim.host.tasks.find(t=>t.task_id===ids.tNotes).state!=='completed')throw Error('Task has not finished');if(document.querySelector('.preview-draft').textContent.includes('Waiting to send'))throw Error('Stale delivery words');})()"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U22-1-waiting-fallback",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset('work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const {ids}=await import(\"/src/dev/sim/scenario.ts\");const {workIds}=await import(\"/src/dev/sim/work.ts\");for(const a of h.attention.filter(a=>a.approval_id!==ids.aTest)){a.resolved_at=Date.now();h.emit({type:'attention_resolved',attention_id:a.attention_id})}const a=h.approvals.find(a=>a.approval_id===ids.aTest);await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:a.revision,body:{command:'resolve_approval',approval_id:a.approval_id,decision:{decision:'deny',reason:null}}});})()"
+      ],
+      [
+        "wait",
+        7000
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const {ids}=await import('/src/dev/sim/scenario.ts');const t=h.tasks.find(t=>t.task_id===ids.tFlaky);for(const a of h.attention.filter(a=>a.task_id===t.task_id&&a.resolved_at===null)){a.resolved_at=Date.now();h.emit({type:'attention_resolved',attention_id:a.attention_id})}const r=h.runs.find(r=>r.run_id===t.current_run);h.emit({type:'run_upserted',run:{...r,state:'awaiting_input',ended_at:null}});h.emit({type:'task_upserted',task:{...t,state:'awaiting_decision',status_line:'Waiting for your reply'}});})()"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('.group .row__title')].some(e=>e.textContent.includes('Fix the flaky retry test')))throw Error('Waiting task missing');"
+      ]
+    ]
+  }
+]

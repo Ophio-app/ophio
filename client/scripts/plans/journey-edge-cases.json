@@ -1,0 +1,129 @@
+[
+  {
+    "name": "CL-6-coding-stop-under-sheet",
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host; h.control=h.control.map(v=>({...v,input_state:'ready',lease:null})); for(const view of h.control) h.emit({type:'control_changed',view})"
+      ],
+      ["clickSel", ".talk-bar__main"],
+      ["click", "Fix the flaky retry test"],
+      ["clickSel", ".talk-bar__main"],
+      ["wait", 400]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "CL-7-review-details-lost",
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "garden-planner"],
+      ["fill", "What should Claude Code", "Add garden layout tests"],
+      ["click", "Review"],
+      ["fill", "Title", "Garden test coverage"],
+      ["fill", "Stop when", "Before changing the database"],
+      ["shot", "before"],
+      ["click", "Back"],
+      ["click", "Review"],
+      [
+        "eval",
+        "document.querySelector('input[placeholder^=\"e.g.\"]').scrollIntoView({block:'center'})"
+      ],
+      ["wait", 400]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "CL-11-keyboard-interventions",
+    "text": 2,
+    "width": 360,
+    "height": 780,
+    "steps": [
+      ["clickSel", ".composer textarea"],
+      ["fill", "Tell Claude Code", "Keep this unsent while checking controls"],
+      ["height", 450],
+      ["wait", 400],
+      ["shot", "keyboard"],
+      [
+        "eval",
+        "const b=document.querySelector('.app__safety .btn--warn').getBoundingClientRect(); if(b.left<0 || b.right>innerWidth || b.bottom>innerHeight) throw Error('CL-11: Pause input is outside the keyboard viewport: '+JSON.stringify(b))"
+      ],
+      ["clickSel", ".app__safety .btn--warn"],
+      ["wait", 500]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "m2-landscape",
+    "width": 844,
+    "height": 390,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(2)"],
+      ["click", "Check the staging dashboard"],
+      ["wait", 500],
+      ["click", "Pause input"],
+      ["wait", 500]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "m2-empty-project",
+    "steps": [
+      ["clickSel", ".ctx__context"],
+      ["click", "garden-planner"],
+      ["wait", 500]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "m2-permission-denied",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.permissions({tasks:false,approvals:false,control_input:false})"
+      ],
+      ["wait", 1200],
+      ["clickSel", ".talk-bar__main"],
+      ["click", "Fix the flaky retry test"],
+      ["wait", 400]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "m2-send-outcome-unknown",
+    "steps": [
+      ["eval", "window.__sim.dropNextReceipt()"],
+      ["fill", "Tell Claude Code", "Keep this exact request"],
+      ["clickSel", ".composer__send"],
+      ["wait", 650],
+      ["shot", "unknown"],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1400]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "CL-10-revoked-identity-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "steps": [
+      ["eval", "window.__sim.revoke()"],
+      ["clickSel", ".ctx__end button"],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] .evidence')].find(e=>e.textContent.includes('Private address')).scrollIntoView({block:'center'})"
+      ],
+      ["wait", 400]
+    ],
+    "scale": 1,
+    "settle": 900
+  }
+]

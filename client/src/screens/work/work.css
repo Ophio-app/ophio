@@ -1,0 +1,816 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.work-screen,
+.work-sheet {
+  overflow-wrap: break-word;
+}
+.work-screen .screen__inner > .notice {
+  margin-block: var(--s2);
+}
+.work-stack {
+  display: grid;
+  gap: var(--s3);
+  min-width: 0;
+}
+/* A grid's implicit column is as wide as its longest word, so one long word
+   in a title at large text widened the whole receipt past the screen. These
+   stacks keep a single column that wraps instead. */
+.work-stack,
+.work-details[open],
+.work-facts,
+.work-feedback,
+.work-stop,
+.work-inbox-list,
+.work-receipt-head,
+.work-check-result,
+.work-observed,
+.work-observed ul {
+  grid-template-columns: minmax(0, 1fr);
+}
+.work-muted {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+.mono-field .field__input {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.work-caption {
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+}
+.work-card {
+  padding: var(--s4);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  min-width: 0;
+}
+.work-card-title {
+  font-size: var(--text-lg);
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  line-height: var(--leading);
+}
+.work-report-detail {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.work-reporter-code {
+  min-width: 0;
+  max-height: 28rem;
+  overflow: auto;
+  padding: var(--s3);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
+.work-children summary,
+.work-details summary {
+  min-height: var(--target);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--accent-text);
+}
+/* The second content gives the glyph empty alt text, so screen readers skip it. */
+.work-children summary::before,
+.work-details summary::before {
+  content: "+";
+  content: "+" / "";
+}
+.work-children[open] summary::before,
+.work-details[open] summary::before {
+  content: "−";
+  content: "−" / "";
+}
+.work-row-line,
+.work-row-state {
+  display: block;
+}
+.work-row-line {
+  margin-top: var(--s1);
+}
+.work-task-row {
+  display: flex;
+  align-items: flex-start;
+  padding-right: var(--s1);
+}
+.work-task-row > .row {
+  flex: 1;
+  min-width: 0;
+}
+.work-task-row > .iconbtn {
+  margin-top: var(--s2);
+}
+.work-screen .group {
+  container-type: inline-size;
+}
+@container (max-width: 20rem) {
+  .work-task-row {
+    display: block;
+    position: relative;
+    padding-right: 0;
+  }
+  .work-task-row > .row {
+    flex-wrap: wrap;
+  }
+  .work-task-row .row__text {
+    flex-basis: 100%;
+  }
+  .work-task-row .row__chevron {
+    display: none;
+  }
+  .work-task-row > .iconbtn {
+    position: absolute;
+    right: var(--s2);
+    top: 0;
+  }
+  /* The title wraps around the actions button in the row's corner, and the
+     lines under it start below the button. */
+  .work-task-row .row__title::before {
+    content: "";
+    float: right;
+    width: var(--target);
+    height: var(--target);
+  }
+}
+.work-screen .row__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  background: transparent;
+}
+.work-screen .row {
+  align-items: flex-start;
+}
+.work-screen .row__chevron {
+  margin-top: var(--s1);
+}
+.work-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+/* A button is never narrower than its label on one line unless that label
+   needs the whole row, so at large text buttons take a row each and grow
+   taller instead of spilling their label. */
+.work-actions > .btn {
+  flex: 1 1 8rem;
+  min-width: fit-content;
+}
+.work-screen .pill,
+.work-sheet .pill {
+  white-space: normal;
+  max-width: 100%;
+}
+.work-screen .btn,
+.work-sheet .btn {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+.work-screen .section__head {
+  flex-wrap: wrap;
+}
+.work-screen .segmented__opt,
+.work-sheet .segmented__opt {
+  min-height: var(--target);
+  min-width: 0;
+  flex-basis: 5rem;
+  padding-block: var(--s2);
+}
+.work-screen .section + .section {
+  margin-top: var(--s5);
+}
+.work-stack > .section + .section {
+  margin-top: var(--s2);
+}
+.work-facts {
+  display: grid;
+  gap: var(--s3);
+  font-size: var(--text-sm);
+  padding-block: var(--s3);
+}
+/* Android's text size enlarges words but not rem lengths, so the label and
+   value are sized in ch, which grows with the text: once they no longer fit
+   side by side the value moves under its label. */
+.work-facts > div {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--s3);
+  row-gap: var(--s1);
+}
+.work-facts dt {
+  flex: 0 0 13ch;
+  color: var(--ink-3);
+}
+.work-facts dd {
+  flex: 1 1 18ch;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.work-feedback:empty {
+  display: none;
+}
+.work-feedback {
+  display: grid;
+  gap: var(--s2);
+}
+.work-children li {
+  border-top: 1px solid var(--line);
+  padding-block: var(--s3);
+  font-size: var(--text-sm);
+}
+.work-stop {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+.work-safety {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+.work-safety > * {
+  flex: 1 1 9rem;
+}
+/* Two large buttons share a phone's width, so each label keeps one line. */
+.work-safety > .btn--lg {
+  padding-inline: var(--s3);
+}
+/* Which task Stop ends, on one line above the buttons. */
+.work-safety > .work-safety__now {
+  display: flex;
+  gap: 0.35em;
+  flex-basis: 100%;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.work-safety__label {
+  flex: none;
+  color: var(--ink-3);
+}
+.work-safety__task {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.work-safety .work-feedback {
+  display: none;
+}
+.work-sheet .work-safety {
+  width: 100%;
+  padding: 0;
+  border: 0;
+}
+.work-sheet .sheet__footer > .work-stop {
+  flex: 1;
+}
+.work-sheet .field__input {
+  min-width: 0;
+  max-width: 100%;
+}
+.work-check {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--target);
+  padding-block: var(--s2);
+}
+.work-queue,
+.work-inbox-list {
+  display: grid;
+  gap: var(--s4);
+}
+.work-queue-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+}
+.work-position {
+  flex: none;
+  width: 1.5rem;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.work-queue-state {
+  font-size: var(--text-sm);
+  font-weight: 550;
+}
+.work-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.work-receipt-head {
+  padding-block: var(--s3);
+  display: grid;
+  gap: var(--s3);
+}
+.work-receipt-head h1 {
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+.work-receipt-state {
+  font-size: var(--text-md);
+  color: var(--ink-2);
+}
+/* The verdict sits under the receipt's headline, so it is in reach at any
+   text size without scrolling past the evidence. */
+.work-review {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  padding: var(--s3);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.work-review .btn {
+  flex: 1 1 7rem;
+  min-width: fit-content;
+}
+.work-review-heading {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.work-review-recorded {
+  flex-basis: 100%;
+  margin: 0;
+  padding-block: var(--s2);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+/* What the latest run came to, under the headline: what it needs or left,
+   the way on, and new work it found. Its edge says which at a glance. */
+.receipt-outcome {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s3);
+  padding: var(--s4);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--outcome-edge, var(--line));
+  border-radius: var(--r-lg);
+}
+.receipt-outcome--waiting,
+.receipt-outcome--needs_you { --outcome-edge: var(--warn); }
+.receipt-outcome--watching,
+.receipt-outcome--unfinished,
+.receipt-outcome--stopped { --outcome-edge: var(--ink-3); }
+.receipt-outcome--failed { --outcome-edge: var(--stop); }
+.receipt-outcome--done { --outcome-edge: var(--ok); }
+.receipt-outcome--done.receipt-outcome--doubt { --outcome-edge: var(--warn); }
+.receipt-outcome__title {
+  font-size: var(--text-lg);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: var(--leading-tight);
+}
+.receipt-outcome__detail {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+.receipt-outcome__items {
+  display: grid;
+  gap: var(--s2);
+  padding-inline-start: var(--s5);
+  list-style: disc;
+  overflow-wrap: anywhere;
+}
+.receipt-outcome .work-actions .btn {
+  flex: 1 1 8rem;
+  min-width: fit-content;
+}
+.receipt-outcome__shown,
+.receipt-outcome__found,
+.receipt-outcome__new {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+.receipt-outcome__found p { color: var(--ink-2); font-size: var(--text-sm); }
+.receipt-outcome__shown h3,
+.receipt-outcome__new h3 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.receipt-new-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s2);
+  justify-items: start;
+}
+.receipt-new-work__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2);
+  justify-self: stretch;
+}
+.receipt-new-work__head h4 {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.receipt-new-work__brief {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.work-mark-head {
+  display: flex;
+  gap: var(--s3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.work-mark-label {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  font-size: var(--text-lg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+}
+.work-original {
+  font-size: var(--text-md);
+}
+.work-picture img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.work-picture figcaption {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  margin-top: var(--s1);
+}
+.work-picture-empty {
+  min-height: 6rem;
+  display: grid;
+  place-content: center;
+  padding: var(--s4);
+  text-align: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.work-check-result {
+  display: grid;
+  gap: var(--s2);
+}
+.work-check-title {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.work-check-title h3 {
+  font-size: var(--text-md);
+  font-weight: 600;
+  flex: 1 1 8rem;
+}
+.work-check-title svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: none;
+  color: var(--ink-3);
+}
+.work-check-output pre {
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 16rem;
+  overflow: auto;
+}
+.work-command {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+}
+.work-observed {
+  display: grid;
+  gap: var(--s2);
+}
+.work-observed ul {
+  display: grid;
+  gap: var(--s2);
+  padding-left: var(--s5);
+  font-size: var(--text-sm);
+}
+.work-observed ul[role="list"] {
+  padding-left: 0;
+}
+.work-observed li {
+  overflow-wrap: anywhere;
+}
+.work-observed__command {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s1) var(--s2);
+}
+.work-observed__command svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.1rem;
+  color: var(--ink-3);
+}
+.work-observed__command .work-observed__failed {
+  color: var(--stop-text);
+}
+.work-observed__command .work-caption {
+  grid-column: 2;
+}
+.work-inbox-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--s2);
+}
+.work-inbox-more {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s1) var(--s2);
+  margin-inline: calc(-1 * var(--s2));
+}
+.work-inbox-heading {
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+}
+.work-inbox-heading > svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: none;
+  margin-top: var(--s1);
+  color: var(--ink-3);
+}
+.work-inbox-text {
+  white-space: pre-wrap;
+  font-size: var(--text-md);
+  overflow-wrap: anywhere;
+}
+.work-inbox-picture {
+  max-height: 10rem;
+  object-fit: contain;
+  object-position: left;
+  border-radius: var(--r-sm);
+}
+.work-sheet .approval__head {
+  flex-wrap: wrap;
+}
+.work-sheet .approval__facts > div {
+  flex-wrap: wrap;
+}
+.work-sheet .approval__facts dt {
+  width: auto;
+  flex-basis: 5.5rem;
+}
+.work-sheet .approval__facts dd {
+  flex-basis: 7rem;
+}
+@media (max-width: 380px) {
+  .work-facts > div > * {
+    flex-basis: 100%;
+  }
+}
+@media (max-height: 440px) {
+  .work-safety {
+    padding-block: var(--s1);
+  }
+}
+
+.work-sheet-primary {
+  width: 100%;
+  min-width: 0;
+}
+.work-sheet-primary > .btn {
+  width: 100%;
+}
+
+.work-attention-group > summary { min-height: var(--target); padding: var(--s3) var(--s4); cursor: pointer; overflow-wrap: break-word; }
+
+/* How the run went: models, account, time and usage, closed until asked for. */
+.work-details[open] {
+  display: grid;
+  gap: var(--s2);
+}
+
+/* A receipt's way on: one button until the message box is asked for. */
+.receipt-continue {
+  --gutter: max(var(--s4), calc((100% - var(--content-max)) / 2 + var(--s4)));
+  padding: var(--s2) max(var(--gutter), var(--safe-right)) var(--s3) max(var(--gutter), var(--safe-left));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+/* ---- Work's root (WorkRoot.tsx) ------------------------------------------ */
+
+.work-root .screen__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s3);
+}
+.work-root .screen__inner > .section {
+  margin-top: var(--s2);
+}
+.work-root .group:empty {
+  display: none;
+}
+/* Several lists read as one: the outer card draws the frame, and each list
+   inside it is only a ruled run of rows. */
+.work-merged.group > * + * {
+  border-top: 0;
+}
+.work-merged .group {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  margin-top: -1px;
+  border-top: 1px solid var(--line);
+}
+.work-merged .group::before {
+  display: none;
+}
+.work-merged .work-unread {
+  display: contents;
+}
+.work-merged:not(:has(.row)) {
+  display: none;
+}
+/* A result not yet looked at carries a dot after its title, as an unread
+   chat does. */
+.work-unread .row__title::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-inline-start: 0.45em;
+  vertical-align: 0.1em;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.work-paused {
+  display: grid;
+  gap: var(--s2);
+  padding: 0 var(--s4) var(--s3);
+}
+.work-brief-row {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.work-brief-row > summary,
+.work-brief-row--flat {
+  min-height: var(--target);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+}
+.work-brief-row > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.work-brief-row > summary::-webkit-details-marker {
+  display: none;
+}
+.work-brief-row > summary::after {
+  content: "+";
+  content: "+" / "";
+  margin-inline-start: auto;
+  color: var(--accent-text);
+}
+.work-brief-row[open] > summary::after {
+  content: "−";
+  content: "−" / "";
+}
+.work-brief-row ul {
+  display: grid;
+  gap: var(--s1);
+  padding-left: var(--s5);
+  margin-bottom: var(--s2);
+}
+/* The segments stay at the top while their list scrolls under them. */
+.work-parts {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.work-part {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s3);
+}
+.work-part > .section {
+  margin-top: var(--s2);
+}
+/* The first thing that needs the person, set apart as the one to answer
+   first. */
+.work-lead.group {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+/* A request's card, measured so a wide one can put its answer beside it. */
+.work-attention-item {
+  container: work-attention / inline-size;
+}
+/* Wide, Deny and Allow sit at the top right, beside what the agent asks,
+   rather than below it: on a phone on its side the first answer then shows
+   without scrolling. */
+@container work-attention (min-width: 34rem) {
+  .talk-quick-approval {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--s4);
+  }
+  .talk-quick-approval > * {
+    grid-column: 1;
+  }
+  .talk-quick-approval > .talk-quick-approval__actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+    flex-wrap: nowrap;
+  }
+}
+/* On a phone on its side, New and the segments share a row, which scrolls
+   away with the list to leave it what little height there is, and section
+   titles take only their own line. New keeps its own row while Set up GitHub
+   is under it. */
+@media (max-height: 480px) and (min-width: 700px) {
+  .work-root .screen__inner {
+    grid-template-columns: 8rem minmax(0, 1fr);
+  }
+  .work-root .screen__inner > * {
+    grid-column: 1 / -1;
+  }
+  .work-root .screen__inner > .work-new:not(:has(> .row ~ .row)):has(+ .work-parts) {
+    grid-column: 1;
+    align-self: start;
+  }
+  .work-root .screen__inner > .work-new:not(:has(> .row ~ .row)) + .work-parts {
+    grid-column: 2;
+    align-self: start;
+  }
+  /* New's hint and chevron give that height back to the list. */
+  .work-new .row__subtitle,
+  .work-new .row__chevron {
+    display: none;
+  }
+  .work-parts {
+    position: static;
+  }
+  .work-root .section__head {
+    min-height: 0;
+  }
+  .work-part > .section {
+    margin-top: 0;
+  }
+}
+.work-inbox-part {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+.work-inbox-part > h3 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.work-inbox-part > p {
+  margin: 0;
+}
+/* Another project's name in Other projects: not the project shown. */
+.work-other {
+  color: var(--accent-text);
+  font-weight: 700;
+}

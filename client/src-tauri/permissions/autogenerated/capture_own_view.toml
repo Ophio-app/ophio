@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-capture-own-view"
+description = "Enables the capture_own_view command without any pre-configured scope."
+commands.allow = ["capture_own_view"]
+
+[[permission]]
+identifier = "deny-capture-own-view"
+description = "Denies the capture_own_view command without any pre-configured scope."
+commands.deny = ["capture_own_view"]

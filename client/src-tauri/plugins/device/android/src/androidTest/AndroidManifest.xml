@@ -1,0 +1,12 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- PreviewChecks serves its page on 127.0.0.1, as the computer's preview gate is reached. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application android:usesCleartextTraffic="true">
+        <activity
+            android:name="app.ophio.device.PreviewHost"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+    </application>
+</manifest>

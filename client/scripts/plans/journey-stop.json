@@ -1,0 +1,1186 @@
+[
+  {
+    "name": "m7-stop-talk-360x780-100",
+    "width": 360,
+    "height": 780,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-work-360x780-100",
+    "width": 360,
+    "height": 780,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Work')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-control-360x780-100",
+    "width": 360,
+    "height": 780,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Control')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talkkb-360x780-100",
+    "width": 360,
+    "height": 780,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        429
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talk-360x780-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-work-360x780-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Work')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-control-360x780-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Control')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talkkb-360x780-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        429
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talk-390x844-100",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-work-390x844-100",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Work')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-control-390x844-100",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Control')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talkkb-390x844-100",
+    "width": 390,
+    "height": 844,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        464
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talk-390x844-200",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-work-390x844-200",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Work')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-control-390x844-200",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Control')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talkkb-390x844-200",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        464
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talk-844x390-100",
+    "width": 844,
+    "height": 390,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-work-844x390-100",
+    "width": 844,
+    "height": 390,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Work')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-control-844x390-100",
+    "width": 844,
+    "height": 390,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Control')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talkkb-844x390-100",
+    "width": 844,
+    "height": 390,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        214
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talk-844x390-200",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-work-844x390-200",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Work')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-control-844x390-200",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Control')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talkkb-844x390-200",
+    "width": 844,
+    "height": 390,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        214
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talk-1280x800-100",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-work-1280x800-100",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Work')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-control-1280x800-100",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Control')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talkkb-1280x800-100",
+    "width": 1280,
+    "height": 800,
+    "text": 1,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        440
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talk-1280x800-200",
+    "width": 1280,
+    "height": 800,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-work-1280x800-200",
+    "width": 1280,
+    "height": 800,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Work')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-control-1280x800-200",
+    "width": 1280,
+    "height": 800,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:has-text('Control')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  },
+  {
+    "name": "m7-stop-talkkb-1280x800-200",
+    "width": 1280,
+    "height": 800,
+    "text": 2,
+    "scale": 1,
+    "dark": false,
+    "steps": [
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const c=h.control[0];Object.assign(c,{input_state:'paused'});h.emit({type:'control_changed',view:{...c}})})()"
+      ],
+      [
+        "clickSel",
+        ".composer textarea"
+      ],
+      [
+        "height",
+        440
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "import(performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/src/design/Toast.tsx'))).then(m=>m.toast('The connection dropped before the computer answered. Your draft is kept in Review, so nothing you wrote is lost.',{tone:'stop',action:{label:'Review',run:()=>{}}}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "(()=>{const r=e=>e.getBoundingClientRect();const vis=e=>{const b=r(e);const cs=getComputedStyle(e);return b.width>0&&b.height>0&&cs.visibility!=='hidden'&&!e.closest('.is-hidden')};\nconst hit=(a,b)=>a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5;\nconst toasts=[...document.querySelectorAll('.toast')].filter(vis);\nconst stops=[...document.querySelectorAll('button')].filter(b=>vis(b)&&/^(Stop|Force stop)/.test((b.getAttribute('aria-label')||b.textContent).trim()));\nconst inputs=[...document.querySelectorAll('textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), [contenteditable=true]')].filter(vis);\nconst latest=[...document.querySelectorAll('.talk-jump')].filter(vis);\nconst issues=[];const sizes=[];\nfor(const s of stops){const b=r(s);const name=(s.getAttribute('aria-label')||s.textContent).trim().slice(0,32);sizes.push(Math.round(b.width)+'x'+Math.round(b.height));\n if(Math.min(b.width,b.height)<44)issues.push('small '+name+' '+Math.round(b.width)+'x'+Math.round(b.height));\n if(b.top<-0.5||b.left<-0.5||b.bottom>innerHeight+1||b.right>innerWidth+1)issues.push('offscreen '+name+' '+JSON.stringify([b.top,b.bottom,innerHeight]));\n const el=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2); if(!el||!s.contains(el))issues.push('covered '+name+' by '+(el?el.tagName+'.'+el.className:'none'));\n for(const t of toasts)if(hit(r(t),b))issues.push('toast over '+name);}\nfor(const i of inputs){for(const t of toasts)if(hit(r(t),r(i)))issues.push('toast over input '+(i.getAttribute('aria-label')||i.name||i.tagName));for(const l of latest)if(hit(r(l),r(i)))issues.push('latest over input');}\nif(issues.length)throw new Error(issues.join('; '));return {vw:innerWidth,vh:innerHeight,stops:stops.length,sizes,toasts:toasts.length,inputs:inputs.length,latest:latest.length,issues}})()"
+      ]
+    ]
+  }
+]

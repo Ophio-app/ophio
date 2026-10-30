@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-shared-read"
+description = "Enables the shared_read command without any pre-configured scope."
+commands.allow = ["shared_read"]
+
+[[permission]]
+identifier = "deny-shared-read"
+description = "Denies the shared_read command without any pre-configured scope."
+commands.deny = ["shared_read"]

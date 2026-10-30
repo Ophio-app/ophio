@@ -1,0 +1,408 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* ---- A display full screen ---------------------------------------------
+   The picture is as large as the screen allows, on black; the controls lie
+   over it on dark glass, so the desktop still shows through, and the text on
+   them is white with a shadow so it reads over any picture. */
+
+.desktop-screen.desktop-screen--full {
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color-scheme: dark;
+}
+.desktop-screen--full > .screen__body {
+  position: relative;
+}
+.live-picture--full {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* The whole screen is the touchpad, not only the picture. */
+.picture-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  container-type: size;
+  touch-action: none;
+  background: #000;
+}
+.live-picture--full .picture-surface {
+  width: min(100cqw, 100cqh * var(--ar, 1.6));
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+  /* Zoomed in, the picture spreads into the black at its sides; the stage
+     clips it at the screen's edge. */
+  overflow: visible;
+}
+
+.full-overlay {
+  --glass: rgb(18 14 22 / 0.56);
+  --glass-strong: rgb(18 14 22 / 0.78);
+  --glass-line: rgb(255 255 255 / 0.16);
+  --glass-ink: #fff;
+  --glass-quiet: rgb(255 255 255 / 0.8);
+  --pad: var(--s2);
+  position: absolute;
+  inset: 0;
+  padding: max(var(--pad), var(--safe-top)) max(var(--pad), var(--safe-right)) max(var(--pad), var(--safe-bottom))
+    max(var(--pad), var(--safe-left));
+  color: var(--glass-ink);
+  /* Only the controls take touches; everywhere else is the touchpad. */
+  pointer-events: none;
+}
+.full-overlay > * {
+  pointer-events: auto;
+}
+
+.full-edge,
+.full-status,
+.full-tool--round,
+.full-count {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: inset 0 0 0 1px var(--glass-line), 0 2px 10px rgb(0 0 0 / 0.25);
+}
+
+/* ---- Pieces --------------------------------------------------------------- */
+
+.full-tool {
+  display: inline-flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 52px;
+  min-height: 48px;
+  padding: var(--s1) var(--s1);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+  cursor: pointer;
+}
+.full-tool svg {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.5));
+}
+.full-tool__label {
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+}
+.full-tool:active:not(:disabled) {
+  background: rgb(255 255 255 / 0.18);
+}
+.full-tool.is-pressed {
+  background: var(--signal);
+  color: #120c0a;
+  text-shadow: none;
+}
+.full-tool.is-pressed svg {
+  filter: none;
+}
+.full-tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.full-overlay :is(button, a):focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+.full-tool--round {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  border-radius: var(--r-full);
+}
+
+.full-status {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  min-height: 48px;
+  padding: var(--s1) var(--s3) var(--s1) var(--s2);
+  border-radius: var(--r-full);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+}
+.full-status__icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+.full-status--agent .full-status__icon { color: #d4b8ff; }
+.full-status--accent .full-status__icon { color: var(--signal); }
+.full-status--warn .full-status__icon { color: #ffcf7a; }
+.full-status__text {
+  min-width: 0;
+}
+.full-overlay .full-status__title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--glass-ink);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.full-status__state {
+  margin: 0;
+  overflow: hidden;
+  color: var(--glass-quiet);
+  font-size: var(--text-xs);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.full-status__stale {
+  color: #ffcf7a;
+}
+
+/* Stop keeps its own solid red; it is never see-through. */
+.full-overlay .full-stop {
+  flex: none;
+  width: auto;
+}
+.full-overlay .full-stop .named-stop__icon {
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
+}
+
+/* The other running tasks, one tap from their Stops in the rail. */
+.full-count {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  min-width: 48px;
+  height: 48px;
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-full);
+  color: var(--glass-ink);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2px var(--stop), 0 2px 10px rgb(0 0 0 / 0.25);
+}
+.full-count svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--stop);
+  color: var(--stop);
+}
+
+/* Take over, Pause, Leave control: compact, on glass, their colours kept. */
+.desktop-screen--full .full-overlay .safety-actions {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--s1);
+}
+.full-overlay .safety-actions > .btn {
+  flex: none;
+}
+.full-overlay .intervention:not(.named-stop__icon) {
+  --btn-h: 48px;
+  min-height: 48px;
+  padding-inline: var(--s3);
+  border-radius: var(--r-md);
+  flex-direction: row;
+  gap: var(--s1);
+  font-size: var(--text-sm);
+}
+.full-overlay .btn--stop-outline {
+  background: var(--glass-strong);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px var(--stop);
+}
+.full-overlay .btn--secondary {
+  background: var(--glass-strong);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+}
+.full-overlay .intervention__more {
+  display: none;
+}
+
+.full-notices {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 0;
+  pointer-events: none;
+}
+.full-notices:empty {
+  display: none;
+}
+.full-notices > * {
+  max-width: min(32rem, 100%);
+  pointer-events: auto;
+}
+.full-notices > .fine,
+.full-notices .full-reason {
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-md);
+  background: var(--glass-strong);
+  color: var(--glass-ink);
+}
+
+/* ---- Hidden: one handle in the corner ----------------------------------- */
+
+.full-overlay--hidden .full-handle {
+  position: absolute;
+  right: max(var(--pad), var(--safe-right));
+  bottom: max(var(--pad), var(--safe-bottom));
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+}
+.full-overlay--hidden .full-handle .full-tool--round {
+  opacity: 0.75;
+}
+.full-overlay--hidden .full-notices {
+  position: absolute;
+  top: calc(max(var(--pad), var(--safe-top)) + 56px);
+  left: 50%;
+  width: min(32rem, 100% - 2 * var(--s4));
+  transform: translateX(-50%);
+}
+
+/* ---- Shown: in the room the picture leaves at its edges ------------------ */
+
+.full-overlay {
+  display: grid;
+  grid-template:
+    "start top end" auto
+    "start notes end" minmax(0, 1fr)
+    / auto minmax(0, 1fr) auto;
+  gap: var(--s2);
+}
+.full-edge--top {
+  grid-area: top;
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+  justify-self: center;
+  max-width: 100%;
+  min-width: 0;
+}
+.full-edge--top > .full-status {
+  flex: 1 1 auto;
+}
+.full-overlay > .full-notices {
+  grid-area: notes;
+}
+.full-edge {
+  border-radius: var(--r-lg);
+}
+.full-edge:empty {
+  display: none;
+}
+.full-edge--top {
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.full-edge--start,
+.full-edge--end {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 72px;
+  gap: 2px;
+  min-height: 0;
+  padding: var(--s1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.full-edge--start {
+  grid-area: start;
+}
+.full-edge--end {
+  grid-area: end;
+}
+.full-edge--end > .full-tool:last-child {
+  margin-top: auto;
+}
+.full-edge__safety {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s1);
+  padding-bottom: var(--s1);
+  margin-bottom: var(--s1);
+  border-bottom: 1px solid var(--glass-line);
+}
+.full-edge__safety > .full-stop,
+.full-edge__safety > .full-count {
+  align-self: center;
+}
+.desktop-screen--full .full-edge__safety .safety-actions {
+  flex-direction: column;
+}
+.desktop-screen--full .full-edge__safety .intervention:not(.named-stop__icon) {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--s1);
+  font-size: var(--text-xs);
+  line-height: 1.1;
+}
+
+/* ---- Upright ------------------------------------------------------------
+   The picture is centred with room above and below it; the controls sit in
+   that room and only wrap, never shrink below a touch target. */
+@media (orientation: portrait) {
+  .full-overlay {
+    grid-template:
+      "top" auto
+      "notes" minmax(0, 1fr)
+      "start" auto
+      "end" auto
+      / minmax(0, 1fr);
+  }
+  .full-edge--top {
+    justify-self: stretch;
+  }
+  .full-edge--start,
+  .full-edge--end {
+    flex-direction: row;
+    width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: visible;
+  }
+  .full-edge__safety {
+    flex: 1 0 100%;
+    flex-direction: row;
+    justify-content: center;
+  }
+  .desktop-screen--full .full-edge__safety .safety-actions {
+    flex-direction: row;
+  }
+  .desktop-screen--full .full-edge__safety .intervention:not(.named-stop__icon) {
+    flex-direction: row;
+    gap: var(--s1);
+    padding-inline: var(--s3);
+    font-size: var(--text-sm);
+  }
+  .full-edge--end > .full-tool:last-child {
+    margin-top: 0;
+  }
+}

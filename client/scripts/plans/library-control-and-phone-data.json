@@ -1,0 +1,370 @@
+[
+  {
+    "name": "folder-light",
+    "height": 1000,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "folder-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "folder-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "folder-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "folder-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "conflict-light",
+    "height": 1000,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "conflict-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "conflict-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "conflict-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "conflict-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 650],
+      ["click", "Project · Read and write"],
+      ["wait", 500],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"guides\")"],
+      ["wait", 450],
+      ["clickSel", "button.row:has-text(\"release.md\")"],
+      ["wait", 600],
+      ["clickSel", ".lib-footer button"],
+      ["wait", 450],
+      [
+        "fill",
+        "Markdown source",
+        "# Release checklist\n\nKeep the change focused.\n\n## Before you ship\n\n- Read the changes.\n- Run the checks.\n- Write clear release notes.\n\nA release is ready after the computer confirms each check.\n"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer(\"0192f7a1-0000-7000-8000-000000000902\", \"docs/guides/release.md\", \"# Release checklist\\n\\nThe computer changed this line.\\n\")"
+      ],
+      ["click", "Review changes"],
+      ["click", "Save on computer"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "control-light",
+    "height": 1000,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "control-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "control-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "control-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "control-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "phone-data-light",
+    "height": 1000,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 800],
+      [
+        "eval",
+        "document.querySelector('#settings-data').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "phone-data-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 800],
+      [
+        "eval",
+        "document.querySelector('#settings-data').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "phone-data-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 800],
+      [
+        "eval",
+        "document.querySelector('#settings-data').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "phone-data-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 800],
+      [
+        "eval",
+        "document.querySelector('#settings-data').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "phone-data-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      ["clickSel", ".ctx__context"],
+      ["click", "Connections and readiness"],
+      ["wait", 800],
+      [
+        "eval",
+        "document.querySelector('#settings-data').scrollIntoView({block:'start'})"
+      ],
+      ["wait", 800]
+    ]
+  }
+]

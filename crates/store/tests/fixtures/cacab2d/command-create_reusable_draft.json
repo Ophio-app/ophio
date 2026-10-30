@@ -1,0 +1,29 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-000000000031",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "create_reusable_draft",
+      "task_id": "00000000-0000-4000-8000-000000000001",
+      "root_id": "00000000-0000-4000-8000-000000000001",
+      "path": "synthetic",
+      "text": "synthetic"
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-000000000031",
+    "status": "accepted",
+    "seq": 49,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

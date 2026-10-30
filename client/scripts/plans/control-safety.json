@@ -1,0 +1,1158 @@
+[
+  {
+    "name": "control-light",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "control-dark",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "control-large",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "control-wide",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "desktop-light",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ]
+    ]
+  },
+  {
+    "name": "desktop-dark",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "desktop-large",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "agent-dark",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Check the staging dashboard"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "agent-wide",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Check the staging dashboard"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "locked-agent",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "window.__sim.control.lock(true,window.__sim.host.targets.find(t=>t.label==='DP-1').target_id)"
+      ],
+      [
+        "click",
+        "Check the staging dashboard"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.agent-screen');if(s.querySelector('.picture-surface'))throw Error('Locked picture');if([...s.querySelectorAll('button')].some(b=>/Take over|Review return/.test(b.textContent)&&!b.disabled))throw Error('Locked input offered')"
+      ]
+    ]
+  },
+  {
+    "name": "indicator-missing",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch DP-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.desktop-screen button')].find(b=>b.textContent.includes('Enable control'));if(!b?.disabled||window.__sim.control.inputs().length)throw Error('Missing Stop allowed input')"
+      ]
+    ],
+    "path": "/?host=gnome&indicator=missing"
+  },
+  {
+    "name": "mixed-input",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const a=h.control.find(v=>v.input_state==='agent');const second=h.targets.find(t=>t.label==='HDMI-A-1');h.control=h.control.map(v=>v===a?{...v,input_state:'paused',lease:{...v.lease,state:'revoked'}}:v.target_id===second.target_id?{...a,target_id:second.target_id,lease:{...a.lease,target_id:second.target_id}}:v);for(const view of h.control)h.emit({type:'control_changed',view});"
+      ],
+      [
+        "eval",
+        "const b=document.querySelector('.safety-rail__toggle');if(!b.textContent.includes('HDMI-A-1 \u00b7 Agent has input')||!b.getAttribute('aria-label').includes('HDMI-A-1 \u00b7 Agent has input'))throw Error('Hidden active input')"
+      ]
+    ]
+  },
+  {
+    "name": "revoked",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.desktop-screen');if(s.textContent.includes('You have control')||s.querySelector('.picture-surface'))throw Error('Stale ownership')"
+      ]
+    ]
+  },
+  {
+    "name": "private-after-stop",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Check the staging dashboard"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "window.__sim.host.computer.unverified=true"
+      ],
+      [
+        "click",
+        "Start private step"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Review private step')).scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "warning"
+      ],
+      [
+        "click",
+        "Review private step"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.getElementById('private-step').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "keyboard-portrait",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".desktop-screen button:has-text(\"Keyboard\")"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Destination stays visible"
+      ],
+      [
+        "eval",
+        "const p=document.querySelector('.desktop-typing .picture-surface').getBoundingClientRect(); if(p.height<50||p.top<0||p.bottom>innerHeight)throw Error('Destination picture out of view'); const t=document.querySelector('.remote-keyboard textarea').getBoundingClientRect();if(t.top<0||t.bottom>innerHeight)throw Error('Text out of view');const c=document.querySelector('.desktop-typing__composer').getBoundingClientRect();if(t.top<c.top-1||t.bottom>c.bottom+1)throw Error('Text clipped by composer');"
+      ],
+      [
+        "log",
+        "JSON.stringify({picture:document.querySelector('.desktop-typing .picture-surface').getBoundingClientRect().toJSON(),field:document.querySelector('.remote-keyboard textarea').getBoundingClientRect().toJSON()})"
+      ]
+    ],
+    "width": 390,
+    "height": 500,
+    "scale": 1
+  },
+  {
+    "name": "keyboard-landscape",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".desktop-screen button:has-text(\"Keyboard\")"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Destination stays visible"
+      ],
+      [
+        "eval",
+        "const p=document.querySelector('.desktop-typing .picture-surface').getBoundingClientRect(); if(p.height<50||p.top<0||p.bottom>innerHeight)throw Error('Destination picture out of view'); const t=document.querySelector('.remote-keyboard textarea').getBoundingClientRect();if(t.top<0||t.bottom>innerHeight)throw Error('Text out of view');const c=document.querySelector('.desktop-typing__composer').getBoundingClientRect();if(t.top<c.top-1||t.bottom>c.bottom+1)throw Error('Text clipped by composer');"
+      ],
+      [
+        "log",
+        "JSON.stringify({picture:document.querySelector('.desktop-typing .picture-surface').getBoundingClientRect().toJSON(),field:document.querySelector('.remote-keyboard textarea').getBoundingClientRect().toJSON()})"
+      ]
+    ],
+    "width": 844,
+    "height": 390,
+    "scale": 1
+  },
+  {
+    "name": "text-refused",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".desktop-screen button:has-text(\"Keyboard\")"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Caf\u00e9 d\u00e9j\u00e0"
+      ],
+      [
+        "eval",
+        "window.__sim.control.refuseText('\u00e9\u00e0',true)"
+      ],
+      [
+        "click",
+        "Send text"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('.remote-keyboard textarea');if(t.value!=='Caf\u00e9 d\u00e9j\u00e0')throw Error('Lost refused text');const c=document.querySelector('.desktop-typing__composer').getBoundingClientRect(),r=t.getBoundingClientRect(),b=[...document.querySelectorAll('button')].find(b=>b.textContent==='Paste instead').getBoundingClientRect();if(r.top<c.top||b.bottom>c.bottom||r.bottom>c.bottom)throw Error('Text and Paste must be visible together');"
+      ],
+      [
+        "shot",
+        "refusal"
+      ],
+      [
+        "click",
+        "Paste instead"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        300
+      ]
+    ],
+    "height": 650
+  },
+  {
+    "name": "text-success",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "clickSel",
+        ".desktop-screen button:has-text(\"Keyboard\")"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Hello"
+      ],
+      [
+        "click",
+        "Send text"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.remote-keyboard').textContent.includes('Typed \u00b7'))throw Error('No typing receipt')"
+      ]
+    ],
+    "height": 650
+  },
+  {
+    "name": "offline",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "setup-empty",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "window.__sim.host.tablet.unavailable(); window.__sim.control.empty();"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.control-screen').textContent.includes('Sign in to the desktop'))throw Error('Contradictory remedy')"
+      ]
+    ]
+  },
+  {
+    "name": "permissions",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({computer_use:false,tasks:false})"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "document.getElementById('control-agents').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "error",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "window.__sim.control.rejectLease()"
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "computer-review",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.computer-tools').scrollIntoView({block:'center'});if(/observe_target|pointer_action|key_action|type_text|request_human/.test(document.querySelector('.computer-review').textContent))throw Error('Tool IDs shown')"
+      ]
+    ]
+  },
+  {
+    "name": "preview-annotate",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".preview-card:has-text(\"Notes\") button:has-text(\"Open\")"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.preview-draft select');s.value=[...s.options].find(o=>o.value).value;s.dispatchEvent(new Event('change',{bubbles:true}));"
+      ],
+      [
+        "click",
+        "Attach to this task"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "shot",
+        "attached"
+      ],
+      [
+        "click",
+        "Open task"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.composer__attach-open')?.textContent.includes('1 image'))throw Error('Source missing from task')"
+      ],
+      [
+        "shot",
+        "task-source"
+      ],
+      [
+        "click",
+        "Open the markup"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-stage svg image')?.getAttribute('href'))throw Error('Preview picture missing');"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "preview-direct",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        ".preview-card:has-text(\"Notes\") button:has-text(\"Open\")"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.preview-draft select');s.value=[...s.options].find(o=>o.value).value;s.dispatchEvent(new Event('change',{bubbles:true}));"
+      ],
+      [
+        "click",
+        "Attach to this task"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "shot",
+        "attached"
+      ],
+      [
+        "click",
+        "Annotate picture"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-stage svg image')?.getAttribute('href'))throw Error('Preview picture missing');"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "agent-large",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Check the staging dashboard"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ],
+    "dark": false,
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "computer-review-large",
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{await document.fonts.ready;for(let i=0;i<200;i++){if(document.querySelector('.talk-log__list'))return;await new Promise(r=>setTimeout(r,50));}throw Error('Talk not ready')})()"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.computer-tools').scrollIntoView({block:'center'});if(/observe_target|pointer_action|key_action|type_text|request_human/.test(document.querySelector('.computer-review').textContent))throw Error('Tool IDs shown')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": false
+  }
+]

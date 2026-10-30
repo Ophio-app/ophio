@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# Installed copy: ~/.config/systemd/user/ophio-ci.slice
+# Holds every ophio-actions-runner@ instance, so the runners together stay
+# behind other work on the build host: half the default CPU weight, memory
+# reclaimed from them above 36 GB and a hard ceiling of 40 GB.
+[Unit]
+Description=Ophio CI runners
+
+[Slice]
+CPUWeight=50
+MemoryHigh=36G
+MemoryMax=40G

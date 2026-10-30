@@ -1,0 +1,1482 @@
+[
+  {
+    "name": "L1-recovery-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "overview"
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Selected comparison\"]').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "L1-recovery-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "overview"
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Selected comparison\"]').scrollIntoView({block:'center'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "L1-recovery-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "overview"
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Selected comparison\"]').scrollIntoView({block:'center'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "L1-recovery-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "overview"
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Selected comparison\"]').scrollIntoView({block:'center'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "L1-instructions-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"instructions\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ]
+    ]
+  },
+  {
+    "name": "L1-instructions-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"instructions\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "L1-instructions-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"instructions\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "shot",
+        "overview"
+      ],
+      [
+        "eval",
+        "document.querySelector('.lib-versions').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "L1-instructions-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"instructions\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "L1-reader-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\", \"source\": \"instructions\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ]
+    ]
+  },
+  {
+    "name": "L1-reader-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\", \"source\": \"instructions\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "L1-reader-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\", \"source\": \"instructions\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "shot",
+        "overview"
+      ],
+      [
+        "eval",
+        "document.querySelector('.notice').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "L1-reader-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\", \"source\": \"instructions\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "L1-reusable-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s = document.querySelector('select'); s.value='claude_code'; s.dispatchEvent(new Event('change',{bubbles:true})); const k=[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith('Reusable kind')).querySelector('select');k.value='skill';k.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "choices"
+      ],
+      [
+        "fill",
+        "Editable preview",
+        "---\nname: reviewed-task\ndescription: Review changes before committing.\ndisable-model-invocation: true\n---\n\nInspect the change and report risks."
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea').scrollIntoView({block:'center'}); document.activeElement.blur()"
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s = document.querySelector('select'); s.value='claude_code'; s.dispatchEvent(new Event('change',{bubbles:true})); const k=[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith('Reusable kind')).querySelector('select');k.value='skill';k.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "choices"
+      ],
+      [
+        "fill",
+        "Editable preview",
+        "---\nname: reviewed-task\ndescription: Review changes before committing.\ndisable-model-invocation: true\n---\n\nInspect the change and report risks."
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea').scrollIntoView({block:'center'}); document.activeElement.blur()"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "L1-reusable-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s = document.querySelector('select'); s.value='claude_code'; s.dispatchEvent(new Event('change',{bubbles:true})); const k=[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith('Reusable kind')).querySelector('select');k.value='skill';k.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "choices"
+      ],
+      [
+        "fill",
+        "Editable preview",
+        "---\nname: reviewed-task\ndescription: Review changes before committing.\ndisable-model-invocation: true\n---\n\nInspect the change and report risks."
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea').scrollIntoView({block:'center'}); document.activeElement.blur()"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "L1-reusable-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s = document.querySelector('select'); s.value='claude_code'; s.dispatchEvent(new Event('change',{bubbles:true})); const k=[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith('Reusable kind')).querySelector('select');k.value='skill';k.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "choices"
+      ],
+      [
+        "fill",
+        "Editable preview",
+        "---\nname: reviewed-task\ndescription: Review changes before committing.\ndisable-model-invocation: true\n---\n\nInspect the change and report risks."
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea').scrollIntoView({block:'center'}); document.activeElement.blur()"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "L1-preview-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "fill",
+        "Preview label",
+        "Local review"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "http://localhost:3000/"
+      ]
+    ]
+  },
+  {
+    "name": "L1-preview-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "fill",
+        "Preview label",
+        "Local review"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "http://localhost:3000/"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "L1-preview-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "fill",
+        "Preview label",
+        "Local review"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "http://localhost:3000/"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "L1-preview-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "fill",
+        "Preview label",
+        "Local review"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "http://localhost:3000/"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "L1-library-recovery",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "L1-recovery-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ]
+    ]
+  },
+  {
+    "name": "L1-recovery-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.fail()"
+      ],
+      [
+        "click",
+        "Refresh comparison"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "L1-recovery-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "L1-recovery-removed-root",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.permissions({library_read:false,library_write:false})"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "L1-recovery-save-discard",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Keep \u201cTried to save\u201d"
+      ],
+      [
+        "wait",
+        2000
+      ],
+      [
+        "shot",
+        "editor"
+      ],
+      [
+        "click",
+        "Review changes"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Save on computer"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "Discard this recovery copy"
+      ],
+      [
+        "shot",
+        "discard-review"
+      ],
+      [
+        "click",
+        "Discard the recovery copy of notes/plan.md"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ]
+  },
+  {
+    "name": "L1-recovery-race",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000903','notes/plan.md','Changed by another editor')"
+      ],
+      [
+        "click",
+        "Keep \u201cTried to save\u201d"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "L1-reader-changed",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\", \"source\": \"instructions\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902','AGENTS.md','# Changed guidance')"
+      ],
+      [
+        "click",
+        "Refresh instruction status"
+      ],
+      [
+        "wait",
+        450
+      ]
+    ]
+  },
+  {
+    "name": "L1-reader-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\", \"source\": \"instructions\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s = document.querySelector('select'); s.value='claude_code'; s.dispatchEvent(new Event('change',{bubbles:true})); const k=[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith('Reusable kind')).querySelector('select');k.value='skill';k.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-unsupported",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const k=[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith('Reusable kind')).querySelector('select');k.value='skill';k.dispatchEvent(new Event('change',{bubbles:true}))"
+      ]
+    ]
+  },
+  {
+    "name": "L1-preview-back-draft",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "fill",
+        "Preview label",
+        "Local review"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "http://localhost:3000/"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('input[inputmode=url]').value!=='http://localhost:3000/')throw Error('Draft lost')"
+      ],
+      [
+        "shot",
+        "restored"
+      ],
+      [
+        "click",
+        "Cancel and clear draft"
+      ],
+      [
+        "click",
+        "Add preview"
+      ]
+    ]
+  },
+  {
+    "name": "L1-preview-landscape",
+    "scale": 1,
+    "width": 844,
+    "height": 390,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "fill",
+        "Preview label",
+        "Local review"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "http://localhost:3000/"
+      ]
+    ]
+  },
+  {
+    "name": "L1-reader-from-instructions",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"instructions\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Open in Library"
+      ],
+      [
+        "wait",
+        1200
+      ]
+    ]
+  },
+  {
+    "name": "L1-instructions-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"instructions\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-unknown-version",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.unknownVersion=true"
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('select');s.value='codex';s.dispatchEvent(new Event('change',{bubbles:true}));"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "const s=[...document.querySelectorAll('select')][1];s.value='subagent';s.dispatchEvent(new Event('change',{bubbles:true}));"
+      ]
+    ]
+  },
+  {
+    "name": "L1-instructions-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"instructions\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host,q=h.query.bind(h);h.query=x=>x.kind==='instructions'?Promise.resolve({kind:x.kind,sources:[]}):q(x)"
+      ],
+      [
+        "click",
+        "Refresh instructions"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "L1-instructions-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"instructions\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host,q=h.query.bind(h);h.query=x=>x.kind==='instructions'?Promise.reject({code:'native_failure',message:'Instruction discovery is unavailable. Try again after reconnecting.'}):q(x)"
+      ],
+      [
+        "click",
+        "Refresh instructions"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "L1-reader-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\", \"source\": \"instructions\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host,q=h.query.bind(h);h.query=x=>x.kind==='instructions'?Promise.reject({code:'native_failure',message:'The computer could not refresh this observation.'}):q(x)"
+      ],
+      [
+        "click",
+        "Refresh instruction status"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "L1-reader-empty-evidence",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\", \"source\": \"instructions\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host,q=h.query.bind(h);h.query=x=>x.kind==='instructions'?Promise.resolve({kind:x.kind,sources:[]}):q(x)"
+      ],
+      [
+        "click",
+        "Refresh instruction status"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-empty-destination",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host; h.roots=h.roots.filter(r=>r.kind!=='drafts');h.emit({type:'library_roots_changed',roots:h.roots})"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host,q=h.query.bind(h);h.query=x=>x.kind==='reusable_formats'?Promise.reject({code:'native_failure',message:'The computer could not prepare a reusable preview.'}):q(x);const s=document.querySelector('select');s.value='codex';s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "L1-preview-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "fill",
+        "Preview label",
+        "Local review"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "http://localhost:3000/"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "L1-preview-invalid-url",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"connections\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "click",
+        "Add preview"
+      ],
+      [
+        "fill",
+        "Preview label",
+        "Local review"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "http://localhost:3000/"
+      ],
+      [
+        "fill",
+        "Preview URL",
+        "not an address"
+      ]
+    ]
+  },
+  {
+    "name": "L1-reader-without-task",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"AGENTS.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-codex-prompt",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s=[...document.querySelectorAll('select')][1];s.value='prompt';s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-codex-subagent",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000202\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s=[...document.querySelectorAll('select')][1];s.value='subagent';s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-collision-save",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s = document.querySelector('select'); s.value='claude_code'; s.dispatchEvent(new Event('change',{bubbles:true})); const k=[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith('Reusable kind')).querySelector('select');k.value='skill';k.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.files['sim-drafts']['skill-draft.md']='Existing draft';const s=[...document.querySelectorAll('select')][2];s.value='sim-drafts';s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "fill",
+        "Editable preview",
+        "---\nname: reviewed-task\ndescription: Inspect a change before committing.\ndisable-model-invocation: true\n---\n\nPreserve this edited preview."
+      ],
+      [
+        "click",
+        "Save reviewed draft"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "document.querySelector('.notice--unknown')?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "collision"
+      ],
+      [
+        "fill",
+        "Draft file name",
+        "reviewed-skill.md"
+      ],
+      [
+        "click",
+        "Save reviewed draft"
+      ],
+      [
+        "wait",
+        1200
+      ]
+    ]
+  },
+  {
+    "name": "L1-recovery-root-removed",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.libraryCompletion.seed()"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "click",
+        "notes/plan.md"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.roots=h.roots.filter(r=>r.root_id!=='0192f7a1-0000-7000-8000-000000000903');h.emit({type:'library_roots_changed',roots:h.roots})"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "L1-reusable-reopen-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>{localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"reusable\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000201\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}}))},{once:true}); location.reload()"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const s = document.querySelector('select'); s.value='claude_code'; s.dispatchEvent(new Event('change',{bubbles:true})); const k=[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith('Reusable kind')).querySelector('select');k.value='skill';k.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Editable preview",
+        "---\nname: kept-task\n---\nKeep editing this draft offline."
+      ],
+      [
+        "eval",
+        "location.href='/?offline'"
+      ],
+      [
+        "wait",
+        3000
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('textarea');if(!t?.value.includes('Keep editing this draft offline.'))throw Error('Offline preview lost');t.scrollIntoView({block:'center'})"
+      ]
+    ]
+  }
+]

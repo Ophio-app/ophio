@@ -1,0 +1,203 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  height: 100%;
+  /* Every screen scrolls inside itself; the page never does. */
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+  font-feature-settings: "cv11", "ss01", "ss03";
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+ul[role="list"],
+ol[role="list"] {
+  list-style: none;
+  padding: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+a {
+  color: var(--accent-text);
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+
+img,
+svg,
+canvas,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--bloom);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-sm);
+}
+
+/* Headings and regions receive focus programmatically so screen readers
+   announce them; they are not controls and do not need a ring. */
+[tabindex="-1"]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border: 0;
+}
+/* A live announcement's inline text stays inside the clipped box too. */
+.visually-hidden [aria-live] span {
+  display: block;
+  max-width: 1px;
+  overflow: hidden;
+}
+
+/* Paths, commands and ids have no spaces to break at. */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  font-variant-ligatures: none;
+  overflow-wrap: anywhere;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+.faint {
+  color: var(--ink-3);
+}
+
+.wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:root[data-reduce-motion="true"] *,
+:root[data-reduce-motion="true"] *::before,
+:root[data-reduce-motion="true"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav__tab.is-on .nav__icon { animation: none !important; }
+  .btn:active:not(:disabled) { transform: none !important; }
+}
+:root[data-reduce-motion="true"] .nav__tab.is-on .nav__icon { animation: none; }
+:root[data-reduce-motion="true"] .btn:active:not(:disabled) { transform: none; }
+
+@media (forced-colors: active) {
+  :focus-visible { outline: 2px solid Highlight; }
+  .btn, .chip, .iconbtn { border: 1px solid ButtonText; }
+  .nav__tab.is-on { outline: 2px solid Highlight; outline-offset: -3px; }
+  .chip.is-selected { outline: 2px solid Highlight; outline-offset: -3px; }
+  .toast { border: 1px solid CanvasText; }
+  .ctx::before { display: none; }
+}

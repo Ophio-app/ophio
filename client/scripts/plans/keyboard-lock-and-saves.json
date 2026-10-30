@@ -1,0 +1,581 @@
+[
+  {
+    "name": "U12-3-take-before-lock",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Watch DP-1"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "U12-3-take-after-lock",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Watch DP-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "window.__sim.control.lock(true,'0192f7a1-0000-7000-8000-000000000601')"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "locked"
+      ],
+      [
+        "eval",
+        "window.__sim.control.lock(false,'0192f7a1-0000-7000-8000-000000000601')"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "U12-4-keyboard-status",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Watch DP-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Hello from this device"
+      ]
+    ]
+  },
+  {
+    "name": "U12-5-keyboard-200",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Watch DP-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Hello from this device"
+      ],
+      [
+        "log",
+        "(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent==='Send text');return {button:b?.getBoundingClientRect().toJSON(),field:document.querySelector('.remote-keyboard textarea')?.getBoundingClientRect().toJSON(),rail:document.querySelector('.safety-rail')?.getBoundingClientRect().toJSON()}})()"
+      ],
+      [
+        "eval",
+        "const rail=document.querySelector('.safety-rail').getBoundingClientRect(); const button=[...document.querySelectorAll('.desktop-screen--typing button')].find(e=>e.textContent==='Send text'); const field=document.querySelector('.remote-keyboard textarea'); for(const el of [button,field]) { const r=el.getBoundingClientRect(); if(r.top<0||r.bottom>rail.top||r.right>innerWidth) throw Error('Keyboard action is clipped'); }"
+      ]
+    ],
+    "text": 2,
+    "dark": true
+  },
+  {
+    "name": "U12-5-keyboard-landscape",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Watch DP-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Hello from this device"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "U12-5-keyboard-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Watch DP-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Hello from this device"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "U12-7-terminal-key-focused",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"control\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}, {\"screen\": \"terminal\", \"terminalId\": \"0192f7a1-0000-7000-8000-000000000a01\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "clickSel",
+        ".terminal-modebar [role=radio]:last-child"
+      ],
+      [
+        "click",
+        "Show keyboard"
+      ],
+      [
+        "shot",
+        "390x844-focused"
+      ],
+      [
+        "height",
+        510
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "log",
+        "({focus:document.activeElement?.className,keys:document.querySelector('.terminal-keys')?.getBoundingClientRect().toJSON(),output:document.querySelector('.terminal-output')?.getBoundingClientRect().toJSON()})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "U12-7-sheet-tap",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "clickSel",
+        "#control-terminals + button"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "log",
+        "({title:document.querySelector('dialog[open] h2')?.textContent,outline:getComputedStyle(document.querySelector('dialog[open] h2')).outline})"
+      ]
+    ]
+  },
+  {
+    "name": "U12-10-computer-use",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"control\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}, {\"screen\": \"computer_use\", \"taskId\": \"0192f7a1-0000-7000-8000-000000000204\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "document.querySelector('#computer-agent')?.scrollIntoView()"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "U12-9-reproduction-200",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {annotationStore}=await import('/src/state/annotations.ts');const store=annotationStore('sim-studio');store.record(id,d=>({...d,mode:'steps',expected:'The page loads',actual:'The page stays blank',sources:[...d.sources,{...d.sources[0],key:'clip',mediaType:'video/webm',included:false,origin:{kind:'clip',target_id:null,duration_ms:3000}}],steps:[{index:1,source_key:'S1',text:'Open the page',clip_range_ms:null}]}));const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "log",
+        "(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent==='Review and send');return {button:b?.getBoundingClientRect().toJSON(),footer:document.querySelector('.an-review')?.getBoundingClientRect().toJSON(),rail:document.querySelector('.safety-rail')?.getBoundingClientRect().toJSON()}})()"
+      ],
+      [
+        "eval",
+        "const rail=document.querySelector('.safety-rail').getBoundingClientRect();const b=[...document.querySelectorAll('.an-screen button')].find(e=>e.textContent==='Review and send').getBoundingClientRect();const footer=document.querySelector('.an-review');if(b.top<0||b.bottom>rail.top||footer.scrollHeight>footer.clientHeight)throw Error('Review action needs a second scroll');"
+      ]
+    ],
+    "text": 2,
+    "dark": true
+  },
+  {
+    "name": "U12-1-uncertain-save",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "clickSel",
+        ".cm-content"
+      ],
+      [
+        "press",
+        "Control+End"
+      ],
+      [
+        "type",
+        "\nA note from this device."
+      ],
+      [
+        "click",
+        "Review changes"
+      ],
+      [
+        "eval",
+        "window.__sim.library.uncertainNextSave()"
+      ],
+      [
+        "click",
+        "Save on computer"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "if(document.body.textContent.includes('Changed on the computer since you opened it'))throw Error('False conflict')"
+      ],
+      [
+        "shot",
+        "unconfirmed"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .notice button"
+      ],
+      [
+        "wait",
+        800
+      ]
+    ]
+  },
+  {
+    "name": "U12-2-12-preview-capture",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog[open] iframe'))throw Error('Preview closed after capture')"
+      ],
+      [
+        "shot",
+        "still-open"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .btn--primary"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "shot",
+        "annotate"
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "fill",
+        "What you\u2019re asking",
+        "Check the layout in this preview picture."
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.talk-log p')].find(e=>e.textContent.includes('Taken from the Notes preview on studio')); if(!p)throw Error('Missing preview provenance on sent receipt');p.scrollIntoView({block:'center'});"
+      ],
+      [
+        "log",
+        "[...document.querySelectorAll('.talk-log p')].filter(e=>e.textContent.includes('Taken from the Notes preview')).map(e=>e.textContent)"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U12-1-foreign-change",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',JSON.stringify({\"version\": 2, \"state\": {\"tab\": \"library\", \"stacks\": {\"talk\": [{\"screen\": \"talk\"}], \"control\": [{\"screen\": \"control\"}], \"work\": [{\"screen\": \"work\"}], \"library\": [{\"screen\": \"library\"}, {\"screen\": \"file\", \"rootId\": \"0192f7a1-0000-7000-8000-000000000902\", \"path\": \"docs/windows.md\"}]}, \"projectId\": \"0192f7a1-0000-7000-8000-000000000101\", \"taskByProject\": {}, \"drafts\": {}, \"targetId\": null}})),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "clickSel",
+        ".cm-content"
+      ],
+      [
+        "press",
+        "Control+End"
+      ],
+      [
+        "type",
+        "\nA note from this device."
+      ],
+      [
+        "click",
+        "Review changes"
+      ],
+      [
+        "eval",
+        "window.__sim.library.uncertainNextSave()"
+      ],
+      [
+        "click",
+        "Save on computer"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "if(document.body.textContent.includes('Changed on the computer since you opened it'))throw Error('False conflict')"
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902','docs/windows.md','A change from another editor.\\n')"
+      ],
+      [
+        "shot",
+        "unconfirmed"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .notice button"
+      ],
+      [
+        "wait",
+        800
+      ]
+    ]
+  }
+]

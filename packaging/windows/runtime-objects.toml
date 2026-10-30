@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: Apache-2.0
+# MinGW-w64 runtime objects the Windows executables are allowed to link, each
+# reviewed against its source and the files it includes. Packaging reads the
+# linker maps and fails on any other runtime object, so a new dependency cannot
+# pull in unreviewed runtime code (such as the Cephes-derived maths the
+# runtime's notice leaves unresolved) without a review here first.
+#
+# Names are as the linker map prints them: the startup objects by file name,
+# archive members as "lib64_<archive>_a-<source>.o".
+#
+# Headers: the C code compiled for Windows (SQLite and ring) includes no
+# LGPL-licensed header. The one Wine-derived header it reaches,
+# corecrt_stdio_config.h, is in the public domain.
+
+source = "https://github.com/mingw-w64/mingw-w64/tree/4564ee4b5063097bf747af3a3f8270a28adff820/mingw-w64-crt"
+toolchain = "llvm-mingw with mingw-w64 15.0.0 headers and runtime"
+
+[licenses]
+"LicenseRef-MinGW-public-domain" = "No copyright assigned and placed in the public domain (DISCLAIMER.PD), or offered for use without restriction of copyright."
+"ZPL-2.1" = "The runtime's overall licence, for files that carry no notice of their own."
+"LicenseRef-gdtoa-Lucent" = "David M. Gay's gdtoa, under the Lucent Technologies permission notice reproduced in the runtime notice."
+
+[objects]
+"crt2.o" = { source = "crt/crtexe.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"crtbegin.o" = { source = "crt/crtbegin.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"crtend.o" = { source = "crt/crtend.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-cinitexe.o" = { source = "crt/cinitexe.c", licenses = ["ZPL-2.1"] }
+"lib64_libmingw32_a-CRT_fp10.o" = { source = "crt/CRT_fp10.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-dllargv.o" = { source = "crt/dllargv.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-gccmain.o" = { source = "crt/gccmain.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-merr.o" = { source = "crt/merr.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-mingw_helpers.o" = { source = "crt/mingw_helpers.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-natstart.o" = { source = "crt/natstart.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-_newmode.o" = { source = "crt/_newmode.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-pesect.o" = { source = "crt/pesect.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-pseudo-reloc-list.o" = { source = "crt/pseudo-reloc-list.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-pseudo-reloc.o" = { source = "crt/pseudo-reloc.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-tlssup.o" = { source = "crt/tlssup.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-usermatherr.o" = { source = "crt/usermatherr.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-wildcard.o" = { source = "crt/wildcard.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-xncommod.o" = { source = "crt/xncommod.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-xthdloc.o" = { source = "crt/xthdloc.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingw32_a-xtxtmode.o" = { source = "crt/xtxtmode.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingwex_a-dmisc.o" = { source = "gdtoa/dmisc.c", licenses = ["LicenseRef-gdtoa-Lucent"] }
+"lib64_libmingwex_a-gdtoa.o" = { source = "gdtoa/gdtoa.c", licenses = ["LicenseRef-gdtoa-Lucent"] }
+"lib64_libmingwex_a-gmisc.o" = { source = "gdtoa/gmisc.c", licenses = ["LicenseRef-gdtoa-Lucent"] }
+"lib64_libmingwex_a-misc.o" = { source = "gdtoa/misc.c", licenses = ["LicenseRef-gdtoa-Lucent"] }
+"lib64_libmingwex_a-guard_dispatch.o" = { source = "cfguard/guard_dispatch.S", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingwex_a-loadcfg.o" = { source = "crt/loadcfg.S", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingwex_a-mingw_cfguard_support.o" = { source = "cfguard/mingw_cfguard_support.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingwex_a-mingw_fprintf.o" = { source = "stdio/mingw_fprintf.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libmingwex_a-mingw_matherr.o" = { source = "misc/mingw_matherr.c", licenses = ["ZPL-2.1"] }
+"lib64_libmingwex_a-mingw_pformat.o" = { source = "stdio/mingw_pformat.c", licenses = ["LicenseRef-MinGW-public-domain", "LicenseRef-gdtoa-Lucent", "ZPL-2.1"] }
+"lib64_libucrt_extra_a-__initenv.o" = { source = "misc/__initenv.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libucrt_extra_a-__p___initenv.o" = { source = "misc/__p___initenv.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libucrt_extra_a-sincos.o" = { source = "math/sincos.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libucrt_extra_a-ucrt_amsg_exit.o" = { source = "misc/ucrt_amsg_exit.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libucrt_extra_a-ucrt_fprintf.o" = { source = "stdio/ucrt_fprintf.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libucrt_extra_a-ucrt__getmainargs.o" = { source = "misc/ucrt__getmainargs.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libucrt_extra_a-ucrt___local_stdio_printf_options.o" = { source = "stdio/ucrt___local_stdio_printf_options.c", licenses = ["LicenseRef-MinGW-public-domain"] }
+"lib64_libucrt_extra_a-ucrt_vfprintf.o" = { source = "stdio/ucrt_vfprintf.c", licenses = ["LicenseRef-MinGW-public-domain"] }

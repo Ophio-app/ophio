@@ -1,0 +1,31 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.agent-children { display: grid; gap: var(--s3); border-top: 1px solid var(--line); padding-top: var(--s4); }
+.agent-children ul, .agent-facts { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s4); }
+.agent-child { border-left: 2px solid var(--line-strong); padding-left: var(--s3); min-width: 0; }
+.agent-child h4 { font-size: var(--text-md); font-weight: 600; }
+.agent-child .btn { width: 100%; }
+.agent-children summary { min-height: var(--target); padding-block: var(--s3); color: var(--ink-2); cursor: pointer; }
+.agent-fact { display: flex; align-items: flex-start; gap: var(--s2); }
+.agent-fact > svg { width: 1.15em; height: 1.15em; flex: none; margin-top: var(--s1); }
+.agent-fact > div { min-width: 0; }
+.agent-fact--unknown, .agent-fact--still_active { color: var(--warn-text); }
+.agent-stop-receipt { border-top: 1px solid var(--line); padding-top: var(--s3); font-size: var(--text-sm); }
+.agent-stop-receipt__title { font-weight: 600; }
+.agent-children, .agent-facts, .agent-outside, .agent-outside-confirm { overflow-wrap: anywhere; }
+.agent-outside { display: grid; gap: var(--s3); }
+.agent-outside__metadata { display: grid; gap: var(--s2); font-size: var(--text-sm); }
+.agent-outside__metadata dt { color: var(--ink-3); }
+.agent-outside__metadata dd { margin: 0; }
+.agent-outside-confirm .btn { min-height: var(--target-intervention); }
+
+.agent-outside-confirm { border-top: 1px solid var(--line); padding-top: var(--s4); }
+.agent-outside-confirm h4 { font-size: var(--text-lg); font-weight: 650; scroll-margin-top: var(--s3); }
+.agent-outside-confirm__actions { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: var(--s2); padding-block: var(--s3); background: var(--surface-raised); }
+.agent-outside-confirm__actions .btn { flex: 1 1 100%; }
+/* At large text, reading the scope takes precedence over pinning a second
+   footer beside the shell’s always-reachable safety controls. */
+:root.app-narrow .agent-outside-confirm__actions,
+:root.app-tight .agent-outside-confirm__actions { position: static; }
+.agent-child .agent-child-stop { min-height: var(--target-intervention); padding-inline: var(--s3); }
+:root.app-narrow .agent-stop-summary { display: block; }
+:root.app-narrow .agent-stop-summary > .notice__icon { display: none; }

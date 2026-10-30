@@ -1,0 +1,446 @@
+[
+  {
+    "tool": "Bash",
+    "input": {
+      "command": "printf fixture",
+      "description": "Print fixture text"
+    },
+    "approval": {
+      "kind": "command",
+      "title": "Run a shell command",
+      "detail": "printf fixture\nPrint fixture text",
+      "detail_lines": [
+        {
+          "text": "printf fixture",
+          "code": true
+        },
+        {
+          "text": "Print fixture text"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "Edit",
+    "input": {
+      "file_path": "src/main.rs",
+      "old_string": "old",
+      "new_string": "new"
+    },
+    "approval": {
+      "kind": "file_edit",
+      "title": "Edit a file",
+      "detail": "src/main.rs\nReplace one match: 3 → 3 characters\n- old\n+ new",
+      "detail_lines": [
+        {
+          "text": "src/main.rs",
+          "code": true
+        },
+        {
+          "text": "Replace one match: 3 → 3 characters"
+        },
+        {
+          "text": "old",
+          "code": true,
+          "change": "removed"
+        },
+        {
+          "text": "new",
+          "code": true,
+          "change": "added"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "Edit",
+    "input": {
+      "file_path": "client/src/screens/Home.tsx",
+      "old_string": "export function Home() {\n  const tasks = useTasks();\n  if (!tasks.length) return <Empty />;\n  return <List items={tasks} />;\n}",
+      "new_string": "export function Home() {\n  const tasks = useTasks();\n  if (!tasks.length) return <Empty title=\"Nothing waiting\" />;\n  return <List items={tasks} sorted />;\n}"
+    },
+    "approval": {
+      "kind": "file_edit",
+      "title": "Edit a file",
+      "detail": "client/src/screens/Home.tsx\nReplace one match: 126 → 157 characters\n  export function Home() {\n    const tasks = useTasks();\n-   if (!tasks.length) return <Empty />;\n-   return <List items={tasks} />;\n+   if (!tasks.length) return <Empty title=\"Nothing waiting\" />;\n+   return <List items={tasks} sorted />;\n  }",
+      "detail_lines": [
+        {
+          "text": "client/src/screens/Home.tsx",
+          "code": true
+        },
+        {
+          "text": "Replace one match: 126 → 157 characters"
+        },
+        {
+          "text": "export function Home() {",
+          "code": true,
+          "change": "unchanged"
+        },
+        {
+          "text": "  const tasks = useTasks();",
+          "code": true,
+          "change": "unchanged"
+        },
+        {
+          "text": "  if (!tasks.length) return <Empty />;",
+          "code": true,
+          "change": "removed"
+        },
+        {
+          "text": "  return <List items={tasks} />;",
+          "code": true,
+          "change": "removed"
+        },
+        {
+          "text": "  if (!tasks.length) return <Empty title=\"Nothing waiting\" />;",
+          "code": true,
+          "change": "added"
+        },
+        {
+          "text": "  return <List items={tasks} sorted />;",
+          "code": true,
+          "change": "added"
+        },
+        {
+          "text": "}",
+          "code": true,
+          "change": "unchanged"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "Archive",
+    "input": {
+      "path": "notes.txt",
+      "destination": "archive",
+      "nested": {
+        "ignore": "blob"
+      }
+    },
+    "approval": {
+      "kind": "tool",
+      "title": "Use Archive",
+      "detail": "destination: archive\npath: notes.txt",
+      "detail_lines": [
+        {
+          "text": "destination: archive"
+        },
+        {
+          "text": "path: notes.txt"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "Write",
+    "input": {
+      "file_path": "notes.md",
+      "content": "hello"
+    },
+    "approval": {
+      "kind": "file_edit",
+      "title": "Edit a file",
+      "detail": "notes.md\nWrite 5 characters\n+ hello",
+      "detail_lines": [
+        {
+          "text": "notes.md",
+          "code": true
+        },
+        {
+          "text": "Write 5 characters"
+        },
+        {
+          "text": "hello",
+          "code": true,
+          "change": "added"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "MultiEdit",
+    "input": {
+      "file_path": "src/main.rs",
+      "edits": [
+        {},
+        {}
+      ]
+    },
+    "approval": {
+      "kind": "file_edit",
+      "title": "Edit a file",
+      "detail": "src/main.rs\n2 edits",
+      "detail_lines": [
+        {
+          "text": "src/main.rs",
+          "code": true
+        },
+        {
+          "text": "2 edits"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "NotebookEdit",
+    "input": {
+      "notebook_path": "analysis.ipynb",
+      "edit_mode": "replace",
+      "cell_id": "cell-1"
+    },
+    "approval": {
+      "kind": "file_edit",
+      "title": "Edit a file",
+      "detail": "analysis.ipynb\nCell change: replace\nCell: cell-1",
+      "detail_lines": [
+        {
+          "text": "analysis.ipynb",
+          "code": true
+        },
+        {
+          "text": "Cell change: replace"
+        },
+        {
+          "text": "Cell: cell-1"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "WebFetch",
+    "input": {
+      "url": "https://example.com/docs"
+    },
+    "approval": {
+      "kind": "network",
+      "title": "Use WebFetch",
+      "detail": "https://example.com/docs",
+      "detail_lines": [
+        {
+          "text": "https://example.com/docs",
+          "code": true
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "WebSearch",
+    "input": {
+      "query": "Rust ownership"
+    },
+    "approval": {
+      "kind": "network",
+      "title": "Search the web",
+      "detail": "Rust ownership",
+      "detail_lines": [
+        {
+          "text": "Rust ownership"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "Grep",
+    "input": {
+      "pattern": "TODO",
+      "path": "src"
+    },
+    "approval": {
+      "kind": "tool",
+      "title": "Use Grep",
+      "detail": "Pattern: TODO\nPath: src",
+      "detail_lines": [
+        {
+          "label": "Pattern",
+          "text": "TODO",
+          "code": true
+        },
+        {
+          "label": "Path",
+          "text": "src",
+          "code": true
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "Glob",
+    "input": {
+      "pattern": "**/*.rs",
+      "path": "crates"
+    },
+    "approval": {
+      "kind": "tool",
+      "title": "Use Glob",
+      "detail": "Pattern: **/*.rs\nPath: crates",
+      "detail_lines": [
+        {
+          "label": "Pattern",
+          "text": "**/*.rs",
+          "code": true
+        },
+        {
+          "label": "Path",
+          "text": "crates",
+          "code": true
+        }
+      ],
+      "scope": "This request once",
+      "shortened": false
+    }
+  },
+  {
+    "tool": "Bash",
+    "input": {
+      "command": "for file in crates/ports/src/lib.rs crates/ports/src/model.rs crates/ports/src/tests.rs crates/ports/src/bridge.rs crates/ports/src/runs.rs crates/protocol/src/lib.rs crates/protocol/src/model.rs crates/protocol/src/tests.rs crates/protocol/src/bridge.rs crates/protocol/src/runs.rs crates/services/src/lib.rs crates/services/src/model.rs crates/services/src/tests.rs crates/services/src/bridge.rs crates/services/src/runs.rs crates/channels/src/lib.rs crates/channels/src/model.rs crates/channels/src/tests.rs crates/channels/src/bridge.rs crates/channels/src/runs.rs crates/store/src/lib.rs crates/store/src/model.rs crates/store/src/tests.rs crates/store/src/bridge.rs crates/store/src/runs.rs crates/harness-claude/src/lib.rs crates/harness-claude/src/model.rs crates/harness-claude/src/tests.rs crates/harness-claude/src/bridge.rs crates/harness-claude/src/runs.rs crates/harness-codex/src/lib.rs crates/harness-codex/src/model.rs crates/harness-codex/src/tests.rs crates/harness-codex/src/bridge.rs crates/harness-codex/src/runs.rs; do rustfmt --check --edition 2024 \"$file\" || echo \"needs formatting: $file\"; done",
+      "description": "Check formatting of each crate source file"
+    },
+    "approval": {
+      "kind": "command",
+      "title": "Run a shell command",
+      "detail": "for file in crates/ports/src/lib.rs crates/ports/src/model.rs crates/ports/src/tests.rs crates/ports/src/bridge.rs crates/ports/src/runs.rs crates/protocol/src/lib.rs crates/protocol/src/model.rs crates/protocol/src/tests.rs crates/protocol/src/bridge.rs crates/protocol/src/runs.rs crates/services/src/lib.rs crates/services/src/model.rs crates/services/src/tests.rs crates/services/src/bridge.rs crates/services/src/runs.rs crates/channels/src/lib.rs crates/channels/src/model.rs crates/channels/src/tests.rs crates/channels/src/bridge.rs crates/channels/src/runs.rs crates/store/src/lib.rs crates/store/src/model.rs crates/store/src/tes…\nCheck formatting of each crate source file",
+      "detail_lines": [
+        {
+          "text": "for file in crates/ports/src/lib.rs crates/ports/src/model.rs crates/ports/src/tests.rs crates/ports/src/bridge.rs crates/ports/src/runs.rs crates/protocol/src/lib.rs crates/protocol/src/model.rs crates/protocol/src/tests.rs crates/protocol/src/bridge.rs crates/protocol/src/runs.rs crates/services/src/lib.rs crates/services/src/model.rs crates/services/src/tests.rs crates/services/src/bridge.rs crates/services/src/runs.rs crates/channels/src/lib.rs crates/channels/src/model.rs crates/channels/src/tests.rs crates/channels/src/bridge.rs crates/channels/src/runs.rs crates/store/src/lib.rs crates/store/src/model.rs crates/store/src/tes…",
+          "code": true
+        },
+        {
+          "text": "Check formatting of each crate source file"
+        }
+      ],
+      "scope": "This request once",
+      "shortened": true
+    }
+  },
+  {
+    "tool": "AskUserQuestion",
+    "input": {
+      "questions": [
+        {
+          "question": "How should totals be rounded?",
+          "header": "Rounding",
+          "multiSelect": false,
+          "options": [
+            {
+              "label": "Nearest cent",
+              "description": "Round half up to two decimal places"
+            },
+            {
+              "label": "Always up",
+              "description": "Never undercharge"
+            }
+          ]
+        },
+        {
+          "question": "Which reports need the change?",
+          "header": "Reports",
+          "multiSelect": true,
+          "options": [
+            {
+              "label": "Invoices"
+            },
+            {
+              "label": "Receipts"
+            },
+            {
+              "label": "Statements",
+              "description": "Monthly account statements"
+            }
+          ]
+        }
+      ]
+    },
+    "approval": {
+      "kind": "question",
+      "title": "Answer 2 questions",
+      "detail": "Rounding: How should totals be rounded?\nNearest cent: Round half up to two decimal places\nAlways up: Never undercharge\nReports: Which reports need the change?\nChoose one or more\nInvoices\nReceipts\nStatements: Monthly account statements",
+      "detail_lines": [
+        {
+          "label": "Rounding",
+          "text": "How should totals be rounded?"
+        },
+        {
+          "label": "Nearest cent",
+          "text": "Round half up to two decimal places"
+        },
+        {
+          "label": "Always up",
+          "text": "Never undercharge"
+        },
+        {
+          "label": "Reports",
+          "text": "Which reports need the change?"
+        },
+        {
+          "text": "Choose one or more"
+        },
+        {
+          "text": "Invoices"
+        },
+        {
+          "text": "Receipts"
+        },
+        {
+          "label": "Statements",
+          "text": "Monthly account statements"
+        }
+      ],
+      "scope": "Only your answer; nothing runs",
+      "shortened": false,
+      "questions": [
+        {
+          "header": "Rounding",
+          "question": "How should totals be rounded?",
+          "options": [
+            {
+              "label": "Nearest cent",
+              "description": "Round half up to two decimal places"
+            },
+            {
+              "label": "Always up",
+              "description": "Never undercharge"
+            }
+          ]
+        },
+        {
+          "header": "Reports",
+          "question": "Which reports need the change?",
+          "options": [
+            {
+              "label": "Invoices"
+            },
+            {
+              "label": "Receipts"
+            },
+            {
+              "label": "Statements",
+              "description": "Monthly account statements"
+            }
+          ],
+          "multi_select": true
+        }
+      ]
+    }
+  }
+]

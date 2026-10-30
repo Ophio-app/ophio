@@ -1,0 +1,444 @@
+[
+  {
+    "name": "annotate-light",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'comments');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'comments');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-large-focused",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'marks');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      ["clickSel", ".an-tools [aria-label=\"Pin\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible while the menu opens."
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-stage svg image')) throw Error('Missing marked crop'); if(document.querySelectorAll('[aria-label=\"Back and keep draft\"]').length!==1) throw Error('Close control count');"
+      ],
+      ["shot", "focused"],
+      ["click", "Add comment"],
+      [
+        "eval",
+        "if(!document.querySelector('.an-screen.is-composing')) throw Error('Comment jumped out of typing');"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-landscape-focused",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'marks');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      ["clickSel", ".an-tools [aria-label=\"Pin\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible while the menu opens."
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-stage svg image')) throw Error('Missing marked crop'); if(document.querySelectorAll('[aria-label=\"Back and keep draft\"]').length!==1) throw Error('Close control count');"
+      ],
+      ["shot", "focused"],
+      ["click", "Add comment"],
+      [
+        "eval",
+        "if(!document.querySelector('.an-screen.is-composing')) throw Error('Comment jumped out of typing');"
+      ]
+    ]
+  },
+  {
+    "name": "capture-layout-changed",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'changed');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-source-caption');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ]
+  },
+  {
+    "name": "capture-layout-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'changed');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ]
+    ]
+  },
+  {
+    "name": "trim-review-light",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'clip');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      ["clickSel", "summary"],
+      ["fill", "Range start (seconds)", "0.3"],
+      ["fill", "Range end (seconds)", "1.1"],
+      ["click", "Apply trim"],
+      [
+        "eval",
+        "const s=document.querySelector('input[aria-label=\"Clip position\"]'); if(s.min!=='0.3'||s.max!=='1.1') throw Error('Scrubber not trimmed');"
+      ],
+      ["wait", 500],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 1", "Open the menu"],
+      ["click", "+1 s"],
+      ["wait", 400],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 2", "The chart disappears"],
+      ["fill", "Expected", "The chart stays visible"],
+      ["fill", "Actual", "The chart disappears"],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})();if(!document.querySelector('.an-outgoing')) throw Error('Missing outgoing review');"
+      ],
+      ["shot", "frames"],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing-steps');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ]
+  },
+  {
+    "name": "trim-review-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'clip');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      ["clickSel", "summary"],
+      ["fill", "Range start (seconds)", "0.3"],
+      ["fill", "Range end (seconds)", "1.1"],
+      ["click", "Apply trim"],
+      [
+        "eval",
+        "const s=document.querySelector('input[aria-label=\"Clip position\"]'); if(s.min!=='0.3'||s.max!=='1.1') throw Error('Scrubber not trimmed');"
+      ],
+      ["wait", 500],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 1", "Open the menu"],
+      ["click", "+1 s"],
+      ["wait", 400],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 2", "The chart disappears"],
+      ["fill", "Expected", "The chart stays visible"],
+      ["fill", "Actual", "The chart disappears"],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})();if(!document.querySelector('.an-outgoing')) throw Error('Missing outgoing review');"
+      ],
+      ["shot", "frames"],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing-steps');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ]
+  },
+  {
+    "name": "trim-review-large",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'clip');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      ["clickSel", "summary"],
+      ["fill", "Range start (seconds)", "0.3"],
+      ["fill", "Range end (seconds)", "1.1"],
+      ["click", "Apply trim"],
+      [
+        "eval",
+        "const s=document.querySelector('input[aria-label=\"Clip position\"]'); if(s.min!=='0.3'||s.max!=='1.1') throw Error('Scrubber not trimmed');"
+      ],
+      ["wait", 500],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 1", "Open the menu"],
+      ["click", "+1 s"],
+      ["wait", 400],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 2", "The chart disappears"],
+      ["fill", "Expected", "The chart stays visible"],
+      ["fill", "Actual", "The chart disappears"],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})();if(!document.querySelector('.an-outgoing')) throw Error('Missing outgoing review');"
+      ],
+      ["shot", "frames"],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing-steps');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ],
+      ["shot", "steps"],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.screen__footer--flow');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop=b.scrollHeight;else throw Error('Review action missing')})()"
+      ]
+    ]
+  },
+  {
+    "name": "trim-review-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'clip');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      ["clickSel", "summary"],
+      ["fill", "Range start (seconds)", "0.3"],
+      ["fill", "Range end (seconds)", "1.1"],
+      ["click", "Apply trim"],
+      [
+        "eval",
+        "const s=document.querySelector('input[aria-label=\"Clip position\"]'); if(s.min!=='0.3'||s.max!=='1.1') throw Error('Scrubber not trimmed');"
+      ],
+      ["wait", 500],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 1", "Open the menu"],
+      ["click", "+1 s"],
+      ["wait", 400],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 2", "The chart disappears"],
+      ["fill", "Expected", "The chart stays visible"],
+      ["fill", "Actual", "The chart disappears"],
+      ["click", "Review and send"],
+      ["wait", 500],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})();if(!document.querySelector('.an-outgoing')) throw Error('Missing outgoing review');"
+      ],
+      ["shot", "frames"],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-outgoing-steps');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-offline",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'comments');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "annotate-empty",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'empty');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-source-error",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'missing');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-canvas')?.textContent.includes('missing from phone storage'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('.an-canvas');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ]
+  },
+  {
+    "name": "localhost-preview-fallback",
+    "caption": "Phone forwarder not implemented; this image shows the explicit localhost limitation.",
+    "steps": [
+      ["click", "Control"],
+      [
+        "eval",
+        "(async()=>{const {previewCompletion}=await import('/src/dev/sim/annotationCompletion.ts');previewCompletion(window.__sim.host)})()"
+      ],
+      ["wait", 300],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('#control-previews');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ]
+  },
+  {
+    "name": "localhost-preview-offline-large",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["click", "Control"],
+      [
+        "eval",
+        "(async()=>{const {previewCompletion}=await import('/src/dev/sim/annotationCompletion.ts');previewCompletion(window.__sim.host)})()"
+      ],
+      ["wait", 300],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('#control-previews');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "previews-empty",
+    "steps": [
+      ["click", "Control"],
+      [
+        "eval",
+        "(async()=>{const {previewCompletion}=await import('/src/dev/sim/annotationCompletion.ts');previewCompletion(window.__sim.host,true)})()"
+      ],
+      ["wait", 300],
+      [
+        "eval",
+        "(()=>{const e=document.querySelector('#control-previews');const b=e?.closest('.screen__body');if(e&&b)b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top})()"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-large-keyboard",
+    "width": 360,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {annotationCompletion}=await import('/src/dev/sim/annotationCompletion.ts');await annotationCompletion(window.__sim.host,'marks');location.reload()})()"
+      ],
+      ["wait", 1000],
+      [
+        "eval",
+        "(async()=>{const until=Date.now()+10000;while(!(document.querySelector('.an-screen'))){if(Date.now()>until)throw Error('Annotation fixture did not load');await new Promise(r=>setTimeout(r,100))}})()"
+      ],
+      ["clickSel", ".an-tools [aria-label=\"Pin\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pin in center');if(!b)throw Error('No Add pin in center key');b.click()})()"],
+      [
+        "fill",
+        "What should change?",
+        "Keep this heading visible while the menu opens."
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.an-stage svg image')) throw Error('Missing marked crop'); if(document.querySelectorAll('[aria-label=\"Back and keep draft\"]').length!==1) throw Error('Close control count');"
+      ],
+      ["height", 600],
+      ["shot", "focused"],
+      ["click", "Add comment"],
+      [
+        "eval",
+        "if(!document.querySelector('.an-screen.is-composing')) throw Error('Comment jumped out of typing');"
+      ]
+    ]
+  }
+]

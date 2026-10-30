@@ -1,0 +1,264 @@
+[
+  {
+    "name": "agent-codex-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "field-notes"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "click",
+        "Codex · GPT-6-Astra"
+      ],
+      [
+        "click",
+        "GPT-6-Sol"
+      ],
+      [
+        "eval",
+        "document.querySelector(\"dialog[open] .talk-agents__chips\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "sol"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.chip:has-text(\"GPT-6-Astra\")"
+      ],
+      [
+        "click",
+        "Extra high"
+      ],
+      [
+        "eval",
+        "document.querySelector(\"dialog[open] .talk-agents__chips\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  },
+  {
+    "name": "agent-claude-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "field-notes"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "click",
+        "Codex · GPT-6-Astra"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "click",
+        "Opus (latest)"
+      ],
+      [
+        "click",
+        "High"
+      ],
+      [
+        "eval",
+        "document.querySelector(\"dialog[open] .talk-agents__chips\").scrollIntoView({block:\"start\"})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "agent-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "field-notes"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "fill",
+        "What should",
+        "Fix editor spacing"
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "click",
+        "Codex · GPT-6-Astra"
+      ],
+      [
+        "click",
+        "GPT-6-Sol"
+      ],
+      [
+        "click",
+        "Low"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('dialog[open] .talk-agents__chips')[1].scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 800,
+    "text": 2
+  },
+  {
+    "name": "agent-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "field-notes"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "click",
+        "Codex · GPT-6-Astra"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "click",
+        "Opus (latest)"
+      ],
+      [
+        "click",
+        "High"
+      ],
+      [
+        "eval",
+        "document.querySelector(\"dialog[open] .talk-agents__chips\").scrollIntoView({block:\"start\"})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "settings-targets",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "App settings"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-labelledby=settings-agents] article:nth-of-type(3)').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "catalog-settings",
+    "scale": 1,
+    "dark": true,
+    "settle": 1000,
+    "steps": [
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "Connections and readiness"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "App settings"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "clickSel",
+        "[aria-labelledby=settings-agents] article:nth-of-type(1) summary"
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-labelledby=settings-agents] article:nth-of-type(1)').scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "claude"
+      ],
+      [
+        "clickSel",
+        "[aria-labelledby=settings-agents] article:nth-of-type(2) summary"
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-labelledby=settings-agents] article:nth-of-type(2)').scrollIntoView({block:'start'})"
+      ]
+    ]
+  }
+]

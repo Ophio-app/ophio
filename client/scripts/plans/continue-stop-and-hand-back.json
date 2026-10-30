@@ -1,0 +1,338 @@
+[
+  {
+    "name": "U11-1-continue-blocked",
+    "scale": 1,
+    "dark": true,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"work\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}, {\\\"screen\\\": \\\"receipt\\\", \\\"taskId\\\": \\\"0192f7a1-0000-7000-8000-000000000202\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "clickSel",
+        ".work-stack > section:last-of-type button:has-text(\"Continue\")"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "What should it do next?",
+        "Retest the retry boundary."
+      ]
+    ]
+  },
+  {
+    "name": "U11-2-force-stop",
+    "scale": 1,
+    "dark": true,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"talk\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "eval",
+        "window.__sim.stops.ignore('0192f7a1-0000-7000-8000-000000000204')"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Stop sent once \u00b7 not confirmed')) throw Error('First Stop rail wording missing')"
+      ],
+      [
+        "shot",
+        "once"
+      ],
+      [
+        "click",
+        "Stop again \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Stop sent twice \u00b7 not confirmed')) throw Error('Repeated Stop rail wording missing')"
+      ],
+      [
+        "shot",
+        "twice"
+      ],
+      [
+        "click",
+        "Force stop"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Force stop on studio"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "click",
+        "What happened"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Stop receipt')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.route:not(.is-hidden) .work-screen')?.textContent.includes('Stop sent twice \u00b7 then Force stop')) throw Error('Force-stop receipt wording missing')"
+      ]
+    ]
+  },
+  {
+    "name": "U11-3-hand-back",
+    "scale": 1,
+    "dark": true,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"talk\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "eval",
+        "(async()=>{await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'take_over',target_id:'0192f7a1-0000-7000-8000-000000000601',geometry_revision:3}})})()"
+      ],
+      [
+        "wait",
+        1100
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk .screen__body').scrollTop=99999"
+      ],
+      [
+        "shot",
+        "chip"
+      ],
+      [
+        "click",
+        "Hand back to the agent"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Return to agent"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.control[0].input_state!=='agent')throw Error('Display was not returned')"
+      ]
+    ]
+  },
+  {
+    "name": "U11-4-blockers-and-review",
+    "scale": 1,
+    "dark": true,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"work\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "U11-11-digest",
+    "scale": 1,
+    "dark": true,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"work\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ]
+    ]
+  },
+  {
+    "name": "U11-12-talk-200",
+    "scale": 1,
+    "dark": true,
+    "width": 360,
+    "height": 780,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"talk\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ]
+    ],
+    "text": 2
+  },
+  {
+    "name": "U11-12-landscape-talk",
+    "scale": 1,
+    "dark": true,
+    "width": 844,
+    "height": 390,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"talk\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ]
+    ]
+  },
+  {
+    "name": "U11-12-expanded-rail-receipt",
+    "scale": 1,
+    "dark": true,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"work\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}, {\\\"screen\\\": \\\"receipt\\\", \\\"taskId\\\": \\\"0192f7a1-0000-7000-8000-000000000202\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "clickSel",
+        ".app__safety .safety-rail__toggle"
+      ],
+      [
+        "log",
+        "({contentHeight:document.querySelector('.route:not(.is-hidden) .work-screen .screen__body')?.clientHeight,viewport:innerHeight})"
+      ],
+      [
+        "shot",
+        "top"
+      ],
+      [
+        "eval",
+        "document.querySelector('.route:not(.is-hidden) .work-screen .screen__body').scrollTop=99999"
+      ],
+      [
+        "wait",
+        100
+      ],
+      [
+        "shot",
+        "actions"
+      ],
+      [
+        "eval",
+        "document.querySelector('.route:not(.is-hidden) .work-screen .screen__body').scrollTop=0"
+      ]
+    ]
+  },
+  {
+    "name": "U11-13-alerts-confirmation",
+    "scale": 1,
+    "dark": true,
+    "width": 390,
+    "height": 844,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"talk\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "fill",
+        "Tell Claude Code while it works",
+        "Check the chart labels."
+      ],
+      [
+        "clickSel",
+        ".composer__send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.alerts-offer')?.scrollIntoView({block:'end'})"
+      ],
+      [
+        "click",
+        "Allow alerts"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  }
+]

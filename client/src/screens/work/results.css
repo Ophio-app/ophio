@@ -1,0 +1,6 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.brief-editor textarea {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.work-card + .work-card { margin-top: var(--s3); }

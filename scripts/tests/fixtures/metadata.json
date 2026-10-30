@@ -1,0 +1,21 @@
+{
+  "packages": [
+    {"id": "host", "name": "host", "version": "1.0.0", "source": null},
+    {"id": "normal", "name": "normal", "version": "2.0.0", "source": "registry"},
+    {"id": "builder", "name": "builder", "version": "3.0.0", "source": "registry"},
+    {"id": "dev", "name": "test-only", "version": "4.0.0", "source": "registry"},
+    {"id": "foreign", "name": "foreign", "version": "5.0.0", "source": "registry"}
+  ],
+  "resolve": {"nodes": [
+    {"id": "host", "deps": [
+      {"pkg": "normal", "dep_kinds": [{"kind": null}]},
+      {"pkg": "builder", "dep_kinds": [{"kind": "build"}]},
+      {"pkg": "dev", "dep_kinds": [{"kind": "dev"}]},
+      {"pkg": "foreign", "dep_kinds": [{"kind": null}]}
+    ]},
+    {"id": "normal", "deps": []},
+    {"id": "builder", "deps": [{"pkg": "normal", "dep_kinds": [{"kind": null}]}]},
+    {"id": "dev", "deps": []},
+    {"id": "foreign", "deps": []}
+  ]}
+}

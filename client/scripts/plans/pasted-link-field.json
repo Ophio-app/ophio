@@ -1,0 +1,1171 @@
+[
+ {
+  "name": "U41-1-paste-1280x800-100",
+  "path": "/?unpaired",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "click",
+    "Pair a computer"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Paste the link instead"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "height",
+    440
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ]
+  ]
+ },
+ {
+  "name": "U41-1-paste-1280x800-100-dark",
+  "path": "/?unpaired",
+  "width": 1280,
+  "height": 800,
+  "steps": [
+   [
+    "click",
+    "Pair a computer"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Paste the link instead"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "height",
+    440
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ]
+  ],
+  "dark": true
+ },
+ {
+  "name": "U41-1-paste-390x844-100",
+  "path": "/?unpaired",
+  "width": 390,
+  "height": 844,
+  "steps": [
+   [
+    "click",
+    "Pair a computer"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Paste the link instead"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "height",
+    460
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ]
+  ]
+ },
+ {
+  "name": "U41-1-paste-360x780-200",
+  "path": "/?unpaired",
+  "width": 360,
+  "height": 780,
+  "steps": [
+   [
+    "click",
+    "Pair a computer"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Paste the link instead"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "height",
+    420
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ]
+  ],
+  "text": 2
+ },
+ {
+  "name": "U41-1-paste-844x390-100",
+  "path": "/?unpaired",
+  "width": 844,
+  "height": 390,
+  "steps": [
+   [
+    "click",
+    "Pair a computer"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Paste the link instead"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "height",
+    190
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ]
+  ]
+ },
+ {
+  "name": "U41-1-paste-844x390-200",
+  "path": "/?unpaired",
+  "width": 844,
+  "height": 390,
+  "steps": [
+   [
+    "click",
+    "Pair a computer"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "Paste the link instead"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ],
+   [
+    "shot",
+    "chosen"
+   ],
+   [
+    "height",
+    190
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "log",
+    "(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.welcome__paste .field');const a=document.querySelector('.welcome__actions');const page=r(document.querySelector('.welcome'));const fb=r(f);const pinned=getComputedStyle(a).position==='sticky';const limit=pinned?Math.min(r(a).top,page.bottom):page.bottom;const focused=document.activeElement===f.querySelector('input');return `field ${Math.round(fb.top)}-${Math.round(fb.bottom)} of ${Math.round(page.bottom)}, actions ${pinned?'pinned from '+Math.round(r(a).top):'at the end'}; focused ${focused}; fully visible ${fb.top>=page.top-1&&fb.bottom<=limit+1}`})()"
+   ]
+  ],
+  "text": 2
+ },
+ {
+  "name": "U41-2-same-name-1280x800-100",
+  "path": "/?same-name",
+  "width": 1280,
+  "height": 800,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent==='Switch to studio').click()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent==='Switch to studio').click()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Paired computers')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.settings-card')].filter(c=>c.querySelector('h3')&&c.closest('section')?.querySelector('h2')?.textContent==='Paired computers').map(c=>c.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ]
+ },
+ {
+  "name": "U41-2-same-name-1280x800-100-dark",
+  "path": "/?same-name",
+  "width": 1280,
+  "height": 800,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Paired computers')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.settings-card')].filter(c=>c.querySelector('h3')&&c.closest('section')?.querySelector('h2')?.textContent==='Paired computers').map(c=>c.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ],
+  "dark": true
+ },
+ {
+  "name": "U41-2-same-name-390x844-100",
+  "path": "/?same-name",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Paired computers')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.settings-card')].filter(c=>c.querySelector('h3')&&c.closest('section')?.querySelector('h2')?.textContent==='Paired computers').map(c=>c.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ]
+ },
+ {
+  "name": "U41-2-same-name-360x780-200",
+  "path": "/?same-name",
+  "width": 360,
+  "height": 780,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Paired computers')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.settings-card')].filter(c=>c.querySelector('h3')&&c.closest('section')?.querySelector('h2')?.textContent==='Paired computers').map(c=>c.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ],
+  "text": 2
+ },
+ {
+  "name": "U41-2-same-name-844x390-100",
+  "path": "/?same-name",
+  "width": 844,
+  "height": 390,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Paired computers')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.settings-card')].filter(c=>c.querySelector('h3')&&c.closest('section')?.querySelector('h2')?.textContent==='Paired computers').map(c=>c.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ]
+ },
+ {
+  "name": "U41-2-rename-390x844-100",
+  "path": "/?same-name",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Paired computers')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.settings-card')].filter(c=>c.querySelector('h3')&&c.closest('section')?.querySelector('h2')?.textContent==='Paired computers').map(c=>c.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].filter(b=>b.textContent==='Rename studio')[1].click()"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "fill",
+    "Computer name",
+    "Old studio"
+   ],
+   [
+    "click",
+    "Save name"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Paired computers')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.settings-card')].filter(c=>c.querySelector('h3')&&c.closest('section')?.querySelector('h2')?.textContent==='Paired computers').map(c=>c.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ]
+ },
+ {
+  "name": "U41-2-rename-360x780-200",
+  "path": "/?same-name",
+  "width": 360,
+  "height": 780,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Paired computers')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...document.querySelectorAll('.settings-card')].filter(c=>c.querySelector('h3')&&c.closest('section')?.querySelector('h2')?.textContent==='Paired computers').map(c=>c.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('button')].filter(b=>b.textContent==='Rename studio')[1].click()"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ],
+  "text": 2
+ },
+ {
+  "name": "U41-2-this-computer-390x844-100",
+  "path": "/?same-name",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "document.getElementById('settings-computer')?.closest('section')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "document.getElementById('settings-computer')?.closest('section')?.innerText.replace(/\\n+/g,' | ')"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-checks-1280x800-100",
+  "width": 1280,
+  "height": 800,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "click",
+    "Run checks"
+   ],
+   [
+    "wait",
+    150
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "done"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).filter(t=>/Codex|Claude/.test(t)).join(' || ')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] .evidence__reason').forEach(d=>d.open=true)"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] .evidence__reason')].at(-1)?.closest('.evidence')?.scrollIntoView({block:'center'})"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-checks-1280x800-100-dark",
+  "width": 1280,
+  "height": 800,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "click",
+    "Run checks"
+   ],
+   [
+    "wait",
+    150
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "done"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).filter(t=>/Codex|Claude/.test(t)).join(' || ')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] .evidence__reason').forEach(d=>d.open=true)"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] .evidence__reason')].at(-1)?.closest('.evidence')?.scrollIntoView({block:'center'})"
+   ]
+  ],
+  "dark": true
+ },
+ {
+  "name": "U41-3-checks-390x844-100",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "click",
+    "Run checks"
+   ],
+   [
+    "wait",
+    150
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "done"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).filter(t=>/Codex|Claude/.test(t)).join(' || ')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] .evidence__reason').forEach(d=>d.open=true)"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] .evidence__reason')].at(-1)?.closest('.evidence')?.scrollIntoView({block:'center'})"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-checks-360x780-200",
+  "width": 360,
+  "height": 780,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "click",
+    "Run checks"
+   ],
+   [
+    "wait",
+    150
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "done"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).filter(t=>/Codex|Claude/.test(t)).join(' || ')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] .evidence__reason').forEach(d=>d.open=true)"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] .evidence__reason')].at(-1)?.closest('.evidence')?.scrollIntoView({block:'center'})"
+   ]
+  ],
+  "text": 2
+ },
+ {
+  "name": "U41-3-checks-844x390-100",
+  "width": 844,
+  "height": 390,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "click",
+    "Run checks"
+   ],
+   [
+    "wait",
+    150
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "pending"
+   ],
+   [
+    "wait",
+    2500
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ],
+   [
+    "shot",
+    "done"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).filter(t=>/Codex|Claude/.test(t)).join(' || ')"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] .evidence__reason').forEach(d=>d.open=true)"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] .evidence__reason')].at(-1)?.closest('.evidence')?.scrollIntoView({block:'center'})"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-checks-offline-390x844-100",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.offline('Connection lost')"
+   ],
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-checks-offline-360x780-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.offline('Connection lost')"
+   ],
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Checks\");const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2'));const b=r(s.querySelector('.readiness-check__actions .btn'));const note=s.querySelector('.section__head > .readiness-check > p, .section__head > .readiness-check > .state');const n=note&&r(note);const same=Math.abs(b.top-t.top)<t.height+b.height&&b.left>t.right;return (same?'same line, centres '+Math.round(Math.abs((t.top+t.bottom)/2-(b.top+b.bottom)/2))+' px apart':'button under the title, left edges '+Math.round(Math.abs(b.left-t.left))+' px apart')+(n?'; status line below the head: '+(n.top>=Math.max(t.bottom,b.bottom)-1):'')})()"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-setup-390x844-100",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.tablet.unavailable()"
+   ],
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"On the computer\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"On the computer\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-usage-limit-390x844-100",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "window.__sim.host.tablet.usageLimit('claude_code', Date.now()+3*3600e3)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ],
+   [
+    "shot",
+    "limited"
+   ],
+   [
+    "eval",
+    "window.__sim.host.tablet.usageLimit('claude_code', Date.now()+1500)"
+   ],
+   [
+    "wait",
+    2600
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-usage-limit-390x844-100-dark",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "window.__sim.host.tablet.usageLimit('claude_code', Date.now()+3*3600e3)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ],
+  "dark": true
+ },
+ {
+  "name": "U41-3-usage-limit-360x780-200",
+  "width": 360,
+  "height": 780,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "window.__sim.host.tablet.usageLimit('claude_code', Date.now()+3*3600e3)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ],
+  "text": 2
+ },
+ {
+  "name": "U41-3-usage-limit-1280x800-100",
+  "width": 1280,
+  "height": 800,
+  "settle": 900,
+  "steps": [
+   [
+    "click",
+    "Connection details"
+   ],
+   [
+    "eval",
+    "window.__sim.host.tablet.usageLimit('claude_code', Date.now()+3*3600e3)"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "[...([...document.querySelectorAll('dialog[open] section')].find(s=>s.querySelector('h2')?.textContent===\"Agent tools\")).querySelectorAll('.evidence')].map(e=>e.innerText.replace(/\\n+/g,' | ')).join(' || ')"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-agents-360x780-200",
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__u41app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__u41app.ui.push({screen:'agents'})"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView({block:'start'})"
+   ],
+   [
+    "log",
+    "(()=>{const s=[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness');const r=e=>e.getBoundingClientRect();const t=r(s.querySelector('h2')),b=r(s.querySelector('.readiness-check__actions .btn'));return 'title '+Math.round(t.left)+','+Math.round(t.top)+' button '+Math.round(b.left)+','+Math.round(b.top)+' h'+Math.round(b.height)})()"
+   ]
+  ]
+ },
+ {
+  "name": "U41-3-agents-390x844-100",
+  "width": 390,
+  "height": 844,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__u41app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+   ],
+   [
+    "eval",
+    "window.__u41app.ui.push({screen:'agents'})"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('section')].find(s=>s.querySelector('h2')?.textContent==='Agent readiness')?.scrollIntoView({block:'start'})"
+   ]
+  ]
+ }
+]

@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+version = 4
+[[package]]
+name = "normal"
+version = "2.0.0"
+source = "registry"
+checksum = "c79a7b2bf017b1e0b499c710e4b6db9b1e7d2c7d15f5b5656531357451963058"

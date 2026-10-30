@@ -1,0 +1,863 @@
+[
+  {
+    "name": "work-light",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "work-dark",
+    "dark": true,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "work-large",
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "work-landscape",
+    "width": 800,
+    "height": 360,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "work-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "tasks-light",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "tasks-dark",
+    "dark": true,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "tasks-large",
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "tasks-landscape",
+    "width": 800,
+    "height": 360,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "tasks-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "agents-light",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Live agents"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "agents-dark",
+    "dark": true,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Live agents"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "agents-large",
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Live agents"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "agents-landscape",
+    "width": 800,
+    "height": 360,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Live agents"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "agents-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Live agents"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "receipt-light",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "receipt-dark",
+    "dark": true,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "receipt-large",
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "receipt-landscape",
+    "width": 800,
+    "height": 360,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "receipt-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "queue-light",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "queue-dark",
+    "dark": true,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "queue-large",
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "queue-landscape",
+    "width": 800,
+    "height": 360,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "queue-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "inbox-light",
+    "steps": [
+      ["eval", "window.__sim.work.addInbox()"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "inbox-dark",
+    "dark": true,
+    "steps": [
+      ["eval", "window.__sim.work.addInbox()"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "inbox-large",
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      ["eval", "window.__sim.work.addInbox()"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "inbox-landscape",
+    "width": 800,
+    "height": 360,
+    "scale": 1,
+    "steps": [
+      ["eval", "window.__sim.work.addInbox()"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "inbox-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      ["eval", "window.__sim.work.addInbox()"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "work-empty",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Switch project"],
+      ["click", "garden-planner"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "work-offline",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["eval", "window.__sim.offline('Network unavailable')"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "work-revoked",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["eval", "window.__sim.revoke()"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "work-brief-details",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["clickSel", ".work-brief summary"],
+      ["eval", "document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .work-brief')?.scrollIntoView({block:'start'})"],
+      ["wait", 300],
+      ["eval", "const b=document.querySelector('.work-brief').textContent; if(!b.includes('2 finished')||!b.includes('1 failed')||!b.includes('5 changed files')||!b.includes('Coupon field')) throw Error('Incomplete return brief')"]
+    ]
+  },
+  {
+    "name": "approval-resolved",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Run payments tests serially"],
+      ["eval", "window.__u2Focus=document.activeElement; window.__sim.work.resolveElsewhere(window.__sim.host.approvals[0].approval_id)"],
+      ["wait", 300],
+      ["eval", "if(document.querySelector('.approval__actions')) throw Error('Stale approval actions remain'); if(document.activeElement!==window.__u2Focus) throw Error('Focus was stolen')"]
+    ]
+  },
+  {
+    "name": "tasks-rename",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000],
+      ["click", "Actions for Refine the checkout page"],
+      ["click", "Rename"],
+      ["fill", "Task title", "Refine checkout spacing"],
+      ["click", "Save title"],
+      ["wait", 300],
+      ["eval", "if(!window.__sim.host.tasks.some(t=>t.title==='Refine checkout spacing')) throw Error('Rename not recorded')"]
+    ]
+  },
+  {
+    "name": "tasks-reconcile",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000],
+      ["click", "Actions for Recover the interrupted migration"],
+      ["click", "Reconcile"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "tasks-archive",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000],
+      ["click", "Actions for Check the staging checkout"],
+      ["click", "Archive…"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "agents-children",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Live agents"],
+      ["wait", 1000],
+      ["eval", "const d=[...document.querySelectorAll('.work-children')].find(d=>d.textContent.includes('2 known')); d.open=true; d.scrollIntoView({block:'start'});"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "receipt-a-before",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["eval", "document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .work-mark')?.scrollIntoView({block:'start'})"],
+      ["clickSel", ".tab:not(.is-hidden) .route:not(.is-hidden) .work-mark button[role=radio]:first-child"],
+      ["wait", 800]
+    ]
+  },
+  {
+    "name": "receipt-b-unverified",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["eval", "document.querySelectorAll('.tab:not(.is-hidden) .route:not(.is-hidden) .work-mark')[1].scrollIntoView({block:'start'})"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "receipt-c-missing",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["eval", "document.querySelectorAll('.tab:not(.is-hidden) .route:not(.is-hidden) .work-mark')[2].scrollIntoView({block:'start'})"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "receipt-remaining",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["eval", "[...document.querySelectorAll('.tab:not(.is-hidden) .route:not(.is-hidden) .section')].find(s=>s.textContent.startsWith('Still running')).scrollIntoView({block:'start'})"],
+      ["click", "Looks right"],
+      ["wait", 300],
+      ["eval", "if(!Object.keys(localStorage).some(k=>k.startsWith('work.sim-studio.review.'))) throw Error('Review not saved'); if(window.__sim.host.runs.find(r=>r.run_id==='0192f7a1-0000-7000-8000-000000002101').children[0].state!=='active') throw Error('Review changed child state')"]
+    ]
+  },
+  {
+    "name": "receipt-correction",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["click", "Not quite — B"],
+      ["wait", 500],
+      ["eval", "const drafts=JSON.parse(localStorage.getItem('annotations.sim-studio')); if(!Object.values(drafts).some(d=>d.taskId==='0192f7a1-0000-7000-8000-000000002001' && d.comments.some(c=>c.text.includes('Correction to B')) && d.sources.length)) throw Error('Correction lost original reference');"],
+      ["eval", "(async()=>{for(let i=0;i<4&&document.querySelector('.route:not(.is-hidden) > .an-screen');i++){const b=[...document.querySelectorAll('.route:not(.is-hidden) > .an-screen button[aria-label]')].find(x=>/Close and keep draft|Back and keep draft|Done typing/.test(x.getAttribute('aria-label')));if(!b)throw Error('No annotate close');b.click();await new Promise(r=>setTimeout(r,250));}if(document.querySelector('.route:not(.is-hidden) > .an-screen'))throw Error('Annotate did not close');})()"],
+      ["wait", 300],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "receipt-reusable",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["click", "Make reusable…"],
+      ["fill", "Draft name", "Tidy imports"],
+      ["shot", "draft-review"],
+      ["click", "Create draft for review"],
+      ["wait", 600],
+      ["eval", "if(!Object.values(window.__sim.host.files).some(files=>Object.keys(files).includes('tidy-imports/SKILL.md'))) throw Error('Draft missing'); const ui=JSON.parse(localStorage.getItem('ui.sim-studio')).state; if(ui.tab!=='library'||ui.stacks.library.at(-1).screen!=='file') throw Error('Library handoff missing');"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "queue-race",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["eval", "window.__sim.work.admitNextBeforePause()"],
+      ["click", "Pause queue"],
+      ["wait", 400],
+      ["eval", "document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .work-feedback')?.scrollIntoView({block:'start'})"],
+      ["eval", "if(!window.__sim.host.queue.paused || !window.__sim.host.queue.items.some(i=>i.item_id==='0192f7a1-0000-7000-8000-000000002201'&&i.state.state==='started')) throw Error('Pause race not exercised')"]
+    ]
+  },
+  {
+    "name": "queue-stop",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["clickSel", ".tab:not(.is-hidden) .route:not(.is-hidden) .work-safety button:has-text(\"Stop task\")"],
+      ["wait", 1300],
+      ["eval", "if(window.__sim.host.queue.paused) throw Error('Stop paused the queue'); if(window.__sim.host.runs.find(r=>r.run_id==='0192f7a1-0000-7000-8000-000000000301').state!=='interrupted') throw Error('Stop not confirmed')"]
+    ]
+  },
+  {
+    "name": "queue-move",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["click", "Move down"],
+      ["wait", 400],
+      ["eval", "if(window.__sim.host.queue.items.find(i=>i.item_id==='0192f7a1-0000-7000-8000-000000002201').authorization!=='ask_before_start') throw Error('Authorization was not revoked')"],
+      ["eval", "[...document.querySelectorAll('.work-queue li')].find(e=>e.textContent.includes('Polish empty states') && e.querySelector('h2').textContent==='Polish empty states').scrollIntoView({block:'start'})"],
+      ["wait", 200]
+    ]
+  },
+  {
+    "name": "queue-dependencies",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["click", "Dependencies"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "queue-remove",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["click", "Remove…"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "queue-rejected",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["eval", "const h=window.__sim.host; const f=h.command.bind(h); h.command=async e=>e.body.command==='queue_pause'?{command_id:e.command_id,status:'rejected',seq:null,result:null,error:{code:'permission_denied',message:'This phone cannot pause the queue.'}}:f(e)"],
+      ["click", "Pause queue"],
+      ["wait", 400]
+    ]
+  },
+  {
+    "name": "queue-empty",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Switch project"],
+      ["click", "garden-planner"],
+      ["click", "Open Next up"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "inbox-empty",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 700]
+    ]
+  },
+  {
+    "name": "inbox-offline-reload",
+    "steps": [
+      ["eval", "(async () => { window.__sim.offline('Offline share intake'); await window.__sim.work.addInbox(); if(window.__sim.host.receipts.size) throw Error('Intake sent a command') })()"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 1000],
+      ["eval", "window.__sim.offline('Offline intake'); window.location.reload()"],
+      ["wait", 1600],
+      ["eval", "window.__sim.offline('Still offline'); if(JSON.parse(localStorage.getItem('capture-inbox.sim-studio')).items.length!==2) throw Error('Inbox did not persist'); if(window.__sim.host.receipts.size) throw Error('Reload sent a command');"],
+      ["wait", 500],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "inbox-use-text",
+    "steps": [
+      ["eval", "window.__sim.work.addInbox()"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 1000],
+      ["clickSel", ".tab:not(.is-hidden) .route:not(.is-hidden) .work-inbox-list li:nth-child(2) button"],
+      ["click", "tidewater-api"],
+      ["wait", 500],
+      ["eval", "const ui=JSON.parse(localStorage.getItem('ui.sim-studio')).state; if(!Object.values(ui.drafts).some(d=>d.text.includes('coupon field'))) throw Error('Talk draft missing'); if(window.__sim.host.receipts.size) throw Error('Inbox sent a command');"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "inbox-annotate",
+    "steps": [
+      ["eval", "window.__sim.work.addInbox()"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 1000],
+      ["click", "Annotate"],
+      ["click", "tidewater-api"],
+      ["wait", 500],
+      ["eval", "const drafts=JSON.parse(localStorage.getItem('annotations.sim-studio')); if(!Object.values(drafts).some(d=>d.sources.some(s=>s.origin.kind==='phone_import'))) throw Error('Imported source missing');"],
+      ["eval", "(async()=>{for(let i=0;i<4&&document.querySelector('.route:not(.is-hidden) > .an-screen');i++){const b=[...document.querySelectorAll('.route:not(.is-hidden) > .an-screen button[aria-label]')].find(x=>/Close and keep draft|Back and keep draft|Done typing/.test(x.getAttribute('aria-label')));if(!b)throw Error('No annotate close');b.click();await new Promise(r=>setTimeout(r,250));}if(document.querySelector('.route:not(.is-hidden) > .an-screen'))throw Error('Annotate did not close');})()"],
+      ["wait", 300],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "project-settings",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["clickSel", ".work-screen .screen__meta button"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "project-settings-large",
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["clickSel", ".work-screen .screen__meta button"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "project-add-invalid",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["clickSel", ".work-screen .screen__meta button"],
+      ["click", "Add project"],
+      ["fill", "Folder on computer", "relative/folder"],
+      ["click", "Add project"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "project-add-remove",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["clickSel", ".work-screen .screen__meta button"],
+      ["click", "Add project"],
+      ["fill", "Folder on computer", "/home/sam/Projects/new-project"],
+      ["fill", "Project name (optional)", "New project"],
+      ["click", "Add project"],
+      ["wait", 500],
+      ["clickSel", ".tab:not(.is-hidden) .route:not(.is-hidden) .screen__meta button"],
+      ["click", "Remove New project"],
+      ["shot", "confirm"],
+      ["clickSel", ".work-sheet[open] .btn--stop-outline"],
+      ["wait", 500],
+      ["eval", "if(window.__sim.host.projects.some(p=>p.name==='New project')) throw Error('Project removal not recorded')"]
+    ]
+  },
+  {
+    "name": "project-defaults",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["clickSel", ".work-screen .screen__meta button"],
+      ["eval", "const s=document.querySelector('.work-sheet[open] select'); s.value='codex'; s.dispatchEvent(new Event('change',{bubbles:true})); window.__sim.work.denyDefaults()"],
+      ["wait", 300],
+      ["click", "Save defaults"],
+      ["wait", 400],
+      ["eval", "const p=window.__sim.host.projects[0]; if(p.default_harness!=='codex'||p.default_model!==null||p.default_effort!==null) throw Error('Unsupported defaults were sent')"]
+    ]
+  },
+  {
+    "name": "tasks-offline",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000],
+      ["eval", "window.__sim.offline('Offline review')"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "agents-offline",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Live agents"],
+      ["wait", 1000],
+      ["eval", "window.__sim.offline('Offline review')"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "receipt-offline",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["eval", "window.__sim.offline('Offline review')"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "queue-offline",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["eval", "window.__sim.offline('Offline review')"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "tasks-empty",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Switch project"],
+      ["click", "garden-planner"],
+      ["wait", 600],
+      ["click", "Finished"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "agents-empty",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Switch project"],
+      ["click", "garden-planner"],
+      ["wait", 600],
+      ["click", "Live agents"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "approval-offline-draft",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Run payments tests serially"],
+      ["click", "Deny…"],
+      ["fill", "Reason (optional)", "Please keep the current test command."],
+      ["eval", "window.__sim.offline('Keep drafting')"],
+      ["wait", 200],
+      ["eval", "if(![...document.querySelectorAll('textarea')].some(e=>e.value.includes('current test command'))) throw Error('Draft missing'); if(!Object.keys(localStorage).some(k=>k.includes('.approval.'))) throw Error('Draft not persisted')"]
+    ]
+  },
+  {
+    "name": "receipt-a-after",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["eval", "document.querySelectorAll('.work-mark-head')[0].closest('article').scrollIntoView({block:'start'})"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "receipt-evidence-error",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["eval", "const h=window.__sim.host; const query=h.query.bind(h); h.query=async q=>{if(q.kind==='artifact') throw {code:'not_found',message:'The computer no longer has this picture.'}; return query(q)}"],
+      ["click", "Refine the checkout page"],
+      ["wait", 1000],
+      ["eval", "document.querySelectorAll('.work-mark-head')[0].closest('article').scrollIntoView({block:'start'})"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "queue-unknown",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Open Next up"],
+      ["wait", 1000],
+      ["eval", "window.__sim.dropNextReceipt()"],
+      ["click", "Pause queue"],
+      ["wait", 600],
+      ["eval", "const s=[...document.querySelectorAll('.work-feedback')].filter(e=>e.getBoundingClientRect().width).find(e=>e.textContent.includes('Outcome unknown')); if(!s) throw Error('Unconfirmed command hidden'); s.scrollIntoView({block:'center'});"],
+      ["wait", 200],
+      ["eval", "if(document.body.textContent.includes('Not sent.')) throw Error('Unknown outcome mislabeled as not sent')"]
+    ]
+  },
+  {
+    "name": "inbox-missing-image",
+    "steps": [
+      ["eval", "(async () => { await window.__sim.work.addInbox(); const key='capture-inbox.sim-studio'; const a=JSON.parse(localStorage.getItem(key)); a.items[0].blobKey='unavailable'; localStorage.setItem(key,JSON.stringify(a)); window.location.reload() })()"],
+      ["wait", 1600],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Capture inbox"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "tasks-permission-denied",
+    "steps": [
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["wait", 500],
+      ["click", "Finished"],
+      ["wait", 1000],
+      ["eval", "const h=window.__sim.host;const f=h.command.bind(h);h.command=async e=>e.body.command==='rename_task'?{command_id:e.command_id,status:'rejected',seq:null,result:null,error:{code:'permission_denied',message:'This phone cannot rename tasks.'}}:f(e)"],
+      ["click", "Actions for Refine the checkout page"],
+      ["click", "Rename"],
+      ["fill", "Task title", "Review checkout spacing"],
+      ["click", "Save title"],
+      ["wait", 300]
+    ]
+  }
+]

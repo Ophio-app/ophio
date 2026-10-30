@@ -1,0 +1,92 @@
+[
+  {
+    "name": "m2-reconnect-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["fill", "Tell Claude Code", "Retain this unsent note."],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 400],
+      ["shot", "offline"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["clickSel", ".nav__tab:nth-child(1)"],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1000],
+      ["wait", 400],
+      ["shot", "online"],
+      ["eval", "window.__sim.revoke()"],
+      ["wait", 300],
+      ["clickSel", ".ctx__end button"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "m2-reconnect-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["fill", "Tell Claude Code", "Retain this unsent note."],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 400],
+      ["shot", "offline"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["clickSel", ".nav__tab:nth-child(1)"],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1000],
+      ["wait", 400],
+      ["shot", "online"],
+      ["eval", "window.__sim.revoke()"],
+      ["wait", 300],
+      ["clickSel", ".ctx__end button"],
+      ["wait", 300]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-reconnect-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["fill", "Tell Claude Code", "Retain this unsent note."],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 400],
+      ["shot", "offline"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["clickSel", ".nav__tab:nth-child(1)"],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1000],
+      ["wait", 400],
+      ["shot", "online"],
+      ["eval", "window.__sim.revoke()"],
+      ["wait", 300],
+      ["clickSel", ".ctx__end button"],
+      ["wait", 300]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-reconnect-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["fill", "Tell Claude Code", "Retain this unsent note."],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 400],
+      ["shot", "offline"],
+      ["clickSel", ".nav__tab:nth-child(3)"],
+      ["clickSel", ".nav__tab:nth-child(1)"],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1000],
+      ["wait", 400],
+      ["shot", "online"],
+      ["eval", "window.__sim.revoke()"],
+      ["wait", 300],
+      ["clickSel", ".ctx__end button"],
+      ["wait", 300]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

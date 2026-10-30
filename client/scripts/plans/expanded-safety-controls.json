@@ -1,0 +1,446 @@
+[
+  {
+    "name": "U23-3-expanded-2-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav button:nth-child(3)"
+      ],
+      [
+        "clickSel",
+        ".app__safety .safety-rail__toggle"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "log",
+        "({font:document.fonts.check('14px \"Inter Variable\"'),rail:document.querySelector('.app__safety').getBoundingClientRect().toJSON(),nav:document.querySelector('.nav').getBoundingClientRect().toJSON()})"
+      ],
+      [
+        "shot",
+        "top"
+      ],
+      [
+        "eval",
+        "const more=document.querySelector('.safety-rail__more');if(more)more.click();"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "eval",
+        "const nav=document.querySelector('.nav').getBoundingClientRect();const open=[...document.querySelectorAll('.safety-rail__target button')].find(e=>e.textContent==='Open control');if(!open||open.getBoundingClientRect().bottom>nav.top)throw Error('Open control covered by tabs');const stops=[...document.querySelectorAll('.safety-rail .named-stop__button')];for(const stop of stops){stop.scrollIntoView({block:'nearest'});const r=stop.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!hit||!stop.contains(hit))throw Error('Stop unreachable');}open.scrollIntoView({block:'nearest'});"
+      ]
+    ]
+  },
+  {
+    "name": "U23-3-expanded-3-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav button:nth-child(3)"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const src=h.tasks.find(t=>t.state==='working'&&!t.target_id)||h.tasks.find(t=>t.state==='awaiting_decision');const r=h.runs.find(r=>r.run_id===src.current_run);const t={...src,task_id:crypto.randomUUID(),title:'Check the deployment logs',current_run:crypto.randomUUID()};const run={...r,run_id:t.current_run,task_id:t.task_id};h.tasks.push(t);h.runs.push(run);h.emit({type:'run_upserted',run});h.emit({type:'task_upserted',task:t});"
+      ],
+      [
+        "clickSel",
+        ".app__safety .safety-rail__toggle"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "log",
+        "({font:document.fonts.check('14px \"Inter Variable\"'),rail:document.querySelector('.app__safety').getBoundingClientRect().toJSON(),nav:document.querySelector('.nav').getBoundingClientRect().toJSON()})"
+      ],
+      [
+        "shot",
+        "top"
+      ],
+      [
+        "eval",
+        "const more=document.querySelector('.safety-rail__more');if(more)more.click();"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "eval",
+        "const nav=document.querySelector('.nav').getBoundingClientRect();const open=[...document.querySelectorAll('.safety-rail__target button')].find(e=>e.textContent==='Open control');if(!open||open.getBoundingClientRect().bottom>nav.top)throw Error('Open control covered by tabs');const stops=[...document.querySelectorAll('.safety-rail .named-stop__button')];for(const stop of stops){stop.scrollIntoView({block:'nearest'});const r=stop.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!hit||!stop.contains(hit))throw Error('Stop unreachable');}open.scrollIntoView({block:'nearest'});"
+      ]
+    ]
+  },
+  {
+    "name": "U23-4-archive",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset('work',[{screen:'tasks',filter:'all'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const t=h.tasks.find(t=>t.title.startsWith('Fix the flaky'));await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'stop_task',task_id:t.task_id,force:true}})})()"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Actions for Check the staging"
+      ],
+      [
+        "click",
+        "Archive\u2026"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('dialog[open] .safety-rail'))throw Error('Empty sheet rail');if(!document.querySelector('dialog[open] .named-stop__button')?.textContent.includes('DP-1'))throw Error('Missing display suffix');"
+      ]
+    ]
+  },
+  {
+    "name": "U23-4-keep-draft",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset('library',[{screen:'file',rootId:'0192f7a1-0000-7000-8000-000000000902',path:'docs/windows.md'}]);window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "click",
+        "Edit"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Markdown source",
+        "Keep this local draft for later."
+      ],
+      [
+        "click",
+        "Close editor"
+      ],
+      [
+        "eval",
+        "const rails=[...document.querySelectorAll('.safety-rail')].filter(e=>e.getBoundingClientRect().height&&getComputedStyle(e).visibility==='visible');if(rails.length!==1)throw Error('Expected one visible rail, saw '+rails.length);if(document.querySelectorAll('dialog[open]').length!==2)throw Error('Expected stacked sheets');"
+      ],
+      [
+        "shot",
+        "collapsed"
+      ],
+      [
+        "clickSel",
+        "dialog[data-urgent-host=true] .safety-rail__toggle"
+      ],
+      [
+        "eval",
+        "const rails=[...document.querySelectorAll('.safety-rail')].filter(e=>e.getBoundingClientRect().height&&getComputedStyle(e).visibility==='visible');if(rails.length!==1)throw Error('Expected one visible rail, saw '+rails.length);if(document.querySelectorAll('dialog[data-urgent-host=true] .named-stop__button').length!==2)throw Error('Other Stop unreachable');"
+      ]
+    ]
+  },
+  {
+    "name": "U23-5-voice",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.push({screen:'voice'},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "const rail=document.querySelector('.app__safety').getBoundingClientRect();const stop=document.querySelector('.app__safety .named-stop__button').getBoundingClientRect();if(rail.right-stop.right>20)throw Error('Voice rail leaves empty right half');"
+      ]
+    ]
+  },
+  {
+    "name": "U23-1-DP1",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety .named-stop__button')?.textContent.includes('this display'))throw Error('Display identity missing');"
+      ]
+    ]
+  },
+  {
+    "name": "U23-1-leave-control",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Leave control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(1)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk .screen__body').scrollTop=99999;if(!document.querySelector('.app__safety .named-stop__button')?.textContent.includes('DP-1 \u00b7 waiting for input'))throw Error('Lost paused display');"
+      ],
+      [
+        "shot",
+        "talk"
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(4)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.app__safety .named-stop__button').textContent;if(!s.includes('Check the staging')||!s.includes('DP-1'))throw Error('Display task hidden in Library');"
+      ]
+    ]
+  },
+  {
+    "name": "U23-2-force-stop",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "window.__sim.stops.ignore('0192f7a1-0000-7000-8000-000000000204')"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "click",
+        "Stop again \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "click",
+        "Force stop"
+      ],
+      [
+        "eval",
+        "const rails=[...document.querySelectorAll('.safety-rail')].filter(e=>e.getBoundingClientRect().height&&getComputedStyle(e).visibility==='visible');if(rails.length!==1)throw Error('Duplicate force-stop rail');if(rails[0].textContent.includes('DP-1'))throw Error('Wrong caption on other task');"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Force stop on studio"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.talk-bar').textContent.includes('Check the staging')||!document.querySelector('.talk-bar').textContent.includes('Stopped'))throw Error('Stopped conversation changed');document.querySelector('.talk .screen__body').scrollTop=99999;"
+      ]
+    ]
+  },
+  {
+    "name": "U23-6-close-terminal",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav button:nth-child(2)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Close terminal"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .sheet__footer button"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "const c=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .control-screen');if(!c||c.classList.contains('terminal-screen'))throw Error('Did not return to terminal list');if(!c.textContent.includes('Closed by you'))throw Error('User close missing');document.querySelector('#control-terminals').scrollIntoView({block:'start'});"
+      ],
+      [
+        "shot",
+        "list"
+      ],
+      [
+        "click",
+        "View output"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .terminal-screen');if(!t.textContent.includes('Closed by you')||t.textContent.includes('exited with code 0'))throw Error('Wrong closed session explanation');"
+      ]
+    ]
+  },
+  {
+    "name": "U23-6-exited-terminal",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav button:nth-child(2)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Command for",
+        "exit 7"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.terminal-screen').textContent.includes('exited with code 7'))throw Error('Lost exit code');"
+      ],
+      [
+        "shot",
+        "output"
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-terminals').scrollIntoView({block:'start'});if(!document.querySelector('.control-list').textContent.includes('Exited with code 7 \u00b7 observed'))throw Error('Exit time missing');"
+      ]
+    ]
+  }
+]

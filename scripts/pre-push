@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Quick checks before a push, so a slip CI would fail on is caught in seconds.
+# Git runs this from .git/hooks/pre-push (CONTRIBUTING.md) with a line per
+# pushed ref on standard input. It checks the checkout as it is, and runs only
+# the checks the pushed commits' changes need:
+#   always              the source and earlier-names scans
+#   Rust changed        cargo fmt --check, in each Cargo workspace touched
+#   client changed      TypeScript type check
+#   scripts changed     the script tests
+# Skip it once with git push --no-verify, or OPHIO_SKIP_PRE_PUSH=1.
+set -euo pipefail
+[[ "${OPHIO_SKIP_PRE_PUSH:-0}" == 1 ]] && exit 0
+cd "$(git rev-parse --show-toplevel)"
+# Git points hooks at this repository by environment; the script tests make
+# repositories of their own.
+# shellcheck disable=SC2046
+unset $(git rev-parse --local-env-vars)
+
+zero=0000000000000000000000000000000000000000
+changed=()
+while read -r _ local_sha _ remote_sha; do
+    [[ "$local_sha" == "$zero" ]] && continue
+    if [[ "$remote_sha" != "$zero" ]] && git cat-file -e "$remote_sha" 2> /dev/null; then
+        base=$(git merge-base "$remote_sha" "$local_sha" || true)
+    else
+        # A new branch: what it adds to main.
+        base=$(git merge-base origin/main "$local_sha" 2> /dev/null || true)
+    fi
+    if [[ -z "$base" ]]; then
+        changed+=(Cargo.toml client/ scripts/)
+        continue
+    fi
+    mapfile -t -O "${#changed[@]}" changed < <(git diff --name-only "$base" "$local_sha")
+done
+((${#changed[@]})) || exit 0
+
+touched() {
+    local path pattern
+    for path in "${changed[@]}"; do
+        for pattern in "$@"; do
+            [[ "$path" == $pattern ]] && return 0
+        done
+    done
+    return 1
+}
+
+step() { printf 'pre-push: %s\n' "$1"; }
+# A check whose tool this machine lacks is left to CI.
+has() { command -v "$1" > /dev/null || { printf 'pre-push: no %s here; CI checks this\n' "$1"; false; }; }
+step 'source scans'
+bash scripts/source-candidate.sh
+python3 scripts/earlier_names.py
+if touched 'crates/*' 'fuzz/*' Cargo.toml && has cargo; then
+    step 'cargo fmt'
+    cargo fmt --all --check
+fi
+if touched 'client/src-tauri/*' && has cargo; then
+    step 'cargo fmt (app)'
+    (cd client/src-tauri && cargo fmt --check)
+fi
+if touched 'client/*' && [[ -d client/node_modules ]] && has npm; then
+    step 'type check'
+    npm --prefix client run --silent typecheck
+fi
+if touched 'scripts/*'; then
+    step 'script tests'
+    python3 -m unittest discover -s scripts/tests -t .
+fi

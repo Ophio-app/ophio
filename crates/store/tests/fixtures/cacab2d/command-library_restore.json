@@ -1,0 +1,28 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-000000000030",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "library_restore",
+      "trash_id": "synthetic",
+      "base_revision": "synthetic",
+      "copy_path": "synthetic"
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-000000000030",
+    "status": "accepted",
+    "seq": 48,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

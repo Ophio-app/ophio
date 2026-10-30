@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-device-events"
+description = "Enables the device_events command without any pre-configured scope."
+commands.allow = ["device_events"]
+
+[[permission]]
+identifier = "deny-device-events"
+description = "Denies the device_events command without any pre-configured scope."
+commands.deny = ["device_events"]

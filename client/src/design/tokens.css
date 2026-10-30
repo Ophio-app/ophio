@@ -1,0 +1,191 @@
+/* SPDX-License-Identifier: Apache-2.0
+ *
+ * Fruiting: warm near-black / ivory, acid signal, violet filaments.
+ * Brand signal is not status: explicit labels and semantic colors still carry
+ * connection, warning, authority and a diff's removed and added lines. Remote
+ * pixels and annotation colors are independent of the decorative palette.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Light uses warm paper colors, not an inverted night palette. */
+  --bg: #f5f1e8;
+  --surface: #faf7f0;
+  --surface-raised: #fffdf8;
+  --surface-sunken: #ece7df;
+  --surface-pressed: #e5dfeb;
+  --line: #dcd1df;
+  --line-strong: #8c7a92;
+  --scrim: rgb(15 7 18 / 0.42);
+
+  --ink: #211526;
+  --ink-2: #504354;
+  --ink-3: #5f5162;
+  --ink-disabled: #9a8d9b;
+
+  /* Green text/essential outlines deepen on paper; primary buttons keep acid. */
+  --accent: #516600;
+  --accent-pressed: #405200;
+  --accent-soft: #e9efd9;
+  --accent-text: #3b4d00;
+  --on-accent: #ffffff;
+  --signal: #c3ff24;
+  --signal-pressed: #b2ec16;
+  --on-signal: #192006;
+  --bloom: #744099;
+  --bloom-soft: #eee3f4;
+  --pulse: #a855ed;
+  --spore: #dfbeff;
+  --filament: #ad86bd;
+
+  /* Semantic. */
+  --stop: #c62828;
+  --stop-pressed: #a81f1f;
+  --on-stop: #ffffff;
+  --stop-soft: #fbe9e6;
+  --stop-text: #a8201b;
+
+  --warn: #b26a00;
+  --warn-soft: #fcf0dc;
+  --warn-text: #7f4c00;
+
+  /* What says something didn't work is drawn in the app's own lime, at body
+     size, so it is seen at a glance. Red stays for Stop and for what failed
+     or was removed. Both themes take these from their accent. */
+  --error: var(--accent);
+  --error-text: var(--accent-text);
+  --error-soft: var(--accent-soft);
+  --text-error: var(--text-md);
+
+  --ok: #2e7d32;
+  --ok-soft: #e5f1e3;
+  --ok-text: #22662a;
+
+  /* Mark palette for annotations (presentation only; labels carry meaning). */
+  --mark-0: #d9480f;
+  --mark-1: #1c7ed6;
+  --mark-2: #9c36b5;
+  --mark-3: #2b8a3e;
+  --mark-4: #e8590c;
+  --mark-5: #0b7285;
+
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  --shadow-1: 0 1px 2px rgb(24 22 18 / 0.06), 0 1px 1px rgb(24 22 18 / 0.04);
+  --shadow-sheet: 0 -10px 40px rgb(24 22 18 / 0.14);
+  --shadow-float: 0 8px 28px rgb(24 22 18 / 0.14), 0 1px 3px rgb(24 22 18 / 0.08);
+
+  /* Type. Sizes are rem so system text scaling reflows layouts. Headings
+     grow less than body text (as Android 14's non-linear scaling does), so
+     at 200% a title doesn't take a third of the screen: each is its default
+     size at 100%, with only part of it in rem. */
+  --font-ui: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: calc(4px + 1rem);
+  --text-2xl: calc(10px + 1rem);
+  --text-3xl: calc(16px + 1.125rem);
+  --leading: 1.45;
+  --leading-tight: 1.2;
+
+  /* Space (4 px grid) and shape. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+  --s10: 40px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-full: 999px;
+
+  /* Minimum touch target; intervention controls are larger. A target holds
+     a line of its text plus fixed padding: 48px at default size, growing with
+     large text only as much as the text does, so pinned controls don't
+     crowd out the screen at 200%. */
+  --target: max(48px, calc(1.5rem + 24px));
+  --target-intervention: max(56px, calc(1.5rem + 32px));
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 280ms;
+
+  --content-max: 760px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* Android's text size zooms text but not rem lengths, so there a target
+   sized in rem stays 48px while its text doubles. A line of the root's text
+   is zoomed with it, and is 1.5rem wherever rem scales, so a target sized by
+   that line grows with the text everywhere. The body sets its own leading. */
+@supports (height: 1rlh) {
+  :root {
+    line-height: 1.5;
+    --target: max(48px, calc(1rlh + 24px));
+    --target-intervention: max(56px, calc(1rlh + 32px));
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0a0605;
+  --surface: #120c0a;
+  --surface-raised: #1c141c;
+  --surface-sunken: #100c11;
+  --surface-pressed: #302239;
+  --line: #49374f;
+  --line-strong: #87708f;
+  --scrim: rgb(5 2 8 / 0.72);
+
+  --ink: #f1eee6;
+  --ink-2: #c7b9c9;
+  --ink-3: #b7aaa6;
+  --ink-disabled: #726473;
+
+  --accent: #c3ff24;
+  --accent-pressed: #b2ec16;
+  --accent-soft: #242d13;
+  --accent-text: #c3ff24;
+  --on-accent: #192006;
+  --bloom: #c291ef;
+  --bloom-soft: #291933;
+  --filament: #76528b;
+
+  --stop: #c62828;
+  --stop-pressed: #de3a3a;
+  --on-stop: #ffffff;
+  --stop-soft: #3a1817;
+  --stop-text: #ff8f85;
+
+  --warn: #ffb85c;
+  --warn-soft: #3a2b13;
+  --warn-text: #ffc77e;
+
+  --ok: #7bd389;
+  --ok-soft: #17301d;
+  --ok-text: #90dc9c;
+
+  --mark-0: #ff8a4c;
+  --mark-1: #5cb3ff;
+  --mark-2: #d68cf0;
+  --mark-3: #6fd68a;
+  --mark-4: #ffa94d;
+  --mark-5: #4fd1e0;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-sheet: 0 -10px 40px rgb(0 0 0 / 0.5);
+  --shadow-float: 0 8px 28px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+}

@@ -1,0 +1,14 @@
+{
+  "transfer_id": "00000000-0000-4000-8000-000000000001",
+  "direction": "phone_to_host",
+  "name": "note.txt",
+  "size": 1,
+  "sha256": null,
+  "transferred": 1,
+  "state": { "state": "completed" },
+  "destination": { "kind": "inbox" },
+  "destination_folder": "/home/sam/Downloads/companion",
+  "host_path": "/home/sam/Downloads/companion/note.txt",
+  "created_at": 1,
+  "updated_at": 2
+}

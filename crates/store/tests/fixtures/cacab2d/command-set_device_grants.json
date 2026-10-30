@@ -1,0 +1,38 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-00000000002c",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "set_device_grants",
+      "device_id": "00000000-0000-4000-8000-000000000001",
+      "grants": {
+        "view": false,
+        "control_input": false,
+        "terminal": false,
+        "tasks": false,
+        "approvals": false,
+        "computer_use": false,
+        "library_read": false,
+        "library_write": false,
+        "transfers": false,
+        "admin": false
+      }
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-00000000002c",
+    "status": "accepted",
+    "seq": 44,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

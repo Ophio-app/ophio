@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-shared-ack"
+description = "Enables the shared_ack command without any pre-configured scope."
+commands.allow = ["shared_ack"]
+
+[[permission]]
+identifier = "deny-shared-ack"
+description = "Denies the shared_ack command without any pre-configured scope."
+commands.deny = ["shared_ack"]

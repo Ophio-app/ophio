@@ -1,0 +1,350 @@
+[
+  {
+    "name": "U24-1-handback",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset('work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'take_over',target_id:ids.tgDp1,geometry_revision:3}})})()"
+      ],
+      [
+        "wait",
+        1100
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const lease=h.control.find(v=>v.target_id.endsWith('0601')).lease;await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'release_lease',lease_id:lease.lease_id}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Needs you').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.work-screen').textContent.includes('Waiting for input on DP-1 \u00b7 Give input back'))throw Error('Missing hand-back row');if(document.querySelector('.nav__count').textContent!=='3')throw Error('Missing badge count')"
+      ],
+      [
+        "shot",
+        "work"
+      ],
+      [
+        "click",
+        "Waiting for input on DP-1"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Return to agent"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.work-screen').textContent.includes('Give input back'))throw Error('Hand-back attention did not clear')"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"')})"
+      ]
+    ]
+  },
+  {
+    "name": "U24-2-deny",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset('work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "click",
+        "Deny\u2026"
+      ],
+      [
+        "fill",
+        "Reason (optional)",
+        "Please wait for the maintainer."
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk-quick-approval').scrollIntoView({block:'center'});if(document.querySelector('.talk-quick-approval .btn--primary').textContent!=='Deny request')throw Error('Deny is not primary')"
+      ]
+    ]
+  },
+  {
+    "name": "U24-3-agent-after-queue",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.saveDraft(ids.pTide,null,{text:'Check the health endpoint',agent:{harness:'codex',model:'gpt-6-astra',effort:'medium'}});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pTide,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "click",
+        "Add to Next up"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "shot",
+        "queued"
+      ],
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');if(ui.draft(ids.pTide,null)?.agent)throw Error('Task pin survived send');ui.selectProject(ids.pGarden);ui.saveDraft(ids.pGarden,null,{text:'Check the garden layout'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pGarden,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__agent').scrollIntoView({block:'center'});if(!document.querySelector('.review__agent').textContent.includes('Claude Code'))throw Error('Agent leaked across project')"
+      ]
+    ]
+  },
+  {
+    "name": "U24-4-removed",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const e=document.querySelector('.talk .ctx .status__label');if(!e||e.textContent!=='Removed'||getComputedStyle(e).display==='none')throw Error('Status word hidden')"
+      ]
+    ]
+  },
+  {
+    "name": "U24-4-offline",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const e=document.querySelector('.talk .ctx .status__label');if(!e||e.textContent!=='Offline'||getComputedStyle(e).display==='none')throw Error('Status word hidden')"
+      ]
+    ]
+  },
+  {
+    "name": "U24-4-reconnecting",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "window.__sim.offline();window.__sim.online()"
+      ],
+      [
+        "eval",
+        "const e=document.querySelector('.talk .ctx .status__label');if(!e||e.textContent!=='Connecting'||getComputedStyle(e).display==='none')throw Error('Status word hidden')"
+      ]
+    ]
+  },
+  {
+    "name": "U24-5-review",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pNotes);ui.saveDraft(ids.pNotes,null,{text:'Check the layout in the Notes preview.'});ui.reset('talk',[{screen:'talk'},{screen:'review',projectId:ids.pNotes,taskId:null,intent:'new_task'}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "const f=document.querySelector('.review-foot');const b=f.getBoundingClientRect();if(f.closest('.screen__body')||b.bottom>document.querySelector('.app__safety').getBoundingClientRect().top+1)throw Error('Review action not pinned');if(document.querySelector('.review__optional').open)throw Error('Optional starts expanded')"
+      ],
+      [
+        "shot",
+        "top"
+      ],
+      [
+        "eval",
+        "document.querySelector('.review__optional').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "U24-6-annotate-source",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const {annotationStore}=await import('/src/state/annotations.ts');const id=await seedAnnotation(window.__sim.host,'comments');annotationStore('sim-studio').update(id,d=>({...d,projectId:ids.pNotes,sources:d.sources.slice(0,1).map(s=>({...s,origin:{kind:'preview_capture',capture_id:'u24-preview',host_id:ids.host,computer_name:'studio',preview_id:'notes',preview_label:'Notes',captured_at:s.capturedAt}}))}));ui.selectProject(ids.pNotes);ui.reset('talk',[{screen:'talk'},{screen:'annotate',annotationId:id}]);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "clickSel",
+        ".an-draft"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] .an-sources').scrollIntoView({block:'start'});const e=document.querySelector('dialog[open] .an-source');if(getComputedStyle(e).flexDirection!=='column')throw Error('Source not stacked')"
+      ]
+    ]
+  },
+  {
+    "name": "U24-7-library",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pNotes);ui.reset('library');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "const f=[...document.querySelectorAll('.library-screen h2')].find(e=>e.textContent==='Folders on the computer');if(f.getBoundingClientRect().top>400)throw Error('Folders not first');if(document.querySelector('.lib-recovery-status').open)throw Error('Empty recovery expanded')"
+      ]
+    ]
+  },
+  {
+    "name": "U24-8-blocked-work",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "text": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectProject(ids.pTide);ui.reset('work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Now').scrollIntoView({block:'start'})"
+      ],
+      [
+        "eval",
+        "const r=[...document.querySelectorAll('.work-screen .row')].find(e=>e.textContent.includes('Approval needed \u00b7 Run'));if(!r||r.textContent.includes('Ran retries_on_503'))throw Error('Blocker did not replace activity')"
+      ]
+    ]
+  },
+  {
+    "name": "U24-9-queued-talk",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,workIds.ready);ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "const e=document.querySelector('.composer__queue');if(!e||e.getBoundingClientRect().height>150)throw Error('Queue notice too tall');if(e.querySelector('details').open)throw Error('Details start expanded');if(e.querySelector('summary').textContent!=='Waiting')throw Error('Queue not loaded')"
+      ]
+    ]
+  }
+]

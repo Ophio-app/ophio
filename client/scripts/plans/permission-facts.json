@@ -1,0 +1,1382 @@
+[
+  {
+    "name": "T1-Bash-light-tablet",
+    "dark": false,
+    "width": 900,
+    "height": 1200,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"command\", \"title\": \"Run a shell command\", \"detail\": \"printf fixture\\nPrint fixture text\", \"scope\": \"This request once\"},{raw_request:\"{\\\"command\\\": \\\"printf fixture\\\", \\\"description\\\": \\\"Print fixture text\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Bash-light-phone200",
+    "dark": false,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"command\", \"title\": \"Run a shell command\", \"detail\": \"printf fixture\\nPrint fixture text\", \"scope\": \"This request once\"},{raw_request:\"{\\\"command\\\": \\\"printf fixture\\\", \\\"description\\\": \\\"Print fixture text\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ],
+      [
+        "shot",
+        "heading"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "detail"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__facts\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "scope"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Bash-dark-tablet",
+    "dark": true,
+    "width": 900,
+    "height": 1200,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"command\", \"title\": \"Run a shell command\", \"detail\": \"printf fixture\\nPrint fixture text\", \"scope\": \"This request once\"},{raw_request:\"{\\\"command\\\": \\\"printf fixture\\\", \\\"description\\\": \\\"Print fixture text\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Bash-dark-phone200",
+    "dark": true,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"command\", \"title\": \"Run a shell command\", \"detail\": \"printf fixture\\nPrint fixture text\", \"scope\": \"This request once\"},{raw_request:\"{\\\"command\\\": \\\"printf fixture\\\", \\\"description\\\": \\\"Print fixture text\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ],
+      [
+        "shot",
+        "heading"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "detail"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__facts\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "scope"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Edit-light-tablet",
+    "dark": false,
+    "width": 900,
+    "height": 1200,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"file_edit\", \"title\": \"Edit a file\", \"detail\": \"src/main.rs\\nReplace one match: 3 \\u2192 3 characters\", \"scope\": \"This request once\"},{raw_request:\"{\\\"file_path\\\": \\\"src/main.rs\\\", \\\"old_string\\\": \\\"old\\\", \\\"new_string\\\": \\\"new\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Edit-light-phone200",
+    "dark": false,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"file_edit\", \"title\": \"Edit a file\", \"detail\": \"src/main.rs\\nReplace one match: 3 \\u2192 3 characters\", \"scope\": \"This request once\"},{raw_request:\"{\\\"file_path\\\": \\\"src/main.rs\\\", \\\"old_string\\\": \\\"old\\\", \\\"new_string\\\": \\\"new\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ],
+      [
+        "shot",
+        "heading"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "detail"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__facts\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "scope"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Edit-dark-tablet",
+    "dark": true,
+    "width": 900,
+    "height": 1200,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"file_edit\", \"title\": \"Edit a file\", \"detail\": \"src/main.rs\\nReplace one match: 3 \\u2192 3 characters\", \"scope\": \"This request once\"},{raw_request:\"{\\\"file_path\\\": \\\"src/main.rs\\\", \\\"old_string\\\": \\\"old\\\", \\\"new_string\\\": \\\"new\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Edit-dark-phone200",
+    "dark": true,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"file_edit\", \"title\": \"Edit a file\", \"detail\": \"src/main.rs\\nReplace one match: 3 \\u2192 3 characters\", \"scope\": \"This request once\"},{raw_request:\"{\\\"file_path\\\": \\\"src/main.rs\\\", \\\"old_string\\\": \\\"old\\\", \\\"new_string\\\": \\\"new\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ],
+      [
+        "shot",
+        "heading"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "detail"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__facts\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "scope"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Archive-light-tablet",
+    "dark": false,
+    "width": 900,
+    "height": 1200,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"tool\", \"title\": \"Use Archive\", \"detail\": \"destination: archive\\npath: notes.txt\", \"scope\": \"This request once\"},{raw_request:\"{\\\"path\\\": \\\"notes.txt\\\", \\\"destination\\\": \\\"archive\\\", \\\"nested\\\": {\\\"ignore\\\": \\\"blob\\\"}}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Archive-light-phone200",
+    "dark": false,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"tool\", \"title\": \"Use Archive\", \"detail\": \"destination: archive\\npath: notes.txt\", \"scope\": \"This request once\"},{raw_request:\"{\\\"path\\\": \\\"notes.txt\\\", \\\"destination\\\": \\\"archive\\\", \\\"nested\\\": {\\\"ignore\\\": \\\"blob\\\"}}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ],
+      [
+        "shot",
+        "heading"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "detail"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__facts\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "scope"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Archive-dark-tablet",
+    "dark": true,
+    "width": 900,
+    "height": 1200,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"tool\", \"title\": \"Use Archive\", \"detail\": \"destination: archive\\npath: notes.txt\", \"scope\": \"This request once\"},{raw_request:\"{\\\"path\\\": \\\"notes.txt\\\", \\\"destination\\\": \\\"archive\\\", \\\"nested\\\": {\\\"ignore\\\": \\\"blob\\\"}}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ]
+    ]
+  },
+  {
+    "name": "T1-Archive-dark-phone200",
+    "dark": true,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{\"kind\": \"tool\", \"title\": \"Use Archive\", \"detail\": \"destination: archive\\npath: notes.txt\", \"scope\": \"This request once\"},{raw_request:\"{\\\"path\\\": \\\"notes.txt\\\", \\\"destination\\\": \\\"archive\\\", \\\"nested\\\": {\\\"ignore\\\": \\\"blob\\\"}}\"});h.emit({type:'approval_upserted',approval:{...a}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ],
+      [
+        "shot",
+        "heading"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "detail"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__facts\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "scope"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  },
+  {
+    "name": "T2-follow-up-review-light",
+    "dark": false,
+    "width": 900,
+    "height": 1200,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement and verify.';for(const item of [{kind:'agent_message',text:p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u27task=t;window.u27run=r;})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host,t=window.u27task,r=window.u27run;const next={...r,run_id:crypto.randomUUID(),admitted_at:Date.now(),started_at:Date.now(),ended_at:Date.now(),outcome:null};h.runs.push(next);h.emit({type:'run_upserted',run:next});t.current_run=next.run_id;h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const p=h.projects.find(p=>p.project_id===window.u27task.project_id);p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector(\".review__text\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "log",
+        "document.body.innerText"
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Plan from run 1'))throw Error('Missing source run')"
+      ]
+    ]
+  },
+  {
+    "name": "T2-follow-up-review-dark",
+    "dark": true,
+    "width": 900,
+    "height": 1200,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement and verify.';for(const item of [{kind:'agent_message',text:p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u27task=t;window.u27run=r;})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host,t=window.u27task,r=window.u27run;const next={...r,run_id:crypto.randomUUID(),admitted_at:Date.now(),started_at:Date.now(),ended_at:Date.now(),outcome:null};h.runs.push(next);h.emit({type:'run_upserted',run:next});t.current_run=next.run_id;h.emit({type:'task_upserted',task:{...t}})})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;const p=h.projects.find(p=>p.project_id===window.u27task.project_id);p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "click",
+        "Carry out this plan"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector(\".review__text\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "log",
+        "document.body.innerText"
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Plan from run 1'))throw Error('Missing source run')"
+      ]
+    ]
+  },
+  {
+    "name": "T3-cleared-notice",
+    "width": 900,
+    "height": 1200,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement and verify.';for(const item of [{kind:'agent_message',text:p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u27task=t;window.u27run=r;})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const q=h.query.bind(h);h.query=async x=>{if(x.kind==='task_timeline')throw {code:'internal',message:'Couldn\u2019t load this plan.'};return q(x)}"
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "clickSel",
+        "dialog button:has-text(\"Carry out this plan\")"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "error"
+      ],
+      [
+        "log",
+        "document.querySelector(\".composer .notice\")?.innerText"
+      ],
+      [
+        "click",
+        "Continue this task"
+      ],
+      [
+        "click",
+        "Start a new task"
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.composer .notice'))throw Error('Stale carry-out notice')"
+      ],
+      [
+        "log",
+        "document.querySelector(\".composer\").innerText"
+      ]
+    ]
+  },
+  {
+    "name": "T4-inline-plan-light-tablet",
+    "dark": false,
+    "width": 900,
+    "height": 1200,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement and verify.';for(const item of [{kind:'agent_message',text:p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u27task=t;window.u27run=r;})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;for(const p of h.projects){p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})}})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const p of h.projects){p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})}for(const t of h.tasks){if(t.task_id!==window.u27task.task_id){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}}for(const r of h.runs){if(r.task_id!==window.u27task.task_id){r.state='completed';r.ended_at=Date.now();r.children=[];h.emit({type:'run_upserted',run:{...r}})}}for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}})()"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".talk-plan\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "shot",
+        "actions"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.talk-plan button')[1].focus()"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "eval",
+        "if(document.activeElement?.tagName!=='TEXTAREA')throw Error('Changes did not focus composer');if(document.querySelector('.composer textarea').placeholder!=='What next?')throw Error('Changes did not select Continue')"
+      ],
+      [
+        "shot",
+        "changes"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.talk-plan button')][0];b.focus();if(document.activeElement!==b)throw Error('Action not keyboard reachable')"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Mode: Work.'))throw Error('Missing review')"
+      ],
+      [
+        "log",
+        "({overflow:document.documentElement.scrollWidth>innerWidth,button:document.querySelector(\".review-foot button\")?.innerText})"
+      ]
+    ]
+  },
+  {
+    "name": "T4-inline-plan-light-phone200",
+    "dark": false,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement and verify.';for(const item of [{kind:'agent_message',text:p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u27task=t;window.u27run=r;})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;for(const p of h.projects){p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})}})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const p of h.projects){p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})}for(const t of h.tasks){if(t.task_id!==window.u27task.task_id){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}}for(const r of h.runs){if(r.task_id!==window.u27task.task_id){r.state='completed';r.ended_at=Date.now();r.children=[];h.emit({type:'run_upserted',run:{...r}})}}for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}})()"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".talk-plan\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "shot",
+        "actions"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.talk-plan button')[1].focus()"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "eval",
+        "if(document.activeElement?.tagName!=='TEXTAREA')throw Error('Changes did not focus composer');if(document.querySelector('.composer textarea').placeholder!=='What next?')throw Error('Changes did not select Continue')"
+      ],
+      [
+        "shot",
+        "changes"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.talk-plan button')][0];b.focus();if(document.activeElement!==b)throw Error('Action not keyboard reachable')"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Mode: Work.'))throw Error('Missing review')"
+      ],
+      [
+        "log",
+        "({overflow:document.documentElement.scrollWidth>innerWidth,button:document.querySelector(\".review-foot button\")?.innerText})"
+      ]
+    ]
+  },
+  {
+    "name": "T4-inline-plan-dark-tablet",
+    "dark": true,
+    "width": 900,
+    "height": 1200,
+    "text": 1,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement and verify.';for(const item of [{kind:'agent_message',text:p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u27task=t;window.u27run=r;})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;for(const p of h.projects){p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})}})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const p of h.projects){p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})}for(const t of h.tasks){if(t.task_id!==window.u27task.task_id){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}}for(const r of h.runs){if(r.task_id!==window.u27task.task_id){r.state='completed';r.ended_at=Date.now();r.children=[];h.emit({type:'run_upserted',run:{...r}})}}for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}})()"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".talk-plan\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "shot",
+        "actions"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.talk-plan button')[1].focus()"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "eval",
+        "if(document.activeElement?.tagName!=='TEXTAREA')throw Error('Changes did not focus composer');if(document.querySelector('.composer textarea').placeholder!=='What next?')throw Error('Changes did not select Continue')"
+      ],
+      [
+        "shot",
+        "changes"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.talk-plan button')][0];b.focus();if(document.activeElement!==b)throw Error('Action not keyboard reachable')"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Mode: Work.'))throw Error('Missing review')"
+      ],
+      [
+        "log",
+        "({overflow:document.documentElement.scrollWidth>innerWidth,button:document.querySelector(\".review-foot button\")?.innerText})"
+      ]
+    ]
+  },
+  {
+    "name": "T4-inline-plan-dark-phone200",
+    "dark": true,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement and verify.';for(const item of [{kind:'agent_message',text:p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u27task=t;window.u27run=r;})()"
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;for(const p of h.projects){p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})}})()"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const p of h.projects){p.active_writer=null;h.emit({type:'project_upserted',project:{...p}})}for(const t of h.tasks){if(t.task_id!==window.u27task.task_id){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}}for(const r of h.runs){if(r.task_id!==window.u27task.task_id){r.state='completed';r.ended_at=Date.now();r.children=[];h.emit({type:'run_upserted',run:{...r}})}}for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}})()"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".talk-plan\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "shot",
+        "actions"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.talk-plan button')[1].focus()"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "eval",
+        "if(document.activeElement?.tagName!=='TEXTAREA')throw Error('Changes did not focus composer');if(document.querySelector('.composer textarea').placeholder!=='What next?')throw Error('Changes did not select Continue')"
+      ],
+      [
+        "shot",
+        "changes"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.talk-plan button')][0];b.focus();if(document.activeElement!==b)throw Error('Action not keyboard reachable')"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Mode: Work.'))throw Error('Missing review')"
+      ],
+      [
+        "log",
+        "({overflow:document.documentElement.scrollWidth>innerWidth,button:document.querySelector(\".review-foot button\")?.innerText})"
+      ]
+    ]
+  },
+  {
+    "name": "T5-queued-light",
+    "dark": false,
+    "width": 900,
+    "height": 1200,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'create_task',project_id:ids.pNotes,kind:'coding',mode:'work',title:'Queue fixture',prompt:'Review the notes tomorrow.',bundle:null,harness:'codex',model:'gpt-6-astra',effort:'medium',mission:null,target_id:null,placement:{mode:'queue',authorization:'ask_before_start',depends_on:[]}}});if(r.status!=='accepted')throw Error(JSON.stringify(r));})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Queue fixture"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "document.querySelector(\".talk-user\").innerText"
+      ],
+      [
+        "shot",
+        "message"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "document.body.innerText"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.work-brief').innerText.includes('1 task is waiting in Next up'))throw Error('Missing queued count');if(document.querySelector('.work-brief').innerText.includes('in progress'))throw Error('Queue counted as running')"
+      ]
+    ]
+  },
+  {
+    "name": "T5-queued-dark",
+    "dark": true,
+    "width": 900,
+    "height": 1200,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'create_task',project_id:ids.pNotes,kind:'coding',mode:'work',title:'Queue fixture',prompt:'Review the notes tomorrow.',bundle:null,harness:'codex',model:'gpt-6-astra',effort:'medium',mission:null,target_id:null,placement:{mode:'queue',authorization:'ask_before_start',depends_on:[]}}});if(r.status!=='accepted')throw Error(JSON.stringify(r));})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Queue fixture"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "document.querySelector(\".talk-user\").innerText"
+      ],
+      [
+        "shot",
+        "message"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "log",
+        "document.body.innerText"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.work-brief').innerText.includes('1 task is waiting in Next up'))throw Error('Missing queued count');if(document.querySelector('.work-brief').innerText.includes('in progress'))throw Error('Queue counted as running')"
+      ]
+    ]
+  },
+  {
+    "name": "T6-plan-once",
+    "width": 900,
+    "height": 1200,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tHeaders);ui.selectTab('talk');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;window.__sim.pace(100);const t=h.tasks.find(t=>t.task_id===ids.tHeaders);t.mode='plan';t.current_run=ids.rHeaders;h.emit({type:'task_upserted',task:{...t}});const r=h.runs.find(r=>r.run_id===t.current_run);r.outcome=null;h.emit({type:'run_upserted',run:{...r}});const p='1. Inspect the parser.\\n2. Add regression coverage.\\n3. Implement and verify.';for(const item of [{kind:'agent_message',text:p,partial:false},{kind:'activity',tool:'ExitPlanMode',summary:'Plan proposed',status:'succeeded',detail:JSON.stringify({plan:p})}])h.emit({type:'timeline_appended',task_id:t.task_id,item:{seq:++h.seq,at:Date.now(),run_id:r.run_id,item}});window.u27task=t;window.u27run=r;})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Plan proposed"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".talk-steps.is-open\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Plan shown above.'))throw Error('Repeated plan')"
+      ],
+      [
+        "log",
+        "document.querySelector(\".talk-steps.is-open\").innerText"
+      ]
+    ]
+  },
+  {
+    "name": "T1-needs-you-sheet-light",
+    "dark": false,
+    "width": 900,
+    "height": 1200,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector(\".talk-quick-approval\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "shot",
+        "row"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.talk-quick-approval').innerText.includes('printf fixture'))throw Error('Missing row detail')"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test in the payments client"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog .approval__detail')?.textContent.includes('printf fixture'))throw Error('Missing sheet detail')"
+      ]
+    ]
+  },
+  {
+    "name": "T1-needs-you-sheet-dark",
+    "dark": true,
+    "width": 900,
+    "height": 1200,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector(\".talk-quick-approval\").scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "shot",
+        "row"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.talk-quick-approval').innerText.includes('printf fixture'))throw Error('Missing row detail')"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test in the payments client"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog .approval__detail')?.textContent.includes('printf fixture'))throw Error('Missing sheet detail')"
+      ]
+    ]
+  },
+  {
+    "name": "T1-long-command-phone200",
+    "dark": false,
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;const a=h.approvals[0];Object.assign(a,{kind:'command',title:'Run a shell command',detail:\"printf fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-\\u2026\",scope:'This request once',raw_request:\"{\\\"command\\\": \\\"printf fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-fixture-\\\"}\"});h.emit({type:'approval_upserted',approval:{...a}})"
+      ],
+      [
+        "eval",
+        "(()=>{const h=window.__sim.host;for(const c of h.control){Object.assign(c,{input_state:'ready',lease:null,model_observation:null});h.emit({type:'control_changed',view:{...c}})}const t=h.tasks.find(t=>t.kind==='computer_use');if(t){t.state='completed';t.current_run=null;h.emit({type:'task_upserted',task:{...t}})}})()"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Fix the flaky retry test"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "log",
+        "({card:document.querySelector(\".approval\").innerText,fonts:document.fonts.check(\"16px Inter Variable\")})"
+      ],
+      [
+        "shot",
+        "heading"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "detail"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__facts\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "scope"
+      ],
+      [
+        "eval",
+        "document.querySelector(\".approval__detail\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  }
+]

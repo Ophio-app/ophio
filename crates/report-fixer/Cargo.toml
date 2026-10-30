@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "report-fixer"
+description = "Contained execution of report fixes with owner approval"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+report-pipeline = { path = "../report-pipeline" }
+intake = { path = "../intake" }
+protocol.workspace = true
+ports.workspace = true
+sandbox.workspace = true
+containment.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+sha2 = "0.10"
+rusqlite = { version = "0.38.0", features = ["bundled"] }
+tempfile = "3.27.0"
+
+[dev-dependencies]
+reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls", "json"] }
+ed25519-dalek = "2.2"
+base64 = "0.22.1"
+toml = "0.9"
+
+[lints]
+workspace = true

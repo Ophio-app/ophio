@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# cargo-audit reads this file when run from the repository root (scripts/ci.sh
+# advisories). client/src-tauri/.cargo/audit.toml covers the Tauri lock file.
+# Every ignore names the crate that pulls the advisory in and why it stands.
+
+[advisories]
+ignore = [
+    # paste 1.0.15, unmaintained; no fixed release exists. A compile-time
+    # proc-macro only, pulled in by gemm (via candle-core in crates/speech) and
+    # tokenizers; gemm 0.19.0 is the latest release and still requires it.
+    "RUSTSEC-2024-0436",
+    # zip 7.2.0: ZipArchive::extract and ZipStreamReader::extract can write
+    # symlinks pointing outside the destination, set permissions through
+    # them and keep setuid bits; fixed only in zip 9. candle-core 0.9.2
+    # (crates/speech) requires ^7.2.0 and no candle release accepts 9.x
+    # (0.11.0 needs ^8.6). candle only reads named entries from .npz and
+    # PyTorch archives and never extracts; speech loads safetensors only.
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
+    # zvariant, zvariant_derive and zbus_names, unmaintained: merged into
+    # zbus 6, with no flaw reported. ashpd 0.13.13 (platform-linux), the
+    # latest, still requires zbus 5, so moving accounts and platform-linux
+    # to zbus 6 would keep these crates locked anyway.
+    "RUSTSEC-2026-0370",
+    "RUSTSEC-2026-0371",
+    "RUSTSEC-2026-0372",
+]

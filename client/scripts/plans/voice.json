@@ -1,0 +1,806 @@
+[
+  {
+    "name": "settings-unlinked",
+    "steps": [
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector(\"#settings-voice-control\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "settings-linked",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector(\"#settings-voice-control\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-unlinked",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-browser-light",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "fill",
+        "Typed command",
+        "click Sign in"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "click"
+      ],
+      [
+        "fill",
+        "Typed command",
+        "go to https://example.test"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "url"
+      ],
+      [
+        "fill",
+        "Typed command",
+        "click link"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "choices"
+      ],
+      [
+        "click",
+        "2. Project notes"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "choice-applied"
+      ],
+      [
+        "fill",
+        "Typed command",
+        "delete draft"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Confirm action"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "shot",
+        "confirmed"
+      ],
+      [
+        "click",
+        "Stop voice control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-browser-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "fill",
+        "Typed command",
+        "delete draft"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-browser-large",
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "fill",
+        "Typed command",
+        "click link"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-browser-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "fill",
+        "Typed command",
+        "type hello world"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "settle": 900
+  },
+  {
+    "name": "voice-browser-landscape",
+    "width": 844,
+    "height": 390,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "fill",
+        "Typed command",
+        "delete draft"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "settle": 900
+  },
+  {
+    "name": "voice-offline",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "fill",
+        "Typed command",
+        "click Sign in"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-picture\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-sensitive",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "fill",
+        "Typed command",
+        "type password"
+      ],
+      [
+        "click",
+        "Send command"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-desktop-missing",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-desktop-ready",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "eval",
+        "window.__sim.host.voice.desktopAvailable=true"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "This desktop"
+      ],
+      [
+        "shot",
+        "disclosure"
+      ],
+      [
+        "click",
+        "Accept and preview commands"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-empty",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "for(const s of window.__sim.host.voice.sessions.values()){s.picture=null;s.steps=[]}"
+      ],
+      [
+        "wait",
+        1300
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-error",
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.fail=true"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "settle": 900
+  },
+  {
+    "name": "voice-speech",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.host.voice.link(window.__sim.host)"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Control by voice"
+      ],
+      [
+        "click",
+        "Browser"
+      ],
+      [
+        "clickSel",
+        "dialog[open] input[type=checkbox]"
+      ],
+      [
+        "click",
+        "Accept and take over"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Hold to talk\"]').focus()"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Live transcript\"]').scrollIntoView({block:\"center\"})"
+      ],
+      [
+        "shot",
+        "listening"
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('[aria-label=\"Live transcript\"]')?.textContent) throw new Error('No streamed transcript')"
+      ],
+      [
+        "press",
+        "Enter"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('[aria-label=\"Hold to talk\"]')) throw new Error('Microphone did not finish')"
+      ],
+      [
+        "shot",
+        "finished"
+      ],
+      [
+        "click",
+        "Stop voice control"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "document.querySelector(\".voice-prompt\").scrollIntoView({block:\"start\"})"
+      ]
+    ]
+  }
+]

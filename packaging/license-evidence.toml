@@ -1,0 +1,135 @@
+# SPDX-License-Identifier: Apache-2.0
+# Supplemental upstream evidence; every text is hash-pinned.
+
+[[evidence]]
+purl = "pkg:cargo/candle-nn@0.9.2"
+path = "packaging/licenses/candle-nn-0.9.2-LICENSE-MIT"
+url = "https://raw.githubusercontent.com/huggingface/candle/3b39794c14b1de8ba4c2d10d49354d557a415547/LICENSE-MIT"
+sha256 = "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/candle-nn@0.9.2"
+path = "packaging/licenses/candle-nn-0.9.2-LICENSE-APACHE"
+url = "https://raw.githubusercontent.com/huggingface/candle/3b39794c14b1de8ba4c2d10d49354d557a415547/LICENSE-APACHE"
+sha256 = "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/candle-transformers@0.9.2"
+path = "packaging/licenses/candle-transformers-0.9.2-LICENSE-MIT"
+url = "https://raw.githubusercontent.com/huggingface/candle/3b39794c14b1de8ba4c2d10d49354d557a415547/LICENSE-MIT"
+sha256 = "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/candle-transformers@0.9.2"
+path = "packaging/licenses/candle-transformers-0.9.2-LICENSE-APACHE"
+url = "https://raw.githubusercontent.com/huggingface/candle/3b39794c14b1de8ba4c2d10d49354d557a415547/LICENSE-APACHE"
+sha256 = "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/pulp-wasm-simd-flag@0.1.1"
+path = "packaging/licenses/pulp-wasm-simd-flag-0.1.1-LICENSE"
+url = "https://raw.githubusercontent.com/sarah-quinones/pulp/5eb07fd7b68edf0a5e19f71737d315f72a510295/LICENSE"
+sha256 = "d64f878c89bd5f1e5ada7e4aad57690b122727cf5229b7b87ea1980c188da1d9"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/ts-rs@12.0.1"
+path = "packaging/licenses/ts-rs-12.0.1-LICENSE"
+url = "https://raw.githubusercontent.com/Aleph-Alpha/ts-rs/7182ad8289596097235406b715fa04506443b4ad/LICENSE"
+sha256 = "db7f7f8e7236a2d0b41b855b2501b7b913caebbcda6ce498637a304ad1706ce1"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/ts-rs-macros@12.0.1"
+path = "packaging/licenses/ts-rs-macros-12.0.1-LICENSE"
+url = "https://raw.githubusercontent.com/Aleph-Alpha/ts-rs/7182ad8289596097235406b715fa04506443b4ad/LICENSE"
+sha256 = "db7f7f8e7236a2d0b41b855b2501b7b913caebbcda6ce498637a304ad1706ce1"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/alloc-stdlib@0.3.0"
+path = "packaging/licenses/alloc-stdlib-0.3.0-LICENSE"
+url = "https://raw.githubusercontent.com/dropbox/rust-alloc-no-stdlib/0a81fd6928ea3b33c8cd484aa4575d50ffb98012/LICENSE"
+sha256 = "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/jni-sys-macros@0.4.1"
+path = "packaging/licenses/jni-sys-macros-0.4.1-LICENSE-MIT"
+url = "https://raw.githubusercontent.com/jni-rs/jni-sys/64d77b7a5f119d7b55b4e2c169a4668067ff59e6/LICENSE-MIT"
+sha256 = "1d85bd754b04ceec93e98e890edd1fa3c6a22e81bcb32135806beeccefa51cd1"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/jni-sys-macros@0.4.1"
+path = "packaging/licenses/jni-sys-macros-0.4.1-LICENSE-APACHE"
+url = "https://raw.githubusercontent.com/jni-rs/jni-sys/64d77b7a5f119d7b55b4e2c169a4668067ff59e6/LICENSE-APACHE"
+sha256 = "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/ndk-context@0.1.1"
+path = "packaging/licenses/ndk-context-0.1.1-LICENSE-MIT"
+url = "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-MIT"
+sha256 = "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/ndk-context@0.1.1"
+path = "packaging/licenses/ndk-context-0.1.1-LICENSE-APACHE"
+url = "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-APACHE"
+sha256 = "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/ndk-sys@0.6.0+11769913"
+path = "packaging/licenses/ndk-sys-0.6.0+11769913-LICENSE-MIT"
+url = "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-MIT"
+sha256 = "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/ndk-sys@0.6.0+11769913"
+path = "packaging/licenses/ndk-sys-0.6.0+11769913-LICENSE-APACHE"
+url = "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-APACHE"
+sha256 = "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/ndk@0.9.0"
+path = "packaging/licenses/ndk-0.9.0-LICENSE-MIT"
+url = "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-MIT"
+sha256 = "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/ndk@0.9.0"
+path = "packaging/licenses/ndk-0.9.0-LICENSE-APACHE"
+url = "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-APACHE"
+sha256 = "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/tauri-plugin@2.7.0"
+path = "packaging/licenses/tauri-plugin-2.7.0-LICENSE-MIT"
+url = "https://raw.githubusercontent.com/tauri-apps/tauri/447fa9f3f993fe77724189e355078b38ce20baea/LICENSE-MIT"
+sha256 = "9dd42ea92cff2ede5cd477cbfcce051b2d0115c0ac7f368ee88cb545055dff1d"
+reason = "Crate archive omits the repository licence; text retrieved from the exact Cargo VCS revision."
+
+[[evidence]]
+purl = "pkg:cargo/cookie-factory@0.3.3"
+path = "packaging/licenses/cookie-factory-0.3.3-LICENSE"
+url = "https://raw.githubusercontent.com/rust-bakery/cookie-factory/d36b805dbd7dd65f2df947235c5bcc573afe2c76/LICENSES/MIT.txt"
+sha256 = "d09216dc1ea5f273997667935a8d6514d80f00b89fb6954ecc3a43e0a6e360de"
+reason = "Full licence text referenced by the upstream source header; absent from the crate archive."
+
+[[evidence]]
+purl = "pkg:cargo/selectors@0.38.0"
+path = "packaging/licenses/selectors-0.38.0-LICENSE"
+url = "https://www.mozilla.org/media/MPL/2.0/index.txt"
+sha256 = "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04"
+reason = "Full licence text referenced by the upstream source header; absent from the crate archive."

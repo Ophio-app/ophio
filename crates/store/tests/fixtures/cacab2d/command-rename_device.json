@@ -1,0 +1,27 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-00000000002a",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "rename_device",
+      "device_id": "00000000-0000-4000-8000-000000000001",
+      "name": "synthetic"
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-00000000002a",
+    "status": "accepted",
+    "seq": 42,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

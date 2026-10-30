@@ -1,0 +1,1383 @@
+[
+  {
+    "name": "offer-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable'); window.__sim.pace(100)"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "garden-planner"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Check the garden layout."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.alerts-offer')) throw Error('Offer missing'); document.querySelector('.alerts-offer').scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "settings-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "new Promise((resolve,reject)=>{let attempts=0;const check=()=>{const el=document.querySelector('#settings-notifications');if(el){el.scrollIntoView({block:'start'});resolve()}else if(++attempts>100)reject(Error('Notifications settings did not load'));else setTimeout(check,100)};check()})"
+      ]
+    ]
+  },
+  {
+    "name": "receipt-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.permissions({transfers:false})"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('.bar__title')].some(x=>x.textContent==='Task receipt')) throw Error('Receipt not opened'); if([...document.querySelectorAll('button')].some(x=>x.textContent.includes('Reload evidence'))) throw Error('Futile reload')"
+      ]
+    ]
+  },
+  {
+    "name": "approval-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000501'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ]
+    ]
+  },
+  {
+    "name": "missed-light",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const item=h.attention.find(a=>a.kind==='completed');for(const id of ['missed-1','missed-2']){h.emit({type:'attention_upserted',item:{...item,attention_id:id}})}"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.alerts-missed').length!==1)throw Error('Expected one missed-alert banner');if(!document.querySelector('.alerts-missed').textContent.includes('2 alerts'))throw Error('Missed count wrong')"
+      ]
+    ]
+  },
+  {
+    "name": "offer-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable'); window.__sim.pace(100)"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "garden-planner"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Check the garden layout."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.alerts-offer')) throw Error('Offer missing'); document.querySelector('.alerts-offer').scrollIntoView({block:'end'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "settings-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "new Promise((resolve,reject)=>{let attempts=0;const check=()=>{const el=document.querySelector('#settings-notifications');if(el){el.scrollIntoView({block:'start'});resolve()}else if(++attempts>100)reject(Error('Notifications settings did not load'));else setTimeout(check,100)};check()})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "receipt-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.permissions({transfers:false})"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('.bar__title')].some(x=>x.textContent==='Task receipt')) throw Error('Receipt not opened'); if([...document.querySelectorAll('button')].some(x=>x.textContent.includes('Reload evidence'))) throw Error('Futile reload')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "approval-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000501'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "missed-dark",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const item=h.attention.find(a=>a.kind==='completed');for(const id of ['missed-1','missed-2']){h.emit({type:'attention_upserted',item:{...item,attention_id:id}})}"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.alerts-missed').length!==1)throw Error('Expected one missed-alert banner');if(!document.querySelector('.alerts-missed').textContent.includes('2 alerts'))throw Error('Missed count wrong')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "offer-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable'); window.__sim.pace(100)"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "garden-planner"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Check the garden layout."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.alerts-offer')) throw Error('Offer missing'); document.querySelector('.alerts-offer').scrollIntoView({block:'end'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "settings-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "new Promise((resolve,reject)=>{let attempts=0;const check=()=>{const el=document.querySelector('#settings-notifications');if(el){el.scrollIntoView({block:'start'});resolve()}else if(++attempts>100)reject(Error('Notifications settings did not load'));else setTimeout(check,100)};check()})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "receipt-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.permissions({transfers:false})"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('.bar__title')].some(x=>x.textContent==='Task receipt')) throw Error('Receipt not opened'); if([...document.querySelectorAll('button')].some(x=>x.textContent.includes('Reload evidence'))) throw Error('Futile reload')"
+      ],
+      [
+        "shot",
+        "title"
+      ],
+      [
+        "eval",
+        "document.querySelector('.permission-note').scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "approval-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000501'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ],
+      [
+        "shot",
+        "request"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval__actions').scrollIntoView({block:'end'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "missed-large",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const item=h.attention.find(a=>a.kind==='completed');for(const id of ['missed-1','missed-2']){h.emit({type:'attention_upserted',item:{...item,attention_id:id}})}"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.alerts-missed').length!==1)throw Error('Expected one missed-alert banner');if(!document.querySelector('.alerts-missed').textContent.includes('2 alerts'))throw Error('Missed count wrong')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "offer-landscape",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable'); window.__sim.pace(100)"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "garden-planner"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Check the garden layout."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.alerts-offer')) throw Error('Offer missing'); document.querySelector('.alerts-offer').scrollIntoView({block:'end'})"
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "settings-landscape",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "new Promise((resolve,reject)=>{let attempts=0;const check=()=>{const el=document.querySelector('#settings-notifications');if(el){el.scrollIntoView({block:'start'});resolve()}else if(++attempts>100)reject(Error('Notifications settings did not load'));else setTimeout(check,100)};check()})"
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "receipt-landscape",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.permissions({transfers:false})"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('.bar__title')].some(x=>x.textContent==='Task receipt')) throw Error('Receipt not opened'); if([...document.querySelectorAll('button')].some(x=>x.textContent.includes('Reload evidence'))) throw Error('Futile reload')"
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "approval-landscape",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000501'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ],
+      [
+        "shot",
+        "request"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval__actions').scrollIntoView({block:'end'})"
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "missed-landscape",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const item=h.attention.find(a=>a.kind==='completed');for(const id of ['missed-1','missed-2']){h.emit({type:'attention_upserted',item:{...item,attention_id:id}})}"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.alerts-missed').length!==1)throw Error('Expected one missed-alert banner');if(!document.querySelector('.alerts-missed').textContent.includes('2 alerts'))throw Error('Missed count wrong')"
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "offer-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable'); window.__sim.pace(100)"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "garden-planner"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Check the garden layout."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.alerts-offer')) throw Error('Offer missing'); document.querySelector('.alerts-offer').scrollIntoView({block:'end'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "settings-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "new Promise((resolve,reject)=>{let attempts=0;const check=()=>{const el=document.querySelector('#settings-notifications');if(el){el.scrollIntoView({block:'start'});resolve()}else if(++attempts>100)reject(Error('Notifications settings did not load'));else setTimeout(check,100)};check()})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "receipt-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.permissions({transfers:false})"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('.bar__title')].some(x=>x.textContent==='Task receipt')) throw Error('Receipt not opened'); if([...document.querySelectorAll('button')].some(x=>x.textContent.includes('Reload evidence'))) throw Error('Futile reload')"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "approval-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000501'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "missed-wide",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const item=h.attention.find(a=>a.kind==='completed');for(const id of ['missed-1','missed-2']){h.emit({type:'attention_upserted',item:{...item,attention_id:id}})}"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.alerts-missed').length!==1)throw Error('Expected one missed-alert banner');if(!document.querySelector('.alerts-missed').textContent.includes('2 alerts'))throw Error('Missed count wrong')"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "offer-allow",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable'); window.__sim.pace(100)"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "garden-planner"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Check the garden layout."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.alerts-offer')) throw Error('Offer missing'); document.querySelector('.alerts-offer').scrollIntoView({block:'end'})"
+      ],
+      [
+        "shot",
+        "choice"
+      ],
+      [
+        "click",
+        "Allow alerts"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.alerts-offer')) throw Error('Offer remained');if(window.__sim.device.notificationRequests!==1)throw Error('Request missing')"
+      ]
+    ]
+  },
+  {
+    "name": "offer-not-now-reload",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable'); window.__sim.pace(100)"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "click",
+        "garden-planner"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Check the garden layout."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if (!document.querySelector('.alerts-offer')) throw Error('Offer missing'); document.querySelector('.alerts-offer').scrollIntoView({block:'end'})"
+      ],
+      [
+        "click",
+        "Not now"
+      ],
+      [
+        "eval",
+        "if(localStorage.getItem('task-alerts-offer.sim-studio')!=='seen')throw Error('Choice not saved');location.reload()"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "clickSel",
+        ".ctx__context"
+      ],
+      [
+        "clickSel",
+        "dialog button:has-text(\"garden-planner\")"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Check the garden spacing."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "click",
+        "Start task"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.alerts-offer'))throw Error('Repeated offer')"
+      ]
+    ]
+  },
+  {
+    "name": "settings-state-refresh",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "new Promise((resolve,reject)=>{let attempts=0;const check=()=>{const el=document.querySelector('#settings-notifications');if(el){el.scrollIntoView({block:'start'});resolve()}else if(++attempts>100)reject(Error('Notifications settings did not load'));else setTimeout(check,100)};check()})"
+      ],
+      [
+        "shot",
+        "off"
+      ],
+      [
+        "click",
+        "Allow alerts"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "shot",
+        "on"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('blocked')"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Open Android settings"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "eval",
+        "if(window.__sim.device.notificationSettingsOpened!==1)throw Error('Settings action missing')"
+      ]
+    ]
+  },
+  {
+    "name": "settings-unknown",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "new Promise((resolve,reject)=>{let attempts=0;const check=()=>{const el=document.querySelector('#settings-notifications');if(el){el.scrollIntoView({block:'start'});resolve()}else if(++attempts>100)reject(Error('Notifications settings did not load'));else setTimeout(check,100)};check()})"
+      ],
+      [
+        "eval",
+        "window.__sim.device.notificationPermissionFailure(true);document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "settings-offline",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('blocked')"
+      ],
+      [
+        "click",
+        "Settings"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "new Promise((resolve,reject)=>{let attempts=0;const check=()=>{const el=document.querySelector('#settings-notifications');if(el){el.scrollIntoView({block:'start'});resolve()}else if(++attempts>100)reject(Error('Notifications settings did not load'));else setTimeout(check,100)};check()})"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        350
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "missed-blocked",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('blocked')"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const item=h.attention.find(a=>a.kind==='completed');for(const id of ['missed-1','missed-2'])h.emit({type:'attention_upserted',item:{...item,attention_id:id}})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        200
+      ],
+      [
+        "click",
+        "Open Android settings"
+      ],
+      [
+        "wait",
+        150
+      ],
+      [
+        "eval",
+        "if(window.__sim.device.notificationSettingsOpened!==1)throw Error('Settings action missing')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "receipt-error",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;window.__n1Query=h.query.bind(h);h.query=q=>q.kind==='task_artifacts'?Promise.reject({code:'native_failure',message:'Task files could not be read.'}):window.__n1Query(q)"
+      ],
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "shot",
+        "failed"
+      ],
+      [
+        "eval",
+        "window.__sim.host.query=window.__n1Query"
+      ],
+      [
+        "click",
+        "Reload evidence"
+      ],
+      [
+        "wait",
+        450
+      ],
+      [
+        "eval",
+        "if([...document.querySelectorAll('button')].some(x=>x.textContent.includes('Reload evidence')))throw Error('Reload failed')"
+      ]
+    ]
+  },
+  {
+    "name": "receipt-offline",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "receipt-revoked",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "attention-settled",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "const a=window.__sim.host.attention.find(x=>x.attention_id==='0192f7a1-0000-7000-8000-000000000502');a.resolved_at=Date.now();window.__sim.host.emit({type:'attention_resolved',attention_id:a.attention_id})"
+      ],
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000502'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ]
+    ]
+  },
+  {
+    "name": "attention-question",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "const a=window.__sim.host.approvals.find(x=>x.approval_id==='0192f7a1-0000-7000-8000-000000000401');a.kind='question';a.title='Which test should run?';a.detail='Choose the check for this task.';a.raw_request=null;window.__sim.host.emit({type:'approval_upserted',approval:a})"
+      ],
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000501'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "fill",
+        "Your answer",
+        "Run the focused test first."
+      ],
+      [
+        "shot",
+        "draft"
+      ],
+      [
+        "press",
+        "Tab"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "attention-missing",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "const key='ui.sim-studio';const stored=JSON.parse(localStorage.getItem(key));stored.state.tab='work';stored.state.stacks.work=[{screen:'work'},{screen:'attention',attentionId:'missing'}];window.addEventListener('pagehide',()=>localStorage.setItem(key,JSON.stringify(stored)));location.reload()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.nav__tab:nth-child(3)[aria-current=page]')) throw Error('Wrong tab')"
+      ]
+    ]
+  },
+  {
+    "name": "attention-offline",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notifications.push({id:'open',title:'Task alert',body:'tidewater-api',route:{kind:'attention',profileId:'sim-studio',attentionId:'0192f7a1-0000-7000-8000-000000000501'}}); window.__sim.device.open('open')"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ],
+    "width": 360,
+    "text": 2,
+    "height": 780
+  },
+  {
+    "name": "missed-recovered",
+    "scale": 1,
+    "settle": 1000,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.device.notificationPermission('promptable')"
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const item=h.attention.find(a=>a.kind==='completed');for(const id of ['missed-1','missed-2']){h.emit({type:'attention_upserted',item:{...item,attention_id:id}})}"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.alerts-missed').length!==1)throw Error('Expected one missed-alert banner');if(!document.querySelector('.alerts-missed').textContent.includes('2 alerts'))throw Error('Missed count wrong')"
+      ],
+      [
+        "click",
+        "Allow alerts"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.alerts-missed').textContent.includes('because alerts were off'))throw Error('Missed alert did not reflect current permission')"
+      ]
+    ]
+  }
+]

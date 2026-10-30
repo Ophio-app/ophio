@@ -1,0 +1,734 @@
+[
+  {
+    "name": "windows-light",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "windows-dark",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "dark": true,
+    "fresh": false
+  },
+  {
+    "name": "windows-large",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.windows-tools').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "fresh": false
+  },
+  {
+    "name": "windows-wide",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ]
+    ],
+    "scale": 1,
+    "width": 1280,
+    "height": 800,
+    "fresh": false
+  },
+  {
+    "name": "windows-actions",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Find an app or window",
+        "Firefox"
+      ],
+      [
+        "shot",
+        "search"
+      ],
+      [
+        "click",
+        "Open Firefox"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "launch"
+      ],
+      [
+        "fill",
+        "Find an app or window",
+        ""
+      ],
+      [
+        "click",
+        "Focus window"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "shot",
+        "focus"
+      ],
+      [
+        "click",
+        "Close window\u2026"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Request close"
+      ],
+      [
+        "wait",
+        250
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "windows-offline",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "eval",
+        "document.querySelector('.windows-tools').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "windows-empty",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.host.windows.empty=true"
+      ],
+      [
+        "click",
+        "Refresh list"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.windows-tools').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "windows-error",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.host.windows.error=true"
+      ],
+      [
+        "click",
+        "Refresh list"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.windows-screen .notice--warn')?.scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "windows-gnome",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "click",
+        "Apps and windows"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "document.querySelector('.windows-tools').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "path": "/?windowBackend=gnome",
+    "fresh": false
+  },
+  {
+    "name": "previews-light",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "previews-dark",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "dark": true,
+    "fresh": false
+  },
+  {
+    "name": "previews-large",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "fresh": false
+  },
+  {
+    "name": "previews-wide",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "width": 1280,
+    "height": 800,
+    "fresh": false
+  },
+  {
+    "name": "previews-lifecycle",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.previews=h.previews.filter(p=>new URL(p.url).hostname==='localhost');for(const project of h.projects)h.emit({type:'previews_changed',project_id:project.project_id,previews:h.previews.filter(p=>p.project_id===project.project_id)})"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ],
+      [
+        "eval",
+        "window.__sim.host.controlSim.previewDelay=1800"
+      ],
+      [
+        "clickSel",
+        ".preview-card .preview-actions button:first-child"
+      ],
+      [
+        "shot",
+        "loading"
+      ],
+      [
+        "wait",
+        1900
+      ],
+      [
+        "shot",
+        "open"
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "document.querySelector('.preview-draft').scrollIntoView()"
+      ],
+      [
+        "shot",
+        "picture"
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.preview-draft select');s.value=s.options[1].value;s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "click",
+        "Attach to this task"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "shot",
+        "attached"
+      ],
+      [
+        "clickSel",
+        ".preview-card .preview-actions button:first-child"
+      ],
+      [
+        "wait",
+        1900
+      ],
+      [
+        "eval",
+        "window.__sim.host.controlSim.closePreviews('removed')"
+      ],
+      [
+        "shot",
+        "removed"
+      ],
+      [
+        "clickSel",
+        ".preview-card .preview-actions button:first-child"
+      ],
+      [
+        "wait",
+        1900
+      ],
+      [
+        "eval",
+        "window.__sim.host.controlSim.closePreviews('idle_timeout')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.preview-card').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "previews-offline",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "previews-empty",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.previews=[];for(const project of h.projects)h.emit({type:'previews_changed',project_id:project.project_id,previews:[]});document.querySelector('#control-previews').scrollIntoView()"
+      ]
+    ],
+    "scale": 1,
+    "fresh": false
+  },
+  {
+    "name": "previews-error",
+    "scale": 1,
+    "fresh": false,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.previews=h.previews.filter(p=>new URL(p.url).hostname==='localhost');for(const project of h.projects)h.emit({type:'previews_changed',project_id:project.project_id,previews:h.previews.filter(p=>p.project_id===project.project_id)})"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ],
+      [
+        "eval",
+        "window.__sim.host.controlSim.previewError=true"
+      ],
+      [
+        "clickSel",
+        ".preview-card .preview-actions button:first-child"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.preview-card').scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "name": "previews-lost",
+    "scale": 1,
+    "fresh": false,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.previews=h.previews.filter(p=>new URL(p.url).hostname==='localhost');for(const project of h.projects)h.emit({type:'previews_changed',project_id:project.project_id,previews:h.previews.filter(p=>p.project_id===project.project_id)})"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ],
+      [
+        "clickSel",
+        ".preview-card .preview-actions button:first-child"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.preview-card').scrollIntoView()"
+      ]
+    ]
+  },
+  {
+    "name": "previews-revoked",
+    "scale": 1,
+    "fresh": false,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.previews=h.previews.filter(p=>new URL(p.url).hostname==='localhost');for(const project of h.projects)h.emit({type:'previews_changed',project_id:project.project_id,previews:h.previews.filter(p=>p.project_id===project.project_id)})"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view});h.tasks=h.tasks.map(t=>({...t,state:'completed'}));for(const task of h.tasks)h.emit({type:'task_upserted',task});h.runs=h.runs.map(r=>({...r,state:'completed'}));for(const run of h.runs)h.emit({type:'run_upserted',run});"
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-previews').scrollIntoView()"
+      ],
+      [
+        "clickSel",
+        ".preview-card .preview-actions button:first-child"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.preview-card').scrollIntoView()"
+      ]
+    ]
+  }
+]

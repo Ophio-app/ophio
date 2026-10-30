@@ -1,0 +1,1301 @@
+[
+  {
+    "name": "Y4-recovery-light",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Delete\u2026"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Delete README.md"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Recently deleted"
+      ],
+      [
+        "click",
+        "README.md"
+      ],
+      [
+        "shot",
+        "inspect"
+      ],
+      [
+        "click",
+        "Restore original path"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "Y4-recovery-dark",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Delete\u2026"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Delete README.md"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Recently deleted"
+      ],
+      [
+        "click",
+        "README.md"
+      ],
+      [
+        "shot",
+        "inspect"
+      ],
+      [
+        "click",
+        "Restore original path"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "Y4-recovery-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Delete\u2026"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Delete README.md"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Recently deleted"
+      ],
+      [
+        "click",
+        "README.md"
+      ],
+      [
+        "shot",
+        "inspect"
+      ],
+      [
+        "click",
+        "Restore original path"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "Y4-recovery-wide",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Delete\u2026"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Delete README.md"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Recently deleted"
+      ],
+      [
+        "click",
+        "README.md"
+      ],
+      [
+        "shot",
+        "inspect"
+      ],
+      [
+        "click",
+        "Restore original path"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "Y4-move-light",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Move\u2026"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text('docs')"
+      ],
+      [
+        "click",
+        "Choose this folder"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Move file"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".route:not(.is-hidden) button.row:has-text('docs')"
+      ]
+    ]
+  },
+  {
+    "name": "Y4-move-dark",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Move\u2026"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text('docs')"
+      ],
+      [
+        "click",
+        "Choose this folder"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Move file"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".route:not(.is-hidden) button.row:has-text('docs')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "Y4-move-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Move\u2026"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text('docs')"
+      ],
+      [
+        "click",
+        "Choose this folder"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Move file"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".route:not(.is-hidden) button.row:has-text('docs')"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "Y4-move-wide",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "click",
+        "Actions for README.md"
+      ],
+      [
+        "click",
+        "Move\u2026"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text('docs')"
+      ],
+      [
+        "click",
+        "Choose this folder"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Move file"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "clickSel",
+        ".route:not(.is-hidden) button.row:has-text('docs')"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "Y4-instructions-light",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902','docs/retry-policy.md','# Changed instructions\\n')"
+      ],
+      [
+        "click",
+        "Refresh instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "discovered"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[1]?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "loaded"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[2]?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "Y4-instructions-dark",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902','docs/retry-policy.md','# Changed instructions\\n')"
+      ],
+      [
+        "click",
+        "Refresh instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "discovered"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[1]?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "loaded"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[2]?.scrollIntoView({block:'start'})"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "Y4-instructions-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902','docs/retry-policy.md','# Changed instructions\\n')"
+      ],
+      [
+        "click",
+        "Refresh instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "discovered"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[1]?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "loaded"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[2]?.scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "Y4-instructions-wide",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902','docs/retry-policy.md','# Changed instructions\\n')"
+      ],
+      [
+        "click",
+        "Refresh instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "discovered"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[1]?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "loaded"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.route:not(.is-hidden) .lib-versions')[2]?.scrollIntoView({block:'start'})"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "Y4-reusable-light",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "What happened in this task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Make reusable\u2026"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.route:not(.is-hidden) select'); s.value='sim-drafts'; s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "fill",
+        "Draft file name",
+        "retry-task.md"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Save reviewed draft"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "Y4-reusable-dark",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "What happened in this task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Make reusable\u2026"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.route:not(.is-hidden) select'); s.value='sim-drafts'; s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "fill",
+        "Draft file name",
+        "retry-task.md"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Save reviewed draft"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "Y4-reusable-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "What happened in this task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Make reusable\u2026"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.route:not(.is-hidden) select'); s.value='sim-drafts'; s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "fill",
+        "Draft file name",
+        "retry-task.md"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Save reviewed draft"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "Y4-reusable-wide",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "What happened in this task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Make reusable\u2026"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const s=document.querySelector('.route:not(.is-hidden) select'); s.value='sim-drafts'; s.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "fill",
+        "Draft file name",
+        "retry-task.md"
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "click",
+        "Save reviewed draft"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "Y4-transfer-light",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Transfers"
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text')"
+      ],
+      [
+        "fill",
+        "File name",
+        "note.md"
+      ],
+      [
+        "fill",
+        "File text",
+        "A reviewed note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "shot",
+        "reset"
+      ],
+      [
+        "fill",
+        "File text",
+        "A second note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "collision"
+      ],
+      [
+        "click",
+        "Keep both"
+      ],
+      [
+        "wait",
+        900
+      ]
+    ]
+  },
+  {
+    "name": "Y4-transfer-dark",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Transfers"
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text')"
+      ],
+      [
+        "fill",
+        "File name",
+        "note.md"
+      ],
+      [
+        "fill",
+        "File text",
+        "A reviewed note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "shot",
+        "reset"
+      ],
+      [
+        "fill",
+        "File text",
+        "A second note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "collision"
+      ],
+      [
+        "click",
+        "Keep both"
+      ],
+      [
+        "wait",
+        900
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "Y4-transfer-large",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Transfers"
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text')"
+      ],
+      [
+        "fill",
+        "File name",
+        "note.md"
+      ],
+      [
+        "fill",
+        "File text",
+        "A reviewed note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "shot",
+        "reset"
+      ],
+      [
+        "fill",
+        "File text",
+        "A second note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "collision"
+      ],
+      [
+        "click",
+        "Keep both"
+      ],
+      [
+        "wait",
+        900
+      ]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "Y4-transfer-wide",
+    "scale": 1,
+    "settle": 800,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Transfers"
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text')"
+      ],
+      [
+        "fill",
+        "File name",
+        "note.md"
+      ],
+      [
+        "fill",
+        "File text",
+        "A reviewed note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "shot",
+        "reset"
+      ],
+      [
+        "fill",
+        "File text",
+        "A second note."
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "collision"
+      ],
+      [
+        "click",
+        "Keep both"
+      ],
+      [
+        "wait",
+        900
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "Y4-library-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Offline drill')"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "Y4-library-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "New notebook"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "Y4-library-denied",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.library.deny('0192f7a1-0000-7000-8000-000000000902')"
+      ],
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Project \u00b7 Read and write"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "Y4-recovery-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Recently deleted"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "Y4-inspector-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "click",
+        "Instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902','docs/retry-policy.md','# Changed instructions\\n')"
+      ],
+      [
+        "click",
+        "Refresh instructions"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.offline('Offline drill')"
+      ]
+    ]
+  },
+  {
+    "name": "Y4-transfer-file-reset",
+    "scale": 1,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Transfers"
+      ],
+      [
+        "wait",
+        650
+      ],
+      [
+        "eval",
+        "const input=document.querySelector('input[type=file]'); const files=new DataTransfer(); files.items.add(new File(['selected file contents'],'chosen.md',{type:'text/markdown'})); input.files=files.files; input.dispatchEvent(new Event('change',{bubbles:true}))"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        1100
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.route:not(.is-hidden) .transfer-footer')) throw new Error('Send remained after completion')"
+      ]
+    ]
+  },
+  {
+    "name": "Y4-transfer-replace",
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "click",
+        "Library"
+      ],
+      [
+        "click",
+        "Transfers"
+      ],
+      [
+        "clickSel",
+        "button[role=radio]:has-text('Text')"
+      ],
+      [
+        "fill",
+        "File name",
+        "README.md"
+      ],
+      [
+        "fill",
+        "File text",
+        "# Replacement reviewed on phone"
+      ],
+      [
+        "clickSel",
+        "label.transfer-choice:has-text('A project folder')"
+      ],
+      [
+        "click",
+        "Choose folder\u2026"
+      ],
+      [
+        "click",
+        "Use this folder"
+      ],
+      [
+        "click",
+        "Send"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "decision"
+      ],
+      [
+        "click",
+        "Replace README.md"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ]
+  }
+]

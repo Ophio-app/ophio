@@ -1,0 +1,900 @@
+── 1 · Welcome to Øphio ──
+╭─╴Øphio setup╶────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│  Welcome to Øphio                                                            │
+│  ─────────────────╴                                                          │
+│                                                                              │
+│  Øphio connects your phone or tablet to this computer: run Claude Code and   │
+│  Codex tasks on it, answer them, and watch its desktop, from anywhere.       │
+│                                                                              │
+│  Setup keeps Øphio running, works out how your phone reaches this computer,  │
+│  connects your agents, pairs your phone and checks that it all works. It     │
+│  takes a few minutes, and any step can be left for later.                    │
+│                                                                              │
+│  · This computer  desk                                                       │
+│  ✓ Claude Code    Found                                                      │
+│  · Codex          Not found                                                  │
+│  ✓ Tailscale      Found                                                      │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│  ╾─◆ [s] Start setup · recommended                                           │
+│      [x] Skip setup                                                          │
+│          Run ophio setup whenever you want it.                               │
+│                                                                              │
+╰─╴↑↓ move · enter choose · ctrl-c leave╶──────────────────────────────────────╯
+── 2 · Keep Øphio running ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 1 of 6╶─╮
+│                    │                                                         │
+│  ◉ Keep running ───┤  Keep Øphio running                                     │
+│  ┊                 ├─────────────────────╴                                   │
+│  ○ Reach           │                                                         │
+│  ┊                 │  Your phone can reach this computer only while Øphio    │
+│  ○ Agents          │  is running on it. It can start whenever you log in,    │
+│  ┊                 │  so it's there when you need it.                        │
+│  ○ Phone           │                                                         │
+│  ┊                 │  ! Now              Not running                         │
+│  ○ Extras          │  ! When you log in  Doesn't start                       │
+│  ┊                 │                                                         │
+│  ○ Check           │  It runs as your own systemd service, ophio.service.    │
+│                    │  To stop that, run ophio service uninstall.             │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [s] Start now and at every login · recommended     │
+│                    │      [j] Just for now                                   │
+│                    │          Until you log out. Your phone can't reach      │
+│                    │          this computer after that.                      │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 3 · Keep Øphio running ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 1 of 6╶─╮
+│                    │                                                         │
+│  ◉ Keep running ───┤  Keep Øphio running                                     │
+│  ┊                 ├─────────────────────╴                                   │
+│  ○ Reach           │                                                         │
+│  ┊                 │  ●── Setting Øphio to start at every login…             │
+│  ○ Agents          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Phone           │                                                         │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────╯
+── 4 · Keep Øphio running ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 1 of 6╶─╮
+│                    │                                                         │
+│  ◉ Keep running ───┤  Keep Øphio running                                     │
+│  ┊                 ├─────────────────────╴                                   │
+│  ○ Reach           │                                                         │
+│  ┊                 │  ✓ Øphio  Running now, and starts whenever you log in.  │
+│  ○ Agents          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Phone           │                                                         │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [n] Continue                                       │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────╯
+── 5 · How your phone reaches this computer ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 2 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  How your phone reaches this computer                   │
+│  │                 ├───────────────────────────────────────╴                 │
+│  ◉ Reach ──────────┤                                                         │
+│  ┊                 │  Your phone reaches this computer through Tailscale, a  │
+│  ○ Agents          │  private network between your own devices that works    │
+│  ┊                 │  wherever you are, or through the Wi‑Fi you share at    │
+│  ○ Phone           │  home.                                                  │
+│  ┊                 │                                                         │
+│  ○ Extras          │  ✓ Tailscale  Connected as desk.tail.ts.net             │
+│  ┊                 │                                                         │
+│  ○ Check           │  Your phone needs Tailscale too, signed in to the same  │
+│                    │  account.                                               │
+│                    │                                                         │
+│                    │  · Wi‑Fi  This computer is 192.168.1.20 here; phones    │
+│                    │           on this network can't reach it unless you     │
+│                    │                                                         │
+│                    │  ╾─◆ [n] Use Tailscale · recommended                    │
+│                    │      [w] This Wi‑Fi only                                │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────╴pgdn for more╶─╯
+── 6 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Connect your agents                                    │
+│  │                 ├──────────────────────╴                                  │
+│  ● Reach           │                                                         │
+│  │                 │  Øphio runs tasks with the agents installed on this     │
+│  ◉ Agents ─────────┤  computer, signed in to your own accounts. One is       │
+│  ┊                 │  enough.                                                │
+│  ○ Phone           │                                                         │
+│  ┊                 │  ✓ Claude Code  Signed in as me@example.com (Max)       │
+│  ○ Extras          │  · Codex        Not installed                           │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [n] Next · recommended                             │
+│                    │      [2] Install Codex                                  │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 7 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Your phone                                             │
+│  │                 ├─────────────╴                                           │
+│  ● Reach           │                                                         │
+│  │                 │  Your phone needs the Øphio app, for Android phones     │
+│  ● Agents          │  and tablets.                                           │
+│  │                 │                                                         │
+│  ◉ Phone ──────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [i] Show me how to install it · recommended        │
+│                    │      [g] Let the agent do it                            │
+│                    │          Claude Code does it in a task you follow       │
+│                    │          here. It asks you before it installs or        │
+│                    │          changes anything.                              │
+│                    │      [h] My phone already has Øphio                     │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 8 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Your phone                                             │
+│  │                 ├─────────────╴                                           │
+│  ● Reach           │                                                         │
+│  │                 │  Øphio can tell your phone when an agent needs you or   │
+│  ● Agents          │  a task ends, even while the app is closed.             │
+│  │                 │                                                         │
+│  ◉ Phone ──────────┤  Nothing stays in the status bar while it waits. For    │
+│  ┊                 │  alerts after you swipe the app away, the phone asks    │
+│  ○ Extras          │  to let Øphio run without battery limits.               │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [y] Turn on alerts · recommended                   │
+│                    │      [n] Not now                                        │
+│                    │          Turn them on later in the app's Settings ›     │
+│                    │          Notifications.                                 │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 9 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Your phone                                             │
+│  │                 ├─────────────╴                                           │
+│  ● Reach           │                                                         │
+│  │                 │  1  Open Øphio on your phone and tap Pair a computer.   │
+│  ● Agents          │  2  Scan this code, or paste the link below.            │
+│  │                 │  3  Check that the fingerprint your phone shows is the  │
+│  ◉ Phone ──────────┤     one here.                                           │
+│  ┊                 │                                                         │
+│  ○ Extras          │  ! Code  Make this window taller, at least 37 rows, to  │
+│  ┊                 │          show the code here.                            │
+│  ○ Check           │                                                         │
+│                    │  Link  ophio://pair?d=eyJob3N0X2lkIjoiMGY4YjZjMWUtMmQz  │
+│                    │        YS00YjVjLThkOWUtMGExYjJjM2Q0ZTVmIiwiaG9zdF9uYW1  │
+│                    │        lIjoiZGVzayIsImFkZHJlc3NlcyI6WyIxMDAuNjQuMC4xOj  │
+│                    │        Q3MTAwIiwiZGVzay50YWlsLnRzLm5ldDo0NzEwMCJdLCJjZ  │
+│                    │        XJ0X3NoYTI1NiI6IjVmMWM5YTBlN2QzYjJhNGM2ZThmMGEx  │
+│                    │        YjNjNWQ3ZTlmMmE0YjZjOGQwZTFmM2E1YjdjOWQxZTNmNWE  │
+│                    │                                                         │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────╴pgdn for more╶─╯
+── 10 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Your phone                                             │
+│  │                 ├─────────────╴                                           │
+│  ● Reach           │                                                         │
+│  │                 │  Pixel 9 (android) is asking to pair.                   │
+│  ● Agents          │  Pair it only if it shows the code 123 456.             │
+│  │                 │                                                         │
+│  ◉ Phone ──────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │      [y] Pair it                                        │
+│                    │          Only if your phone shows the same code.        │
+│                    │      [n] Don't pair                                     │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 11 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Your phone                                             │
+│  │                 ├─────────────╴                                           │
+│  ● Reach           │                                                         │
+│  │                 │  ✓ Paired  Pixel 9                                      │
+│  ● Agents          │                                                         │
+│  │                 │  What may Pixel 9 do on this computer? Right now it     │
+│  ◉ Phone ──────────┤  may not do anything.                                   │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │  ╾─◆ [f] Everything · recommended                       │
+│                    │          Right for your own phone, which you keep       │
+│                    │          locked.                                        │
+│                    │      [e] Everyday                                       │
+│                    │          Run and answer agent tasks, watch the desktop  │
+│                    │          and read the Library. Nothing that controls    │
+│                    │          this computer or changes who has access.       │
+│                    │      [c] Choose each                                    │
+│                    │      [k] Keep it as it is                               │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 12 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Your phone                                             │
+│  │                 ├─────────────╴                                           │
+│  ● Reach           │                                                         │
+│  │                 │  Tick what Pixel 9 may do.                              │
+│  ● Agents          │                                                         │
+│  │                 │                                                         │
+│  ◉ Phone ──────────┤                                                         │
+│  ┊                 │      [ ] 1 Watch the desktop                            │
+│  ○ Extras          │      [ ] 2 Control the desktop                          │
+│  ┊                 │      [ ] 3 Open terminals                               │
+│  ○ Check           │      [ ] 4 Run agent tasks                              │
+│                    │      [ ] 5 Answer agents                                │
+│                    │      [ ] 6 Let an agent use the desktop                 │
+│                    │      [ ] 7 Read the Library                             │
+│                    │      [ ] 8 Edit the Library                             │
+│                    │      [ ] 9 Transfer files                               │
+│                    │      [ ]   Manage access                                │
+│                    │      [ ]   Manage accounts                              │
+│                    │  ╾─◆ [↵] Go on with these                               │
+│                    │      [b] Back                                           │
+│                    │                                                         │
+╰────────────────────┴─╴space tick · enter choose · esc back · ctrl-c leave╶───╯
+── 13 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Your phone                                             │
+│  │                 ├─────────────╴                                           │
+│  ● Reach           │                                                         │
+│  │                 │  ✓ Pixel 9  It may watch the desktop.                   │
+│  ● Agents          │                                                         │
+│  │                 │  Change this whenever you like in the app, under        │
+│  ◉ Phone ──────────┤  Connections, or with ophio devices allow and ophio     │
+│  ┊                 │  devices deny.                                          │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [n] Continue                                       │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────╯
+── 14 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  Tick any you want to set up now. Each can be set up    │
+│  ● Agents          │  later, in the app or with ophio setup.                 │
+│  │                 │                                                         │
+│  ● Phone           │                                                         │
+│  │                 │      [ ] 1 Add your projects                            │
+│  ◉ Extras ─────────┤      [✓] 2 Choose where files go                        │
+│  ┊                 │      [ ] 3 Watch and control this desktop               │
+│  ○ Check           │      [ ] 4 Talk to your agents                          │
+│                    │      [ ] 5 Message your agents on Telegram              │
+│                    │      [ ] 6 Message your agents on Discord               │
+│                    │      [ ] 7 Give tasks your other accounts               │
+│                    │      [ ] 8 Let agents open pull requests                │
+│                    │      [ ] 9 Let agents sign in to websites               │
+│                    │      [ ]   Control the computer by voice                │
+│                    │  ╾─◆ [↵] Go on with these                               │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · space tick · enter choose · ctrl-c leave╶────╯
+── 15 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  Add the folders your agents work in. Each becomes a    │
+│  ● Agents          │  project in the app.                                    │
+│  │                 │                                                         │
+│  ● Phone           │                                                         │
+│  │                 │                                                         │
+│  ◉ Extras ─────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [t] Type the folders · recommended                 │
+│                    │      [g] Let the agent find them                        │
+│                    │          It looks for folders kept in Git, and asks     │
+│                    │          you which to add.                              │
+│                    │      [l] Leave this for later                           │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 16 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  Add the folders your agents work in, one at a time.    │
+│  ● Agents          │  Each becomes a project in the app.                     │
+│  │                 │                                                         │
+│  ● Phone           │  · They start with  Claude Code                         │
+│  │                 │                                                         │
+│  ◉ Extras ─────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  Folder (Enter alone when done)                         │
+│                    │  ›                                                      │
+│                    │                                                         │
+╰────────────────────┴─╴enter send · esc clear · ctrl-c leave╶─────────────────╯
+── 17 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  Add the folders your agents work in, one at a time.    │
+│  ● Agents          │  Each becomes a project in the app.                     │
+│  │                 │                                                         │
+│  ● Phone           │  · They start with  Claude Code                         │
+│  │                 │  ✓ Added            /work/app                           │
+│  ◉ Extras ─────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  Folder (Enter alone when done)                         │
+│                    │  ›                                                      │
+│                    │                                                         │
+╰────────────────────┴─╴enter send · esc clear · ctrl-c leave╶─────────────────╯
+── 18 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  Add the folders your agents work in, one at a time.    │
+│  ● Agents          │  Each becomes a project in the app.                     │
+│  │                 │                                                         │
+│  ● Phone           │  · They start with  Claude Code                         │
+│  │                 │  ✓ Added            /work/app                           │
+│  ◉ Extras ─────────┤  ! /missing         There is no folder at /missing.     │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  Folder (Enter alone when done)                         │
+│                    │  ›                                                      │
+│                    │                                                         │
+╰────────────────────┴─╴enter send · esc clear · ctrl-c leave╶─────────────────╯
+── 19 · Check everything works ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 6 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Check everything works                                 │
+│  │                 ├─────────────────────────╴                               │
+│  ● Reach           │                                                         │
+│  │                 │  ●── Checking…                                          │
+│  ● Agents          │                                                         │
+│  │                 │                                                         │
+│  ● Phone           │                                                         │
+│  │                 │                                                         │
+│  ● Extras          │                                                         │
+│  │                 │                                                         │
+│  ◉ Check ──────────┤                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────╯
+── 20 · Check everything works ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 6 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Check everything works                                 │
+│  │                 ├─────────────────────────╴                               │
+│  ● Reach           │                                                         │
+│  │                 │  Everything checked works.                              │
+│  ● Agents          │                                                         │
+│  │                 │  ✓ 2 checks passed                                      │
+│  ● Phone           │                                                         │
+│  │                 │                                                         │
+│  ● Extras          │                                                         │
+│  │                 │                                                         │
+│  ◉ Check ──────────┤                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [n] Next · recommended                             │
+│                    │      [r] Check again                                    │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 21 · Done ──
+╭─╴Øphio setup╶──────┬──────────────────────────────────────────────────╴Done╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Done                                                   │
+│  │                 ├───────╴                                                 │
+│  ● Reach           │                                                         │
+│  │                 │  ✓ Keep Øphio running        Done                       │
+│  ● Agents          │  ✓ How your phone reaches this computer                 │
+│  │                 │    Done                                                 │
+│  ● Phone           │  ✓ Connect your agents       Done                       │
+│  │                 │  ✓ Your phone                Done                       │
+│  ● Extras          │  ✓ Extras                    Done                       │
+│  │                 │  ✓ Check everything works    Done                       │
+│  ● Check           │                                                         │
+│                    │  Change any of this in the app's Settings, or run       │
+│                    │  ophio setup again.                                     │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [n] Finish                                         │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────╯
+── 22 · Welcome to Øphio ──
+╭─╴Øphio setup╶────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│  Welcome to Øphio                                                            │
+│  ─────────────────╴                                                          │
+│                                                                              │
+│  Øphio connects your phone or tablet to this computer: run Claude Code and   │
+│  Codex tasks on it, answer them, and watch its desktop, from anywhere.       │
+│                                                                              │
+│  Setup keeps Øphio running, works out how your phone reaches this computer,  │
+│  connects your agents, pairs your phone and checks that it all works. It     │
+│  takes a few minutes, and any step can be left for later.                    │
+│                                                                              │
+│  · This computer  desk                                                       │
+│  ✓ Claude Code    Found                                                      │
+│  · Codex          Not found                                                  │
+│  ✓ Tailscale      Found                                                      │
+│                                                                              │
+│  Setup carries on where it was left: 2 of 6 steps are behind you.            │
+│                                                                              │
+│  ╾─◆ [s] Carry on · recommended                                              │
+│      [x] Skip setup                                                          │
+│          Run ophio setup whenever you want it.                               │
+│                                                                              │
+╰─╴↑↓ move · enter choose · ctrl-c leave╶──────────────────────────────────────╯
+── 23 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Connect your agents                                    │
+│  │                 ├──────────────────────╴                                  │
+│  ● Reach           │                                                         │
+│  │                 │  Øphio runs tasks with the agents installed on this     │
+│  ◉ Agents ─────────┤  computer, signed in to your own accounts. One is       │
+│  ┊                 │  enough.                                                │
+│  ○ Phone           │                                                         │
+│  ┊                 │  · Claude Code  Not installed                           │
+│  ○ Extras          │  · Codex        Not installed                           │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │      [n] Next                                           │
+│                    │          No agent is ready yet; tasks can't start       │
+│                    │          until one is.                                  │
+│                    │      [1] Install Claude Code                            │
+│                    │      [2] Install Codex                                  │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 24 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Connect your agents                                    │
+│  │                 ├──────────────────────╴                                  │
+│  ● Reach           │                                                         │
+│  │                 │  This installs Claude Code on this computer with its    │
+│  ◉ Agents ─────────┤  maker's own installer:                                 │
+│  ┊                 │                                                         │
+│  ○ Phone           │  ▸ curl -fsSL https://claude.ai/install.sh | bash       │
+│  ┊                 │                                                         │
+│  ○ Extras          │  Its output shows here as it runs.                      │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [y] Run it · recommended                           │
+│                    │      [b] Back                                           │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · esc back · ctrl-c leave╶──────╯
+── 25 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Connect your agents                                    │
+│  │                 ├──────────────────────╴                                  │
+│  ● Reach           │                                                         │
+│  │                 │  ✓ Claude Code  Installed                               │
+│  ◉ Agents ─────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Phone           │                                                         │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [n] Continue                                       │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────╯
+── 26 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Connect your agents                                    │
+│  │                 ├──────────────────────╴                                  │
+│  ● Reach           │                                                         │
+│  │                 │  Øphio runs tasks with the agents installed on this     │
+│  ◉ Agents ─────────┤  computer, signed in to your own accounts. One is       │
+│  ┊                 │  enough.                                                │
+│  ○ Phone           │                                                         │
+│  ┊                 │  ! Claude Code  Installed, not signed in                │
+│  ○ Extras          │  · Codex        Not installed                           │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │      [n] Next                                           │
+│                    │          No agent is ready yet; tasks can't start       │
+│                    │          until one is.                                  │
+│                    │      [1] Sign in to Claude Code                         │
+│                    │      [2] Install Codex                                  │
+│                    │      [l] Leave this for later                           │
+│                    │      [x] Skip the rest of setup                         │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 27 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Connect your agents                                    │
+│  │                 ├──────────────────────╴                                  │
+│  ● Reach           │                                                         │
+│  │                 │  Signing in to Claude Code with its own sign-in.        │
+│  ◉ Agents ─────────┤                                                         │
+│  ┊                 │  ●── Starting                                           │
+│  ○ Phone           │                                                         │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [c] Cancel sign-in                                 │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────╯
+── 28 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Connect your agents                                    │
+│  │                 ├──────────────────────╴                                  │
+│  ● Reach           │                                                         │
+│  │                 │  Signing in to Claude Code with its own sign-in.        │
+│  ◉ Agents ─────────┤                                                         │
+│  ┊                 │  · Your code  Enter ABCD-1234 on claude.ai in this      │
+│  ○ Phone           │               computer's browser.                       │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [c] Cancel sign-in                                 │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────╯
+── 29 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Connect your agents                                    │
+│  │                 ├──────────────────────╴                                  │
+│  ● Reach           │                                                         │
+│  │                 │  ✓ Claude Code  Signed in as me@example.com             │
+│  ◉ Agents ─────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Phone           │                                                         │
+│  ┊                 │                                                         │
+│  ○ Extras          │                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [n] Continue                                       │
+│                    │                                                         │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────╯
+── 30 · Welcome to Øphio ──
+╭─╴Øphio setup╶────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│  Welcome to Øphio                                                            │
+│  ─────────────────╴                                                          │
+│                                                                              │
+│  Øphio connects your phone or tablet to this computer: run Claude Code and   │
+│  Codex tasks on it, answer them, and watch its desktop, from anywhere.       │
+│                                                                              │
+│  Setup keeps Øphio running, works out how your phone reaches this computer,  │
+│  connects your agents, pairs your phone and checks that it all works. It     │
+│  takes a few minutes, and any step can be left for later.                    │
+│                                                                              │
+│  · This computer  desk                                                       │
+│  ✓ Claude Code    Found                                                      │
+│  · Codex          Not found                                                  │
+│  ✓ Tailscale      Found                                                      │
+│                                                                              │
+│  Setup carries on where it was left: 4 of 6 steps are behind you.            │
+│                                                                              │
+│  ╾─◆ [s] Carry on · recommended                                              │
+│      [x] Skip setup                                                          │
+│          Run ophio setup whenever you want it.                               │
+│                                                                              │
+╰─╴↑↓ move · enter choose · ctrl-c leave╶──────────────────────────────────────╯
+── 31 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  · Talk to your agents                                  │
+│  ● Agents          │                                                         │
+│  │                 │  Talk instead of typing. What you say is recognised on  │
+│  ● Phone           │  this computer, by a 151 MB speech model that is        │
+│  │                 │  downloaded once.                                       │
+│  ◉ Extras ─────────┤                                                         │
+│  ┊                 │  ▸ ophio voice install tiny.en                          │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [y] Download it · recommended                      │
+│                    │      [g] Let the agent do it                            │
+│                    │          Claude Code does it in a task you follow       │
+│                    │          here. It asks you before it installs or        │
+│                    │          changes anything.                              │
+│                    │      [l] Leave this for later                           │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 32 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  · Skill setup-voice  What setup-voice does.            │
+│  ● Agents          │                                                         │
+│  │                 │  Claude Code does this as a task, in a folder of its    │
+│  ● Phone           │  own; you follow it here and in the app. Before it      │
+│  │                 │  runs a command that installs or changes anything, it   │
+│  ◉ Extras ─────────┤  asks you here and shows exactly what would run.        │
+│  ┊                 │                                                         │
+│  ○ Check           │  Confirming a pairing, choosing what a device may do,   │
+│                    │  signing in, and typing passwords or tokens stay with   │
+│                    │  you.                                                   │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │  ╾─◆ [s] Start it · recommended                         │
+│                    │      [b] Back                                           │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · esc back · ctrl-c leave╶──────╯
+── 33 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  ●── Starting the task…                                 │
+│  ● Agents          │                                                         │
+│  │                 │                                                         │
+│  ● Phone           │                                                         │
+│  │                 │                                                         │
+│  ◉ Extras ─────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────╯
+── 34 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  · Skill setup-voice                                    │
+│  ● Agents          │  ! Waiting for you                                      │
+│  │                 │                                                         │
+│  ● Phone           │  whisper.cpp is in your package manager, so I'll        │
+│  │                 │  install it from there.                                 │
+│  ◉ Extras ─────────┤                                                         │
+│  ┊                 │  ✓ Read the voice guide                                 │
+│  ○ Check           │  ●── pacman -Si whisper.cpp                             │
+│                    │  ! It asks to                Run a command              │
+│                    │                                                         │
+│                    │  ▸ sudo pacman -S --needed whisper.cpp                  │
+│                    │                                                         │
+│                    │      [a] Allow                                          │
+│                    │      [d] Don't allow                                    │
+│                    │      [s] Stop it                                        │
+│                    │      [b] Leave it running                               │
+│                    │          It carries on; follow it in the app.           │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯
+── 35 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  · Skill setup-voice                                    │
+│  ● Agents          │  ! Waiting for you                                      │
+│  │                 │  ! It asks            Which folders?                    │
+│  ● Phone           │                                                         │
+│  │                 │                                                         │
+│  ◉ Extras ─────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │      [ ] 1 ~/work/app                                   │
+│                    │      [ ] 2 ~/work/site                                  │
+│                    │      [ ] 3 ~/notes                                      │
+│                    │  ╾─◆ [↵] Go on with these                               │
+│                    │      [a] Answer in your own words                       │
+│                    │      [s] Stop it                                        │
+│                    │      [b] Leave it running                               │
+│                    │          It carries on; follow it in the app.           │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · space tick · enter choose · ctrl-c leave╶────╯
+── 36 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                         │
+│  ● Keep running    │  Extras                                                 │
+│  │                 ├─────────╴                                               │
+│  ● Reach           │                                                         │
+│  │                 │  · Skill setup-voice                                    │
+│  ● Agents          │  ✓ Its turn is done   If it asked you something,        │
+│  │                 │                       reply.                            │
+│  ● Phone           │                                                         │
+│  │                 │                                                         │
+│  ◉ Extras ─────────┤                                                         │
+│  ┊                 │                                                         │
+│  ○ Check           │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │                                                         │
+│                    │      [r] Reply                                          │
+│                    │  ╾─◆ [n] Go on · recommended                            │
+│                    │                                                         │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────╯

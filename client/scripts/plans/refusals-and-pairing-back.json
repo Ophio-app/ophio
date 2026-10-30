@@ -1,0 +1,672 @@
+[
+  {
+    "name": "stale-save-390",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;ui.selectProject(h.projects[0].project_id);ui.push({screen:'connections'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.devices=h.devices.map(d=>d.name==='Old tablet'?{...d,grants:{...d.grants,control_input:true,view:true,terminal:false}}:d);h.emit({type:'devices_changed',devices:h.devices})"
+      ],
+      [
+        "click",
+        "Permissions for Old tablet"
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const d=h.devices.find(d=>d.name==='Old tablet');await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expected_revision:null,expires_at:null,body:{command:'set_device_grants',device_id:d.device_id,expected:{...d.grants},grants:{...d.grants,control_input:false}}})})()"
+      ],
+      [
+        "clickSel",
+        "dialog[open] label:has-text(\"Terminals\") input"
+      ],
+      [
+        "click",
+        "Save permissions"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"This device's permissions changed while you were editing.\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "const d=window.__sim.host.devices.find(d=>d.name==='Old tablet');if(d.grants.control_input) throw new Error('Stale grant restored');document.querySelector('dialog[open] [role=alert]').scrollIntoView({block:'nearest'})"
+      ]
+    ]
+  },
+  {
+    "name": "last-manager-390",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;ui.selectProject(h.projects[0].project_id);ui.push({screen:'connections'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Permissions for Pixel 9"
+      ],
+      [
+        "clickSel",
+        "dialog[open] label:has-text(\"Manage access\") input"
+      ],
+      [
+        "click",
+        "Save permissions"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Give another device Manage access first\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] [role=alert]').scrollIntoView({block:'nearest'})"
+      ]
+    ]
+  },
+  {
+    "name": "continue-talk-390",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');ui.selectTask(t.project_id,t.task_id);ui.saveDraft(t.project_id,t.task_id,{text:'Continue checking the desktop'});ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');h.tasks=h.tasks.map(x=>x.task_id===t.task_id?{...x,state:'interrupted'}:x);h.runs=h.runs.map(r=>r.run_id===t.current_run?{...r,state:'interrupted'}:r);h.projects=h.projects.map(p=>p.project_id===t.project_id?{...p,active_writer:null}:p);h.control=h.control.map(c=>c.target_id===t.target_id?{...c,desktop_lock:'locked',input_state:'paused',lease:null}:c);h.tasks.forEach(task=>h.emit({type:'task_upserted',task}));h.runs.forEach(run=>h.emit({type:'run_upserted',run}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.control.forEach(view=>h.emit({type:'control_changed',view}));"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Unlock on the computer to watch and control again.\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Continue');if(!b?.disabled)throw new Error('Continue is enabled');b.scrollIntoView({block:'nearest'})"
+      ]
+    ]
+  },
+  {
+    "name": "continue-review-390",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');ui.selectTask(t.project_id,t.task_id);ui.saveDraft(t.project_id,t.task_id,{text:'Continue checking the desktop'});ui.push({screen:'review',projectId:t.project_id,taskId:t.task_id,intent:'continue'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');h.tasks=h.tasks.map(x=>x.task_id===t.task_id?{...x,state:'interrupted'}:x);h.runs=h.runs.map(r=>r.run_id===t.current_run?{...r,state:'interrupted'}:r);h.projects=h.projects.map(p=>p.project_id===t.project_id?{...p,active_writer:null}:p);h.control=h.control.map(c=>c.target_id===t.target_id?{...c,desktop_lock:'locked',input_state:'paused',lease:null}:c);h.tasks.forEach(task=>h.emit({type:'task_upserted',task}));h.runs.forEach(run=>h.emit({type:'run_upserted',run}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.control.forEach(view=>h.emit({type:'control_changed',view}));"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Unlock on the computer to watch and control again.\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "click",
+        "Review current task"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.review-foot button')].find(b=>b.textContent.trim()==='Continue');if(!b?.disabled)throw new Error('Continue is enabled');b.scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "approval-failure-390",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.attention.find(a=>a.approval_id);ui.push({screen:'attention',attentionId:a.attention_id});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "window.__sim.host.failNextApprovalDelivery=true"
+      ],
+      [
+        "click",
+        "Allow"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"The agent did not receive this. It may still be waiting.\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval__error').scrollIntoView({block:'nearest'});if(![...document.querySelectorAll('.approval button')].some(b=>b.textContent.trim()==='Allow'&&!b.disabled))throw new Error('Approval retry disabled')"
+      ]
+    ]
+  },
+  {
+    "name": "pairing-first-back-390",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Paste the link instead"
+      ],
+      [
+        "eval",
+        "(async()=>{const {simPairingLink}=await import('/src/dev/sim/platform.ts');const field=document.querySelector('input');const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(field,simPairingLink());field.dispatchEvent(new Event('input',{bubbles:true}))})()"
+      ],
+      [
+        "click",
+        "Continue"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Pair with studio?\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Pair with your computer\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "shot",
+        "connect"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Your computer, from your\")) throw new Error(\"Missing expected copy\")"
+      ]
+    ],
+    "path": "/?unpaired"
+  },
+  {
+    "name": "pairing-add-back-390",
+    "width": 390,
+    "height": 844,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;ui.selectProject(h.projects[0].project_id);ui.push({screen:'connections'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "click",
+        "Paste the link instead"
+      ],
+      [
+        "eval",
+        "(async()=>{const {simPairingLink}=await import('/src/dev/sim/platform.ts');const field=document.querySelector('input');const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(field,simPairingLink());field.dispatchEvent(new Event('input',{bubbles:true}))})()"
+      ],
+      [
+        "click",
+        "Continue"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Pair with studio?\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Pair with your computer\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "shot",
+        "connect"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Connections\")) throw new Error(\"Missing expected copy\")"
+      ]
+    ]
+  },
+  {
+    "name": "stale-save-360",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;ui.selectProject(h.projects[0].project_id);ui.push({screen:'connections'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.devices=h.devices.map(d=>d.name==='Old tablet'?{...d,grants:{...d.grants,control_input:true,view:true,terminal:false}}:d);h.emit({type:'devices_changed',devices:h.devices})"
+      ],
+      [
+        "click",
+        "Permissions for Old tablet"
+      ],
+      [
+        "eval",
+        "(async()=>{const h=window.__sim.host;const d=h.devices.find(d=>d.name==='Old tablet');await h.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expected_revision:null,expires_at:null,body:{command:'set_device_grants',device_id:d.device_id,expected:{...d.grants},grants:{...d.grants,control_input:false}}})})()"
+      ],
+      [
+        "clickSel",
+        "dialog[open] label:has-text(\"Terminals\") input"
+      ],
+      [
+        "click",
+        "Save permissions"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"This device's permissions changed while you were editing.\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "const d=window.__sim.host.devices.find(d=>d.name==='Old tablet');if(d.grants.control_input) throw new Error('Stale grant restored');document.querySelector('dialog[open] [role=alert]').scrollIntoView({block:'nearest'})"
+      ]
+    ]
+  },
+  {
+    "name": "last-manager-360",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;ui.selectProject(h.projects[0].project_id);ui.push({screen:'connections'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Permissions for Pixel 9"
+      ],
+      [
+        "clickSel",
+        "dialog[open] label:has-text(\"Manage access\") input"
+      ],
+      [
+        "click",
+        "Save permissions"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Give another device Manage access first\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "document.querySelector('dialog[open] [role=alert]').scrollIntoView({block:'nearest'})"
+      ]
+    ]
+  },
+  {
+    "name": "continue-talk-360",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');ui.selectTask(t.project_id,t.task_id);ui.saveDraft(t.project_id,t.task_id,{text:'Continue checking the desktop'});ui.reset('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');h.tasks=h.tasks.map(x=>x.task_id===t.task_id?{...x,state:'interrupted'}:x);h.runs=h.runs.map(r=>r.run_id===t.current_run?{...r,state:'interrupted'}:r);h.projects=h.projects.map(p=>p.project_id===t.project_id?{...p,active_writer:null}:p);h.control=h.control.map(c=>c.target_id===t.target_id?{...c,desktop_lock:'locked',input_state:'paused',lease:null}:c);h.tasks.forEach(task=>h.emit({type:'task_upserted',task}));h.runs.forEach(run=>h.emit({type:'run_upserted',run}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.control.forEach(view=>h.emit({type:'control_changed',view}));"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Unlock on the computer to watch and control again.\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Continue');if(!b?.disabled)throw new Error('Continue is enabled');b.scrollIntoView({block:'nearest'})"
+      ]
+    ]
+  },
+  {
+    "name": "continue-review-360",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');ui.selectTask(t.project_id,t.task_id);ui.saveDraft(t.project_id,t.task_id,{text:'Continue checking the desktop'});ui.push({screen:'review',projectId:t.project_id,taskId:t.task_id,intent:'continue'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;const t=h.tasks.find(t=>t.kind==='computer_use');h.tasks=h.tasks.map(x=>x.task_id===t.task_id?{...x,state:'interrupted'}:x);h.runs=h.runs.map(r=>r.run_id===t.current_run?{...r,state:'interrupted'}:r);h.projects=h.projects.map(p=>p.project_id===t.project_id?{...p,active_writer:null}:p);h.control=h.control.map(c=>c.target_id===t.target_id?{...c,desktop_lock:'locked',input_state:'paused',lease:null}:c);h.tasks.forEach(task=>h.emit({type:'task_upserted',task}));h.runs.forEach(run=>h.emit({type:'run_upserted',run}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.control.forEach(view=>h.emit({type:'control_changed',view}));"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Unlock on the computer to watch and control again.\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "click",
+        "Review current task"
+      ],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('.review-foot button')].find(b=>b.textContent.trim()==='Continue');if(!b?.disabled)throw new Error('Continue is enabled');b.scrollIntoView({block:'end'})"
+      ]
+    ]
+  },
+  {
+    "name": "approval-failure-360",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;const a=h.attention.find(a=>a.approval_id);ui.push({screen:'attention',attentionId:a.attention_id});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "eval",
+        "window.__sim.host.failNextApprovalDelivery=true"
+      ],
+      [
+        "click",
+        "Allow"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"The agent did not receive this. It may still be waiting.\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval__error').scrollIntoView({block:'nearest'});if(![...document.querySelectorAll('.approval button')].some(b=>b.textContent.trim()==='Allow'&&!b.disabled))throw new Error('Approval retry disabled')"
+      ]
+    ]
+  },
+  {
+    "name": "pairing-first-back-360",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "click",
+        "Pair a computer"
+      ],
+      [
+        "click",
+        "Paste the link instead"
+      ],
+      [
+        "eval",
+        "(async()=>{const {simPairingLink}=await import('/src/dev/sim/platform.ts');const field=document.querySelector('input');const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(field,simPairingLink());field.dispatchEvent(new Event('input',{bubbles:true}))})()"
+      ],
+      [
+        "click",
+        "Continue"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Pair with studio?\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Pair with your computer\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "shot",
+        "connect"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Your computer, from your\")) throw new Error(\"Missing expected copy\")"
+      ]
+    ],
+    "path": "/?unpaired"
+  },
+  {
+    "name": "pairing-add-back-360",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');const h=window.__sim.host;ui.selectProject(h.projects[0].project_id);ui.push({screen:'connections'});ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Pair another computer"
+      ],
+      [
+        "click",
+        "Paste the link instead"
+      ],
+      [
+        "eval",
+        "(async()=>{const {simPairingLink}=await import('/src/dev/sim/platform.ts');const field=document.querySelector('input');const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(field,simPairingLink());field.dispatchEvent(new Event('input',{bubbles:true}))})()"
+      ],
+      [
+        "click",
+        "Continue"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Pair with studio?\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Pair with your computer\")) throw new Error(\"Missing expected copy\")"
+      ],
+      [
+        "shot",
+        "connect"
+      ],
+      [
+        "eval",
+        "history.back()"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes(\"Connections\")) throw new Error(\"Missing expected copy\")"
+      ]
+    ]
+  }
+]

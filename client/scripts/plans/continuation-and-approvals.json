@@ -1,0 +1,1306 @@
+[
+  {
+    "name": "continue-light",
+    "scale": 1,
+    "settle": 700,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"Add rate-limit headers\")"
+      ],
+      [
+        "fill",
+        "What should it do next?",
+        "Also check the error response headers."
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "clickSel",
+        ".composer__send"
+      ],
+      [
+        "wait",
+        650
+      ]
+    ]
+  },
+  {
+    "name": "approval-light",
+    "scale": 1,
+    "settle": 700,
+    "steps": [
+      [
+        "clickSel",
+        ".nav .nav__tab:nth-of-type(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "div:has(> .talk-quick-approval) > :first-child"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "request"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] button')].find(b=>b.textContent.trim()==='Allow').click()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "queue-light",
+    "scale": 1,
+    "settle": 700,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "list"
+      ],
+      [
+        "click",
+        "Review and start"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Queued prompt",
+        "Polish the empty list and check keyboard focus."
+      ],
+      [
+        "click",
+        "Save prompt changes"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review current request"
+      ],
+      [
+        "eval",
+        "document.querySelector('.route:not(.is-hidden) .review-foot button').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "reviewed"
+      ],
+      [
+        "click",
+        "Start queued task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;if(!h.queue.items.some(i=>i.request?.prompt==='Polish the empty list and check keyboard focus.'&&i.state.state==='started'))throw Error('Queued request did not start')"
+      ]
+    ]
+  },
+  {
+    "name": "mission-light",
+    "scale": 1,
+    "settle": 700,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"New task\")"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Review keyboard focus and empty states."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "fill",
+        "Boundaries",
+        "Keep public APIs unchanged\nDo not edit deployment settings"
+      ],
+      [
+        "fill",
+        "Completion checks",
+        "Run keyboard navigation checks\nReview a narrow screen"
+      ],
+      [
+        "fill",
+        "Stop when",
+        "Before changing the public API"
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea[placeholder=\"One boundary per line\"]').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "bounds"
+      ],
+      [
+        "clickSel",
+        ".review-foot button"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const t=window.__sim.host.tasks.find(t=>t.title==='Review keyboard focus and empty states.');if(!t?.mission||t.mission.bounds.length!==2||t.mission.bounds.some(b=>b.enforcement!=='requested_only')||t.mission.completion_checks.length!==2)throw Error('Mission was not saved')"
+      ]
+    ]
+  },
+  {
+    "name": "continue-dark",
+    "scale": 1,
+    "settle": 700,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"Add rate-limit headers\")"
+      ],
+      [
+        "fill",
+        "What should it do next?",
+        "Also check the error response headers."
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "clickSel",
+        ".composer__send"
+      ],
+      [
+        "wait",
+        650
+      ]
+    ]
+  },
+  {
+    "name": "approval-dark",
+    "scale": 1,
+    "settle": 700,
+    "dark": true,
+    "steps": [
+      [
+        "clickSel",
+        ".nav .nav__tab:nth-of-type(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "div:has(> .talk-quick-approval) > :first-child"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "request"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] button')].find(b=>b.textContent.trim()==='Allow').click()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "queue-dark",
+    "scale": 1,
+    "settle": 700,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "list"
+      ],
+      [
+        "click",
+        "Review and start"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Queued prompt",
+        "Polish the empty list and check keyboard focus."
+      ],
+      [
+        "click",
+        "Save prompt changes"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review current request"
+      ],
+      [
+        "eval",
+        "document.querySelector('.route:not(.is-hidden) .review-foot button').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "reviewed"
+      ],
+      [
+        "click",
+        "Start queued task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;if(!h.queue.items.some(i=>i.request?.prompt==='Polish the empty list and check keyboard focus.'&&i.state.state==='started'))throw Error('Queued request did not start')"
+      ]
+    ]
+  },
+  {
+    "name": "mission-dark",
+    "scale": 1,
+    "settle": 700,
+    "dark": true,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"New task\")"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Review keyboard focus and empty states."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "fill",
+        "Boundaries",
+        "Keep public APIs unchanged\nDo not edit deployment settings"
+      ],
+      [
+        "fill",
+        "Completion checks",
+        "Run keyboard navigation checks\nReview a narrow screen"
+      ],
+      [
+        "fill",
+        "Stop when",
+        "Before changing the public API"
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea[placeholder=\"One boundary per line\"]').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "bounds"
+      ],
+      [
+        "clickSel",
+        ".review-foot button"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const t=window.__sim.host.tasks.find(t=>t.title==='Review keyboard focus and empty states.');if(!t?.mission||t.mission.bounds.length!==2||t.mission.bounds.some(b=>b.enforcement!=='requested_only')||t.mission.completion_checks.length!==2)throw Error('Mission was not saved')"
+      ]
+    ]
+  },
+  {
+    "name": "continue-large",
+    "scale": 1,
+    "settle": 700,
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"Add rate-limit headers\")"
+      ],
+      [
+        "fill",
+        "What should it do next?",
+        "Also check the error response headers."
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "clickSel",
+        ".composer__send"
+      ],
+      [
+        "wait",
+        650
+      ]
+    ]
+  },
+  {
+    "name": "approval-large",
+    "scale": 1,
+    "settle": 700,
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      [
+        "clickSel",
+        ".nav .nav__tab:nth-of-type(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "div:has(> .talk-quick-approval) > :first-child"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "request"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] button')].find(b=>b.textContent.trim()==='Allow').click()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "queue-large",
+    "scale": 1,
+    "settle": 700,
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "list"
+      ],
+      [
+        "click",
+        "Review and start"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Queued prompt",
+        "Polish the empty list and check keyboard focus."
+      ],
+      [
+        "click",
+        "Save prompt changes"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review current request"
+      ],
+      [
+        "eval",
+        "document.querySelector('.route:not(.is-hidden) .review-foot button').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "reviewed"
+      ],
+      [
+        "click",
+        "Start queued task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;if(!h.queue.items.some(i=>i.request?.prompt==='Polish the empty list and check keyboard focus.'&&i.state.state==='started'))throw Error('Queued request did not start')"
+      ]
+    ]
+  },
+  {
+    "name": "mission-large",
+    "scale": 1,
+    "settle": 700,
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"New task\")"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Review keyboard focus and empty states."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "fill",
+        "Boundaries",
+        "Keep public APIs unchanged\nDo not edit deployment settings"
+      ],
+      [
+        "fill",
+        "Completion checks",
+        "Run keyboard navigation checks\nReview a narrow screen"
+      ],
+      [
+        "fill",
+        "Stop when",
+        "Before changing the public API"
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea[placeholder=\"One boundary per line\"]').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "bounds"
+      ],
+      [
+        "clickSel",
+        ".review-foot button"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const t=window.__sim.host.tasks.find(t=>t.title==='Review keyboard focus and empty states.');if(!t?.mission||t.mission.bounds.length!==2||t.mission.bounds.some(b=>b.enforcement!=='requested_only')||t.mission.completion_checks.length!==2)throw Error('Mission was not saved')"
+      ]
+    ]
+  },
+  {
+    "name": "continue-wide",
+    "scale": 1,
+    "settle": 700,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"Add rate-limit headers\")"
+      ],
+      [
+        "fill",
+        "What should it do next?",
+        "Also check the error response headers."
+      ],
+      [
+        "shot",
+        "review"
+      ],
+      [
+        "clickSel",
+        ".composer__send"
+      ],
+      [
+        "wait",
+        650
+      ]
+    ]
+  },
+  {
+    "name": "approval-wide",
+    "scale": 1,
+    "settle": 700,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".nav .nav__tab:nth-of-type(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "div:has(> .talk-quick-approval) > :first-child"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "request"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dialog[open] button')].find(b=>b.textContent.trim()==='Allow').click()"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "queue-wide",
+    "scale": 1,
+    "settle": 700,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "list"
+      ],
+      [
+        "click",
+        "Review and start"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Queued prompt",
+        "Polish the empty list and check keyboard focus."
+      ],
+      [
+        "click",
+        "Save prompt changes"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Review current request"
+      ],
+      [
+        "eval",
+        "document.querySelector('.route:not(.is-hidden) .review-foot button').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "reviewed"
+      ],
+      [
+        "click",
+        "Start queued task"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;if(!h.queue.items.some(i=>i.request?.prompt==='Polish the empty list and check keyboard focus.'&&i.state.state==='started'))throw Error('Queued request did not start')"
+      ]
+    ]
+  },
+  {
+    "name": "mission-wide",
+    "scale": 1,
+    "settle": 700,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"New task\")"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Review keyboard focus and empty states."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "fill",
+        "Boundaries",
+        "Keep public APIs unchanged\nDo not edit deployment settings"
+      ],
+      [
+        "fill",
+        "Completion checks",
+        "Run keyboard navigation checks\nReview a narrow screen"
+      ],
+      [
+        "fill",
+        "Stop when",
+        "Before changing the public API"
+      ],
+      [
+        "eval",
+        "document.querySelector('textarea[placeholder=\"One boundary per line\"]').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "bounds"
+      ],
+      [
+        "clickSel",
+        ".review-foot button"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const t=window.__sim.host.tasks.find(t=>t.title==='Review keyboard focus and empty states.');if(!t?.mission||t.mission.bounds.length!==2||t.mission.bounds.some(b=>b.enforcement!=='requested_only')||t.mission.completion_checks.length!==2)throw Error('Mission was not saved')"
+      ]
+    ]
+  },
+  {
+    "name": "continue-stale",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"Add rate-limit headers\")"
+      ],
+      [
+        "fill",
+        "What should it do next?",
+        "Keep this correction"
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.tasks=h.tasks.map(t=>t.title.startsWith('Add rate-limit')?{...t,title:'Headers need a second review',revision:t.revision+1}:t)"
+      ],
+      [
+        "clickSel",
+        ".composer__send"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Headers need a second review')||document.querySelector('.composer textarea').value!=='Keep this correction')throw Error('Stale draft lost')"
+      ]
+    ]
+  },
+  {
+    "name": "approval-list",
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav .nav__tab:nth-of-type(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "pending"
+      ],
+      [
+        "clickSel",
+        ".talk-quick-approval button:last-child"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.approvals.some(a=>a.state==='pending'))throw Error('Approval still pending')"
+      ]
+    ]
+  },
+  {
+    "name": "held-cancel",
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.__sim.pace(30)"
+      ],
+      [
+        "click",
+        "Steer now"
+      ],
+      [
+        "click",
+        "After this turn"
+      ],
+      [
+        "fill",
+        "Message for after this turn",
+        "Please keep the existing empty state labels."
+      ],
+      [
+        "clickSel",
+        ".composer__send"
+      ],
+      [
+        "wait",
+        350
+      ],
+      [
+        "shot",
+        "held"
+      ],
+      [
+        "clickSel",
+        ".talk-held button"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Cancelled before delivery'))throw Error('Cancellation not confirmed')"
+      ]
+    ]
+  },
+  {
+    "name": "queue-reorder",
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const row=[...document.querySelectorAll('.work-queue li')].find(e=>e.querySelector('h2')?.textContent==='Polish empty states');if(![...row.querySelectorAll('button')].find(b=>b.textContent.includes('Move down')).disabled)throw Error('Dependent can be moved ahead');const free=[...document.querySelectorAll('.work-queue li')].find(e=>e.querySelector('h2')?.textContent==='Review keyboard navigation');free.querySelector('button[aria-label]')?.scrollIntoView();[...free.querySelectorAll('button')].find(b=>b.textContent.includes('Move up')).click()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "document.querySelector('.work-queue').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "queue-offline",
+    "dark": true,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "queue-empty",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.queue={...h.queue,revision:h.queue.revision+1,items:[]};h.emit({type:'queue_changed',queue:h.queue})"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "queue-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;const query=h.query.bind(h);h.query=q=>{if(q.kind==='queue')throw {code:'permission_denied',message:'Queue access is unavailable'};return query(q)}"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ]
+    ]
+  },
+  {
+    "name": "review-landscape",
+    "width": 800,
+    "height": 430,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"New task\")"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Review empty state accessibility."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "fill",
+        "Boundaries",
+        "Preserve keyboard shortcuts"
+      ],
+      [
+        "eval",
+        "document.querySelector('.review-foot button').scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "approval-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav .nav__tab:nth-of-type(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "div:has(> .talk-quick-approval) > :first-child"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('.approval button')].find(b=>b.textContent==='Allow')?.disabled)throw Error('Offline approval enabled')"
+      ]
+    ]
+  },
+  {
+    "name": "review-offline",
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".nav__tab:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Open Next up"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "shot",
+        "list"
+      ],
+      [
+        "click",
+        "Review and start"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "document.querySelector('.review-foot button').scrollIntoView({block:'center'});if(!document.querySelector('.review-foot button').disabled)throw Error('Offline start enabled')"
+      ]
+    ]
+  },
+  {
+    "name": "talk-offline",
+    "scale": 1,
+    "width": 360,
+    "height": 900,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host;h.projects=h.projects.map(p=>({...p,active_writer:null}));h.projects.forEach(project=>h.emit({type:'project_upserted',project}));h.queue={...h.queue,writer:null};h.emit({type:'queue_changed',queue:h.queue});window.__sim.pace(4)"
+      ],
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"Add rate-limit headers\")"
+      ],
+      [
+        "fill",
+        "What should it do next?",
+        "Also check the error response headers."
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.composer__send').disabled)throw Error('Offline Continue enabled')"
+      ]
+    ]
+  },
+  {
+    "name": "approval-revoked",
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav .nav__tab:nth-of-type(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "clickSel",
+        "div:has(> .talk-quick-approval) > :first-child"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        250
+      ]
+    ]
+  },
+  {
+    "name": "mission-offline",
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".talk-bar__main"
+      ],
+      [
+        "clickSel",
+        "dialog[open] button.row:has-text(\"New task\")"
+      ],
+      [
+        "fill",
+        "What should Claude Code",
+        "Review keyboard focus and empty states."
+      ],
+      [
+        "click",
+        "Review"
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        250
+      ],
+      [
+        "eval",
+        "document.querySelector('.review-foot button').scrollIntoView({block:'center'});if(!document.querySelector('.review-foot button').disabled)throw Error('Offline task start enabled')"
+      ]
+    ]
+  }
+]

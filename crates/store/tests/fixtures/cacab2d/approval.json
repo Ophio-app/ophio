@@ -1,0 +1,22 @@
+{
+  "approval_id": "00000000-0000-4000-8000-000000000001",
+  "run_id": "00000000-0000-4000-8000-000000000001",
+  "task_id": "00000000-0000-4000-8000-000000000001",
+  "project_id": "00000000-0000-4000-8000-000000000001",
+  "native_request_id": "synthetic",
+  "kind": "command",
+  "title": "synthetic",
+  "detail": "synthetic",
+  "raw_request": "synthetic",
+  "scope": "synthetic",
+  "revision": 1,
+  "state": "pending",
+  "outcome": "allowed",
+  "requested_at": 1,
+  "expires_at": 1,
+  "resolved_by": {
+    "kind": "device",
+    "device_id": "00000000-0000-4000-8000-000000000001"
+  },
+  "resolved_at": 1
+}

@@ -1,0 +1,93 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "packaged-app",
+  "description": "Only the packaged main interface may use native functions.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "allow-profiles",
+    "allow-pair",
+    "allow-pair-cancel",
+    "allow-rename-profile",
+    "allow-forget",
+    "allow-outbox-put",
+    "allow-outbox-list",
+    "allow-outbox-remove",
+    "allow-link-page",
+    "allow-link-open",
+    "allow-link-connect",
+    "allow-link-send",
+    "allow-link-send-binary",
+    "allow-link-sent",
+    "allow-link-close",
+    "allow-device-events",
+    "allow-share-text",
+    "allow-shared-read",
+    "allow-shared-ack",
+    "allow-app-update-check",
+    "allow-app-update-begin",
+    "allow-app-update-chunk",
+    "allow-app-update-commit",
+    "allow-app-update-cancel",
+    "allow-save-begin",
+    "allow-save-chunk",
+    "allow-save-finish",
+    "allow-save-cancel",
+    "allow-notify",
+    "allow-cancel-notifications",
+    "allow-request-notifications",
+    "allow-app-info",
+    "allow-keep-awake",
+    "allow-alerts-state",
+    "allow-alerts-configure",
+    "allow-alerts-seen",
+    "allow-alerts-viewing",
+    "allow-alerts-battery",
+    "allow-alerts-channel",
+    "allow-scan-pairing-code",
+    "allow-haptic",
+    "allow-shell-theme",
+    "allow-shell-immersive",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://*"
+        },
+        {
+          "url": "http://*"
+        },
+        {
+          "url": "mailto:*"
+        },
+        {
+          "url": "tel:*"
+        }
+      ]
+    },
+    "allow-app-lock-state",
+    "allow-app-lock-configure",
+    "allow-app-unlock",
+    "allow-app-confirm",
+    "allow-app-lock",
+    "allow-app-lock-screen-ready",
+    "allow-preview-open",
+    "allow-preview-close",
+    "allow-preview-show",
+    "allow-preview-picture-read",
+    "allow-preview-picture-ack",
+    "allow-preview-pending",
+    "allow-notification-permission",
+    "allow-clip-begin",
+    "allow-clip-write",
+    "allow-clip-trim",
+    "allow-clip-read",
+    "allow-clip-discard",
+    "allow-take-native-crashes",
+    "allow-screenshot-supported",
+    "allow-start-screenshot-watch",
+    "allow-stop-screenshot-watch",
+    "allow-capture-own-view"
+  ]
+}

@@ -1,0 +1,202 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.transfers-screen,
+.transfer-sheet {
+  overflow-wrap: anywhere;
+}
+.transfer-stack {
+  display: grid;
+  gap: var(--s4);
+  min-width: 0;
+}
+.transfer-meta {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.transfer-meta.transfer-error {
+  color: var(--error-text);
+  font-size: var(--text-error);
+  font-weight: 620;
+}
+.transfer-path {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.transfer-rule {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  padding: var(--s3) var(--s4);
+  border-left: 2px solid var(--line-strong);
+}
+.transfer-destination {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+}
+.transfer-destination legend {
+  font-size: var(--text-md);
+  font-weight: 600;
+  margin-bottom: var(--s2);
+}
+.transfer-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--target);
+  padding-block: var(--s2);
+}
+.transfer-label {
+  display: grid;
+  gap: var(--s2);
+  font-size: var(--text-sm);
+}
+.transfer-label select {
+  min-height: var(--target);
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-raised);
+  padding: var(--s2);
+}
+.transfer-pick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  min-height: var(--target);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  padding: var(--s4);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.transfer-pick svg {
+  width: 1.2em;
+  height: 1.2em;
+  flex: none;
+}
+.transfer-pick input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.transfer-pick:focus-within {
+  box-shadow: var(--focus-ring);
+}
+.transfer-row {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  min-width: 0;
+}
+.transfer-row-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+}
+.transfer-row-head > svg {
+  flex: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: var(--s1);
+  color: var(--ink-2);
+}
+.transfer-row-head > div {
+  min-width: 0;
+}
+.transfer-row h3 {
+  font-size: var(--text-md);
+  font-weight: 620;
+}
+.transfer-row progress {
+  width: 100%;
+  height: var(--s2);
+  accent-color: var(--accent);
+  background: var(--surface-sunken);
+  border: 0;
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+.transfer-row progress::-webkit-progress-bar {
+  background: var(--surface-sunken);
+}
+.transfer-row progress::-webkit-progress-value {
+  background: var(--accent);
+}
+.transfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.transfer-actions:empty {
+  display: none;
+}
+.transfer-verified {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  font-size: var(--text-sm);
+  color: var(--ok-text);
+}
+.transfer-verified svg {
+  flex: none;
+  width: 1em;
+  height: 1em;
+}
+/* Where Save to phone put the file, as the phone reported it. */
+.transfer-saved {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  font-size: var(--text-sm);
+  color: var(--ok-text);
+}
+/* One line tall, so the icon stays beside the first line when the path wraps. */
+.transfer-saved svg {
+  flex: none;
+  width: 1em;
+  height: 1lh;
+}
+.transfer-saved .transfer-path {
+  color: var(--ink);
+}
+.transfer-intervention {
+  min-height: var(--target-intervention);
+}
+.transfers-screen .btn,
+.transfer-sheet .btn {
+  max-width: 100%;
+  white-space: normal;
+}
+.transfer-sheet .sheet__title,
+.transfer-sheet .row__title {
+  overflow-wrap: anywhere;
+  hyphens: manual;
+}
+
+.transfer-footer {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  max-height: 38dvh;
+  overflow-y: auto;
+}
+.transfer-footer > * {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+.transfers-screen .transfer-footer > .btn {
+  max-width: var(--content-max);
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-outbox-remove"
+description = "Enables the outbox_remove command without any pre-configured scope."
+commands.allow = ["outbox_remove"]
+
+[[permission]]
+identifier = "deny-outbox-remove"
+description = "Denies the outbox_remove command without any pre-configured scope."
+commands.deny = ["outbox_remove"]

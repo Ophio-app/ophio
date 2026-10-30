@@ -1,0 +1,386 @@
+[
+ {
+  "name": "U45-1-link-review-390x844-light",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "fill",
+    "Chat link code",
+    "123-456"
+   ],
+   [
+    "shot",
+    "code"
+   ],
+   [
+    "click",
+    "Check code"
+   ],
+   [
+    "wait",
+    1200
+   ]
+  ]
+ },
+ {
+  "name": "U45-1-linked-card-390x844-light",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "fill",
+    "Chat link code",
+    "123-456"
+   ],
+   [
+    "click",
+    "Check code"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "click",
+    "Approve Robin Park"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const e=[...document.querySelectorAll('h3')].find(e=>e.textContent.trim()==='Robin Park');if(!e)throw Error('No linked card');e.scrollIntoView({block:'center'})})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U45-1-link-review-390x844-dark",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "fill",
+    "Chat link code",
+    "123-456"
+   ],
+   [
+    "shot",
+    "code"
+   ],
+   [
+    "click",
+    "Check code"
+   ],
+   [
+    "wait",
+    1200
+   ]
+  ]
+ },
+ {
+  "name": "U45-1-linked-card-390x844-dark",
+  "settle": 900,
+  "width": 390,
+  "height": 844,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "fill",
+    "Chat link code",
+    "123-456"
+   ],
+   [
+    "click",
+    "Check code"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "click",
+    "Approve Robin Park"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const e=[...document.querySelectorAll('h3')].find(e=>e.textContent.trim()==='Robin Park');if(!e)throw Error('No linked card');e.scrollIntoView({block:'center'})})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U45-1-link-review-360x780-200-light",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "fill",
+    "Chat link code",
+    "123-456"
+   ],
+   [
+    "shot",
+    "code"
+   ],
+   [
+    "click",
+    "Check code"
+   ],
+   [
+    "wait",
+    1200
+   ]
+  ]
+ },
+ {
+  "name": "U45-1-linked-card-360x780-200-light",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "fill",
+    "Chat link code",
+    "123-456"
+   ],
+   [
+    "click",
+    "Check code"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "click",
+    "Approve Robin Park"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const e=[...document.querySelectorAll('h3')].find(e=>e.textContent.trim()==='Robin Park');if(!e)throw Error('No linked card');e.scrollIntoView({block:'center'})})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "U45-1-link-review-360x780-200-dark",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "fill",
+    "Chat link code",
+    "123-456"
+   ],
+   [
+    "shot",
+    "code"
+   ],
+   [
+    "click",
+    "Check code"
+   ],
+   [
+    "wait",
+    1200
+   ]
+  ]
+ },
+ {
+  "name": "U45-1-linked-card-360x780-200-dark",
+  "settle": 900,
+  "width": 360,
+  "height": 780,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "click",
+    "Link a chat"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "fill",
+    "Chat link code",
+    "123-456"
+   ],
+   [
+    "click",
+    "Check code"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "click",
+    "Approve Robin Park"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "eval",
+    "(()=>{const e=[...document.querySelectorAll('h3')].find(e=>e.textContent.trim()==='Robin Park');if(!e)throw Error('No linked card');e.scrollIntoView({block:'center'})})()"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ }
+]

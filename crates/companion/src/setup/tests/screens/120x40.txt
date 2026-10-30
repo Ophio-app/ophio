@@ -1,0 +1,1476 @@
+── 1 · Welcome to Øphio ──
+╭─╴Øphio setup╶────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                      │
+│                                           ╭────╮ ╱         ╷                                                         │
+│                                         ╭─╯    ╰╱╮         │       ◆                                                 │
+│                                         │      ╱ │  ╭───╮  ├───╮   ╷  ╭───╮                                          │
+│                                         │     ╱  │  │   │  │   │   │  │   │                                          │
+│                                         │    ╱   │  │   │  │   │   │  │   │                                          │
+│                                         ╰╮  ╱  ╭─╯  ├───╯  ╵   ╵   ╵  ╰───╯                                          │
+│                                          ╰─╱───╯    │                                                                │
+│                                           ╱         ╵                                                                │
+│                                                                                                                      │
+│                     Welcome to Øphio                                                                                 │
+│                     ─────────────────╴                                                                               │
+│                                                                                                                      │
+│                     Øphio connects your phone or tablet to this computer: run Claude Code and                        │
+│                     Codex tasks on it, answer them, and watch its desktop, from anywhere.                            │
+│                                                                                                                      │
+│                     Setup keeps Øphio running, works out how your phone reaches this computer,                       │
+│                     connects your agents, pairs your phone and checks that it all works. It                          │
+│                     takes a few minutes, and any step can be left for later.                                         │
+│                                                                                                                      │
+│                     · This computer  desk                                                                            │
+│                     ✓ Claude Code    Found                                                                           │
+│                     · Codex          Not found                                                                       │
+│                     ✓ Tailscale      Found                                                                           │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                     ╾─◆ [s] Start setup · recommended                                                                │
+│                         [x] Skip setup                                                                               │
+│                             Run ophio setup whenever you want it.                                                    │
+│                                                                                                                      │
+╰─╴↑↓ move · enter choose · ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────╯
+── 2 · Keep Øphio running ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 1 of 6╶─╮
+│                    │                                                                                                 │
+│  ◉ Keep running ───┤  Keep Øphio running                                                                             │
+│  ┊                 ├─────────────────────╴                                                                           │
+│  ○ Reach           │                                                                                                 │
+│  ┊                 │  Your phone can reach this computer only while Øphio is running on it. It can                   │
+│  ○ Agents          │  start whenever you log in, so it's there when you need it.                                     │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │  ! Now              Not running                                                                 │
+│  ┊                 │  ! When you log in  Doesn't start                                                               │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │  It runs as your own systemd service, ophio.service. To stop that, run ophio                    │
+│  ○ Check           │  service uninstall.                                                                             │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [s] Start now and at every login · recommended                                             │
+│                    │      [j] Just for now                                                                           │
+│                    │          Until you log out. Your phone can't reach this computer after that.                    │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 3 · Keep Øphio running ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 1 of 6╶─╮
+│                    │                                                                                                 │
+│  ◉ Keep running ───┤  Keep Øphio running                                                                             │
+│  ┊                 ├─────────────────────╴                                                                           │
+│  ○ Reach           │                                                                                                 │
+│  ┊                 │  ●── Setting Øphio to start at every login…                                                     │
+│  ○ Agents          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────────╯
+── 4 · Keep Øphio running ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 1 of 6╶─╮
+│                    │                                                                                                 │
+│  ◉ Keep running ───┤  Keep Øphio running                                                                             │
+│  ┊                 ├─────────────────────╴                                                                           │
+│  ○ Reach           │                                                                                                 │
+│  ┊                 │  ✓ Øphio  Running now, and starts whenever you log in.                                          │
+│  ○ Agents          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Continue                                                                               │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
+── 5 · How your phone reaches this computer ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 2 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  How your phone reaches this computer                                                           │
+│  │                 ├───────────────────────────────────────╴                                                         │
+│  ◉ Reach ──────────┤                                                                                                 │
+│  ┊                 │  Your phone reaches this computer through Tailscale, a private network between                  │
+│  ○ Agents          │  your own devices that works wherever you are, or through the Wi‑Fi you share at                │
+│  ┊                 │  home.                                                                                          │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │  ✓ Tailscale  Connected as desk.tail.ts.net                                                     │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │  Your phone needs Tailscale too, signed in to the same account.                                 │
+│  ○ Check           │                                                                                                 │
+│                    │  · Wi‑Fi  This computer is 192.168.1.20 here; phones on this network can't reach                │
+│                    │           it unless you allow it                                                                │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Use Tailscale · recommended                                                            │
+│                    │      [w] This Wi‑Fi only                                                                        │
+│                    │          Your phone reaches this computer only at home, on this network.                        │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 6 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Øphio runs tasks with the agents installed on this computer, signed in to your                 │
+│  ◉ Agents ─────────┤  own accounts. One is enough.                                                                   │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │  ✓ Claude Code  Signed in as me@example.com (Max)                                               │
+│  ┊                 │  · Codex        Not installed                                                                   │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Next · recommended                                                                     │
+│                    │      [2] Install Codex                                                                          │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 7 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Your phone                                                                                     │
+│  │                 ├─────────────╴                                                                                   │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Your phone needs the Øphio app, for Android phones and tablets.                                │
+│  ● Agents          │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Phone ──────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [i] Show me how to install it · recommended                                                │
+│                    │      [g] Let the agent do it                                                                    │
+│                    │          Claude Code does it in a task you follow here. It asks you before it                   │
+│                    │          installs or changes anything.                                                          │
+│                    │      [h] My phone already has Øphio                                                             │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 8 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Your phone                                                                                     │
+│  │                 ├─────────────╴                                                                                   │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Øphio can tell your phone when an agent needs you or a task ends, even while the               │
+│  ● Agents          │  app is closed.                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Phone ──────────┤  Nothing stays in the status bar while it waits. For alerts after you swipe the                 │
+│  ┊                 │  app away, the phone asks to let Øphio run without battery limits.                              │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [y] Turn on alerts · recommended                                                           │
+│                    │      [n] Not now                                                                                │
+│                    │          Turn them on later in the app's Settings › Notifications.                              │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 9 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Your phone                                                                                     │
+│  │                 ├─────────────╴                                                                                   │
+│  ● Reach           │                                                                                                 │
+│  │                 │  1  Open Øphio on your phone and tap     ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│  ● Agents          │     Pair a computer.                     ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│  │                 │  2  Scan this code, or paste the link    ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│  ◉ Phone ──────────┤     below.                               ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│  ┊                 │  3  Check that the fingerprint your      ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│  ○ Extras          │     phone shows is the one here.         ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│  ┊                 │                                          ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│  ○ Check           │  Link  ophio://pair?d=eyJob3N0X2lkIjoi   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        MGY4YjZjMWUtMmQzYS00YjVjLThkOWU   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        tMGExYjJjM2Q0ZTVmIiwiaG9zdF9uYW   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        1lIjoiZGVzayIsImFkZHJlc3NlcyI6W   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        yIxMDAuNjQuMC4xOjQ3MTAwIiwiZGVz   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        ay50YWlsLnRzLm5ldDo0NzEwMCJdLCJ   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        jZXJ0X3NoYTI1NiI6IjVmMWM5YTBlN2   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        QzYjJhNGM2ZThmMGExYjNjNWQ3ZTlmM   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        mE0YjZjOGQwZTFmM2E1YjdjOWQxZTNm   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        NWE3YjljMGQiLCJwYWlyaW5nX3NlY3J   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        ldCI6IkFBRUNBd1FGQmdjSUNRb0xEQT   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        BPRHhBUkVoTVVGUllYR0JrYUd4d2RIa   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        DgiLCJleHBpcmVzX2F0IjoxOTAwMDAw   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        NjAwMDAwLCJwcm90b2NvbCI6eyJtYWp   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        vciI6MSwibWlub3IiOjB9fQ&alerts=   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │        on                                ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │                                          ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │  · Fingerprint       5F1C 9A0E 7D3B      ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │                      2A4C 6E8F 0A1B      ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │                      3C5D 7E9F           ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │  ●── Waiting for your phone                        Expires at 13:56, in 10 minutes.             │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 10 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Your phone                                                                                     │
+│  │                 ├─────────────╴                                                                                   │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Pixel 9 (android) is asking to pair.                                                           │
+│  ● Agents          │  Pair it only if it shows the code 123 456.                                                     │
+│  │                 │                                                                                                 │
+│  ◉ Phone ──────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [y] Pair it                                                                                │
+│                    │          Only if your phone shows the same code.                                                │
+│                    │      [n] Don't pair                                                                             │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 11 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Your phone                                                                                     │
+│  │                 ├─────────────╴                                                                                   │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ✓ Paired  Pixel 9                                                                              │
+│  ● Agents          │                                                                                                 │
+│  │                 │  What may Pixel 9 do on this computer? Right now it may not do anything.                        │
+│  ◉ Phone ──────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [f] Everything · recommended                                                               │
+│                    │          Right for your own phone, which you keep locked.                                       │
+│                    │      [e] Everyday                                                                               │
+│                    │          Run and answer agent tasks, watch the desktop and read the Library.                    │
+│                    │          Nothing that controls this computer or changes who has access.                         │
+│                    │      [c] Choose each                                                                            │
+│                    │      [k] Keep it as it is                                                                       │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 12 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Your phone                                                                                     │
+│  │                 ├─────────────╴                                                                                   │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Tick what Pixel 9 may do.                                                                      │
+│  ● Agents          │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Phone ──────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [ ] 1 Watch the desktop                                                                    │
+│                    │            See this computer's screen                                                           │
+│                    │      [ ] 2 Control the desktop                                                                  │
+│                    │            Use its mouse and keyboard                                                           │
+│                    │      [ ] 3 Open terminals                                                                       │
+│                    │            Run any command as you                                                               │
+│                    │      [ ] 4 Run agent tasks                                                                      │
+│                    │            Start, continue and stop them                                                        │
+│                    │      [ ] 5 Answer agents                                                                        │
+│                    │            Approve or refuse what they ask                                                      │
+│                    │      [ ] 6 Let an agent use the desktop                                                         │
+│                    │            An agent sees the screen and works it                                                │
+│                    │      [ ] 7 Read the Library                                                                     │
+│                    │            Browse and open files                                                                │
+│                    │      [ ] 8 Edit the Library                                                                     │
+│                    │            Change, move and delete files                                                        │
+│                    │      [ ] 9 Transfer files                                                                       │
+│                    │            Copy files to and from the phone                                                     │
+│                    │      [ ]   Manage access                                                                        │
+│                    │            Pair, remove and change devices                                                      │
+│                    │      [ ]   Manage accounts                                                                      │
+│                    │            Sign in and out of the accounts tasks use                                            │
+│                    │  ╾─◆ [↵] Go on with these                                                                       │
+│                    │      [b] Back                                                                                   │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · space tick · enter choose · esc back · ctrl-c leave╶─────────────────────────────────╯
+── 13 · Your phone ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 4 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Your phone                                                                                     │
+│  │                 ├─────────────╴                                                                                   │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ✓ Pixel 9  It may watch the desktop.                                                           │
+│  ● Agents          │                                                                                                 │
+│  │                 │  Change this whenever you like in the app, under Connections, or with ophio                     │
+│  ◉ Phone ──────────┤  devices allow and ophio devices deny.                                                          │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Continue                                                                               │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
+── 14 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Tick any you want to set up now. Each can be set up later, in the app or with                  │
+│  ● Agents          │  ophio setup.                                                                                   │
+│  │                 │                                                                                                 │
+│  ● Phone           │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Extras ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [ ] 1 Add your projects                                                                    │
+│                    │            The folders your agents work in                                                      │
+│                    │      [✓] 2 Choose where files go                                                                │
+│                    │            Files from your checklists: this phone, Taildrop, a folder or a drive                │
+│                    │      [ ] 3 Watch and control this desktop                                                       │
+│                    │            From your phone, once you allow it                                                   │
+│                    │      [ ] 4 Talk to your agents                                                                  │
+│                    │            A 151 MB speech model, recognised on this computer                                   │
+│                    │      [ ] 5 Message your agents on Telegram                                                      │
+│                    │            Through a bot of your own                                                            │
+│                    │      [ ] 6 Message your agents on Discord                                                       │
+│                    │            Through a bot of your own                                                            │
+│                    │      [ ] 7 Give tasks your other accounts                                                       │
+│                    │            GitHub, Google and others, kept on this computer                                     │
+│                    │      [ ] 8 Let agents open pull requests                                                        │
+│                    │            On GitHub, as the account signed in under Accounts                                   │
+│                    │      [ ] 9 Let agents sign in to websites                                                       │
+│                    │            Passwords kept on this computer; read its notice first                               │
+│                    │      [ ]   Control the computer by voice                                                        │
+│                    │            Through TypeSafe's Jev, at your own cost                                             │
+│                    │  ╾─◆ [↵] Go on with these                                                                       │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · space tick · enter choose · ctrl-c leave╶────────────────────────────────────────────╯
+── 15 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Add the folders your agents work in. Each becomes a project in the app.                        │
+│  ● Agents          │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ● Phone           │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Extras ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [t] Type the folders · recommended                                                         │
+│                    │      [g] Let the agent find them                                                                │
+│                    │          It looks for folders kept in Git, and asks you which to add.                           │
+│                    │      [l] Leave this for later                                                                   │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 16 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Add the folders your agents work in, one at a time. Each becomes a project in                  │
+│  ● Agents          │  the app.                                                                                       │
+│  │                 │                                                                                                 │
+│  ● Phone           │  · They start with  Claude Code                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Extras ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  Folder (Enter alone when done)                                                                 │
+│                    │  ›                                                                                              │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter send · esc clear · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 17 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Add the folders your agents work in, one at a time. Each becomes a project in                  │
+│  ● Agents          │  the app.                                                                                       │
+│  │                 │                                                                                                 │
+│  ● Phone           │  · They start with  Claude Code                                                                 │
+│  │                 │  ✓ Added            /work/app                                                                   │
+│  ◉ Extras ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  Folder (Enter alone when done)                                                                 │
+│                    │  ›                                                                                              │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter send · esc clear · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 18 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Add the folders your agents work in, one at a time. Each becomes a project in                  │
+│  ● Agents          │  the app.                                                                                       │
+│  │                 │                                                                                                 │
+│  ● Phone           │  · They start with  Claude Code                                                                 │
+│  │                 │  ✓ Added            /work/app                                                                   │
+│  ◉ Extras ─────────┤  ! /missing         There is no folder at /missing.                                             │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  Folder (Enter alone when done)                                                                 │
+│                    │  ›                                                                                              │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter send · esc clear · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 19 · Check everything works ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 6 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Check everything works                                                                         │
+│  │                 ├─────────────────────────╴                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ●── Checking…                                                                                  │
+│  ● Agents          │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ● Phone           │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ● Extras          │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Check ──────────┤                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────────╯
+── 20 · Check everything works ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 6 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Check everything works                                                                         │
+│  │                 ├─────────────────────────╴                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Everything checked works.                                                                      │
+│  ● Agents          │                                                                                                 │
+│  │                 │  ✓ 2 checks passed                                                                              │
+│  ● Phone           │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ● Extras          │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Check ──────────┤                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Next · recommended                                                                     │
+│                    │      [r] Check again                                                                            │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 21 · Done ──
+╭─╴Øphio setup╶──────┬──────────────────────────────────────────────────────────────────────────────────────────╴Done╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Done                                                                                           │
+│  │                 ├───────╴                                                                                         │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ✓ Keep Øphio running                    Done                                                   │
+│  ● Agents          │  ✓ How your phone reaches this computer  Done                                                   │
+│  │                 │  ✓ Connect your agents                   Done                                                   │
+│  ● Phone           │  ✓ Your phone                            Done                                                   │
+│  │                 │  ✓ Extras                                Done                                                   │
+│  ● Extras          │  ✓ Check everything works                Done                                                   │
+│  │                 │                                                                                                 │
+│  ● Check           │  Change any of this in the app's Settings, or run ophio setup again.                            │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Finish                                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
+── 22 · Welcome to Øphio ──
+╭─╴Øphio setup╶────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                      │
+│                                           ╭────╮ ╱         ╷                                                         │
+│                                         ╭─╯    ╰╱╮         │       ◆                                                 │
+│                                         │      ╱ │  ╭───╮  ├───╮   ╷  ╭───╮                                          │
+│                                         │     ╱  │  │   │  │   │   │  │   │                                          │
+│                                         │    ╱   │  │   │  │   │   │  │   │                                          │
+│                                         ╰╮  ╱  ╭─╯  ├───╯  ╵   ╵   ╵  ╰───╯                                          │
+│                                          ╰─╱───╯    │                                                                │
+│                                           ╱         ╵                                                                │
+│                                                                                                                      │
+│                     Welcome to Øphio                                                                                 │
+│                     ─────────────────╴                                                                               │
+│                                                                                                                      │
+│                     Øphio connects your phone or tablet to this computer: run Claude Code and                        │
+│                     Codex tasks on it, answer them, and watch its desktop, from anywhere.                            │
+│                                                                                                                      │
+│                     Setup keeps Øphio running, works out how your phone reaches this computer,                       │
+│                     connects your agents, pairs your phone and checks that it all works. It                          │
+│                     takes a few minutes, and any step can be left for later.                                         │
+│                                                                                                                      │
+│                     · This computer  desk                                                                            │
+│                     ✓ Claude Code    Found                                                                           │
+│                     · Codex          Not found                                                                       │
+│                     ✓ Tailscale      Found                                                                           │
+│                                                                                                                      │
+│                     Setup carries on where it was left: 2 of 6 steps are behind you.                                 │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                     ╾─◆ [s] Carry on · recommended                                                                   │
+│                         [x] Skip setup                                                                               │
+│                             Run ophio setup whenever you want it.                                                    │
+│                                                                                                                      │
+╰─╴↑↓ move · enter choose · ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────╯
+── 23 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Øphio runs tasks with the agents installed on this computer, signed in to your                 │
+│  ◉ Agents ─────────┤  own accounts. One is enough.                                                                   │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │  · Claude Code  Not installed                                                                   │
+│  ┊                 │  · Codex        Not installed                                                                   │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [n] Next                                                                                   │
+│                    │          No agent is ready yet; tasks can't start until one is.                                 │
+│                    │      [1] Install Claude Code                                                                    │
+│                    │      [2] Install Codex                                                                          │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 24 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  This installs Claude Code on this computer with its maker's own installer:                     │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │  ▸ curl -fsSL https://claude.ai/install.sh | bash                                               │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │  Its output shows here as it runs.                                                              │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [y] Run it · recommended                                                                   │
+│                    │      [b] Back                                                                                   │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · esc back · ctrl-c leave╶──────────────────────────────────────────────╯
+── 25 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ✓ Claude Code  Installed                                                                       │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Continue                                                                               │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
+── 26 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Øphio runs tasks with the agents installed on this computer, signed in to your                 │
+│  ◉ Agents ─────────┤  own accounts. One is enough.                                                                   │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │  ! Claude Code  Installed, not signed in                                                        │
+│  ┊                 │  · Codex        Not installed                                                                   │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [n] Next                                                                                   │
+│                    │          No agent is ready yet; tasks can't start until one is.                                 │
+│                    │      [1] Sign in to Claude Code                                                                 │
+│                    │      [2] Install Codex                                                                          │
+│                    │      [l] Leave this for later                                                                   │
+│                    │      [x] Skip the rest of setup                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 27 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Signing in to Claude Code with its own sign-in.                                                │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │  ●── Starting                                                                                   │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [c] Cancel sign-in                                                                         │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
+── 28 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  Signing in to Claude Code with its own sign-in.                                                │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │  · Your code  Enter ABCD-1234 on claude.ai in this computer's browser.                          │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [c] Cancel sign-in                                                                         │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
+── 29 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ✓ Claude Code  Signed in as me@example.com                                                     │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Continue                                                                               │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
+── 30 · Welcome to Øphio ──
+╭─╴Øphio setup╶────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                      │
+│                                           ╭────╮ ╱         ╷                                                         │
+│                                         ╭─╯    ╰╱╮         │       ◆                                                 │
+│                                         │      ╱ │  ╭───╮  ├───╮   ╷  ╭───╮                                          │
+│                                         │     ╱  │  │   │  │   │   │  │   │                                          │
+│                                         │    ╱   │  │   │  │   │   │  │   │                                          │
+│                                         ╰╮  ╱  ╭─╯  ├───╯  ╵   ╵   ╵  ╰───╯                                          │
+│                                          ╰─╱───╯    │                                                                │
+│                                           ╱         ╵                                                                │
+│                                                                                                                      │
+│                     Welcome to Øphio                                                                                 │
+│                     ─────────────────╴                                                                               │
+│                                                                                                                      │
+│                     Øphio connects your phone or tablet to this computer: run Claude Code and                        │
+│                     Codex tasks on it, answer them, and watch its desktop, from anywhere.                            │
+│                                                                                                                      │
+│                     Setup keeps Øphio running, works out how your phone reaches this computer,                       │
+│                     connects your agents, pairs your phone and checks that it all works. It                          │
+│                     takes a few minutes, and any step can be left for later.                                         │
+│                                                                                                                      │
+│                     · This computer  desk                                                                            │
+│                     ✓ Claude Code    Found                                                                           │
+│                     · Codex          Not found                                                                       │
+│                     ✓ Tailscale      Found                                                                           │
+│                                                                                                                      │
+│                     Setup carries on where it was left: 4 of 6 steps are behind you.                                 │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                     ╾─◆ [s] Carry on · recommended                                                                   │
+│                         [x] Skip setup                                                                               │
+│                             Run ophio setup whenever you want it.                                                    │
+│                                                                                                                      │
+╰─╴↑↓ move · enter choose · ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────╯
+── 31 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  · Talk to your agents                                                                          │
+│  ● Agents          │                                                                                                 │
+│  │                 │  Talk instead of typing. What you say is recognised on this computer, by a 151 MB               │
+│  ● Phone           │  speech model that is downloaded once.                                                          │
+│  │                 │                                                                                                 │
+│  ◉ Extras ─────────┤  ▸ ophio voice install tiny.en                                                                  │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [y] Download it · recommended                                                              │
+│                    │      [g] Let the agent do it                                                                    │
+│                    │          Claude Code does it in a task you follow here. It asks you before it                   │
+│                    │          installs or changes anything.                                                          │
+│                    │      [l] Leave this for later                                                                   │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 32 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  · Skill setup-voice  What setup-voice does.                                                    │
+│  ● Agents          │                                                                                                 │
+│  │                 │  Claude Code does this as a task, in a folder of its own; you follow it here and                │
+│  ● Phone           │  in the app. Before it runs a command that installs or changes anything, it asks                │
+│  │                 │  you here and shows exactly what would run.                                                     │
+│  ◉ Extras ─────────┤                                                                                                 │
+│  ┊                 │  Confirming a pairing, choosing what a device may do, signing in, and typing                    │
+│  ○ Check           │  passwords or tokens stay with you.                                                             │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [s] Start it · recommended                                                                 │
+│                    │      [b] Back                                                                                   │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · esc back · ctrl-c leave╶──────────────────────────────────────────────╯
+── 33 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ●── Starting the task…                                                                         │
+│  ● Agents          │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ● Phone           │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Extras ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────────╯
+── 34 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  · Skill setup-voice                                                                            │
+│  ● Agents          │  ! Waiting for you                                                                              │
+│  │                 │                                                                                                 │
+│  ● Phone           │  whisper.cpp is in your package manager, so I'll install it from there.                         │
+│  │                 │                                                                                                 │
+│  ◉ Extras ─────────┤  ✓ Read the voice guide                                                                         │
+│  ┊                 │  ●── pacman -Si whisper.cpp                                                                     │
+│  ○ Check           │  ! It asks to                Run a command                                                      │
+│                    │                                                                                                 │
+│                    │  ▸ sudo pacman -S --needed whisper.cpp                                                          │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [a] Allow                                                                                  │
+│                    │      [d] Don't allow                                                                            │
+│                    │      [s] Stop it                                                                                │
+│                    │      [b] Leave it running                                                                       │
+│                    │          It carries on; follow it in the app.                                                   │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
+── 35 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  · Skill setup-voice                                                                            │
+│  ● Agents          │  ! Waiting for you                                                                              │
+│  │                 │  ! It asks            Which folders?                                                            │
+│  ● Phone           │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Extras ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [ ] 1 ~/work/app                                                                           │
+│                    │      [ ] 2 ~/work/site                                                                          │
+│                    │      [ ] 3 ~/notes                                                                              │
+│                    │  ╾─◆ [↵] Go on with these                                                                       │
+│                    │      [a] Answer in your own words                                                               │
+│                    │      [s] Stop it                                                                                │
+│                    │      [b] Leave it running                                                                       │
+│                    │          It carries on; follow it in the app.                                                   │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · space tick · enter choose · ctrl-c leave╶────────────────────────────────────────────╯
+── 36 · Extras ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Extras                                                                                         │
+│  │                 ├─────────╴                                                                                       │
+│  ● Reach           │                                                                                                 │
+│  │                 │  · Skill setup-voice                                                                            │
+│  ● Agents          │  ✓ Its turn is done   If it asked you something, reply.                                         │
+│  │                 │                                                                                                 │
+│  ● Phone           │                                                                                                 │
+│  │                 │                                                                                                 │
+│  ◉ Extras ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │      [r] Reply                                                                                  │
+│                    │  ╾─◆ [n] Go on · recommended                                                                    │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-alerts-state"
+description = "Enables the alerts_state command without any pre-configured scope."
+commands.allow = ["alerts_state"]
+
+[[permission]]
+identifier = "deny-alerts-state"
+description = "Denies the alerts_state command without any pre-configured scope."
+commands.deny = ["alerts_state"]

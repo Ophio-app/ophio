@@ -1,0 +1,124 @@
+[
+  {
+    "name": "m2-ask-light",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".talk-bar__main"],
+      ["clickSel", "dialog[open] button.row:has-text(\"New task\")"],
+      [
+        "fill",
+        "What should Claude Code",
+        "Explain the deployment health checks."
+      ],
+      ["click", "Review"],
+      ["clickSel", "label.mode:has(input[value=\"ask\"])"],
+      ["wait", 400],
+      ["shot", "review"],
+      ["click", "Start task"],
+      ["wait", 1500],
+      ["wait", 400],
+      [
+        "eval",
+        "const h=window.__sim.host; const t=h.tasks.find(t=>t.title.includes('Explain the deployment')); if(!t || t.mode!=='ask' || !h.projects.find(p=>p.project_id===t.project_id).active_writer) throw Error('Ask did not coexist with writer')"
+      ],
+      ["shot", "running"],
+      ["clickSel", ".talk-bar__stop"],
+      ["wait", 700]
+    ]
+  },
+  {
+    "name": "m2-ask-dark",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".talk-bar__main"],
+      ["clickSel", "dialog[open] button.row:has-text(\"New task\")"],
+      [
+        "fill",
+        "What should Claude Code",
+        "Explain the deployment health checks."
+      ],
+      ["click", "Review"],
+      ["clickSel", "label.mode:has(input[value=\"ask\"])"],
+      ["wait", 400],
+      ["shot", "review"],
+      ["click", "Start task"],
+      ["wait", 1500],
+      ["wait", 400],
+      [
+        "eval",
+        "const h=window.__sim.host; const t=h.tasks.find(t=>t.title.includes('Explain the deployment')); if(!t || t.mode!=='ask' || !h.projects.find(p=>p.project_id===t.project_id).active_writer) throw Error('Ask did not coexist with writer')"
+      ],
+      ["shot", "running"],
+      ["clickSel", ".talk-bar__stop"],
+      ["wait", 700]
+    ],
+    "dark": true
+  },
+  {
+    "name": "m2-ask-large",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".talk-bar__main"],
+      ["clickSel", "dialog[open] button.row:has-text(\"New task\")"],
+      [
+        "fill",
+        "What should Claude Code",
+        "Explain the deployment health checks."
+      ],
+      ["click", "Review"],
+      ["clickSel", "label.mode:has(input[value=\"ask\"])"],
+      ["wait", 400],
+      ["shot", "review"],
+      ["click", "Start task"],
+      ["wait", 1500],
+      ["wait", 400],
+      [
+        "eval",
+        "const h=window.__sim.host; const t=h.tasks.find(t=>t.title.includes('Explain the deployment')); if(!t || t.mode!=='ask' || !h.projects.find(p=>p.project_id===t.project_id).active_writer) throw Error('Ask did not coexist with writer')"
+      ],
+      ["shot", "running"],
+      [
+        "eval",
+        "if(getComputedStyle(document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden)')).visibility!=='visible') throw Error('CL-8: current Talk route remains hidden after Start task')"
+      ],
+      ["clickSel", ".talk-bar__stop"],
+      ["wait", 700]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "m2-ask-wide",
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["clickSel", ".talk-bar__main"],
+      ["clickSel", "dialog[open] button.row:has-text(\"New task\")"],
+      [
+        "fill",
+        "What should Claude Code",
+        "Explain the deployment health checks."
+      ],
+      ["click", "Review"],
+      ["clickSel", "label.mode:has(input[value=\"ask\"])"],
+      ["wait", 400],
+      ["shot", "review"],
+      ["click", "Start task"],
+      ["wait", 1500],
+      ["wait", 400],
+      [
+        "eval",
+        "const h=window.__sim.host; const t=h.tasks.find(t=>t.title.includes('Explain the deployment')); if(!t || t.mode!=='ask' || !h.projects.find(p=>p.project_id===t.project_id).active_writer) throw Error('Ask did not coexist with writer')"
+      ],
+      ["shot", "running"],
+      ["clickSel", ".talk-bar__stop"],
+      ["wait", 700]
+    ],
+    "width": 1280,
+    "height": 800
+  }
+]

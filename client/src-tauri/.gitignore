@@ -1,0 +1,10 @@
+/target/
+/gen/schemas/
+/gen/android/.gradle/
+/gen/android/.kotlin/
+/gen/android/local.properties
+/gen/android/**/build/
+/gen/android/app/src/main/jniLibs/
+/plugins/device/android/.gradle/
+/plugins/device/android/build/
+/.dev-host/

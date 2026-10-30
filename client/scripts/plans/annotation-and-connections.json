@@ -1,0 +1,661 @@
+[
+  {
+    "name": "annotate-light",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ]
+  },
+  {
+    "name": "connections-light",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ]
+  },
+  {
+    "name": "annotate-dark",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ],
+    "dark": true
+  },
+  {
+    "name": "connections-dark",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ],
+    "dark": true
+  },
+  {
+    "name": "annotate-large",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "connections-large",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ],
+    "width": 360,
+    "height": 780,
+    "text": 2
+  },
+  {
+    "name": "annotate-landscape",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ],
+    "width": 800,
+    "height": 360,
+    "scale": 1
+  },
+  {
+    "name": "connections-landscape",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ],
+    "width": 800,
+    "height": 360,
+    "scale": 1
+  },
+  {
+    "name": "annotate-wide",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "connections-wide",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "annotate-empty",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'empty');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ]
+  },
+  {
+    "name": "annotate-missing",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'missing');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900]
+    ]
+  },
+  {
+    "name": "annotate-type-flow",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'marks');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('.an-bar')?.scrollIntoView({block:'start'})"
+      ],
+      ["fill", "What should change?", "Give these more breathing room"],
+      ["click", "Target A"],
+      ["click", "Target C"],
+      ["shot", "keyboard"],
+      ["click", "Add comment"],
+      [
+        "eval",
+        "document.querySelector('.an-bar')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "fill",
+        "What should change?",
+        "Keep the color; increase contrast against the background."
+      ],
+      ["click", "Target B"],
+      ["click", "Add comment"],
+      ["clickSel", ".an-draft"]
+    ]
+  },
+  {
+    "name": "annotate-keyboard-large",
+    "width": 360,
+    "height": 570,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'marks');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('.an-bar')?.scrollIntoView({block:'start'})"
+      ],
+      ["fill", "What should change?", "Give these more breathing room"],
+      ["click", "Target A"],
+      ["click", "Target C"]
+    ]
+  },
+  {
+    "name": "annotate-delete-undo",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["clickSel", ".an-draft"],
+      ["click", "Delete B"],
+      ["shot", "affected"],
+      ["clickSel", "dialog[open] .sheet__footer button"],
+      ["eval", "document.querySelector('.an-bar')?.scrollIntoView({block:'start'})"],
+      ["shot", "unresolved"],
+      ["click", "Undo"],
+      ["clickSel", ".an-draft"]
+    ]
+  },
+  {
+    "name": "annotate-offline-reload",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 300],
+      ["shot", "offline"],
+      ["eval", "location.reload()"],
+      ["wait", 900],
+      ["eval", "window.__sim.offline()"]
+    ]
+  },
+  {
+    "name": "annotate-capture",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'empty');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["click", "Add source"],
+      ["click", "Capture the computer"],
+      ["click", "DP-1"],
+      ["wait", 700],
+      ["clickSel", ".an-tools [aria-label=\"Box\"]"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add box in center');if(!b)throw Error('No Add box in center key');b.click()})()"],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Zoom in');if(!b)throw Error('No Zoom in key');b.click()})()"]
+    ]
+  },
+  {
+    "name": "annotate-speech",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'marks');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pen in center');if(!b)throw Error('No Add pen in center key');b.click()})()"],
+      ["click", "Speak"],
+      ["shot", "explanation"],
+      ["click", "Start recording"],
+      ["wait", 1500],
+      [
+        "eval",
+        "document.querySelector('.an-bar')?.scrollIntoView({block:'start'})"
+      ],
+      ["shot", "recording"],
+      ["click", "Stop recording"],
+      ["wait", 1400],
+      ["clickSel", ".an-draft"]
+    ]
+  },
+  {
+    "name": "annotate-speech-unavailable",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'marks');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["eval", "window.__sim.offline()"],
+      ["click", "Speak"],
+      [
+        "eval",
+        "document.querySelector('.an-bar')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-clip",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'clip');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 1200],
+      ["click", "Add this moment"],
+      ["click", "+1 s"],
+      ["wait", 300],
+      ["click", "Add this moment"],
+      ["click", "\u22121 frame"],
+      ["wait", 300],
+      ["click", "Add this moment"],
+      ["fill", "Describe step 1", "Open the dashboard"],
+      ["fill", "Describe step 2", "Choose the latency chart"],
+      ["fill", "Describe step 3", "The chart disappears"],
+      ["fill", "Expected", "The chart remains visible"],
+      ["fill", "Actual", "The chart disappears"],
+      [
+        "eval",
+        "document.querySelector('.an-steps')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "connections-phones",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('#settings-phones')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "connections-revoke",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["click", "Revoke Old tablet"],
+      ["shot", "confirm"],
+      ["clickSel", "dialog[open] .sheet__footer button"],
+      ["wait", 300],
+      [
+        "eval",
+        "document.querySelector('#settings-phones')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "connections-chat",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["click", "Link a chat"],
+      ["fill", "Chat link code", "000-000"],
+      ["click", "Approve chat link"],
+      ["wait", 300],
+      ["shot", "bad-code"],
+      ["fill", "Chat link code", "123-456"],
+      ["click", "Approve chat link"],
+      ["wait", 300],
+      [
+        "eval",
+        "document.querySelector('#settings-chat')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "connections-agents",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('#settings-agents')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "connections-account-remedy",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('#settings-agents')?.closest('section')?.querySelector('.settings-card:last-child')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "control-add-preview",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.reset('control');await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["click", "Previews"],
+      [
+        "eval",
+        "[...document.querySelectorAll('button')].find(b=>/^(Add|Add a preview)$/.test(b.textContent.trim()))?.click()"
+      ],
+      ["wait", 300],
+      ["fill", "Preview label", "Public demo"],
+      ["fill", "Preview URL", "https://example.com"],
+      ["shot", "public-warning"],
+      ["click", "Add preview"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "connections-voice",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('#settings-voice')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "connections-data",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('#settings-data')?.scrollIntoView({block:'start'})"
+      ],
+      ["click", "Export phone data"],
+      ["wait", 300],
+      ["log", "document.querySelector('.settings-saved')?.textContent ?? 'not saved'"]
+    ]
+  },
+  {
+    "name": "connections-data-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('#settings-data')?.scrollIntoView({block:'start'})"
+      ],
+      ["click", "Export phone data"],
+      ["wait", 300],
+      ["click", "Export phone data"],
+      ["wait", 300],
+      ["log", "document.querySelector('.settings-saved')?.textContent ?? 'not saved'"],
+      [
+        "eval",
+        "document.querySelector('.settings-saved')?.scrollIntoView({block:'center'})"
+      ]
+    ]
+  },
+  {
+    "name": "connections-readiness",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "document.querySelector('#settings-readiness')?.scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "connections-forget",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["click", "Forget this computer on this phone"]
+    ]
+  },
+  {
+    "name": "connections-offline",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["eval", "window.__sim.offline()"]
+    ]
+  },
+  {
+    "name": "annotate-redact",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'marks');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["clickSel", ".an-draft"],
+      ["click", "B \u00b7 Box \u00b7 S1"],
+      ["click", "Redact selected boxes"],
+      ["shot", "explanation"],
+      ["click", "Create redacted image"],
+      ["wait", 500],
+      ["eval", "document.querySelector('.an-screen .screen__body').scrollTop=0"]
+    ]
+  },
+  {
+    "name": "annotate-crop",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'marks');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["clickSel", ".an-draft"],
+      ["click", "B \u00b7 Box \u00b7 S1"],
+      ["click", "Crop selected box"],
+      ["shot", "explanation"],
+      ["click", "Create cropped image"],
+      ["wait", 500],
+      ["eval", "document.querySelector('.an-screen .screen__body').scrollTop=0"]
+    ]
+  },
+  {
+    "name": "annotate-revoked",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["eval", "window.__sim.revoke()"]
+    ]
+  },
+  {
+    "name": "connections-current-revoked",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["click", "Revoke Pixel 9"],
+      ["shot", "confirm"],
+      ["clickSel", "dialog[open] .sheet__footer button"],
+      ["wait", 400],
+      [
+        "eval",
+        "document.querySelector('.settings-screen .screen__body').scrollTop=0"
+      ]
+    ]
+  },
+  {
+    "name": "connections-empty",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "window.__sim.host.devices=[];window.__sim.host.identities=[];window.__sim.host.emit({type:'devices_changed',devices:[]});window.__sim.host.emit({type:'channel_identities_changed',identities:[]})"
+      ],
+      [
+        "eval",
+        "document.querySelector('#settings-phones').scrollIntoView({block:'start'})"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-speech-edited",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'marks');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["eval", "(()=>{const b=[...document.querySelectorAll('.an-keys button')].find(b=>b.textContent.trim()==='Add pen in center');if(!b)throw Error('No Add pen in center key');b.click()})()"],
+      ["click", "Speak"],
+      ["click", "Start recording"],
+      ["wait", 800],
+      ["clickSel", ".an-draft"],
+      ["click", "Select targets"],
+      ["fill", "Comment text", "My wording stays"],
+      ["clickSel", "dialog[open] button[aria-label=\"Target A\"]"],
+      ["clickSel", "dialog[open] button[aria-label=\"Target C\"]"],
+      ["click", "Keep changes"],
+      ["wait", 1400],
+      ["wait", 0]
+    ]
+  },
+  {
+    "name": "connections-permission",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["eval", "window.__sim.permissions({admin:false})"],
+      ["wait", 2000],
+      [
+        "eval",
+        "if(!document.querySelector('.settings-screen').textContent.includes('wasn\u2019t granted permission')) throw new Error('Restricted-access state was not reached')"
+      ]
+    ]
+  },
+  {
+    "name": "connections-unknown",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'connections'});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      ["click", "Rename Old tablet"],
+      ["fill", "Device name", "Desk tablet"],
+      ["eval", "window.__sim.dropNextReceipt()"],
+      ["click", "Save name"],
+      ["wait", 700],
+      [
+        "eval",
+        "const t=document.querySelector('dialog[open]').textContent;if(!t.includes('hasn\u2019t confirmed')||t.includes('Not sent.')) throw new Error('Lost receipt must remain unknown')"
+      ]
+    ]
+  },
+  {
+    "name": "annotate-capture-denied",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {seedAnnotation}=await import('/src/dev/sim/annotate.ts');const id=await seedAnnotation(window.__sim.host,'comments');const {UiStore}=await import('/src/app/ui.ts');const ui=new UiStore('sim-studio');ui.selectProject(window.__sim.host.projects[0].project_id);ui.push({screen:'annotate',annotationId:id});await new Promise(r=>setTimeout(r,400));location.reload()})()"
+      ],
+      ["wait", 900],
+      [
+        "eval",
+        "window.__sim.host.targets=window.__sim.host.targets.map(t=>({...t,capture:{state:'permission_missing',remedy:'Enable capture on the computer.'}}));window.__sim.host.emit({type:'targets_changed',targets:window.__sim.host.targets})"
+      ],
+      ["clickSel", ".an-draft"],
+      ["click", "Add source"],
+      ["click", "Capture the computer"]
+    ]
+  }
+]

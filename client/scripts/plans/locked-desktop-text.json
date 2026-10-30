@@ -1,0 +1,618 @@
+[
+  {
+    "name": "initial-light",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.control-footer button').disabled) throw Error('Initial control disabled')"
+      ]
+    ]
+  },
+  {
+    "name": "initial-dark",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.control-footer button').disabled) throw Error('Initial control disabled')"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "initial-large",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.control-footer button').disabled) throw Error('Initial control disabled')"
+      ]
+    ],
+    "width": 360,
+    "height": 800,
+    "text": 2
+  },
+  {
+    "name": "landscape",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.control-footer button').disabled) throw Error('Initial control disabled')"
+      ]
+    ],
+    "width": 800,
+    "height": 360,
+    "scale": 1
+  },
+  {
+    "name": "wide",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.control-footer button').disabled) throw Error('Initial control disabled')"
+      ]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "geometry",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.control.freeze(true); window.__sim.control.geometry()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "changed"
+      ],
+      [
+        "eval",
+        "window.__sim.control.freeze(false)"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(document.body.innerText.includes('Display changed')) throw Error('Geometry did not recover')"
+      ],
+      [
+        "shot",
+        "recovered"
+      ]
+    ]
+  },
+  {
+    "name": "locked-light",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.control.lock(true)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Locked on computer')) throw Error('Lock missing')"
+      ]
+    ]
+  },
+  {
+    "name": "locked-large-dark",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "window.__sim.control.lock(true)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.body.innerText.includes('Locked on computer')) throw Error('Lock missing')"
+      ]
+    ],
+    "width": 360,
+    "height": 800,
+    "text": 2,
+    "dark": true
+  },
+  {
+    "name": "text-choice",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        ".desktop-screen button:has-text(\"Keyboard\")"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Caf\u00e9 \u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac \u65e5\u672c\u8a9e"
+      ],
+      [
+        "eval",
+        "window.__sim.control.refuseText(\"\u00e9\u0395\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac\u65e5\u672c\u8a9e\",true)"
+      ],
+      [
+        "click",
+        "Send text"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Saved text\"]').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "refused"
+      ],
+      [
+        "click",
+        "Paste instead"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!window.__sim.control.inputs().some(e=>e.action.action==='paste')) throw Error('Paste choice not sent')"
+      ]
+    ]
+  },
+  {
+    "name": "text-unavailable",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        ".desktop-screen button:has-text(\"Keyboard\")"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Caf\u00e9 \u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac \u65e5\u672c\u8a9e"
+      ],
+      [
+        "eval",
+        "window.__sim.control.refuseText(\"\u00e9\u0395\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac\u65e5\u672c\u8a9e\",false)"
+      ],
+      [
+        "click",
+        "Send text"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Saved text\"]').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "refused"
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "text-large",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Enable control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "clickSel",
+        ".desktop-screen button:has-text(\"Keyboard\")"
+      ],
+      [
+        "fill",
+        "Text for the computer",
+        "Caf\u00e9 \u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac \u65e5\u672c\u8a9e"
+      ],
+      [
+        "eval",
+        "window.__sim.control.refuseText(\"\u00e9\u0395\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac\u65e5\u672c\u8a9e\",true)"
+      ],
+      [
+        "click",
+        "Send text"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('[aria-label=\"Saved text\"]').scrollIntoView({block:'center'})"
+      ],
+      [
+        "shot",
+        "refused"
+      ],
+      [
+        "click",
+        "Paste instead"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(!window.__sim.control.inputs().some(e=>e.action.action==='paste')) throw Error('Paste choice not sent')"
+      ]
+    ],
+    "width": 360,
+    "height": 800,
+    "text": 2
+  },
+  {
+    "name": "offline",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "empty",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.control.empty()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "permission",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.control.missing()"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "removed-source",
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Watch HDMI-A-1"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.targets=h.targets.map(t=>({...t,capture:{state:'temporarily_unavailable',reason:'Display changed, reopen to continue'}}));h.emit({type:'targets_changed',targets:h.targets})"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "shot",
+        "removed-source-before"
+      ],
+      [
+        "click",
+        "Reopen sharing"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.control-footer button').disabled) throw Error('Reopened picture did not become current')"
+      ]
+    ]
+  }
+]

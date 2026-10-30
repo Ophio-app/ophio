@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "app": {
+      "command": "{npx}",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.79",
+        "--cdp-endpoint",
+        "http://127.0.0.1:9226",
+        "--output-dir",
+        "{shots}"
+      ],
+      "env": { "PATH": "{path}" }
+    },
+    "phone": {
+      "command": "{node}",
+      "args": ["{repo}/tools/review/phone-mcp.mjs"],
+      "env": { "ADB_SERVER_SOCKET": "tcp:5038", "PATH": "{path}" }
+    }
+  }
+}

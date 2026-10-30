@@ -1,0 +1,51 @@
+[
+  {
+    "name": "canary-console-error",
+    "steps": [["eval", "console.error('smoke canary: console error')"]]
+  },
+  {
+    "name": "canary-page-error",
+    "steps": [["eval", "setTimeout(() => { throw new Error('smoke canary: page error') })"], ["wait", 200]]
+  },
+  {
+    "name": "canary-overflow",
+    "steps": [["eval", "const d = document.createElement('div'); d.className = 'smoke-canary'; d.style.width = '200vw'; d.style.height = '4px'; document.body.append(d)"]]
+  },
+  {
+    "name": "canary-two-titles",
+    "steps": [["eval", "const h = document.createElement('h1'); h.className = 'smoke-canary'; h.textContent = 'Smoke canary second title'; document.querySelector('main').append(h)"]]
+  },
+  {
+    "name": "canary-missing-text",
+    "steps": [["expect", "Smoke canary text that is on no screen", { "timeout": 500 }]]
+  },
+  {
+    "name": "canary-stale-click",
+    "steps": [["click", "Smoke canary button that no screen has", { "exact": true }]]
+  },
+  {
+    "name": "canary-covered",
+    "steps": [
+      ["eval", "const d = document.createElement('div'); d.className = 'smoke-canary'; d.style.cssText = 'position:fixed;inset:0;z-index:2147483647'; document.body.append(d)"],
+      ["reach", "button", "Library", { "in": "nav" }]
+    ]
+  },
+  {
+    "name": "canary-below-fold",
+    "steps": [
+      ["eval", "const b = document.createElement('button'); b.className = 'smoke-canary'; b.textContent = 'Smoke canary button below the fold'; b.style.cssText = 'position:absolute;top:200vh;left:0'; document.body.append(b)"],
+      ["inView", "button", "Smoke canary button below the fold"]
+    ]
+  },
+  {
+    "name": "canary-slow-flip",
+    "steps": [
+      ["eval", "const b = document.createElement('button'); b.className = 'smoke-canary'; b.setAttribute('role', 'switch'); b.setAttribute('aria-checked', 'false'); b.textContent = 'Smoke canary switch'; b.style.cssText = 'position:fixed;top:0;left:0;z-index:2147483647'; b.onclick = () => setTimeout(() => b.setAttribute('aria-checked', 'true'), 1500); document.body.append(b)"],
+      ["flips", "switch", "Smoke canary switch"]
+    ]
+  },
+  {
+    "name": "canary-unknown-step",
+    "steps": [["clik", "Library"]]
+  }
+]

@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.voice-stack { display: grid; gap: var(--s4); min-width: 0; overflow-wrap: break-word; }
+.voice-heading { font-size: var(--text-3xl); font-weight: 600; letter-spacing: -0.03em; }
+.voice-target { display: grid; gap: var(--s3); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s3); margin-bottom: var(--s3); min-width: 0; }
+.voice-target h3 { font-size: var(--text-lg); }
+.voice-check { display: flex; gap: var(--s3); align-items: center; min-height: var(--target); }
+.voice-stack select { max-width: 100%; min-width: 0; min-height: var(--target); background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: var(--s2); }
+.voice-prompt { background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s4); }
+.voice-prompt h2 { font-size: var(--text-xl); font-weight: 600; }
+.voice-label { font-size: var(--text-xs); color: var(--ink-3); }
+.voice-choices, .voice-log { list-style: none; padding: 0; display: grid; gap: var(--s3); }
+.voice-choices .btn { text-align: left; justify-content: start; white-space: normal; }
+.voice-picture { margin: 0 0 var(--s3); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--surface-sunken); }
+.voice-picture img { display: block; width: 100%; height: auto; max-height: 340px; object-fit: contain; }
+.voice-picture figcaption { padding: var(--s3); font-size: var(--text-xs); color: var(--ink-2); }
+.voice-log li { border-top: 1px solid var(--line); padding-top: var(--s3); display: grid; gap: var(--s1); font-size: var(--text-sm); }
+.voice-transcript { border-left: 2px solid var(--accent); padding-left: var(--s3); }
+.voice-stop { padding: var(--s2) var(--s4); }
+.voice-stop .btn { min-height: var(--target-intervention); }
+
+.safety-rail--voice:not(.safety-rail--expanded) { display: grid; grid-template-columns: var(--target) minmax(0, 1fr); }
+.safety-rail--voice:not(.safety-rail--expanded) .safety-rail__content > .intervention { grid-column: 2; max-width: none; min-width: 0; padding-inline: var(--s2); }
+.safety-rail--voice .named-stop__button { padding-inline: var(--s2); }
+.safety-rail--voice:not(.safety-rail--expanded) .btn__icon { display: none; }

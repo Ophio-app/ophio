@@ -1,0 +1,69 @@
+[
+  {
+    "name": "attention-light",
+    "height": 1000,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){const app=f.memoizedProps.app;const item=Object.values(app.session.state.get().attention).find(a=>a.kind==='approval'&&a.resolved_at===null);window.__sim.device.notifications.push({id:'shot',title:'Approval waiting',body:'Project',route:{kind:'attention',profileId:app.profile.profileId,attentionId:item.attention_id}});window.__sim.device.open('shot');return;}}})()"
+      ],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "attention-dark",
+    "height": 1000,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){const app=f.memoizedProps.app;const item=Object.values(app.session.state.get().attention).find(a=>a.kind==='approval'&&a.resolved_at===null);window.__sim.device.notifications.push({id:'shot',title:'Approval waiting',body:'Project',route:{kind:'attention',profileId:app.profile.profileId,attentionId:item.attention_id}});window.__sim.device.open('shot');return;}}})()"
+      ],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "attention-narrow",
+    "height": 1000,
+    "width": 360,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){const app=f.memoizedProps.app;const item=Object.values(app.session.state.get().attention).find(a=>a.kind==='approval'&&a.resolved_at===null);window.__sim.device.notifications.push({id:'shot',title:'Approval waiting',body:'Project',route:{kind:'attention',profileId:app.profile.profileId,attentionId:item.attention_id}});window.__sim.device.open('shot');return;}}})()"
+      ],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "attention-large",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){const app=f.memoizedProps.app;const item=Object.values(app.session.state.get().attention).find(a=>a.kind==='approval'&&a.resolved_at===null);window.__sim.device.notifications.push({id:'shot',title:'Approval waiting',body:'Project',route:{kind:'attention',profileId:app.profile.profileId,attentionId:item.attention_id}});window.__sim.device.open('shot');return;}}})()"
+      ],
+      ["wait", 1000]
+    ]
+  },
+  {
+    "name": "attention-large-dark",
+    "height": 1000,
+    "width": 360,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      ["wait", 1000],
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){const app=f.memoizedProps.app;const item=Object.values(app.session.state.get().attention).find(a=>a.kind==='approval'&&a.resolved_at===null);window.__sim.device.notifications.push({id:'shot',title:'Approval waiting',body:'Project',route:{kind:'attention',profileId:app.profile.profileId,attentionId:item.attention_id}});window.__sim.device.open('shot');return;}}})()"
+      ],
+      ["wait", 1000]
+    ]
+  }
+]

@@ -1,0 +1,31 @@
+{
+ "tile_frames": [
+  {"name": "keyframe with cursor and two tiles", "hex": "544456310300008000000000000000070000000000000003050002d000000a00000005a0000a0014000200000000000000000003616263000300020000000568656c6c6f", "frame": {"keyframe": true, "cursor": [10, 20], "tile": 128, "seq": 7, "geometry_revision": 3, "enc_width": 1280, "enc_height": 720, "src_width": 2560, "src_height": 1440, "count": 2, "tiles": [[0, 0, "616263"], [3, 2, "68656c6c6f"]]}},
+  {"name": "delta without tiles", "hex": "544456310000008000000000000000070000000000000003050002d000000a00000005a00000000000000000", "frame": {"keyframe": false, "cursor": null, "tile": 128, "seq": 7, "geometry_revision": 3, "enc_width": 1280, "enc_height": 720, "src_width": 2560, "src_height": 1440, "count": 0, "tiles": []}},
+  {"name": "unknown flag bits, reserved and padding are ignored", "hex": "54445631f9ff008000000000000000070000000000000003050002d000000a00000005a0000500060000ffff", "frame": {"keyframe": true, "cursor": null, "tile": 128, "seq": 7, "geometry_revision": 3, "enc_width": 1280, "enc_height": 720, "src_width": 2560, "src_height": 1440, "count": 0, "tiles": []}},
+  {"name": "cursor bytes without the cursor flag", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a00009000900000000", "frame": {"keyframe": true, "cursor": null, "tile": 128, "seq": 7, "geometry_revision": 3, "enc_width": 1280, "enc_height": 720, "src_width": 2560, "src_height": 1440, "count": 0, "tiles": []}},
+  {"name": "an empty tile", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a000000000000100000001000100000000", "frame": {"keyframe": true, "cursor": null, "tile": 128, "seq": 7, "geometry_revision": 3, "enc_width": 1280, "enc_height": 720, "src_width": 2560, "src_height": 1440, "count": 1, "tiles": [[1, 1, ""]]}},
+  {"name": "largest values", "hex": "544456310200ffff001fffffffffffff001fffffffffffffffffffffffffffffffffffffffffffff00000000", "frame": {"keyframe": false, "cursor": [65535, 65535], "tile": 65535, "seq": 9007199254740991, "geometry_revision": 9007199254740991, "enc_width": 65535, "enc_height": 65535, "src_width": 4294967295, "src_height": 4294967295, "count": 0, "tiles": []}},
+  {"name": "keyframe of a region reaching the far corner", "hex": "544456310700008000000000000000070000000000000003050002d000000a00000005a0000a00140001000000000500000002d000000500000002d00000000000000003616263", "frame": {"keyframe": true, "cursor": [10, 20], "tile": 128, "seq": 7, "geometry_revision": 3, "enc_width": 1280, "enc_height": 720, "src_width": 2560, "src_height": 1440, "region": [1280, 720, 1280, 720], "count": 1, "tiles": [[0, 0, "616263"]]}},
+  {"name": "empty", "hex": "", "error": "short"},
+  {"name": "one byte short of a header", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a000000000000000", "error": "short"},
+  {"name": "wrong magic", "hex": "544456320100008000000000000000070000000000000003050002d000000a00000005a00000000000000000", "error": "magic"},
+  {"name": "lowercase magic", "hex": "746476310100008000000000000000070000000000000003050002d000000a00000005a00000000000000000", "error": "magic"},
+  {"name": "tile record cut short", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a0000000000001000000000000000000", "error": "truncated"},
+  {"name": "tile bytes cut short", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a0000000000001000000000000000000036162", "error": "truncated"},
+  {"name": "second tile missing", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a000000000000200000000000000000003616263", "error": "truncated"},
+  {"name": "length past the end", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a0000000000001000000000000ffffffff616263", "error": "truncated"},
+  {"name": "tile count of zero with a tile", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a000000000000000000000000000000003616263", "error": "trailing"},
+  {"name": "one trailing byte", "hex": "544456310100008000000000000000070000000000000003050002d000000a00000005a00000000000010000000000000000000361626300", "error": "trailing"},
+  {"name": "region cut short", "hex": "544456310500008000000000000000070000000000000003050002d000000a00000005a00000000000000000000000000000000000000500000002", "error": "short"},
+  {"name": "region past the source", "hex": "544456310500008000000000000000070000000000000003050002d000000a00000005a00000000000000000000005010000000000000500000002d0", "error": "region"},
+  {"name": "empty region", "hex": "544456310500008000000000000000070000000000000003050002d000000a00000005a00000000000000000000000000000000000000000000002d0", "error": "region"}
+ ],
+ "terminal_frames": [
+  {"name": "offset and output", "hex": "000000000000002a6f6b0d0a", "offset": 42, "bytes": "6f6b0d0a"},
+  {"name": "offset alone", "hex": "0000000000000007", "offset": 7, "bytes": ""},
+  {"name": "largest safe offset", "hex": "001fffffffffffffff", "offset": 9007199254740991, "bytes": "ff"},
+  {"name": "seven bytes", "hex": "00000000000000", "offset": null},
+  {"name": "empty", "hex": "", "offset": null}
+ ]
+}

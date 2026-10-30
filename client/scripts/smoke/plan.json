@@ -1,0 +1,429 @@
+{
+  "variants": [
+    { "suffix": "portrait", "width": 390, "height": 844 },
+    { "suffix": "landscape", "width": 844, "height": 390 },
+    { "suffix": "large-text", "width": 390, "height": 844, "text": 2 },
+    { "suffix": "landscape-large-text", "width": 844, "height": 390, "text": 2 }
+  ],
+  "parts": {
+    "storage notice fits": [
+      ["eval", "(() => { const notice = document.querySelector('.app > .notice'); const n = notice.getBoundingClientRect(), m = document.querySelector('.app__main').getBoundingClientRect(); if (Math.abs(n.left - m.left) > 1 || Math.abs(n.right - m.right) > 1) throw new Error('storage warning does not span the content: ' + JSON.stringify({ notice: n.toJSON(), main: m.toJSON() })); if (n.bottom > m.top + 1 || m.height < 40) throw new Error('storage warning overlaps or consumes the main screen'); })()"]
+    ],
+    "chat storage layout": [
+      ["nav", "Library"],
+      ["expect", "Saved chats could not be read.", {"in": ".app > .notice"}],
+      ["expect", "Agent is in control · Screen 1 (DP-1)", {"in": "aside"}],
+      ["part", "storage notice fits"],
+      ["reach", "button", "Retry saving chats"],
+      ["reach", "button", "Stop · Check the staging dashboard renders the new latency chart", {"starts": true, "in": "aside"}],
+      ["shot", "warning"],
+      ["clickSel", ".safety-rail__toggle"],
+      ["eval", "(() => { const n = document.querySelector('.app > .notice').getBoundingClientRect(), r = document.querySelector('.safety-rail--expanded').getBoundingClientRect(); if (r.top < n.bottom - 1) throw new Error('expanded safety controls cover the storage warning'); })()"],
+      ["reach", "button", "Retry saving chats"],
+      ["clickSel", ".safety-rail__toggle"],
+      ["click", "Files", {"exact": true, "role": "radio"}],
+      ["click", "Transfers", {"exact": true}],
+      ["expectRole", "heading", "Send a file"],
+      ["part", "storage notice fits"],
+      ["reach", "button", "Retry saving chats"],
+      ["eval", "window.__restoreChatReads()"],
+      ["click", "Retry saving chats", {"exact": true}],
+      ["expectNot", "Saved chats could not be read."],
+      ["eval", "if (document.querySelector('.app > .notice')) throw new Error('storage warning stayed after a successful retry')"]
+    ],
+    "pick tidewater-api": [
+      ["click", "Home", { "starts": true, "role": "button", "in": "main" }],
+      ["expectRole", "dialog", "Projects"],
+      ["click", "tidewater-api", { "starts": true, "in": "dialog" }]
+    ],
+    "tidewater": [
+      ["part", "pick tidewater-api"],
+      ["expectRole", "heading", "tidewater-api", { "in": "main" }]
+    ],
+    "tidewater tasks": [
+      ["nav", "Tasks"],
+      ["part", "tidewater"]
+    ],
+    "release.md in the editor": [
+      ["nav", "Library"],
+      ["part", "pick tidewater-api"],
+      ["click", "Files", { "exact": true, "role": "radio" }],
+      ["click", "tidewater-api Project · Read and write"],
+      ["click", "docs"],
+      ["click", "guides"],
+      ["click", "release.md"],
+      ["expectRole", "heading", "Release checklist"],
+      ["click", "Edit", { "exact": true }],
+      ["expectRole", "dialog", "Edit Markdown"],
+      ["fill", "Markdown source", "# Release checklist\n\nKeep the change focused.\n"]
+    ],
+    "a new conversation": [
+      ["nav", "Chat"],
+      ["expectRole", "heading", "Home", { "in": "main" }],
+      ["click", "New conversation", { "exact": true }],
+      ["expectRole", "group", "What the agent may reach"]
+    ]
+  },
+  "scenarios": [
+    {
+      "name": "chat-storage-warning",
+      "init": "const read = Storage.prototype.getItem; Storage.prototype.getItem = function(key) { if (key.startsWith('ui.')) throw new Error('Storage temporarily unavailable'); return read.call(this, key); }; window.__restoreChatReads = () => { Storage.prototype.getItem = read; };",
+      "steps": [["part", "chat storage layout"]]
+    },
+    {
+      "name": "chat-storage-warning-wide",
+      "width": 1024,
+      "height": 768,
+      "shapes": ["portrait"],
+      "init": "const read = Storage.prototype.getItem; Storage.prototype.getItem = function(key) { if (key.startsWith('ui.')) throw new Error('Storage temporarily unavailable'); return read.call(this, key); }; window.__restoreChatReads = () => { Storage.prototype.getItem = read; };",
+      "steps": [["part", "chat storage layout"]]
+    },
+    {
+      "name": "pair",
+      "path": "/?unpaired",
+      "steps": [
+        ["click", "Pair a computer", { "exact": true }],
+        ["click", "Scan the code", { "exact": true }],
+        ["expectRole", "heading", "Pair with studio?"],
+        ["expect", "Check it matches the fingerprint shown under the code on your computer."],
+        ["reach", "button", "Pair"],
+        ["click", "Pair", { "exact": true }],
+        ["expectRole", "heading", "Paired with studio", { "timeout": 10000 }],
+        ["expect", "Open terminals", { "exact": true }],
+        ["click", "Continue", { "exact": true }],
+        ["expectRole", "region", "Chat"],
+        ["expectRole", "navigation", "Main"]
+      ]
+    },
+    {
+      "name": "new-chat",
+      "steps": [
+        ["part", "a new conversation"],
+        ["expect", "The agent can read your home folder but can’t change anything."],
+        ["fill", "Ask Claude Code anything about Home", "What changed in the parser?"],
+        ["click", "Start conversation", { "exact": true }],
+        ["expect", "Delivered to the agent", { "in": "main" }],
+        ["expect", "I only read files; nothing was changed.", { "timeout": 8000 }],
+        ["reach", "textbox", "Reply to Claude Code", { "timeout": 8000 }]
+      ]
+    },
+    {
+      "name": "permissions",
+      "steps": [
+        ["part", "a new conversation"],
+        ["click", "Change & run: Nothing", { "exact": true }],
+        ["expectRole", "dialog", "What the agent may change and run"],
+        ["click", "tidewater-api", { "in": "dialog", "role": "checkbox" }],
+        ["click", "Done", { "exact": true, "in": "dialog" }],
+        ["click", "Internet", { "exact": true }],
+        ["expectRole", "button", "Change & run: tidewater-api"],
+        ["expect", "The agent can change tidewater-api and run commands there, and read your home folder. It can’t reach the internet."]
+      ]
+    },
+    {
+      "name": "approval",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["expect", "Approval needed", { "in": "main" }],
+        ["reach", "button", "Allow", { "in": "main" }],
+        ["click", "Allow", { "exact": true, "in": "main" }],
+        ["expect", "After “Fix the flaky retry test in the payments client” finishes"],
+        ["expectNot", "Approval needed", { "in": "main" }]
+      ]
+    },
+    {
+      "name": "conversion",
+      "steps": [
+        ["part", "a new conversation"],
+        ["fill", "Ask Claude Code anything about Home", "What changed in the parser?"],
+        ["click", "Start conversation", { "exact": true }],
+        ["click", "Turn into a task", { "exact": true, "timeout": 8000 }],
+        ["expectRole", "dialog", "Turn into a task"],
+        ["expect", "It keeps this conversation’s access, and may change Home.", { "in": "dialog" }],
+        ["reach", "button", "Start the task", { "in": "dialog" }],
+        ["click", "Start the task", { "exact": true, "in": "dialog" }],
+        ["expectRole", "button", "More about this task"],
+        ["expectRole", "button", "Change & run: Home"],
+        ["expect", "Go ahead with what we discussed.", { "in": "main" }]
+      ]
+    },
+    {
+      "name": "queue",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["click", "Open Next up"],
+        ["expectRole", "heading", "Next up", { "in": "main" }],
+        ["click", "Move up", { "exact": true, "in": "main li:has(h2:text-is('Update README install steps for the new CLI'))" }],
+        ["expectRole", "heading", "Update README install steps for the new CLI", { "in": "main li:nth-child(3)" }],
+        ["click", "Pause queue", { "exact": true }],
+        ["expect", "Next up is paused. Resume it to let tasks start."],
+        ["reach", "button", "Resume queue"]
+      ]
+    },
+    {
+      "name": "library-offline-save",
+      "steps": [
+        ["part", "release.md in the editor"],
+        ["eval", "window.__sim.offline('Network disconnected')"],
+        ["expect", "Connect to the computer to save. Editing stays on this device."],
+        ["expect", "Saved on this device", { "in": "dialog" }],
+        ["eval", "window.__sim.online()"],
+        ["click", "Review changes", { "exact": true, "timeout": 8000 }],
+        ["expectRole", "dialog", "Review save"],
+        ["click", "Save on computer", { "exact": true, "in": "dialog" }],
+        ["expect", "Saved on computer", { "in": "main" }],
+        ["eval", "if (!window.__sim.host.files['0192f7a1-0000-7000-8000-000000000902']['docs/guides/release.md'].includes('Keep the change focused.')) throw new Error('The computer did not get the edit')"]
+      ]
+    },
+    {
+      "name": "library-conflict",
+      "steps": [
+        ["part", "release.md in the editor"],
+        ["eval", "window.__sim.library.editOnComputer('0192f7a1-0000-7000-8000-000000000902', 'docs/guides/release.md', '# Release checklist\\n\\nThe computer changed this line.\\n')"],
+        ["click", "Review changes", { "exact": true }],
+        ["click", "Save on computer", { "exact": true, "in": "dialog" }],
+        ["expectRole", "heading", "Review conflicting changes"],
+        ["expect", "Both versions are kept"],
+        ["click", "Save as a new copy…", { "exact": true }],
+        ["expectRole", "dialog", "Save beside the original"],
+        ["click", "Create new copy", { "exact": true, "in": "dialog" }],
+        ["wait", 600],
+        ["eval", "const f = window.__sim.host.files['0192f7a1-0000-7000-8000-000000000902']; if (!f['docs/guides/release (copy).md']?.includes('Keep the change focused.')) throw new Error('No copy with the draft'); if (!f['docs/guides/release.md'].includes('The computer changed this line.')) throw new Error('The copy overwrote the original')"]
+      ]
+    },
+    {
+      "name": "recovery",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["click", "Recover the interrupted migration"],
+        ["expect", "The outcome needs your decision"],
+        ["reach", "button", "Mark failed"],
+        ["click", "Mark failed", { "exact": true }],
+        ["expect", "not verified by the computer"],
+        ["expectNot", "The outcome needs your decision"],
+        ["reach", "button", "Continue this task"]
+      ]
+    },
+    {
+      "name": "problem-report",
+      "shapes": ["portrait", "large-text"],
+      "steps": [
+        ["click", "Settings", { "exact": true, "role": "button" }],
+        ["click", "Report a problem", { "starts": true }],
+        ["expectRole", "dialog", "Report a problem"],
+        ["fill", "What happened?", "The task stayed waiting."],
+        ["reach", "button", "Send"],
+        ["click", "Send", { "exact": true, "in": "dialog" }],
+        ["expect", "Got it, report", { "in": "dialog" }],
+        ["click", "Done", { "exact": true, "in": "dialog" }],
+        ["click", "Your reports", { "starts": true }],
+        ["eval", "const row = [...document.querySelectorAll('.row__title')].find(e => /^Report [A-Z0-9]{6}$/.test(e.textContent)); if (!row) throw new Error('No submitted report'); row.closest('button').click()"],
+        ["expect", "Has it happened again since you reported it?", { "timeout": 10000 }],
+        ["click", "Yes", { "exact": true }],
+        ["expect", "Fixed in this update", { "timeout": 10000 }],
+        ["reach", "button", "Update now"]
+      ]
+    },
+    {
+      "name": "alerts-flip",
+      "steps": [
+        ["click", "Settings", { "exact": true, "role": "button" }],
+        ["click", "Notifications", { "starts": true }],
+        ["expectRole", "heading", "What alerts you"],
+        ["flips", "checkbox", "Questions", { "latency": 1500 }],
+        ["flips", "checkbox", "Approvals"],
+        ["wait", 4000],
+        ["eval", "const box = (name) => [...document.querySelectorAll('input[type=checkbox]')].find((i) => i.labels?.[0]?.textContent.trim() === name); if (box('Questions')?.checked !== false || box('Approvals')?.checked !== false) throw new Error('An alert went back on once the computer answered')"]
+      ]
+    },
+    {
+      "name": "needs-you-first-screen",
+      "shapes": ["portrait", "landscape"],
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["inView", "button", "Allow", { "in": "main" }]
+      ]
+    },
+    {
+      "name": "needs-you-first-request",
+      "shapes": ["large-text", "landscape-large-text"],
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["inView", "button", "Fix the flaky retry test in the payments client", { "starts": true, "exact": false, "in": "main" }],
+        ["reach", "button", "Allow", { "in": "main" }]
+      ]
+    },
+    {
+      "name": "one-line-rail",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["log", "(() => { const r = document.querySelector('.safety-rail:not(.safety-rail--expanded)'); if (!r) throw new Error('no collapsed rail'); const box = (el) => el.getBoundingClientRect(); const t = box(r.querySelector('.safety-rail__toggle')); const s = box(r.querySelector('.named-stop')); if (Math.abs(t.top + t.height / 2 - (s.top + s.height / 2)) > 4) throw new Error('the rail wraps: its toggle is at ' + Math.round(t.top) + ', its Stop at ' + Math.round(s.top)); for (const el of r.querySelectorAll('.safety-rail__title, .safety-rail__line')) { const lh = parseFloat(getComputedStyle(el).lineHeight); if (box(el).height > lh * 1.5) throw new Error(el.className + ' takes ' + Math.round(box(el).height) + 'px, more than one line'); } return Math.round(box(r).height) + 'px rail, ' + Math.round(s.height) + 'px Stop'; })()"],
+        ["expect", "Agent is in control · Screen 1 (DP-1)", { "in": "aside" }],
+        ["reach", "button", "Stop · Check the staging dashboard renders the new latency chart", { "starts": true, "in": "aside" }]
+      ]
+    },
+    {
+      "name": "bottom-chrome",
+      "shapes": ["portrait", "landscape"],
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["log", "(() => { const tops = [...document.querySelectorAll('.safety-rail, nav.nav')].map((el) => el.getBoundingClientRect().top); if (tops.length < 2) throw new Error('expected the rail and the navigation'); const chrome = Math.round(innerHeight - Math.min(...tops)); const limit = innerWidth > innerHeight ? 72 : 132; if (chrome > limit) throw new Error('the rail and navigation take ' + chrome + 'px, more than ' + limit + 'px'); return chrome + 'px of ' + limit + 'px'; })()"]
+      ]
+    },
+    {
+      "name": "rail-steps-aside",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["click", "Stop · Check the staging dashboard renders the new latency chart", { "starts": true, "in": "aside" }],
+        ["expectRole", "button", "1 running task. Show Stop", { "timeout": 8000 }],
+        ["eval", "if (document.querySelector('.safety-rail')) throw new Error('the rail stayed up with no display held')"],
+        ["click", "1 running task. Show Stop", { "exact": true }],
+        ["reach", "button", "Stop · Fix the flaky retry test in the payments client", { "starts": true, "in": "aside" }]
+      ]
+    },
+    {
+      "name": "issues-and-prs",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["click", "Issues & pull requests", { "starts": true, "in": "main" }],
+        ["expectRole", "radio", "Pull requests", { "in": "main" }],
+        ["eval", "if (![...document.querySelectorAll('[role=radio][aria-checked=true]')].some((r) => r.checkVisibility() && r.textContent === 'Pull requests')) throw new Error('the door did not open on the open pull request')"],
+        ["click", "Issues", { "exact": true, "role": "radio" }],
+        ["expectRole", "heading", "Issues", { "in": "main" }],
+        ["click", "Close", { "exact": true }],
+        ["expectRole", "heading", "tidewater-api", { "in": "main" }]
+      ]
+    },
+    {
+      "name": "review-result-approve",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["click", "Issues & pull requests", { "starts": true, "in": "main" }],
+        ["expect", "It affects updates, signing and the review rules themselves, so it needs your approval to merge.", { "in": "main" }],
+        ["expect", "Its review stopped and needs you to decide what happens next.", { "in": "main" }],
+        ["click", "#218 Sign update bundles", { "starts": true, "in": "main" }],
+        ["expect", "This change affects updates, signing and the review rules themselves, so it needs your approval.", { "in": "dialog" }],
+        ["clickSel", "dialog[open] .review-more > summary"],
+        ["expect", "This change edits the review rules. Its edits were not followed; the rules already in the project were.", { "in": "dialog" }],
+        ["reach", "button", "Approve and merge", { "in": "dialog" }],
+        ["shot", "sheet"],
+        ["click", "Approve and merge", { "exact": true, "in": "dialog" }],
+        ["expectRole", "heading", "Approve commit 8c4d2e1?"],
+        ["reach", "button", "Approve and merge", { "in": "dialog" }],
+        ["reach", "button", "Not now", { "in": "dialog" }]
+      ]
+    },
+    {
+      "name": "first-run-opens-tasks",
+      "steps": [
+        ["eval", "(async () => { const tab = () => document.querySelector('.nav [aria-current=page]')?.textContent ?? 'no tab'; for (let i = 0; i < 50 && !tab().includes('Tasks'); i++) await new Promise((r) => setTimeout(r, 100)); if (!tab().includes('Tasks')) throw new Error('a first run with something waiting opened on ' + tab()); })()"],
+        ["inView", "button", "2 in tidewater-api", { "in": "main", "starts": true, "exact": false }],
+        ["click", "2 in tidewater-api", { "in": "main", "starts": true }],
+        ["expectRole", "heading", "Needs you", { "in": "main" }],
+        ["eval", "(() => { const tabs = [...document.querySelectorAll('.nav__tab')]; if (tabs.length !== 5 || tabs.map((t) => t.querySelector('.nav__label')?.textContent).join(',') !== 'Chat,Control,Tasks,Library,To-Do') throw new Error('expected five ordered tabs'); const cut = tabs.filter((t) => { const l = t.querySelector('.nav__label'); if (!l) return true; const a = l.getBoundingClientRect(), b = t.getBoundingClientRect(); return !a.width || a.left < b.left - 1 || a.right > b.right + 1 || l.scrollWidth > Math.ceil(a.width) + 1; }).map((t) => t.textContent); if (cut.length) throw new Error('tabs without their whole name: ' + cut.join(', ')); const opts = [...document.querySelectorAll('.work-parts .segmented__opt')].filter((o) => o.getBoundingClientRect().width); if (opts.length < 3) throw new Error('no Show choice'); if (new Set(opts.map((o) => Math.round(o.getBoundingClientRect().top))).size > 1) throw new Error('Show takes more than one row'); const name = [...document.querySelectorAll('.ctx__project-name')].find((n) => n.getBoundingClientRect().width); const r = document.createRange(); r.selectNodeContents(name); const lines = new Set([...r.getClientRects()].map((x) => Math.round(x.top))).size; if (lines !== 1) throw new Error('the project name takes ' + lines + ' lines'); })()"]
+      ]
+    },
+    {
+      "name": "review-start-summary",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["click", "New", { "starts": true, "in": "main" }],
+        ["click", "New task", { "starts": true, "in": "dialog" }],
+        ["fill", "What should Claude Code do in tidewater-api?", "Tidy the retry helper"],
+        ["click", "Review", { "exact": true }],
+        ["inView", "button", "Add to Next up"],
+        ["eval", "(() => { const s = document.querySelector('.review-foot__summary'); if (!s) throw new Error('no start summary beside Start'); const r = s.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) throw new Error('the start summary is off the screen'); if (!s.textContent.startsWith('In tidewater-api · Claude Code · Work, “Skip permissions” · ')) throw new Error('the start summary says ' + s.textContent); })()"]
+      ]
+    },
+    {
+      "name": "paused-control-resume-first",
+      "steps": [
+        ["nav", "Control"],
+        ["click", "Pause", { "starts": true, "in": ".control-live" }],
+        ["expect", "Agent paused · you’re watching until you resume it or take over", { "in": ".control-live" }],
+        ["reach", "button", "Resume agent", { "in": ".control-live" }],
+        ["eval", "(() => { const b = [...document.querySelectorAll('.control-live .safety-actions > .btn')].map((b) => b.textContent); if (b.join('|') !== 'Resume agent|Take over') throw new Error('the paused display offers ' + b.join(', ')); })()"],
+        ["click", "Resume agent", { "exact": true, "in": ".control-live" }],
+        ["expectRole", "dialog", "Resume the agent on Screen 1 (DP-1)"],
+        ["reach", "button", "Mark up", { "in": "dialog" }],
+        ["reach", "button", "Resume now", { "in": "dialog" }]
+      ]
+    },
+    {
+      "name": "new-file-opens-editor",
+      "steps": [
+        ["nav", "Library"],
+        ["part", "pick tidewater-api"],
+        ["click", "Files", { "exact": true, "role": "radio" }],
+        ["click", "tidewater-api Project · Read and write"],
+        ["click", "docs"],
+        ["click", "New file", { "exact": true }],
+        ["fill", "File name", "review-notes.md"],
+        ["click", "Create file", { "exact": true }],
+        ["expectRole", "dialog", "Edit Markdown"],
+        ["expect", "Write in Markdown. Nothing reaches the computer until you review and save.", { "in": "dialog" }]
+      ]
+    },
+    {
+      "name": "customize-opens-editor",
+      "steps": [
+        ["nav", "Library"],
+        ["click", "About Bug hunter", { "exact": true }],
+        ["click", "Customize", { "exact": true, "in": "dialog" }],
+        ["expectRole", "dialog", "Edit Markdown"],
+        ["expect", "Hunts for bugs in the code", { "in": "dialog" }]
+      ]
+    },
+    {
+      "name": "transfers-send-first",
+      "steps": [
+        ["nav", "Library"],
+        ["click", "Files", { "exact": true, "role": "radio" }],
+        ["click", "Transfers", { "exact": true }],
+        ["expectRole", "heading", "Send a file"],
+        ["eval", "const hs = [...document.querySelectorAll('h2')].filter((h) => h.checkVisibility()).map((h) => h.textContent); const a = hs.indexOf('Send a file'), b = hs.indexOf('History'); if (a < 0 || b < 0 || a > b) throw new Error('Transfers reads ' + hs.join(' / '))"],
+        ["click", "A project folder", { "exact": true, "role": "radio" }],
+        ["click", "Choose another"],
+        ["expectRole", "dialog", "Send to a project"],
+        ["eval", "const d = [...document.querySelectorAll('dialog[open]')].at(-1); const names = [...d.querySelectorAll('.row__title')].map((t) => t.textContent); if (!names.length || names.includes('Home')) throw new Error('Projects offered: ' + names.join(', '))"]
+      ]
+    },
+    {
+      "name": "attach-in-chat",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["click", "Finished", {"starts": true, "role": "radio"}],
+        ["click", "Add rate-limit headers to /v1/orders"],
+        ["click", "Continue this task", {"exact": true}],
+        ["expectNot", "Mark up a screenshot"],
+        ["click", "Attach", {"exact": true}],
+        ["expectRole", "dialog", "Attach"],
+        ["eval", "(() => { const rows = [...document.querySelectorAll('dialog[open] .row__title')].map((t) => t.textContent); if (rows.join('|') !== 'Screen|Images|Clip|Mark up') throw new Error('Attach offers ' + rows.join(', ')); })()"],
+        ["eval", "(async () => { const c = document.createElement('canvas'); c.width = 320; c.height = 200; const g = c.getContext('2d'); g.fillStyle = '#3a6'; g.fillRect(0, 0, 320, 200); const blob = await new Promise((r) => c.toBlob(r, 'image/png')); const dt = new DataTransfer(); dt.items.add(new File([blob], 'checkout.png', { type: 'image/png' })); const input = document.querySelector('input[aria-label=\"Images to attach\"]'); input.files = dt.files; input.dispatchEvent(new Event('change', { bubbles: true })); })()"],
+        ["expect", "1 image", {"timeout": 6000}],
+        ["reach", "button", "Review and send"],
+        ["click", "Back and keep draft", {"exact": true}],
+        ["click", "Message tools", {"exact": true}],
+        ["click", "Attach", {"starts": true, "in": "dialog"}],
+        ["expect", "1 image", {"in": "dialog"}],
+        ["click", "Screen", {"starts": true, "in": "dialog"}],
+        ["expectRole", "dialog", "Add a source"],
+        ["expect", "Which screen?", {"in": "dialog"}]
+      ]
+    },
+    {
+      "name": "archive-undo",
+      "steps": [
+        ["part", "tidewater tasks"],
+        ["click", "Finished", {"starts": true, "role": "radio"}],
+        ["click", "Archive Add rate-limit headers to /v1/orders", {"exact": true}],
+        ["expect", "Archived task, now in Tasks › Archived"],
+        ["expectNot", "Archive task"],
+        ["click", "Undo", {"exact": true}],
+        ["expect", "Add rate-limit headers to /v1/orders", {"timeout": 4000}],
+        ["click", "Archived", {"exact": true, "role": "radio"}],
+        ["expectNot", "Add rate-limit headers to /v1/orders"]
+      ]
+    }
+  ]
+}

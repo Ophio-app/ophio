@@ -1,0 +1,86 @@
+[
+  {
+    "name": "M3-4-3-tasks-height-780",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host,base=h.tasks.find(t=>t.title.startsWith('Fix the flaky')); for(const t of h.tasks)h.emit({type:'task_upserted',task:{...t,state:'completed'}}); h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view}); h.tasks=Array.from({length:3},(_,i)=>({...base,task_id:'proof-task-'+i,title:'Running task '+(i+1),state:'working',mode:'ask'}));for(const task of h.tasks)h.emit({type:'task_upserted',task})"
+      ],
+      ["clickSel", ".ctx__context"],
+      ["height", 780],
+      ["wait", 300],
+      [
+        "log",
+        "[...document.querySelectorAll('dialog[open] .sheet__urgent button')].map(b=>({name:b.textContent,task:document.getElementById(b.getAttribute('aria-describedby'))?.textContent,top:b.getBoundingClientRect().top,bottom:b.getBoundingClientRect().bottom}))"
+      ]
+    ]
+  },
+  {
+    "name": "M3-4-3-tasks-height-450",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host,base=h.tasks.find(t=>t.title.startsWith('Fix the flaky')); for(const t of h.tasks)h.emit({type:'task_upserted',task:{...t,state:'completed'}}); h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view}); h.tasks=Array.from({length:3},(_,i)=>({...base,task_id:'proof-task-'+i,title:'Running task '+(i+1),state:'working',mode:'ask'}));for(const task of h.tasks)h.emit({type:'task_upserted',task})"
+      ],
+      ["clickSel", ".ctx__context"],
+      ["height", 450],
+      ["wait", 300],
+      [
+        "log",
+        "[...document.querySelectorAll('dialog[open] .sheet__urgent button')].map(b=>({name:b.textContent,task:document.getElementById(b.getAttribute('aria-describedby'))?.textContent,top:b.getBoundingClientRect().top,bottom:b.getBoundingClientRect().bottom}))"
+      ]
+    ]
+  },
+  {
+    "name": "M3-4-4-tasks-height-780",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host,base=h.tasks.find(t=>t.title.startsWith('Fix the flaky')); for(const t of h.tasks)h.emit({type:'task_upserted',task:{...t,state:'completed'}}); h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view}); h.tasks=Array.from({length:4},(_,i)=>({...base,task_id:'proof-task-'+i,title:'Running task '+(i+1),state:'working',mode:'ask'}));for(const task of h.tasks)h.emit({type:'task_upserted',task})"
+      ],
+      ["clickSel", ".ctx__context"],
+      ["height", 780],
+      ["wait", 300],
+      [
+        "log",
+        "[...document.querySelectorAll('dialog[open] .sheet__urgent button')].map(b=>({name:b.textContent,task:document.getElementById(b.getAttribute('aria-describedby'))?.textContent,top:b.getBoundingClientRect().top,bottom:b.getBoundingClientRect().bottom}))"
+      ]
+    ]
+  },
+  {
+    "name": "M3-4-4-tasks-height-450",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      [
+        "eval",
+        "const h=window.__sim.host,base=h.tasks.find(t=>t.title.startsWith('Fix the flaky')); for(const t of h.tasks)h.emit({type:'task_upserted',task:{...t,state:'completed'}}); h.control=h.control.map(v=>({...v,input_state:'ready',lease:null}));for(const view of h.control)h.emit({type:'control_changed',view}); h.tasks=Array.from({length:4},(_,i)=>({...base,task_id:'proof-task-'+i,title:'Running task '+(i+1),state:'working',mode:'ask'}));for(const task of h.tasks)h.emit({type:'task_upserted',task})"
+      ],
+      ["clickSel", ".ctx__context"],
+      ["height", 450],
+      ["wait", 300],
+      [
+        "log",
+        "[...document.querySelectorAll('dialog[open] .sheet__urgent button')].map(b=>({name:b.textContent,task:document.getElementById(b.getAttribute('aria-describedby'))?.textContent,top:b.getBoundingClientRect().top,bottom:b.getBoundingClientRect().bottom}))"
+      ]
+    ]
+  }
+]

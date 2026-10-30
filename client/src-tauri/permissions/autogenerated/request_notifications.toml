@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-request-notifications"
+description = "Enables the request_notifications command without any pre-configured scope."
+commands.allow = ["request_notifications"]
+
+[[permission]]
+identifier = "deny-request-notifications"
+description = "Denies the request_notifications command without any pre-configured scope."
+commands.deny = ["request_notifications"]

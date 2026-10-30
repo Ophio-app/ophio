@@ -1,0 +1,1088 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.control-screen {
+  min-width: 0;
+}
+.control-screen .screen__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.control-intro {
+  color: var(--ink-2);
+  margin-bottom: var(--s3);
+}
+.control-cards,
+.control-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.control-target {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.control-target > .ownership {
+  border-radius: 0;
+  margin: 0 var(--s3);
+  border-top: 1px solid var(--line);
+}
+.control-target > .fine,
+.control-target > .notice {
+  margin: var(--s3) var(--s4);
+}
+.control-target .row {
+  background: transparent;
+}
+.control-subline {
+  display: block;
+  margin-top: var(--s1);
+}
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.control-row h2,
+.control-receipt h2,
+.remote-keyboard h2 {
+  font-size: var(--text-lg);
+  font-weight: 650;
+}
+.control-row time {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+.control-tools,
+.control-keys,
+.terminal-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.control-keys .btn {
+  flex: 1 0 auto;
+}
+.control-tools {
+  justify-content: center;
+}
+.control-screen .btn {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+.control-screen .btn__label {
+  min-width: 0;
+}
+.control-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.control-footer {
+  padding: var(--s2) max(var(--s3), var(--safe-left));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.control-footer > .stateline {
+  margin-bottom: var(--s2);
+}
+/* Voice control keeps talking and stopping in thumb reach. */
+.desktop-voice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.desktop-voice-actions .btn {
+  flex: 1 1 8rem;
+  min-height: var(--target-intervention);
+}
+.desktop-voice {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s3);
+}
+.safety-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.safety-actions > .btn {
+  flex: 1 1 0;
+  padding-inline: var(--s2);
+  min-width: 0;
+}
+.safety-actions .intervention {
+  --btn-h: var(--target-intervention);
+  font-size: var(--text-sm);
+  border-radius: var(--r-md);
+  flex-direction: column;
+  gap: 0;
+}
+.safety-actions .btn__label {
+  padding: var(--s1) 0;
+}
+.live-picture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+.picture-caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  justify-content: space-between;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+.picture-caption > span:first-child {
+  display: inline-flex;
+  gap: var(--s2);
+  align-items: center;
+}
+.picture-caption__stale {
+  color: var(--warn-text);
+}
+.picture-surface {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  width: 100%;
+}
+/* The zoom and pan move the layer. A zoomed picture may show only part of the
+   target; useMedia places its canvas over that part, above what was shown. */
+.picture-layer {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+.picture-surface canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.picture-pointer {
+  position: absolute;
+  pointer-events: none;
+  fill: var(--surface);
+  color: var(--ink);
+}
+.picture-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--s4);
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+/* Sits on the picture's foot, so a late frame moves nothing around it. */
+.picture-paused {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: var(--s2);
+  transform: translateX(-50%);
+  max-width: calc(100% - 2 * var(--s2));
+  padding: 2px var(--s2);
+  border-radius: var(--r-full);
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.remote-keyboard,
+.control-receipt,
+.control-review {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+/* Positioned so its hidden heading stays with it inside the typing composer
+   or the screen that scrolls it. */
+.remote-keyboard {
+  position: relative;
+}
+.remote-keyboard form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.remote-keyboard .btn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.control-receipt > p {
+  font-size: var(--text-md);
+}
+.control-receipt ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.control-fact {
+  display: flex;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
+}
+.control-fact > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.control-fact strong {
+  font-weight: 560;
+}
+.control-fact p {
+  color: var(--ink-2);
+  margin-top: var(--s1);
+}
+.control-fact--unknown > svg,
+.control-fact--still_active > svg {
+  color: var(--warn-text);
+}
+.control-fact--failed > svg {
+  color: var(--stop-text);
+}
+.control-lock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+.control-path,
+.control-details dd {
+  overflow-wrap: anywhere;
+}
+.control-task h1 {
+  font-size: var(--text-xl);
+  font-weight: 650;
+  line-height: 1.3;
+  margin-bottom: var(--s2);
+}
+.control-task__activity {
+  color: var(--ink-2);
+  margin-bottom: var(--s1);
+}
+.control-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.control-details > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s1) var(--s4);
+  border-top: 1px solid var(--line);
+  padding-top: var(--s3);
+}
+.control-details dt {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+.control-details dd {
+  margin: 0;
+  font-size: var(--text-md);
+}
+.terminal-status {
+  font-weight: 600;
+}
+.terminal-toolbar {
+  gap: var(--s1);
+}
+.terminal-toolbar .btn {
+  margin-left: auto;
+}
+/* Output scrolls independently of the mode switch and keyboard controls. */
+.terminal-screen .screen__body {
+  container-type: size;
+}
+/* The output takes the height its status leaves on the first screen, below
+   the body's top padding, at any text size, so its latest rows are in view
+   without scrolling; the options and session controls scroll up below it. */
+.terminal-view {
+  --terminal-peek: calc(var(--s3) + var(--target));
+  --terminal-floor: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-height: calc(100cqh - var(--s2) - var(--terminal-peek));
+}
+.terminal-frame {
+  position: relative;
+  flex: 1 0 var(--terminal-floor);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--s2);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.terminal-output {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.terminal-output .xterm {
+  height: 100%;
+}
+.terminal-output .xterm-viewport {
+  scrollbar-width: thin;
+}
+/* xterm gives each row a line height in pixels as tall as the row. Android's
+   text size scales that line height and not the row, so the letters sat low
+   and lost their lower half. Rows are as tall as a line of their letters. */
+.terminal-output .xterm-rows > div {
+  line-height: normal !important;
+}
+/* xterm paints its viewport black; the rows below a partial last line would
+   show it. The output box's own background shows instead. */
+.terminal-output .xterm .xterm-viewport {
+  background-color: transparent;
+}
+/* Short for the text size, every row counts: the output keeps to what is
+   left rather than a minimum that would push its latest rows out of view. */
+:root.app-tight .terminal-view {
+  --terminal-peek: 0px;
+  --terminal-floor: 0px;
+}
+.terminal-jump {
+  position: absolute;
+  right: var(--s2);
+  bottom: var(--s2);
+  box-shadow: var(--shadow-1);
+}
+.terminal-session {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+/* Close terminal ends running programs, in the bar as well as below. */
+.terminal-close:not(:disabled) {
+  color: var(--stop-text);
+}
+/* Short for the text size, the keys keep to one row that scrolls sideways. */
+:root.app-tight .terminal-keys {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+:root.app-tight .terminal-keys .btn {
+  flex: none;
+}
+/* On a wide screen the line being typed sits under the output it goes to. */
+.terminal-composer > * {
+  max-width: calc(var(--content-max) - 2 * var(--s4));
+  margin-inline: auto;
+}
+.terminal-composer form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s2);
+}
+.terminal-composer .field {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.terminal-composer .stateline {
+  flex-basis: 100%;
+}
+.terminal-composer .field__label {
+  font-size: var(--text-sm);
+}
+.terminal-composer > .fine {
+  margin-bottom: var(--s2);
+}
+.terminal-paste {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: var(--s3);
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+  margin-top: var(--s3);
+}
+@media (orientation: landscape) and (min-width: 700px) {
+  .desktop-screen,
+  .agent-screen {
+    display: grid;
+    grid-template:
+      "head safety" auto "body safety" minmax(0, 1fr) / minmax(0, 1fr)
+      minmax(160px, 23%);
+  }
+  .desktop-screen > .bar,
+  .agent-screen > .bar {
+    grid-area: head;
+  }
+  .desktop-screen > .screen__body,
+  .agent-screen > .screen__body {
+    grid-area: body;
+  }
+  .desktop-screen > .screen__footer,
+  .agent-screen > .screen__footer {
+    grid-area: safety;
+    overflow-y: auto;
+  }
+  .desktop-screen .control-footer,
+  .agent-screen .control-footer {
+    height: 100%;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+  .desktop-screen .safety-actions,
+  .agent-screen .safety-actions {
+    flex-direction: column;
+  }
+  .safety-actions .intervention {
+    flex-direction: row;
+    gap: var(--s2);
+  }
+}
+
+.control-screen .fine {
+  margin-top: 0;
+}
+.control-screen .section__head {
+  flex-wrap: wrap;
+}
+
+@media (orientation: landscape) and (min-width: 700px) and (max-height: 500px) {
+  .desktop-screen .screen__inner,
+  .agent-screen .screen__inner {
+    gap: var(--s1);
+    padding-top: 0;
+  }
+  .desktop-screen .ownership,
+  .agent-screen .ownership {
+    padding-block: var(--s1);
+  }
+  .desktop-screen .ownership__detail,
+  .agent-screen .ownership__detail {
+    display: none;
+  }
+  .agent-screen .ownership {
+    order: -3;
+  }
+  .agent-screen .live-picture {
+    order: -2;
+  }
+  .agent-screen .control-task {
+    order: -1;
+  }
+  .desktop-screen .picture-surface,
+  .agent-screen .picture-surface {
+    width: auto;
+    max-width: 100%;
+    height: clamp(64px, calc(100dvh - 264px), 180px);
+    align-self: center;
+  }
+}
+
+.terminal-composer form > .btn {
+  padding-inline: var(--s3);
+}
+.terminal-composer .field__label {
+  font-size: var(--text-xs);
+}
+
+/* Named Stop controls share the same visual weight on every surface. */
+.named-stop {
+  min-width: 0;
+  width: 100%;
+}
+.named-stop__button {
+  width: 100%;
+  min-height: var(--target-intervention);
+  height: auto;
+  text-align: start;
+}
+.named-stop__button .btn__label {
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.stop-status {
+  margin-top: var(--s2);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  overflow-wrap: break-word;
+}
+.stop-status--unknown, .stop-status--waiting, .stop-status--refused {
+  color: var(--warn-text);
+}
+.safety-rail {
+  display: flex;
+  align-items: stretch;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  min-width: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.safety-rail__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  flex: 0 1 auto;
+  min-width: var(--target);
+  min-height: var(--target);
+  padding: var(--s1);
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-sm);
+}
+.safety-rail__toggle svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.safety-rail__stops {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.safety-rail.safety-rail--expanded {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.safety-rail__content { display: contents; }
+.safety-rail--expanded .safety-rail__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.safety-rail--expanded .safety-rail__content > * { flex: none; }
+.safety-rail__more { flex: none; }
+.safety-rail--expanded .safety-rail__stops {
+  flex: none;
+  min-width: 0;
+}
+/* Expanded, each task's Stop has Open task beside it, or below it when the
+   text is too large for both on one line. */
+.safety-rail__task {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--s2);
+}
+.safety-rail__task > .named-stop {
+  flex: 1 1 12rem;
+  width: auto;
+}
+.safety-rail__task > .btn {
+  flex: none;
+  min-height: var(--target-intervention);
+}
+.safety-rail__target {
+  width: 100%;
+  min-width: 0;
+  border-top: 1px solid var(--line);
+  padding-top: var(--s2);
+}
+.safety-rail__target p {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  margin-bottom: var(--s2);
+}
+.safety-rail .safety-actions:empty {
+  display: none;
+}
+/* The rail wraps rather than squeezing a named Stop into a column of single
+   letters: Leave control takes its own line when both cannot fit at the
+   current text size. */
+.safety-rail {
+  flex-wrap: wrap;
+}
+.safety-rail__stops {
+  flex: 1 1 0;
+  min-width: min(calc(100% - var(--target) - var(--s2)), 11rem);
+}
+.safety-rail__content > .intervention {
+  flex: 1 0 auto;
+  max-width: 100%;
+}
+.computer-choices {
+  display: grid;
+  gap: var(--s2);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+}
+.computer-choice {
+  min-width: 0;
+  min-height: var(--target);
+  padding: var(--s3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  text-align: start;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--ink);
+  background: var(--surface);
+  overflow-wrap: break-word;
+}
+.computer-choice[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.computer-choice span {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.computer-choice:disabled {
+  background: var(--surface-sunken);
+}
+/* A choice the computer rules out looks it, and says why in its own line. */
+.computer-choice--unavailable {
+  border-style: dashed;
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+.computer-choice--unavailable strong {
+  color: var(--ink-2);
+}
+.computer-choice span.computer-choice__why {
+  color: var(--warn-text);
+}
+.computer-tools {
+  padding-left: var(--s5);
+  overflow-wrap: break-word;
+}
+.computer-tools code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.computer-review__footer {
+  padding: var(--s3);
+}
+.computer-review__footer .btn {
+  min-height: var(--target);
+  white-space: normal;
+}
+@media (max-width: 430px) {
+  .safety-rail__toggle {
+  flex-direction: column;
+  max-width: 5rem;
+}
+}
+
+.named-stop .named-stop__button {
+  border-radius: var(--r-md);
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--s2);
+  font-size: var(--text-sm);
+  padding: var(--s2) var(--s3);
+}
+.named-stop__button .btn__icon {
+  flex: none;
+}
+/* Positioned so the hidden caption stays with the toggle; in a sheet it would
+   otherwise be placed against the dialog, outside the scrolling panel. */
+.safety-rail__toggle {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: var(--target);
+  max-width: 4.5rem;
+  flex-direction: column;
+}
+.safety-rail__caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.safety-rail__count {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+.safety-rail--expanded .safety-rail__toggle {
+  flex-direction: row;
+  flex: none;
+  width: 100%;
+  max-width: 100%;
+  justify-content: flex-start;
+  gap: var(--s2);
+  font-size: var(--text-md);
+  font-weight: 650;
+  color: var(--ink);
+}
+.safety-rail__close {
+  margin-left: auto;
+  color: var(--accent-text);
+  font-size: var(--text-sm);
+}
+.safety-rail__intro {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.safety-rail--expanded .safety-rail__caption {
+  position: static;
+  width: auto;
+  height: auto;
+  clip-path: none;
+}
+.safety-rail__count--warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--warn-text);
+}
+.safety-rail__count--warn svg {
+  width: 0.875em;
+  height: 0.875em;
+}
+.safety-rail--expanded .safety-rail__count {
+  display: none;
+}
+.safety-rail--expanded .safety-rail__toggle svg {
+  transform: rotate(180deg);
+}
+.safety-rail__display {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: end;
+  color: var(--ink-2);
+}
+.computer-choice__selected {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.control-saved-text {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.terminal-modebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+.terminal-modebar .segmented {
+  flex: 1 1 auto;
+}
+/* Keys wrap rather than clip; short screens keep one sideways-scrolling row. */
+.terminal-keys .btn {
+  flex: none;
+}
+
+.terminal-modebar > .terminal-keys {
+  flex: 1 1 100%;
+}
+/* On a phone on its side the mode switch shares a row with the command field,
+   so the output keeps a few lines above them. */
+:root.app-sideways .terminal-composer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s1) var(--s2);
+  padding-inline: max(var(--s3), var(--safe-left), (100% - var(--content-max)) / 2 + var(--s4));
+}
+:root.app-sideways .terminal-composer > * {
+  flex-basis: 100%;
+  order: 1;
+  margin: 0;
+}
+:root.app-sideways .terminal-composer > .terminal-modebar {
+  flex: 1 1 auto;
+  order: 0;
+}
+:root.app-sideways .terminal-composer > form {
+  flex: 3 1 16rem;
+  order: 0;
+}
+
+/* Detail remains one tap away when text or viewport height needs the space. */
+:root.app-tight .safety-rail:not(.safety-rail--expanded) .stop-status {
+  display: none;
+}
+:root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+  white-space: normal;
+  line-height: var(--leading-tight);
+}
+/* The footer's hit boxes end before navigation, including when no rail shows. */
+.control-footer {
+  padding-bottom: max(var(--s2), var(--safe-bottom));
+}
+@media (max-height: 480px) and (min-width: 700px) {
+  .safety-rail:not(.safety-rail--expanded) {
+    padding-block: var(--s1);
+  }
+  .safety-rail:not(.safety-rail--expanded) .safety-rail__toggle {
+    flex-direction: row;
+  }
+  /* Beside navigation the rail keeps to the bottom row: the task name takes
+     two lines at most, and expanding the rail shows it in full. */
+  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button {
+    font-size: calc(8px + 0.3125rem);
+  }
+  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+}
+
+/* Large text uses the same partial rem scaling as headings in the rail. */
+:root.app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__button {
+  font-size: calc(8px + 0.3125rem);
+  font-weight: 600;
+  padding-inline: var(--s2);
+}
+:root.app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__icon {
+  display: none;
+}
+
+/* The destination stays in view while the keyboard's accessories scroll. */
+.desktop-typing {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+}
+.desktop-typing__composer { overflow: auto; min-height: 0; }
+.desktop-typing .remote-keyboard { padding: 0; border: 0; }
+.live-picture--compact { align-items: center; }
+.live-picture--compact .picture-caption { width: 100%; }
+.live-picture--compact .picture-surface { width: auto; height: clamp(56px, 14dvh, 112px); max-width: 100%; }
+.remote-keyboard__keys > summary { min-height: var(--target); display: flex; align-items: center; cursor: pointer; }
+@media (orientation: landscape) and (min-width: 700px) {
+  .desktop-typing { grid-template: minmax(0, 1fr) / minmax(0, 1fr) minmax(0, 1fr); }
+  .live-picture--compact .picture-surface { width: 100%; height: auto; }
+}
+
+.safety-rail__summary { margin: 0; font-size: var(--text-xs); color: var(--ink-2); overflow-wrap: break-word; }
+:root.app-narrow .safety-rail__summary { display: none; }
+/* Cramped (large text on a phone on its side), the rail keeps to the height of
+   its Stop so the screen above keeps its content. The display's state is still
+   read with the rail's toggle, and expanding the rail shows it. */
+:root.app-cramped .safety-rail:not(.safety-rail--expanded) .safety-rail__summary { display: none; }
+
+/* Hide keyboard restores navigation; Leave and every task Stop stay visible. */
+@media (max-width: 899px) {
+  .app:has(.tab:not(.is-hidden) .route:not(.is-hidden) .desktop-screen--typing) > .nav { display: none; }
+}
+.live-picture--compact canvas { object-fit: contain; }
+.desktop-typing .remote-keyboard form { gap: var(--s1); }
+
+.typing-recovery { display: grid; gap: var(--s1); }
+.typing-recovery summary { min-height: var(--target); display: flex; align-items: center; cursor: pointer; }
+.typing-recovery p { margin: 0; }
+
+/* Keyboard input owns the available bottom space; Leave stays in the header. */
+:root.app-tight .desktop-screen--typing { overflow: hidden; }
+:root.app-tight .desktop-screen--typing .screen__body { min-height: 0; }
+.desktop-typing__status { margin: 0 0 var(--s1); }
+:root.app-tight .desktop-typing { grid-template-rows: auto minmax(0, 1fr); gap: var(--s1); padding-block: var(--s1); }
+:root.app-tight .desktop-typing .live-picture--compact .picture-surface { height: 48px; }
+
+:root.app-narrow .desktop-screen--typing .bar {
+  display: grid;
+  grid-template-columns: var(--target) minmax(0, 1fr);
+  gap: var(--s1);
+}
+:root.app-narrow .desktop-screen--typing .bar__actions { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+:root.app-narrow .desktop-screen--typing .bar__titles { grid-column: 1 / -1; padding-bottom: var(--s1); }
+
+:root.app-narrow .desktop-screen--typing .bar > .iconbtn:first-child { grid-column: 1; grid-row: 1; }
+
+/* Keep a single accessory row above the IME, including on tall phones. */
+:root.kb-open .terminal-keys { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+:root.kb-open .terminal-modebar { gap: var(--s1); margin-bottom: 0; }
+:root.kb-open .terminal-screen .screen__body { min-height: 0; }
+:root.kb-open .terminal-view { --terminal-peek: 0px; --terminal-floor: 0px; }
+.terminal-options > summary { min-height: var(--target); align-items: center; cursor: pointer; }
+:root:not(.kb-open) .terminal-options > summary { display: none; }
+:root.kb-open .terminal-options > summary { display: flex; }
+
+/* Connection state and recovery stay above scrollback and the input dock. */
+.terminal-recovery { padding: var(--s1) var(--s3); border-bottom: 1px solid var(--line); }
+.terminal-recovery p { margin: 0; }
+.terminal-recovery .control-row { flex-wrap: wrap; gap: var(--s1) var(--s2); }
+.terminal-recovery .terminal-status { flex: 1; }
+.terminal-screen [hidden] { display: none; }
+
+/* A command field with focus, or a screen cramped for its text size, reserves
+   the short viewport for output and typing. While typing everything else gives
+   way; otherwise the options and session controls scroll up below the output. */
+:root.app-tight .terminal-screen--compact .screen__body { padding: 0 var(--s2); }
+:root.app-tight .terminal-screen--typing .screen__body { overflow: hidden; }
+:root.app-tight .terminal-screen--compact .terminal-frame { padding: var(--s1); }
+:root.app-tight .terminal-screen--compact .screen__footer { padding-block: var(--s1); }
+:root.app-tight .terminal-screen--typing .terminal-composer { gap: 0; }
+/* On a phone on its side the bar and the input share the top row. The title
+   keeps to one line there; the output and the command field carry the full
+   name for assistive technology. */
+:root.app-sideways .terminal-screen--compact {
+  display: grid;
+  grid-template-columns: minmax(200px, 40%) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+:root.app-sideways .terminal-screen--compact > .bar { grid-column: 1; grid-row: 1; min-height: var(--target); }
+:root.app-sideways .terminal-screen--compact .bar__subtitle { display: none; }
+:root.app-sideways .terminal-screen--compact .bar__title {
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.app-sideways .terminal-screen--compact > .screen__footer { grid-column: 2; grid-row: 1; padding: 0; }
+:root.app-sideways .terminal-screen--compact .terminal-composer { padding: var(--s1); border: 0; }
+:root.app-sideways .terminal-screen--compact .terminal-composer > .terminal-modebar { flex: 0 1 auto; flex-wrap: nowrap; margin-bottom: 0; }
+:root.app-sideways .terminal-screen--compact .terminal-modebar .segmented { flex: none; }
+:root.app-sideways .terminal-screen--compact .terminal-modebar > .terminal-keys { flex: 1 1 0; min-width: 0; }
+:root.app-sideways .terminal-screen--compact .terminal-composer > form { flex: 1 1 8rem; }
+:root.app-sideways .terminal-screen--compact > .screen__body { grid-column: 1 / -1; grid-row: 2; }
+:root.app-sideways .terminal-screen--compact .screen__inner { padding: 0; }
+:root.app-sideways .terminal-screen--compact .terminal-view { min-height: 100cqh; }
+
+
+/* Stop as the stop symbol alone, on a rounded square at the safety target
+   size. What it ends is quiet text before it and its full accessible name;
+   its status and any follow-up actions take the full width below. */
+.named-stop--icon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s1) var(--s3);
+}
+.named-stop--icon > :is(.stop-status, .work-actions) {
+  flex-basis: 100%;
+}
+.named-stop .named-stop__icon {
+  border-radius: var(--r-md);
+}
+.named-stop__icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+.named-stop__caption {
+  flex: 1 1 0;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+  color: var(--ink-2);
+}
+.safety-rail__title {
+  color: var(--ink);
+  font-weight: 600;
+}
+.safety-rail--expanded .named-stop__caption {
+  display: block;
+}
+/* Collapsed, the rail is one row at every text size: the count, the lead
+   task's name over its display's state, each cut to a line, and Stop.
+   Leave control takes a row of its own only when it can't fit beside them;
+   expanding the rail shows everything in full. */
+.safety-rail:not(.safety-rail--expanded) {
+  align-items: center;
+  padding-block: var(--s1);
+}
+.safety-rail:not(.safety-rail--expanded) .safety-rail__stops {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.safety-rail:not(.safety-rail--expanded) .named-stop--icon {
+  flex-wrap: nowrap;
+}
+.safety-rail:not(.safety-rail--expanded) .named-stop__caption {
+  display: block;
+}
+.safety-rail:not(.safety-rail--expanded) :is(.safety-rail__title, .safety-rail__line) {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.safety-rail__line {
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+}
+.safety-rail__line--warn {
+  color: var(--warn-text);
+}
+:root.app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__caption {
+  font-size: calc(8px + 0.3125rem);
+}
+:root.app-narrow .safety-rail__line {
+  font-size: calc(8px + 0.3125rem);
+}
+/* The computer's sign-in, followed over Desktop control. */
+.sign-in-strip__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.sign-in-strip__code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  letter-spacing: 0.08em;
+  margin-block: var(--s2);
+  overflow-wrap: anywhere;
+  user-select: all;
+}

@@ -1,0 +1,302 @@
+/* SPDX-License-Identifier: Apache-2.0
+ *
+ * Talk's conversation header (TalkHeader.tsx) and the pinned rows under it.
+ * One line of name and one of state, as a chat header; anything pinned under
+ * it shows only while there is something to say.
+ */
+
+.chat-head {
+  container: chathead / inline-size;
+  flex-wrap: wrap;
+  gap: 0 var(--s1);
+  padding-inline: max(var(--s1), var(--safe-left)) max(var(--s2), var(--safe-right));
+}
+/* Stop keeps its full intervention size, with room above and below it. */
+.chat-head:has(> .chat-head__stop .named-stop__icon) {
+  padding-block: calc(var(--safe-top) + var(--s1)) var(--s1);
+}
+.chat-head__heading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  margin: 0;
+  font: inherit;
+}
+.chat-head__main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+  min-height: var(--target);
+  padding: var(--s1) var(--s2) var(--s1) 0;
+}
+.chat-head__title {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 0;
+  font-size: var(--text-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.chat-head__title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-head__sub {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.chat-head__sub > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-head__sub > :first-child {
+  flex: none;
+}
+.chat-head__sub > * + *::before {
+  content: "·";
+  content: "·" / "";
+  margin-inline: var(--s2);
+}
+.chat-head__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+.chat-head__state svg {
+  width: 0.9em;
+  height: 0.9em;
+}
+.chat-head__state--accent { color: var(--accent-text); }
+.chat-head__state--ok { color: var(--ok-text); }
+.chat-head__state--warn { color: var(--warn-text); }
+.chat-head__state--stop { color: var(--stop-text); }
+.chat-head__state--neutral { color: var(--ink-2); }
+
+.chat-head__end {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  flex: none;
+}
+.chat-head__end:empty {
+  display: none;
+}
+/* Stop ends the row; its status takes the full width under the name. */
+.chat-head > .chat-head__stop {
+  display: contents;
+}
+.chat-head > .chat-head__stop > :is(.stop-status, .work-actions) {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0 var(--s2) var(--s2);
+}
+
+/* Large text on a phone: the name takes two lines before it is cut, and how
+   long ago it last moved and which display it works on wait; the rail still
+   has the display. Offline, a question mark stands for "Last reported",
+   which is still read aloud. Typing keeps one line of name. */
+@container chathead (max-width: 18rem) {
+  :root:not(.kb-open) .chat-head__title-text {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .chat-head__age,
+  .chat-head__where {
+    display: none;
+  }
+  .chat-head__since {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Back to the project's tasks, counting what needs the person, as a chat's
+   back button counts unread chats. */
+.chat-head__back {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  min-width: var(--target);
+  padding: 0 var(--s1) 0 0;
+  border-radius: var(--r-full);
+  color: var(--ink);
+}
+.chat-head__back:active {
+  background: var(--surface-pressed);
+}
+.chat-head__back svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.chat-head__count {
+  min-width: 1.4em;
+  padding: 0 var(--s1);
+  border-radius: var(--r-full);
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* ---- Pinned under the header ------------------------------------------- */
+
+/* A phone on its side: the pinned row sits beside the header rather than
+   under it, so the conversation keeps its lines. With less room, the screen
+   scrolls rather than hiding one under the other. */
+@media (max-height: 480px) and (min-width: 700px) {
+  .talk:has(> .chat-head + .chat-pins:not(:empty)) {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(14rem, 2fr);
+    grid-template-rows: auto minmax(3rem, 1fr) auto;
+  }
+  .talk > .chat-head { grid-column: 1; grid-row: 1; min-width: 0; }
+  .talk > .chat-pins { grid-column: 2; grid-row: 1; min-width: 0; align-content: center; }
+  .talk > .screen__body { grid-column: 1 / -1; grid-row: 2; }
+  :root:is(.app-tight, .kb-open) .talk:has(> .chat-head + .chat-pins:not(:empty)) > .screen__body { min-height: 0; }
+  .talk > .screen__footer { grid-column: 1 / -1; grid-row: 3; }
+}
+
+.chat-pins {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 max(var(--s2), var(--safe-right)) 0 max(var(--s2), var(--safe-left));
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.chat-pins:empty {
+  display: none;
+}
+.chat-pins > * + * {
+  border-top: 1px solid var(--line);
+}
+.chat-activity {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  min-height: var(--target);
+  padding: 0 var(--s2);
+  border-radius: var(--r-md);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  text-align: left;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.chat-activity:active {
+  background: var(--surface-pressed);
+}
+.chat-activity__icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--warn-text);
+}
+.chat-activity--stop .chat-activity__icon {
+  width: 0.7rem;
+  height: 0.7rem;
+  color: var(--stop);
+  fill: currentColor;
+  margin-inline: 0.15rem;
+}
+.chat-activity__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-activity__chev {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--ink-3);
+}
+
+/* What the task is watching between turns, with its Stop watching. */
+.chat-watch {
+  flex: 1 0 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--target);
+  padding: 0 0 0 var(--s2);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.chat-watch__icon {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--accent-text);
+}
+.chat-watch__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-watch__stop {
+  flex: none;
+}
+
+/* A linked task's pull request, on a line of its own. */
+.chat-pr {
+  flex: 1 0 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--target);
+  padding: 0 var(--s2);
+  border-radius: var(--r-md);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  text-align: left;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.chat-pr:active {
+  background: var(--surface-pressed);
+}
+.chat-pr__icon {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--accent-text);
+}
+.chat-pr__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Typing: the pull request waits until the keyboard closes. */
+:root.kb-open .chat-pr {
+  display: none;
+}

@@ -1,0 +1,635 @@
+[
+  {
+    "name": "U18-1-in_process",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTab('work');ui.push({screen:'receipt',taskId:workIds.receipt},'work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "window.__sim.host.children.endedHelper('in_process')"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(window.__sim.host.tasks.find(t=>t.title==='Summarize the project').attention_count!==0)throw Error('Helper still needs attention');[...document.querySelectorAll('p')].find(e=>e.textContent.includes('Summarize the README \u00b7 Ended with the agent process'))?.scrollIntoView({block:'center'});"
+      ]
+    ]
+  },
+  {
+    "name": "U18-1-separate_process",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {workIds}=await import('/src/dev/sim/work.ts');const ui=new UiStore('sim-studio');ui.selectTab('work');ui.push({screen:'receipt',taskId:workIds.receipt},'work');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "eval",
+        "window.__sim.host.children.endedHelper('separate_process')"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "shot",
+        "before-check"
+      ],
+      [
+        "click",
+        "Helpers checked"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(!document.body.textContent.includes('Helpers checked by you'))throw Error('Decision missing');"
+      ]
+    ]
+  },
+  {
+    "name": "U18-2-stop-receipt-order",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tDash);ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "const s=window.__sim; s.stops.ignore(s.host.tasks.find(t=>t.kind==='computer_use'&&t.state==='working').task_id,false,true)"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        6000
+      ],
+      [
+        "click",
+        "What happened"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "const r=document.querySelector('.screen');if(!r?.textContent.includes('Agent process ended on the computer'))throw Error('Missing process receipt');document.querySelector('.work-body .notice')?.scrollIntoView({block:'center'});const heading=[...document.querySelectorAll('h2,h3')].find(e=>e.textContent==='Stop receipt');heading?.scrollIntoView({block:'start'});"
+      ],
+      [
+        "eval",
+        "const facts=[...document.querySelectorAll('.agent-stop-summary .agent-stop-fact')];const text=document.querySelector('.agent-stop-summary')?.textContent||'';if(text.indexOf('Next up paused')<text.indexOf('Agent process ended on the computer'))throw Error('Next up precedes process');"
+      ]
+    ]
+  },
+  {
+    "name": "U18-3-tablet",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "pwd"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const box=document.querySelector('.terminal-output').getBoundingClientRect();const grid=document.querySelector('.xterm-screen').getBoundingClientRect();const cursor=document.querySelector('.xterm-cursor')?.getBoundingClientRect();const body=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();if(grid.bottom>box.bottom+0.5)throw Error('Terminal rows clipped: '+JSON.stringify({box:box.toJSON(),grid:grid.toJSON()}));if(!cursor)throw Error('Cursor missing');if(cursor.bottom>Math.min(box.bottom,body.bottom,innerHeight)+0.5||cursor.top<box.top-0.5)throw Error('Cursor row clipped: '+JSON.stringify({cursor:cursor.toJSON(),box:box.toJSON(),body:body.toJSON()}));"
+      ]
+    ]
+  },
+  {
+    "name": "U18-3-tablet-keyboard",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "height",
+        480
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Command",
+        "pwd"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const box=document.querySelector('.terminal-output').getBoundingClientRect();const grid=document.querySelector('.xterm-screen').getBoundingClientRect();const cursor=document.querySelector('.xterm-cursor')?.getBoundingClientRect();const body=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();if(grid.bottom>box.bottom+0.5)throw Error('Terminal rows clipped: '+JSON.stringify({box:box.toJSON(),grid:grid.toJSON()}));if(!cursor)throw Error('Cursor missing');if(cursor.bottom>Math.min(box.bottom,body.bottom,innerHeight)+0.5||cursor.top<box.top-0.5)throw Error('Cursor row clipped: '+JSON.stringify({cursor:cursor.toJSON(),box:box.toJSON(),body:body.toJSON()}));"
+      ],
+      [
+        "shot",
+        "keyboard-open"
+      ],
+      [
+        "height",
+        800
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const box=document.querySelector('.terminal-output').getBoundingClientRect();const grid=document.querySelector('.xterm-screen').getBoundingClientRect();const cursor=document.querySelector('.xterm-cursor')?.getBoundingClientRect();const body=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();if(grid.bottom>box.bottom+0.5)throw Error('Terminal rows clipped: '+JSON.stringify({box:box.toJSON(),grid:grid.toJSON()}));if(!cursor)throw Error('Cursor missing');if(cursor.bottom>Math.min(box.bottom,body.bottom,innerHeight)+0.5||cursor.top<box.top-0.5)throw Error('Cursor row clipped: '+JSON.stringify({cursor:cursor.toJSON(),box:box.toJSON(),body:body.toJSON()}));"
+      ],
+      [
+        "shot",
+        "keyboard-closed"
+      ],
+      [
+        "height",
+        480
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "fill",
+        "Command",
+        "pwd"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const box=document.querySelector('.terminal-output').getBoundingClientRect();const grid=document.querySelector('.xterm-screen').getBoundingClientRect();const cursor=document.querySelector('.xterm-cursor')?.getBoundingClientRect();const body=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();if(grid.bottom>box.bottom+0.5)throw Error('Terminal rows clipped: '+JSON.stringify({box:box.toJSON(),grid:grid.toJSON()}));if(!cursor)throw Error('Cursor missing');if(cursor.bottom>Math.min(box.bottom,body.bottom,innerHeight)+0.5||cursor.top<box.top-0.5)throw Error('Cursor row clipped: '+JSON.stringify({cursor:cursor.toJSON(),box:box.toJSON(),body:body.toJSON()}));"
+      ]
+    ]
+  },
+  {
+    "name": "U18-3-phone",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "git status"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "fill",
+        "Command",
+        "pwd"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const box=document.querySelector('.terminal-output').getBoundingClientRect();const grid=document.querySelector('.xterm-screen').getBoundingClientRect();const cursor=document.querySelector('.xterm-cursor')?.getBoundingClientRect();const body=document.querySelector('.terminal-screen .screen__body').getBoundingClientRect();if(grid.bottom>box.bottom+0.5)throw Error('Terminal rows clipped: '+JSON.stringify({box:box.toJSON(),grid:grid.toJSON()}));if(!cursor)throw Error('Cursor missing');if(cursor.bottom>Math.min(box.bottom,body.bottom,innerHeight)+0.5||cursor.top<box.top-0.5)throw Error('Cursor row clipped: '+JSON.stringify({cursor:cursor.toJSON(),box:box.toJSON(),body:body.toJSON()}));"
+      ]
+    ]
+  },
+  {
+    "name": "U18-4-terminal-sessions",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 1200,
+    "steps": [
+      [
+        "clickSel",
+        ".nav__tab:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const h=window.__sim.host;h.terminals=[{...h.terminals[0],title:'Running shell'},{...h.terminals[0],terminal_id:'ended-example',title:'Finished shell',state:{state:'exited',code:0}}];h.emit({type:'terminals_changed',terminals:h.terminals});"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('h2')].find(e=>e.textContent==='Terminals')?.scrollIntoView({block:'start'});const buttons=[...document.querySelectorAll('button')];if(buttons.filter(b=>b.textContent==='Attach').length!==1)throw Error('Running Attach missing');if(!buttons.some(b=>b.textContent==='View output')||!buttons.some(b=>b.textContent==='Remove'))throw Error('Exited actions missing');"
+      ],
+      [
+        "shot",
+        "list"
+      ],
+      [
+        "click",
+        "View output"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.terminal-composer textarea')?.disabled)throw Error('Ended input is writable');"
+      ],
+      [
+        "shot",
+        "read-only"
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "click",
+        "Remove"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.control-list')?.textContent.includes('Finished shell'))throw Error('Ended row remains');"
+      ]
+    ]
+  }
+]

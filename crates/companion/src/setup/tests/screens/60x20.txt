@@ -1,0 +1,756 @@
+── 1 · Welcome to Øphio ──
+ Welcome to Øphio
+ ──────────────────────────────────────────────────────────
+
+ Øphio connects your phone or tablet to this computer: run
+ Claude Code and Codex tasks on it, answer them, and watch
+ its desktop, from anywhere.
+
+ Setup keeps Øphio running, works out how your phone
+ reaches this computer, connects your agents, pairs your
+ phone and checks that it all works. It takes a few
+ minutes, and any step can be left for later.
+
+ · This computer  desk
+ ✓ Claude Code    Found
+ · Codex          Not found
+ ✓ Tailscale      Found
+
+ ╾─◆ [s] Start setup · recommended
+     [x] Skip setup
+ ↑↓ move · enter choose · ctrl-c leave
+── 2 · Keep Øphio running ──
+ Step 1 of 6 · Keep Øphio running
+ ──────────────────────────────────────────────────────────
+
+ Your phone can reach this computer only while Øphio is
+ running on it. It can start whenever you log in, so it's
+ there when you need it.
+
+ ! Now              Not running
+ ! When you log in  Doesn't start
+
+ It runs as your own systemd service, ophio.service. To
+ stop that, run ophio service uninstall.
+
+ ╾─◆ [s] Start now and at every login · recommended
+     [j] Just for now
+         Until you log out. Your phone can't reach this
+         computer after that.
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ ↑↓ move · enter choose · ctrl-c leave
+── 3 · Keep Øphio running ──
+ Step 1 of 6 · Keep Øphio running
+ ──────────────────────────────────────────────────────────
+
+ ●── Setting Øphio to start at every login…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ctrl-c leave
+── 4 · Keep Øphio running ──
+ Step 1 of 6 · Keep Øphio running
+ ──────────────────────────────────────────────────────────
+
+ ✓ Øphio  Running now, and starts whenever you log in.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ╾─◆ [n] Continue
+ enter choose · ctrl-c leave
+── 5 · How your phone reaches this computer ──
+ Step 2 of 6 · How your phone reaches this computer
+ ──────────────────────────────────────────────────────────
+
+ Your phone reaches this computer through Tailscale, a
+ private network between your own devices that works
+ wherever you are, or through the Wi‑Fi you share at home.
+
+ ✓ Tailscale  Connected as desk.tail.ts.net
+
+ Your phone needs Tailscale too, signed in to the same
+ account.
+
+ · Wi‑Fi  This computer is 192.168.1.20 here; phones on
+          this network can't reach it unless you allow it
+
+ ╾─◆ [n] Use Tailscale · recommended
+     [w] This Wi‑Fi only
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ ↑↓ move · enter choose · ctrl-c leave
+── 6 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ Øphio runs tasks with the agents installed on this
+ computer, signed in to your own accounts. One is enough.
+
+ ✓ Claude Code  Signed in as me@example.com (Max)
+ · Codex        Not installed
+
+
+
+
+
+
+
+ ╾─◆ [n] Next · recommended
+     [2] Install Codex
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ ↑↓ move · enter choose · ctrl-c leave
+── 7 · Your phone ──
+ Step 4 of 6 · Your phone
+ ──────────────────────────────────────────────────────────
+
+ Your phone needs the Øphio app, for Android phones and
+ tablets.
+
+
+
+
+
+
+
+ ╾─◆ [i] Show me how to install it · recommended
+     [g] Let the agent do it
+         Claude Code does it in a task you follow here. It
+         asks you before it installs or changes anything.
+     [h] My phone already has Øphio
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ ↑↓ move · enter choose · ctrl-c leave
+── 8 · Your phone ──
+ Step 4 of 6 · Your phone
+ ──────────────────────────────────────────────────────────
+
+ Øphio can tell your phone when an agent needs you or a
+ task ends, even while the app is closed.
+
+ Nothing stays in the status bar while it waits. For alerts
+ after you swipe the app away, the phone asks to let Øphio
+ run without battery limits.
+
+
+
+
+
+
+ ╾─◆ [y] Turn on alerts · recommended
+     [n] Not now
+         Turn them on later in the app's Settings ›
+         Notifications.
+ ↑↓ move · enter choose · ctrl-c leave
+── 9 · Your phone ──
+ Step 4 of 6 · Your phone
+ ──────────────────────────────────────────────────────────
+
+ 1  Open Øphio on your phone and tap Pair a computer.
+ 2  Scan this code, or paste the link below.
+ 3  Check that the fingerprint your phone shows is the one
+    here.
+
+ ! Code  Make this window taller, at least 34 rows, to show
+         the code here.
+
+ Link  ophio://pair?d=eyJob3N0X2lkIjoiMGY4YjZjMWUtMmQzYS00Y
+       jVjLThkOWUtMGExYjJjM2Q0ZTVmIiwiaG9zdF9uYW1lIjoiZGVza
+       yIsImFkZHJlc3NlcyI6WyIxMDAuNjQuMC4xOjQ3MTAwIiwiZGVza
+       y50YWlsLnRzLm5ldDo0NzEwMCJdLCJjZXJ0X3NoYTI1NiI6IjVmM
+       WM5YTBlN2QzYjJhNGM2ZThmMGExYjNjNWQ3ZTlmMmE0YjZjOGQwZ
+
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ pgdn for more · ↑↓ move · enter choose · ctrl-c leave
+── 10 · Your phone ──
+ Step 4 of 6 · Your phone
+ ──────────────────────────────────────────────────────────
+
+ Pixel 9 (android) is asking to pair.
+ Pair it only if it shows the code 123 456.
+
+
+
+
+
+
+
+
+
+
+
+     [y] Pair it
+         Only if your phone shows the same code.
+     [n] Don't pair
+ ↑↓ move · enter choose · ctrl-c leave
+── 11 · Your phone ──
+ Step 4 of 6 · Your phone
+ ──────────────────────────────────────────────────────────
+
+ ✓ Paired  Pixel 9
+
+ What may Pixel 9 do on this computer? Right now it may not
+ do anything.
+
+
+
+
+ ╾─◆ [f] Everything · recommended
+         Right for your own phone, which you keep locked.
+     [e] Everyday
+         Run and answer agent tasks, watch the desktop and
+         read the Library. Nothing that controls this
+         computer or changes who has access.
+     [c] Choose each
+     [k] Keep it as it is
+ ↑↓ move · enter choose · ctrl-c leave
+── 12 · Your phone ──
+ Step 4 of 6 · Your phone
+ ──────────────────────────────────────────────────────────
+
+ Tick what Pixel 9 may do.
+
+
+     [ ] 1 Watch the desktop
+     [ ] 2 Control the desktop
+     [ ] 3 Open terminals
+     [ ] 4 Run agent tasks
+     [ ] 5 Answer agents
+     [ ] 6 Let an agent use the desktop
+     [ ] 7 Read the Library
+     [ ] 8 Edit the Library
+     [ ] 9 Transfer files
+     [ ]   Manage access
+     [ ]   Manage accounts
+ ╾─◆ [↵] Go on with these
+     [b] Back
+ space tick · enter choose · esc back · ctrl-c leave
+── 13 · Your phone ──
+ Step 4 of 6 · Your phone
+ ──────────────────────────────────────────────────────────
+
+ ✓ Pixel 9  It may watch the desktop.
+
+ Change this whenever you like in the app, under
+ Connections, or with ophio devices allow and ophio devices
+ deny.
+
+
+
+
+
+
+
+
+
+
+ ╾─◆ [n] Continue
+ enter choose · ctrl-c leave
+── 14 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ Tick any you want to set up now. Each can be set up later,
+ in the app or with ophio setup.
+
+     [ ] 1 Add your projects
+     [✓] 2 Choose where files go
+     [ ] 3 Watch and control this desktop
+     [ ] 4 Talk to your agents
+     [ ] 5 Message your agents on Telegram
+     [ ] 6 Message your agents on Discord
+     [ ] 7 Give tasks your other accounts
+     [ ] 8 Let agents open pull requests
+     [ ] 9 Let agents sign in to websites
+     [ ]   Control the computer by voice
+ ╾─◆ [↵] Go on with these
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ ↑↓ move · space tick · enter choose · ctrl-c leave
+── 15 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ Add the folders your agents work in. Each becomes a
+ project in the app.
+
+
+
+
+
+
+
+
+
+ ╾─◆ [t] Type the folders · recommended
+     [g] Let the agent find them
+         It looks for folders kept in Git, and asks you
+         which to add.
+     [l] Leave this for later
+ ↑↓ move · enter choose · ctrl-c leave
+── 16 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ Add the folders your agents work in, one at a time. Each
+ becomes a project in the app.
+
+ · They start with  Claude Code
+
+
+
+
+
+
+
+
+
+
+ Folder (Enter alone when done)
+ ›
+ enter send · esc clear · ctrl-c leave
+── 17 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ Add the folders your agents work in, one at a time. Each
+ becomes a project in the app.
+
+ · They start with  Claude Code
+ ✓ Added            /work/app
+
+
+
+
+
+
+
+
+
+ Folder (Enter alone when done)
+ ›
+ enter send · esc clear · ctrl-c leave
+── 18 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ Add the folders your agents work in, one at a time. Each
+ becomes a project in the app.
+
+ · They start with  Claude Code
+ ✓ Added            /work/app
+ ! /missing         There is no folder at /missing.
+
+
+
+
+
+
+
+
+ Folder (Enter alone when done)
+ ›
+ enter send · esc clear · ctrl-c leave
+── 19 · Check everything works ──
+ Step 6 of 6 · Check everything works
+ ──────────────────────────────────────────────────────────
+
+ ●── Checking…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ctrl-c leave
+── 20 · Check everything works ──
+ Step 6 of 6 · Check everything works
+ ──────────────────────────────────────────────────────────
+
+ Everything checked works.
+
+ ✓ 2 checks passed
+
+
+
+
+
+
+
+
+
+ ╾─◆ [n] Next · recommended
+     [r] Check again
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ ↑↓ move · enter choose · ctrl-c leave
+── 21 · Done ──
+ Done
+ ──────────────────────────────────────────────────────────
+
+ ✓ Keep Øphio running           Done
+ ✓ How your phone reaches this computer
+   Done
+ ✓ Connect your agents          Done
+ ✓ Your phone                   Done
+ ✓ Extras                       Done
+ ✓ Check everything works       Done
+
+ Change any of this in the app's Settings, or run ophio
+ setup again.
+
+
+
+
+
+ ╾─◆ [n] Finish
+ enter choose · ctrl-c leave
+── 22 · Welcome to Øphio ──
+ Welcome to Øphio
+ ──────────────────────────────────────────────────────────
+
+ Øphio connects your phone or tablet to this computer: run
+ Claude Code and Codex tasks on it, answer them, and watch
+ its desktop, from anywhere.
+
+ Setup keeps Øphio running, works out how your phone
+ reaches this computer, connects your agents, pairs your
+ phone and checks that it all works. It takes a few
+ minutes, and any step can be left for later.
+
+ · This computer  desk
+ ✓ Claude Code    Found
+ · Codex          Not found
+ ✓ Tailscale      Found
+
+ ╾─◆ [s] Carry on · recommended
+     [x] Skip setup
+ pgdn for more · ↑↓ move · enter choose · ctrl-c leave
+── 23 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ Øphio runs tasks with the agents installed on this
+ computer, signed in to your own accounts. One is enough.
+
+ · Claude Code  Not installed
+ · Codex        Not installed
+
+
+
+
+     [n] Next
+         No agent is ready yet; tasks can't start until one
+         is.
+     [1] Install Claude Code
+     [2] Install Codex
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ ↑↓ move · enter choose · ctrl-c leave
+── 24 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ This installs Claude Code on this computer with its
+ maker's own installer:
+
+ ▸ curl -fsSL https://claude.ai/install.sh | bash
+
+ Its output shows here as it runs.
+
+
+
+
+
+
+
+
+ ╾─◆ [y] Run it · recommended
+     [b] Back
+ ↑↓ move · enter choose · esc back · ctrl-c leave
+── 25 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ ✓ Claude Code  Installed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ╾─◆ [n] Continue
+ enter choose · ctrl-c leave
+── 26 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ Øphio runs tasks with the agents installed on this
+ computer, signed in to your own accounts. One is enough.
+
+ ! Claude Code  Installed, not signed in
+ · Codex        Not installed
+
+
+
+
+     [n] Next
+         No agent is ready yet; tasks can't start until one
+         is.
+     [1] Sign in to Claude Code
+     [2] Install Codex
+     [l] Leave this for later
+     [x] Skip the rest of setup
+ ↑↓ move · enter choose · ctrl-c leave
+── 27 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ Signing in to Claude Code with its own sign-in.
+
+ ●── Starting
+
+
+
+
+
+
+
+
+
+
+
+
+ ╾─◆ [c] Cancel sign-in
+ enter choose · ctrl-c leave
+── 28 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ Signing in to Claude Code with its own sign-in.
+
+ · Your code  Enter ABCD-1234 on claude.ai in this
+              computer's browser.
+
+
+
+
+
+
+
+
+
+
+
+ ╾─◆ [c] Cancel sign-in
+ enter choose · ctrl-c leave
+── 29 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ ✓ Claude Code  Signed in as me@example.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ╾─◆ [n] Continue
+ enter choose · ctrl-c leave
+── 30 · Welcome to Øphio ──
+ Welcome to Øphio
+ ──────────────────────────────────────────────────────────
+
+ Øphio connects your phone or tablet to this computer: run
+ Claude Code and Codex tasks on it, answer them, and watch
+ its desktop, from anywhere.
+
+ Setup keeps Øphio running, works out how your phone
+ reaches this computer, connects your agents, pairs your
+ phone and checks that it all works. It takes a few
+ minutes, and any step can be left for later.
+
+ · This computer  desk
+ ✓ Claude Code    Found
+ · Codex          Not found
+ ✓ Tailscale      Found
+
+ ╾─◆ [s] Carry on · recommended
+     [x] Skip setup
+ pgdn for more · ↑↓ move · enter choose · ctrl-c leave
+── 31 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ · Talk to your agents
+
+ Talk instead of typing. What you say is recognised on this
+ computer, by a 151 MB speech model that is downloaded
+ once.
+
+ ▸ ophio voice install tiny.en
+
+
+
+
+ ╾─◆ [y] Download it · recommended
+     [g] Let the agent do it
+         Claude Code does it in a task you follow here. It
+         asks you before it installs or changes anything.
+     [l] Leave this for later
+ ↑↓ move · enter choose · ctrl-c leave
+── 32 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ · Skill setup-voice  What setup-voice does.
+
+ Claude Code does this as a task, in a folder of its own;
+ you follow it here and in the app. Before it runs a
+ command that installs or changes anything, it asks you
+ here and shows exactly what would run.
+
+ Confirming a pairing, choosing what a device may do,
+ signing in, and typing passwords or tokens stay with you.
+
+
+
+
+
+ ╾─◆ [s] Start it · recommended
+     [b] Back
+ ↑↓ move · enter choose · esc back · ctrl-c leave
+── 33 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ ●── Starting the task…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ctrl-c leave
+── 34 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ · Skill setup-voice
+ ! Waiting for you
+
+ whisper.cpp is in your package manager, so I'll install it
+ from there.
+
+ ✓ Read the voice guide
+ ●── pacman -Si whisper.cpp
+ ! It asks to                Run a command
+
+ ▸ sudo pacman -S --needed whisper.cpp
+
+     [a] Allow
+     [d] Don't allow
+     [s] Stop it
+     [b] Leave it running
+ ↑↓ move · enter choose · ctrl-c leave
+── 35 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ · Skill setup-voice
+ ! Waiting for you
+ ! It asks            Which folders?
+
+
+
+
+
+     [ ] 1 ~/work/app
+     [ ] 2 ~/work/site
+     [ ] 3 ~/notes
+ ╾─◆ [↵] Go on with these
+     [a] Answer in your own words
+     [s] Stop it
+     [b] Leave it running
+         It carries on; follow it in the app.
+ ↑↓ move · space tick · enter choose · ctrl-c leave
+── 36 · Extras ──
+ Step 5 of 6 · Extras
+ ──────────────────────────────────────────────────────────
+
+ · Skill setup-voice
+ ✓ Its turn is done   If it asked you something, reply.
+
+
+
+
+
+
+
+
+
+
+
+
+     [r] Reply
+ ╾─◆ [n] Go on · recommended
+ ↑↓ move · enter choose · ctrl-c leave

@@ -1,0 +1,29 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-00000000000b",
+    "issued_at": 1700000000000,
+    "expected_revision": 1,
+    "expires_at": null,
+    "body": {
+      "command": "resolve_approval",
+      "approval_id": "00000000-0000-4000-8000-000000000001",
+      "decision": {
+        "decision": "allow"
+      }
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-00000000000b",
+    "status": "accepted",
+    "seq": 11,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

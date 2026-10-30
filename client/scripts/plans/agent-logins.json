@@ -1,0 +1,767 @@
+[
+ {
+  "name": "al-01-disclaimer",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "shot",
+    "top"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "clickSel",
+    "dialog[open] input[type=checkbox]"
+   ],
+   [
+    "eval",
+    "if(!(!document.querySelector('dialog[open] button.btn--primary, dialog[open] button[type=submit]')?.disabled)) throw Error(\"Turn on stayed disabled after ticking\")"
+   ]
+  ]
+ },
+ {
+  "name": "al-02-turned-on",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input[type=checkbox]"
+   ],
+   [
+    "click",
+    "Turn on Agent logins"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!(window.__sim.host.agentLogins.view.enabled)) throw Error(\"Accepting did not turn it on\")"
+   ]
+  ]
+ },
+ {
+  "name": "al-03-not-now-dark",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Not now"
+   ],
+   [
+    "wait",
+    500
+   ]
+  ]
+ },
+ {
+  "name": "al-04-list-dark",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ]
+  ]
+ },
+ {
+  "name": "al-05-add-keyboard",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Add a login"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "fill",
+    "Name",
+    "Seed swap"
+   ],
+   [
+    "fill",
+    "Sites",
+    "seedswap.example"
+   ],
+   [
+    "fill",
+    "Username",
+    "sam"
+   ],
+   [
+    "clickSel",
+    "dialog[open] input[type=password]"
+   ],
+   [
+    "height",
+    470
+   ],
+   [
+    "eval",
+    "document.activeElement.scrollIntoView({block:'nearest'})"
+   ],
+   [
+    "wait",
+    400
+   ],
+   [
+    "shot",
+    "keyboard"
+   ],
+   [
+    "height",
+    844
+   ],
+   [
+    "click",
+    "Generate"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "generated"
+   ],
+   [
+    "click",
+    "Add login"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!(window.__sim.host.agentLogins.view.logins.some(l=>l.name==='Seed swap'))) throw Error(\"The login was not added\")"
+   ],
+   [
+    "eval",
+    "if(!(!JSON.stringify(localStorage).includes(window.__sim.host.agentLogins.passwords.get(window.__sim.host.agentLogins.view.logins.find(l=>l.name==='Seed swap').login_id)))) throw Error(\"The password was kept on the phone\")"
+   ]
+  ]
+ },
+ {
+  "name": "al-06-login-shown",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Facebook"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "click",
+    "Show password"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "al-07-delete-step-dark",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Facebook"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "click",
+    "Delete permanently"
+   ],
+   [
+    "wait",
+    400
+   ]
+  ]
+ },
+ {
+  "name": "al-08-ask-first",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "eval",
+    "window.__sim.host.agentLogins.ask('login_use')"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "[...document.querySelectorAll('*')].find(e=>e.children.length===0&&e.textContent.includes('sign in to Facebook'))?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "al-09-code-landscape",
+  "width": 844,
+  "height": 390,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "eval",
+    "window.__sim.host.agentLogins.ask('login_code')"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "document.querySelector('input[autocomplete=one-time-code]')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "shot",
+    "prompt"
+   ],
+   [
+    "clickSel",
+    "input[autocomplete=one-time-code]"
+   ],
+   [
+    "type",
+    "482 913"
+   ],
+   [
+    "click",
+    "Fill code"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!([...window.__sim.host.agentLogins.codes.values()].includes('482913'))) throw Error(\"The code was not filled\")"
+   ]
+  ]
+ },
+ {
+  "name": "al-10-used-toast-dark",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "dark": true,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const s=window.__sim.host.agentLogins;s.use(s.view.logins.find(l=>l.name==='Facebook').login_id,'0192f7a1-0000-7000-8000-000000000201')"
+   ],
+   [
+    "wait",
+    600
+   ]
+  ]
+ },
+ {
+  "name": "al-11-list-200",
+  "width": 360,
+  "height": 780,
+  "scale": 1,
+  "settle": 900,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "shot",
+    "top"
+   ],
+   [
+    "click",
+    "Facebook"
+   ],
+   [
+    "wait",
+    500
+   ]
+  ]
+ },
+ {
+  "name": "al-12-disclaimer-200-dark",
+  "width": 360,
+  "height": 780,
+  "scale": 1,
+  "settle": 900,
+  "text": 2,
+  "dark": true,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "shot",
+    "top"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "al-13-code-200",
+  "width": 360,
+  "height": 780,
+  "scale": 1,
+  "settle": 900,
+  "text": 2,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "eval",
+    "window.__sim.host.agentLogins.ask('login_code')"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__main"
+   ],
+   [
+    "click",
+    "Fix the flaky retry test"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "document.querySelector('input[autocomplete=one-time-code]')?.scrollIntoView({block:'center'})"
+   ],
+   [
+    "wait",
+    300
+   ]
+  ]
+ },
+ {
+  "name": "al-14-tablet",
+  "width": 1024,
+  "height": 768,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "window.__sim.host.agentLogins.seed()"
+   ],
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "Agent logins"
+   ],
+   [
+    "wait",
+    800
+   ],
+   [
+    "click",
+    "Facebook"
+   ],
+   [
+    "wait",
+    500
+   ]
+  ]
+ }
+]

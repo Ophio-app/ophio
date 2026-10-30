@@ -1,0 +1,78 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+@import "./control.css";
+.windows-screen {
+  overflow-wrap: break-word;
+}
+.windows-picture {
+  max-width: 22rem;
+  margin-inline: auto;
+  width: 100%;
+}
+.windows-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--s3);
+}
+.windows-tools .field {
+  flex: 1 1 15rem;
+  min-width: 0;
+}
+.windows-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--s3);
+}
+.windows-card {
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  min-width: 0;
+}
+.windows-title {
+  display: flex;
+  align-items: start;
+  gap: var(--s3);
+}
+.windows-title svg {
+  flex: 0 0 1.2rem;
+  margin-top: 0.2rem;
+}
+.windows-title h3 {
+  font-size: var(--text-md);
+  margin: 0;
+}
+.windows-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+.windows-focused {
+  color: var(--ink);
+  font-size: var(--text-sm);
+  margin-block: var(--s2);
+}
+.windows-app {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--line);
+}
+.windows-app > span {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+.windows-close-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.control-footer .windows-why {
+  margin: 0 0 var(--s2);
+}

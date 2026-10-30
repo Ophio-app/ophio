@@ -1,0 +1,187 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* What a conversation's agent may reach: read on the left, under the
+   project; the internet in the middle; change and run on the right, under
+   Live and the cog. Each is drawn as a control, outlined with a chevron or
+   in a ring, so it reads as something to tap. */
+.access {
+  flex: 1 0 100%;
+  min-width: 0;
+}
+.access__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--target);
+  padding-block: var(--s1);
+}
+.access__pick {
+  display: grid;
+  justify-self: start;
+  max-width: 100%;
+  min-width: 0;
+  min-height: var(--target);
+  padding: var(--s1) var(--s2) var(--s1) var(--s3);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  text-align: left;
+  transition: background-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+.access__pick--write {
+  justify-self: end;
+  justify-items: end;
+  text-align: right;
+}
+.access__pick:active:not(:disabled) {
+  background: var(--surface-pressed);
+  box-shadow: inset 0 0 0 1px var(--ink-3);
+}
+.access__pick:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.access__pick:disabled:not(.is-busy) {
+  opacity: 0.55;
+}
+.access__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.access__label svg {
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+.access__value {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+.access__summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.access__chevron {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+  color: var(--ink-3);
+}
+
+/* Grey when off, green when on; the icon swaps too, so colour isn't the
+   only sign. A ring either way, so off still looks like a switch. */
+.access__net {
+  color: var(--ink-3);
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  transition: color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+.access__net.is-on {
+  color: var(--ok);
+  background: var(--ok-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ok) 55%, transparent);
+}
+.access__net:active:not(:disabled) {
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+.access__net.is-on:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ok) 28%, var(--ok-soft));
+  color: var(--ok);
+}
+
+/* Waiting for the computer to say a change is in force: the control's icon
+   turns, and the control stays at full strength, not faded as if off. */
+.access__net.is-busy:disabled {
+  opacity: 1;
+}
+.access .is-busy .access__label svg,
+.access__net.is-busy svg {
+  animation: spin 0.9s linear infinite;
+}
+
+/* What Øphio just stopped, with the one tap that allows it: tinted and
+   ringed like a warning, and dropped in each time something new is stopped,
+   so it isn't missed under the bar. */
+.access-blocked {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--target);
+  margin-block: var(--s1);
+  padding: var(--s1) var(--s2) var(--s1) var(--s3);
+  border-radius: var(--r-md);
+  background: var(--warn-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--warn) 55%, transparent);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  animation: drop-in var(--dur-3) var(--ease);
+}
+.access-blocked__icon {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--warn-text);
+}
+.access-blocked__lead {
+  font-weight: 650;
+  color: var(--warn-text);
+}
+.access-blocked__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.access-blocked__what {
+  font-family: var(--font-mono);
+}
+
+.access-sheet__note {
+  margin: 0 0 var(--s3);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+.access-sheet__list {
+  display: grid;
+  margin-top: var(--s3);
+}
+.access-option {
+  cursor: pointer;
+}
+.access-option.is-implied {
+  cursor: default;
+  opacity: 0.6;
+}
+.access-sheet__none {
+  padding: var(--s3) var(--s2);
+  color: var(--ink-2);
+}
+
+@media (forced-colors: active) {
+  /* Forced colours drop the box-shadow outlines. */
+  .access__pick,
+  .access__net {
+    border: 1px solid ButtonText;
+  }
+  .access__net.is-on {
+    border: 2px solid Highlight;
+  }
+  .access-blocked {
+    border: 2px solid CanvasText;
+  }
+  .access__pick:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}

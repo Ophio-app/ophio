@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-app-update-chunk"
+description = "Enables the app_update_chunk command without any pre-configured scope."
+commands.allow = ["app_update_chunk"]
+
+[[permission]]
+identifier = "deny-app-update-chunk"
+description = "Denies the app_update_chunk command without any pre-configured scope."
+commands.deny = ["app_update_chunk"]

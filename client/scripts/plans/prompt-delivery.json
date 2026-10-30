@@ -1,0 +1,155 @@
+[
+  {
+    "name": "U19-1-preview-delivered",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pNotes,ids.tNotes);ui.selectTab('talk');ui.persistNow();location.reload()})()"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "clickSel",
+        ".preview-card:last-child .preview-actions > button:first-child"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "click",
+        "Take picture"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('dialog[open] iframe'))throw Error('Preview closed after capture')"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .btn--primary"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Review and send"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "fill",
+        "Your message",
+        "Check the layout in this preview picture."
+      ],
+      [
+        "click",
+        "Continue"
+      ],
+      [
+        "wait",
+        1800
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.talk-log p')].find(e=>e.textContent.includes('Taken from the Notes preview on studio')); if(!p)throw Error('Missing preview provenance on sent receipt');p.scrollIntoView({block:'center'});"
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.talk-log')?.textContent.includes('Delivered to the agent'))throw Error('Initial prompt not delivered')"
+      ],
+      [
+        "shot",
+        "talk-delivered"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const p=[...document.querySelectorAll('.preview-draft p')].find(e=>e.textContent.includes('Sent with markup to'));if(!p)throw Error('Preview not delivered');p.scrollIntoView({block:'center'});"
+      ]
+    ],
+    "fresh": false
+  },
+  {
+    "name": "U19-2-terminal-ended",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "fresh": false,
+    "steps": [
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "click",
+        "Attach"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "fill",
+        "Command",
+        "pwd"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "fill",
+        "Command",
+        "exit 7"
+      ],
+      [
+        "click",
+        "Send line"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "const t=document.querySelector('.terminal-screen');if(!t?.textContent.includes('Session ended')||!t.textContent.includes('code 7'))throw Error('Exit missing');if(t.textContent.includes('Reconnect terminal'))throw Error('Reconnect remains');if(!t.querySelector('.terminal-composer textarea')?.disabled)throw Error('Input remains enabled');"
+      ]
+    ]
+  }
+]

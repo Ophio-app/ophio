@@ -1,0 +1,38 @@
+[package]
+name = "harness-claude"
+description = "Claude Code adapter over its stream-json print mode"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+protocol.workspace = true
+ports.workspace = true
+containment.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+base64 = "0.22.1"
+uuid = { version = "1.26", features = ["v4"] }
+tempfile = "3.23.0"
+sha2 = "0.10"
+
+[lints]
+workspace = true
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "1.1.2", features = ["process"] }
+
+[dev-dependencies]
+containment = { workspace = true, features = ["test-hooks"] }
+tokio = { version = "1.53", features = ["test-util"] }
+test-support = { path = "../test-support" }
+
+[target.'cfg(windows)'.dev-dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Threading"] }

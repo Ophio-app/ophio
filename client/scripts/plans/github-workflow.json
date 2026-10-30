@@ -1,0 +1,1618 @@
+[
+ {
+  "name": "gh-settings-light",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "GitHub"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "shot",
+    "projects"
+   ],
+   [
+    "click",
+    "tidewater-api"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "drafts"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Through merge/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "warning"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "warning-end"
+   ],
+   [
+    "click",
+    "Keep Through merge"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!([...document.querySelectorAll('*')].some(e=>e.children.length===0&&/merges its pull requests into .* once their checks pass/.test(e.textContent)))) throw Error(\"No Through merge reminder\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-settings-dark",
+  "width": 390,
+  "dark": true,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "GitHub"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "shot",
+    "projects"
+   ],
+   [
+    "click",
+    "tidewater-api"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "drafts"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Through merge/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "warning"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "warning-end"
+   ],
+   [
+    "click",
+    "Keep Through merge"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!([...document.querySelectorAll('*')].some(e=>e.children.length===0&&/merges its pull requests into .* once their checks pass/.test(e.textContent)))) throw Error(\"No Through merge reminder\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-settings-large",
+  "width": 360,
+  "text": 2,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "GitHub"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "shot",
+    "projects"
+   ],
+   [
+    "click",
+    "tidewater-api"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "drafts"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Through merge/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "warning"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "warning-end"
+   ],
+   [
+    "click",
+    "Keep Through merge"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!([...document.querySelectorAll('*')].some(e=>e.children.length===0&&/merges its pull requests into .* once their checks pass/.test(e.textContent)))) throw Error(\"No Through merge reminder\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-settings-narrow",
+  "width": 320,
+  "text": 2,
+  "height": 700,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".ctx__context"
+   ],
+   [
+    "click",
+    "Connections and readiness"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "App settings"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "click",
+    "GitHub"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "shot",
+    "projects"
+   ],
+   [
+    "click",
+    "tidewater-api"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "drafts"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Through merge/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "warning"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "shot",
+    "warning-end"
+   ],
+   [
+    "click",
+    "Keep Through merge"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!([...document.querySelectorAll('*')].some(e=>e.children.length===0&&/merges its pull requests into .* once their checks pass/.test(e.textContent)))) throw Error(\"No Through merge reminder\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-review-light",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Add a retry budget header"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: New pull request\"]'))) throw Error(\"Work did not default to a new pull request\")"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "shot",
+    "links"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take over a pull request/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "pr-step"
+   ],
+   [
+    "fill",
+    "The pull request\u2019s number or link",
+    "#214"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "click",
+    "Use #214"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: Pull request #214\"]'))) throw Error(\"Take over did not link #214\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-review-dark",
+  "width": 390,
+  "dark": true,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Add a retry budget header"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: New pull request\"]'))) throw Error(\"Work did not default to a new pull request\")"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "shot",
+    "links"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take over a pull request/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "pr-step"
+   ],
+   [
+    "fill",
+    "The pull request\u2019s number or link",
+    "#214"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "click",
+    "Use #214"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: Pull request #214\"]'))) throw Error(\"Take over did not link #214\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-review-large",
+  "width": 360,
+  "text": 2,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Add a retry budget header"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: New pull request\"]'))) throw Error(\"Work did not default to a new pull request\")"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "shot",
+    "links"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take over a pull request/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "pr-step"
+   ],
+   [
+    "fill",
+    "The pull request\u2019s number or link",
+    "#214"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "click",
+    "Use #214"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: Pull request #214\"]'))) throw Error(\"Take over did not link #214\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-review-narrow",
+  "width": 320,
+  "text": 2,
+  "height": 700,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Add a retry budget header"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: New pull request\"]'))) throw Error(\"Work did not default to a new pull request\")"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "shot",
+    "links"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take over a pull request/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "pr-step"
+   ],
+   [
+    "fill",
+    "The pull request\u2019s number or link",
+    "#214"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "click",
+    "Use #214"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: Pull request #214\"]'))) throw Error(\"Take over did not link #214\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-find-light",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Look for problems"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Find issues/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "find-step"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-find-dark",
+  "width": 390,
+  "dark": true,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Look for problems"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Find issues/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "find-step"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-find-large",
+  "width": 360,
+  "text": 2,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Look for problems"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Find issues/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "find-step"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-find-narrow",
+  "width": 320,
+  "text": 2,
+  "height": 700,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Look for problems"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Find issues/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "find-step"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-pr-light",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Add rate-limit headers/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "task"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^PR #214/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-pr-dark",
+  "width": 390,
+  "dark": true,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Add rate-limit headers/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "task"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^PR #214/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-pr-large",
+  "width": 360,
+  "text": 2,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Add rate-limit headers/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "task"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^PR #214/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-pr-narrow",
+  "width": 320,
+  "text": 2,
+  "height": 700,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Add rate-limit headers/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "task"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^PR #214/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-list-light",
+  "width": 390,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "Issues and pull requests"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/#223/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "item"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-list-dark",
+  "width": 390,
+  "dark": true,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "Issues and pull requests"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/#223/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "item"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-list-large",
+  "width": 360,
+  "text": 2,
+  "height": 844,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "Issues and pull requests"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/#223/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "item"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-list-narrow",
+  "width": 320,
+  "text": 2,
+  "height": 700,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "Issues and pull requests"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/#223/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "item"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-review-tablet",
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "eval",
+    "const h=window.__sim.host;const p={...h.projects.find(p=>p.name==='tidewater-api'),active_writer:null};h.projects=h.projects.map(x=>x.project_id===p.project_id?p:x);h.emit({type:'project_upserted',project:p})"
+   ],
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^New task\\s+Start something separate/,0)"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "fill",
+    "What should",
+    "Add a retry budget header"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Review$/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: New pull request\"]'))) throw Error(\"Work did not default to a new pull request\")"
+   ],
+   [
+    "shot",
+    "review"
+   ],
+   [
+    "click",
+    "GitHub: New pull request"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "shot",
+    "links"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^Take over a pull request/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "pr-step"
+   ],
+   [
+    "fill",
+    "The pull request\u2019s number or link",
+    "#214"
+   ],
+   [
+    "wait",
+    200
+   ],
+   [
+    "click",
+    "Use #214"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "eval",
+    "if(!(document.querySelector('[aria-label=\"GitHub: Pull request #214\"]'))) throw Error(\"Take over did not link #214\")"
+   ]
+  ]
+ },
+ {
+  "name": "gh-pr-tablet",
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".talk-bar__title"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/Add rate-limit headers/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "task"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/^PR #214/,0)"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "shot",
+    "sheet"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ },
+ {
+  "name": "gh-list-tablet",
+  "width": 1280,
+  "height": 800,
+  "scale": 1,
+  "settle": 900,
+  "steps": [
+   [
+    "clickSel",
+    ".nav__tab:nth-child(3)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "click",
+    "Issues and pull requests"
+   ],
+   [
+    "wait",
+    1400
+   ],
+   [
+    "shot",
+    "list"
+   ],
+   [
+    "eval",
+    "const clk=(re,n=0)=>{const b=[...document.querySelectorAll('button,a,[role=tab],[role=radio],summary,label')].filter(e=>e.offsetParent&&re.test((e.getAttribute('aria-label')||e.innerText).trim()))[n];if(!b)throw Error('No control '+re);b.click()};clk(/#223/,0)"
+   ],
+   [
+    "wait",
+    900
+   ],
+   [
+    "shot",
+    "item"
+   ],
+   [
+    "eval",
+    "document.querySelectorAll('dialog[open] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20&&getComputedStyle(e).overflowY!='visible')e.scrollTop=e.scrollHeight})"
+   ],
+   [
+    "wait",
+    200
+   ]
+  ]
+ }
+]

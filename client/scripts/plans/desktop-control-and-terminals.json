@@ -1,0 +1,553 @@
+[
+  {
+    "name": "control-light",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600]
+    ]
+  },
+  {
+    "name": "control-dark",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600]
+    ],
+    "dark": true
+  },
+  {
+    "name": "control-large",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600]
+    ],
+    "width": 360,
+    "height": 800,
+    "text": 2
+  },
+  {
+    "name": "control-landscape",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600]
+    ],
+    "width": 800,
+    "height": 360,
+    "scale": 1
+  },
+  {
+    "name": "control-wide",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "desktop-light",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700]
+    ]
+  },
+  {
+    "name": "desktop-dark",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700]
+    ],
+    "dark": true
+  },
+  {
+    "name": "desktop-large",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700]
+    ],
+    "width": 360,
+    "height": 800,
+    "text": 2
+  },
+  {
+    "name": "desktop-landscape",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700]
+    ],
+    "width": 800,
+    "height": 360,
+    "scale": 1
+  },
+  {
+    "name": "desktop-wide",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "agent-light",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700]
+    ]
+  },
+  {
+    "name": "agent-dark",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700]
+    ],
+    "dark": true
+  },
+  {
+    "name": "agent-large",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700]
+    ],
+    "width": 360,
+    "height": 800,
+    "text": 2
+  },
+  {
+    "name": "agent-landscape",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700]
+    ],
+    "width": 800,
+    "height": 360,
+    "scale": 1
+  },
+  {
+    "name": "agent-wide",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "terminal-light",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700]
+    ]
+  },
+  {
+    "name": "terminal-dark",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700]
+    ],
+    "dark": true
+  },
+  {
+    "name": "terminal-large",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      [
+        "eval",
+        "{ const e=document.querySelector('.terminal-screen .terminal-output'); const body=e?.closest('.screen__body'); if(e && body) body.scrollTop += e.getBoundingClientRect().top - body.getBoundingClientRect().top; }"
+      ]
+    ],
+    "width": 360,
+    "height": 800,
+    "text": 2
+  },
+  {
+    "name": "terminal-landscape",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700]
+    ],
+    "width": 800,
+    "height": 360,
+    "scale": 1
+  },
+  {
+    "name": "terminal-wide",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700]
+    ],
+    "width": 1280,
+    "height": 800,
+    "scale": 1
+  },
+  {
+    "name": "desktop-human-keyboard",
+    "dark": true,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700],
+      [
+        "eval",
+        "if(window.__sim.control.inputs().length) throw Error('Opening sent input')"
+      ],
+      ["click", "Enable control"],
+      ["wait", 400],
+      ["clickSel", "[role=radio]:has-text('Direct')"],
+      ["clickSel", ".picture-surface"],
+      [
+        "eval",
+        "const c=window.__sim.control.inputs().filter(x=>x.action.action==='click'); if(c.length!==1 || Math.abs(c[0].action.at.x-.5)>.02 || Math.abs(c[0].action.at.y-.5)>.02) throw Error('Wrong click coordinates')"
+      ],
+      ["shot", "click"],
+      ["click", "Keyboard"],
+      ["fill", "Text for the computer", "A saved input draft"],
+      ["shot", "draft"],
+      ["click", "Leave control"],
+      ["wait", 1500],
+      [
+        "eval",
+        "if(window.__sim.host.control.some(x=>x.lease?.owner.kind==='human' && x.lease.state==='active')) throw Error('Lease not released')"
+      ]
+    ]
+  },
+  {
+    "name": "desktop-stale",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700],
+      ["click", "Enable control"],
+      ["eval", "window.__sim.media.freeze()"],
+      ["wait", 4100],
+      ["shot", "paused"],
+      ["eval", "window.__sim.media.freeze(false)"],
+      ["wait", 600],
+      ["shot", "restored"]
+    ]
+  },
+  {
+    "name": "desktop-geometry",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700],
+      ["click", "Enable control"],
+      ["eval", "window.__sim.control.geometry()"],
+      ["wait", 700]
+    ]
+  },
+  {
+    "name": "desktop-rejected",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700],
+      ["eval", "window.__sim.control.rejectLease()"],
+      ["click", "Enable control"],
+      ["wait", 300]
+    ]
+  },
+  {
+    "name": "desktop-keyboard-short",
+    "width": 360,
+    "height": 420,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700],
+      ["click", "Enable control"],
+      ["click", "Keyboard"],
+      ["fill", "Text for the computer", "Keep this draft"],
+      [
+        "eval",
+        "const b=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Leave control')); const r=b.getBoundingClientRect(); if(r.bottom>innerHeight || r.top<0)throw Error('Leave control hidden')"
+      ]
+    ]
+  },
+  {
+    "name": "agent-short",
+    "width": 360,
+    "height": 420,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700],
+      [
+        "eval",
+        "for(const text of ['Pause input','Take over','Stop task']) { const b=[...document.querySelectorAll('.safety-actions button')].find(b=>b.textContent.includes(text)); const r=b.getBoundingClientRect(); if(r.bottom>innerHeight || r.top<0)throw Error(text+' hidden'); }"
+      ]
+    ]
+  },
+  {
+    "name": "agent-pause",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700],
+      ["click", "Pause input"],
+      ["shot", "requested"],
+      ["wait", 900],
+      [
+        "eval",
+        "{ const e=document.querySelector('.agent-screen .control-receipt'); const body=e?.closest('.screen__body'); if(e && body) body.scrollTop += e.getBoundingClientRect().top - body.getBoundingClientRect().top; }"
+      ]
+    ]
+  },
+  {
+    "name": "agent-takeover",
+    "dark": true,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700],
+      ["click", "Take over"],
+      ["wait", 2000],
+      [
+        "eval",
+        "if(!window.__sim.host.control.some(v=>v.target_id.endsWith('601') && v.lease?.owner.kind==='human' && v.lease.state==='active'))throw Error('No fresh human lease')"
+      ]
+    ]
+  },
+  {
+    "name": "agent-stop-unknown",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700],
+      ["click", "Stop task"],
+      ["shot", "requested"],
+      ["wait", 1100],
+      [
+        "eval",
+        "{ const e=document.querySelector('.agent-screen .control-receipt'); const body=e?.closest('.screen__body'); if(e && body) body.scrollTop += e.getBoundingClientRect().top - body.getBoundingClientRect().top; }"
+      ]
+    ]
+  },
+  {
+    "name": "agent-navigation",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700],
+      ["click", "Library"],
+      ["wait", 900],
+      [
+        "eval",
+        "if(window.__sim.host.control.find(v=>v.target_id.endsWith('601')).input_state!=='paused')throw Error('Navigation did not pause')"
+      ],
+      ["click", "Control"],
+      ["wait", 700],
+      [
+        "eval",
+        "if(window.__sim.host.control.find(v=>v.target_id.endsWith('601')).input_state!=='paused')throw Error('Navigation resumed input')"
+      ],
+      ["click", "Review return to agent"],
+      ["shot", "review"],
+      ["click", "Return to agent"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "agent-private",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700],
+      ["click", "Start private step"],
+      ["wait", 1000],
+      [
+        "eval",
+        "{ const e=document.querySelector('#private-step'); const body=e?.closest('.screen__body'); if(e && body) body.scrollTop += e.getBoundingClientRect().top - body.getBoundingClientRect().top; }"
+      ]
+    ]
+  },
+  {
+    "name": "terminal-reconnect",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      ["fill", "Command for", "pwd"],
+      ["press", "Enter"],
+      ["wait", 300],
+      ["fill", "Command for", "echo kept on phone"],
+      ["eval", "window.__sim.offline()"],
+      ["shot", "offline"],
+      ["eval", "window.__sim.online()"],
+      ["wait", 1000],
+      ["eval", "window.__sim.control.dropTerminal()"],
+      ["wait", 1700],
+      ["shot", "resumed"],
+      ["click", "Detach"],
+      ["shot", "detached"],
+      ["click", "Attach again"],
+      ["wait", 500],
+      ["click", "Close terminal"],
+      ["shot", "close-review"]
+    ]
+  },
+  {
+    "name": "terminal-paste",
+    "dark": true,
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      ["fill", "Command for", "echo one\necho two"],
+      ["click", "Send line"],
+      ["shot", "preview"],
+      ["click", "Paste into"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "control-empty",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["eval", "window.__sim.control.empty()"],
+      ["wait", 200]
+    ]
+  },
+  {
+    "name": "control-capability",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["eval", "window.__sim.control.missing()"],
+      ["wait", 200]
+    ]
+  },
+  {
+    "name": "desktop-capability",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700],
+      ["eval", "window.__sim.control.missing()"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "control-offline",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 200]
+    ]
+  },
+  {
+    "name": "desktop-offline",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Watch HDMI-A-1"],
+      ["wait", 700],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "agent-offline",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Check the staging dashboard"],
+      ["wait", 700],
+      ["eval", "window.__sim.offline()"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "terminal-revoked",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      ["eval", "window.__sim.revoke()"],
+      ["wait", 500]
+    ]
+  },
+  {
+    "name": "control-sessions",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      [
+        "eval",
+        "{ const e=document.querySelector('#control-terminals'); const b=e?.closest('.screen__body'); if(e && b) b.scrollTop += e.getBoundingClientRect().top-b.getBoundingClientRect().top; }"
+      ],
+      ["shot", "sessions"],
+      [
+        "eval",
+        "{ const e=document.querySelector('#control-previews'); const b=e?.closest('.screen__body'); if(e && b) b.scrollTop += e.getBoundingClientRect().top-b.getBoundingClientRect().top; }"
+      ]
+    ]
+  },
+  {
+    "name": "terminal-close-confirmed",
+    "steps": [
+      ["click", "Control"],
+      ["wait", 600],
+      ["click", "Attach"],
+      ["wait", 700],
+      ["click", "Close terminal"],
+      ["click", "Close \u2018tidewater-api"],
+      ["wait", 300],
+      [
+        "eval",
+        "if(window.__sim.host.terminals[0].state.state!=='exited' || !document.querySelector('.terminal-composer textarea')?.disabled) throw Error('Terminal close was not confirmed')"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,128 @@
+[
+  {
+    "name": "M3-5-focus-light",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 400],
+      ["click", "Project · Read and write"],
+      ["wait", 400],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 400],
+      ["click", "metrics.csv"],
+      ["wait", 500],
+      ["shot", "deep"],
+      ["click", "Back"],
+      ["wait", 350],
+      [
+        "log",
+        "({focus:document.activeElement?.tagName,text:document.activeElement?.textContent,scroll:document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen__body')?.scrollTop})"
+      ],
+      ["shot", "back"],
+      ["click", "Back"],
+      ["wait", 350],
+      [
+        "log",
+        "({focus:document.activeElement?.tagName,text:document.activeElement?.textContent})"
+      ]
+    ]
+  },
+  {
+    "name": "M3-5-focus-dark",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "settle": 900,
+    "dark": true,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 400],
+      ["click", "Project · Read and write"],
+      ["wait", 400],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 400],
+      ["click", "metrics.csv"],
+      ["wait", 500],
+      ["shot", "deep"],
+      ["click", "Back"],
+      ["wait", 350],
+      [
+        "log",
+        "({focus:document.activeElement?.tagName,text:document.activeElement?.textContent,scroll:document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen__body')?.scrollTop})"
+      ],
+      ["shot", "back"],
+      ["click", "Back"],
+      ["wait", 350],
+      [
+        "log",
+        "({focus:document.activeElement?.tagName,text:document.activeElement?.textContent})"
+      ]
+    ]
+  },
+  {
+    "name": "M3-5-focus-large",
+    "width": 360,
+    "height": 780,
+    "scale": 1,
+    "settle": 900,
+    "text": 2,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 400],
+      ["click", "Project · Read and write"],
+      ["wait", 400],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 400],
+      ["click", "metrics.csv"],
+      ["wait", 500],
+      ["shot", "deep"],
+      ["click", "Back"],
+      ["wait", 350],
+      [
+        "log",
+        "({focus:document.activeElement?.tagName,text:document.activeElement?.textContent,scroll:document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen__body')?.scrollTop})"
+      ],
+      ["shot", "back"],
+      ["click", "Back"],
+      ["wait", 350],
+      [
+        "log",
+        "({focus:document.activeElement?.tagName,text:document.activeElement?.textContent})"
+      ]
+    ]
+  },
+  {
+    "name": "M3-5-focus-wide",
+    "width": 1280,
+    "height": 800,
+    "scale": 1,
+    "settle": 900,
+    "steps": [
+      ["click", "Library"],
+      ["wait", 400],
+      ["click", "Project · Read and write"],
+      ["wait", 400],
+      ["clickSel", "button.row:has-text(\"docs\")"],
+      ["wait", 400],
+      ["click", "metrics.csv"],
+      ["wait", 500],
+      ["shot", "deep"],
+      ["click", "Back"],
+      ["wait", 350],
+      [
+        "log",
+        "({focus:document.activeElement?.tagName,text:document.activeElement?.textContent,scroll:document.querySelector('.tab:not(.is-hidden) .route:not(.is-hidden) .screen__body')?.scrollTop})"
+      ],
+      ["shot", "back"],
+      ["click", "Back"],
+      ["wait", 350],
+      [
+        "log",
+        "({focus:document.activeElement?.tagName,text:document.activeElement?.textContent})"
+      ]
+    ]
+  }
+]

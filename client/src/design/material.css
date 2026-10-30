@@ -1,0 +1,392 @@
+/* SPDX-License-Identifier: Apache-2.0
+ * Texture belongs to usable surfaces, never to an extra panel or control.
+ * These layers cannot receive input, add layout height, or announce anything.
+ */
+
+:root {
+  /* Each texture is named once, so the build inlines it once. */
+  --branch-mask: url("./assets/mycelium.svg");
+  --reach-1: url("./assets/reach-1.svg");
+  --reach-2: url("./assets/reach-2.svg");
+  --reach-3: url("./assets/reach-3.svg");
+  --mat: url("./assets/mat-light.svg");
+  --mat-veil: rgb(245 241 232 / 0.6);
+  --glow-a: rgb(116 64 153 / 0.05);
+  --glow-b: rgb(81 102 0 / 0.03);
+  --gill: rgb(116 64 153 / 0.07);
+  /* A press tints toward a violet about as bright as the surface, so it shows
+     as colour without taking contrast from the text above it. */
+  --reach-tint: rgb(217 202 227 / 0.95);
+  --release-a: var(--pulse);
+  --release-b: var(--accent);
+}
+:root[data-theme="dark"] {
+  --mat: url("./assets/mat-dark.svg");
+  --mat-veil: rgb(10 6 5 / 0.5);
+  --glow-a: rgb(194 145 239 / 0.07);
+  --glow-b: rgb(195 255 36 / 0.03);
+  --gill: rgb(194 145 239 / 0.07);
+  --reach-tint: rgb(78 58 96 / 0.8);
+  --release-a: var(--spore);
+  --release-b: var(--signal);
+}
+
+/* The ground every screen stands on: a fine network painted once, at two
+   scales so it never reads as a repeat, calmer under the reading column. The
+   screen's own bars let it run through them. */
+.route,
+.welcome {
+  background:
+    radial-gradient(120% 70% at 100% 100%, var(--glow-a), transparent 70%),
+    radial-gradient(90% 50% at 0 0, var(--glow-b), transparent 70%),
+    linear-gradient(90deg, transparent, var(--mat-veil) max(15%, 50% - var(--content-max) / 2) min(85%, 50% + var(--content-max) / 2), transparent),
+    var(--mat) 0 100% / 320px,
+    var(--mat) 157px calc(100% - 91px) / 452px,
+    var(--bg);
+}
+:is(.bar, .chat-pins, .composer, .review-foot) { background: transparent; }
+/* The header calms the ground under its labels; its own edge stays clear. */
+.ctx { background: var(--mat-veil); }
+
+/* Pinned footers hide what scrolls under them. They carry the same ground,
+   so they don't read as a blank patch; the welcome's lines up exactly, from
+   the same bottom edge across the full width. */
+.welcome { overflow-x: hidden; }
+:is(.welcome__actions, .talk-jump) { background: none; }
+:is(.welcome__actions, .talk-jump)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(var(--mat-veil) 0 0), var(--mat) 0 100% / 320px, var(--mat) 157px calc(100% - 91px) / 452px, var(--bg);
+  mask-image: linear-gradient(transparent, #000 var(--s5));
+}
+.talk-jump { isolation: isolate; }
+.talk-jump::before { mask-image: none; }
+.welcome__actions::before {
+  inset: 0 auto 0 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  background:
+    radial-gradient(120vw 70dvh at 100% 100%, var(--glow-a), transparent 70%),
+    linear-gradient(90deg, transparent, var(--mat-veil) max(15%, 50% - var(--content-max) / 2) min(85%, 50% + var(--content-max) / 2), transparent),
+    var(--mat) 0 100% / 320px,
+    var(--mat) 157px calc(100% - 91px) / 452px,
+    var(--bg);
+}
+.welcome--typing .welcome__actions::before { content: none; }
+
+/* Fine gills hang from the bar's edge and fade before its labels. */
+.nav {
+  background:
+    linear-gradient(transparent, var(--surface) 55%),
+    repeating-conic-gradient(from -0.3deg at 50% 1400%, var(--gill) 0deg 0.12deg, transparent 0.12deg 0.6deg),
+    var(--surface);
+}
+@media (min-width: 900px) {
+  .nav {
+    background:
+      linear-gradient(90deg, var(--surface) 30%, transparent),
+      repeating-conic-gradient(from 89.7deg at -1400% 50%, var(--gill) 0deg 0.12deg, transparent 0.12deg 0.6deg),
+      var(--surface);
+  }
+}
+
+.welcome--intro,
+.group,
+.toast,
+.nav__pill,
+.btn--primary {
+  position: relative;
+  isolation: isolate;
+}
+
+.welcome--intro::before,
+.group::before,
+.toast::before,
+.nav__pill::before,
+.btn--primary::before,
+.composer__bubble::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background: var(--filament);
+  mask: var(--branch-mask) right center / auto 100% no-repeat;
+}
+
+/* A continuous edge in the page itself, not a framed illustration. */
+.welcome--intro::before {
+  inset: 0;
+  z-index: -1;
+  opacity: 0.3;
+  mask-image: linear-gradient(to left, #000, transparent 85%), var(--branch-mask);
+  mask-size: 100% 100%, 640px 360px;
+  mask-position: center, right top;
+  mask-repeat: no-repeat, repeat-y;
+  mask-composite: intersect;
+}
+.welcome--intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("./assets/grain.png");
+  opacity: 0.025;
+}
+
+/* The texture follows the edge of an existing list, leaving its text clear. */
+.group::before {
+  inset: 0 0 0 auto;
+  width: min(32%, 100px);
+  z-index: -1;
+  opacity: 0.2;
+  mask-size: 300px auto;
+  transition: opacity var(--dur-2) var(--ease);
+}
+.group:focus-within::before { opacity: 0.3; }
+
+/* A toast grows its edge in as it arrives, from the end it hangs from. */
+.toast::before {
+  inset: 0 0 0 auto;
+  width: min(40%, 140px);
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0.3;
+  mask-size: 260px auto;
+  transform-origin: right center;
+  animation: edge-arrive 380ms var(--ease);
+}
+.group:focus-within { box-shadow: inset 0 0 0 1px var(--bloom); }
+.row--action .row__chevron {
+  transition: transform var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+}
+.row--action:active:not(:disabled) .row__chevron {
+  color: var(--bloom);
+  transform: translateX(3px);
+}
+
+/* One material, a little denser while a real action is pressed. The press
+   itself grows from the finger (below), so only opacity moves here. */
+.btn--primary::before {
+  inset: 1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--on-signal);
+  mask-size: 230px auto;
+  opacity: 0.14;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.btn--primary:active:not(:disabled)::before { opacity: 0.25; }
+
+/* The selected destination, not a second thing to interact with. */
+.nav__pill::before {
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--on-signal);
+  mask-size: 130px auto;
+  opacity: 0;
+}
+.nav__tab.is-on .nav__pill::before {
+  opacity: 0.22;
+  animation: edge-arrive 380ms var(--ease);
+}
+@keyframes edge-arrive {
+  from { opacity: 0; transform: scaleX(0.7); }
+}
+
+/* Focus grows along the input's lower edge, up to Send; it never crosses
+   the typed line. */
+.composer__bubble::after {
+  bottom: 1px;
+  right: var(--target);
+  width: min(45%, 140px);
+  height: 14px;
+  border-radius: 0 0 var(--r-lg) 0;
+  background: var(--bloom);
+  mask-size: 230px auto;
+  opacity: 0;
+  transform: translateX(6px);
+  transition: opacity var(--dur-2) var(--ease), transform 320ms var(--ease);
+}
+.composer__bubble:has(.field__input:focus)::after { opacity: 0.65; transform: none; }
+
+/* ---- Touch --------------------------------------------------------------
+   touch.ts marks the pressed control with data-reach and the finger's
+   position; a network grows from there behind the label and fades. It is
+   the control's own layer, so it scrolls and leaves with it. */
+:is(.btn, .iconbtn, .row--action, .chip, .segmented__opt, .evidence--action, .ctx__context, .status, .chat-head__back, .nav__pill) {
+  --reach: var(--reach-tint);
+  --reach-mix: 100%;
+  isolation: isolate;
+}
+:is(.row--action, .chip, .segmented__opt, .evidence--action, .ctx__context, .status, .chat-head__back) { position: relative; }
+/* Every tint keeps the dimmest text on its surface at 4.5:1 in both themes,
+   even where a line of the ground runs under the same letter. On the signal
+   colour, under its pressed texture, that leaves room for a quarter. */
+:is(.btn--primary, .iconbtn--primary, .nav__tab.is-on .nav__pill) { --reach: var(--on-signal); --reach-mix: 25%; }
+:is(.btn, .iconbtn, .row--action, .chip, .segmented__opt, .evidence--action, .ctx__context, .status, .chat-head__back, .nav__pill)[data-reach]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--reach) var(--reach-mix), transparent);
+  mask-image: radial-gradient(closest-side, #0009, #0000), var(--reach-net), radial-gradient(closest-side, #000 40%, #0000);
+  mask-size: 150px 150px, 360px 360px, 340px 340px;
+  mask-position:
+    calc(var(--reach-x) - 75px) calc(var(--reach-y) - 75px),
+    calc(var(--reach-x) - 180px) calc(var(--reach-y) - 180px),
+    calc(var(--reach-x) - 170px) calc(var(--reach-y) - 170px);
+  mask-repeat: no-repeat;
+  mask-composite: add, intersect;
+  transform-origin: 0 0;
+  opacity: 0;
+}
+[data-reach="1"] { --reach-net: var(--reach-1); }
+[data-reach="2"] { --reach-net: var(--reach-2); }
+[data-reach="3"] { --reach-net: var(--reach-3); }
+
+/* What a primary action lets go of. touch.ts moves one of these. */
+.release {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  pointer-events: none;
+  contain: strict;
+  opacity: 0;
+  z-index: 2147483000;
+  inset: 0 auto auto 0;
+  border: 0;
+  padding: 0;
+  overflow: visible;
+  background:
+    radial-gradient(circle at 50% 20%, var(--release-a) 2.2px, transparent 3px),
+    radial-gradient(circle at 28% 32%, var(--release-b) 1.6px, transparent 2.3px),
+    radial-gradient(circle at 72% 28%, var(--release-a) 1.5px, transparent 2.2px),
+    radial-gradient(circle at 38% 10%, var(--release-a) 1.2px, transparent 1.8px),
+    radial-gradient(circle at 63% 6%, var(--release-b) 1.9px, transparent 2.6px),
+    radial-gradient(circle at 14% 54%, var(--release-a) 1.2px, transparent 1.8px),
+    radial-gradient(circle at 88% 48%, var(--release-a) 1.7px, transparent 2.4px),
+    radial-gradient(circle at 44% 42%, var(--release-b) 1px, transparent 1.6px),
+    radial-gradient(circle at 57% 46%, var(--release-a) 1.2px, transparent 1.8px),
+    radial-gradient(circle at 22% 16%, var(--release-b) 1px, transparent 1.6px),
+    radial-gradient(circle at 81% 14%, var(--release-a) 1.3px, transparent 2px),
+    radial-gradient(circle at 33% 64%, var(--release-a) 0.9px, transparent 1.5px),
+    radial-gradient(circle at 69% 62%, var(--release-b) 1.1px, transparent 1.7px),
+    radial-gradient(circle at 52% 0%, var(--release-a) 1px, transparent 1.6px);
+}
+
+/* A selected option settles in with a little growth of its own. */
+.segmented__opt.is-on::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--bloom);
+  mask: var(--reach-2) 30% 60% / 220px no-repeat;
+  opacity: 0.16;
+  animation: sprout 520ms var(--ease);
+}
+@keyframes sprout {
+  from { opacity: 0; transform: scale(0.4); }
+}
+
+/* An empty screen's mark sits in a faint, lit reach of its own. */
+.empty { isolation: isolate; }
+.empty__icon { position: relative; }
+.empty__icon::before {
+  content: "";
+  position: absolute;
+  inset: -3.5rem;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--release-b);
+  mask:
+    var(--reach-3) center / contain no-repeat,
+    radial-gradient(closest-side, #000 50%, #0000);
+  mask-composite: intersect;
+  opacity: 0.3;
+  animation: halo 900ms var(--ease);
+}
+@keyframes halo {
+  from { opacity: 0; transform: scale(0.55) rotate(-8deg); }
+}
+
+/* The welcome edge grows in once from where it's anchored. */
+.welcome--intro::before {
+  transform-origin: right center;
+  animation: edge-grow 1100ms var(--ease);
+}
+@keyframes edge-grow {
+  from { opacity: 0; transform: scale(0.94); }
+}
+
+/* A healthy connection glows, and lets out one ring when it arrives. */
+.status--ok .status__dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--dot) 22%, transparent); }
+.status--ok .status__dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--dot);
+  opacity: 0;
+  animation: dot-release 1400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes dot-release {
+  from { opacity: 0.55; transform: scale(1); }
+  to { opacity: 0; transform: scale(3.2); }
+}
+
+::selection { background: color-mix(in srgb, var(--bloom) 28%, transparent); }
+input,
+textarea { caret-color: var(--bloom); }
+
+/* Consent and emergency controls remain still and unembellished, and so do
+   controls that can't be used yet. */
+:is(.approval, .review-foot, .safety-rail) .btn--primary::before,
+:is(.btn--primary, .segmented__opt.is-on):is(:disabled, [aria-disabled="true"])::before { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav__tab.is-on .nav__pill::before,
+  .toast::before,
+  .segmented__opt.is-on::before,
+  .empty__icon::before,
+  .welcome--intro::before,
+  .status--ok .status__dot::after { animation: none; }
+  .row--action:active:not(:disabled) .row__chevron { transform: none; }
+  .composer__bubble::after { transform: none; }
+}
+:root[data-reduce-motion="true"] :is(.nav__tab.is-on .nav__pill, .toast, .segmented__opt.is-on, .empty__icon, .welcome--intro)::before,
+:root[data-reduce-motion="true"] .status--ok .status__dot::after { animation: none; }
+:root[data-reduce-motion="true"] .row--action:active:not(:disabled) .row__chevron { transform: none; }
+:root[data-reduce-motion="true"] .composer__bubble::after { transform: none; }
+
+@media (forced-colors: active) {
+  .welcome--intro::before,
+  .welcome--intro::after,
+  .group::before,
+  .toast::before,
+  .nav__pill::before,
+  .btn--primary::before,
+  .composer__bubble::after,
+  [data-reach]::after,
+  .release,
+  .segmented__opt.is-on::before,
+  .empty__icon::before,
+  .welcome__actions::before,
+  .talk-jump::before,
+  .status--ok .status__dot::after { display: none; }
+  .welcome__actions,
+  .talk-jump,
+  .route,
+  .welcome,
+  .nav { background: Canvas; }
+}

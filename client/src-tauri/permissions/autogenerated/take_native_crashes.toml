@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-take-native-crashes"
+description = "Enables the take_native_crashes command without any pre-configured scope."
+commands.allow = ["take_native_crashes"]
+
+[[permission]]
+identifier = "deny-take-native-crashes"
+description = "Denies the take_native_crashes command without any pre-configured scope."
+commands.deny = ["take_native_crashes"]

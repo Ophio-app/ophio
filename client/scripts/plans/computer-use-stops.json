@@ -1,0 +1,1041 @@
+[
+  {
+    "name": "control-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "review-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.computer-review .screen__body').scrollTop=0"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "review-dark-tools",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.computer-tools').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "review-large",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "document.querySelector('.computer-review .screen__body').scrollTop=0"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "width": 360,
+    "text": 2
+  },
+  {
+    "name": "running-light",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        ".computer-review__footer button"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ]
+  },
+  {
+    "name": "running-wide",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        ".computer-review__footer button"
+      ],
+      [
+        "wait",
+        1000
+      ]
+    ],
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "name": "private-ready",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        ".computer-review__footer button"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Start private step"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector('#private-step').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "private-resumed",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        ".computer-review__footer button"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Start private step"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector('#private-step').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "End private step"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Resume computer use"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector('.agent-screen .screen__body').scrollTop=0"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "private-unverified",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.host.computer.unverified=true"
+      ],
+      [
+        "clickSel",
+        ".computer-review__footer button"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "click",
+        "Start private step"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "eval",
+        "document.querySelector('#private-step').scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "rail-expanded",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Safety"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "rail-large",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Safety"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "width": 360,
+    "text": 2
+  },
+  {
+    "name": "offline-stop",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.offline()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        ".app__safety .named-stop__button"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "lost-stop",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.dropNextReceipt()"
+      ],
+      [
+        "clickSel",
+        ".app__safety .named-stop__button"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "empty-review",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.host.targets=[];window.__y2app.session.state.set(s=>({...s,targets:[]}))"
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "revoked",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "dark": true
+  },
+  {
+    "name": "rail-landscape",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ],
+    "width": 844,
+    "height": 390
+  },
+  {
+    "name": "start-error",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.host.computer.refuseNextStart=true"
+      ],
+      [
+        "clickSel",
+        ".computer-review__footer button"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "takeover-stop",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        ".computer-review__footer button"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        2500
+      ],
+      [
+        "eval",
+        "if(![...document.querySelectorAll('.ownership__title')].some(e=>e.textContent==='You have control'))throw Error('Takeover not confirmed')"
+      ]
+    ]
+  },
+  {
+    "name": "left-control",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "Start computer use"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "HDMI-A-1"
+      ],
+      [
+        "click",
+        "Claude Code"
+      ],
+      [
+        "fill",
+        "Goal",
+        "Review the staging dashboard"
+      ],
+      [
+        "press",
+        "Tab"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "clickSel",
+        ".computer-review__footer button"
+      ],
+      [
+        "wait",
+        1000
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        2500
+      ],
+      [
+        "click",
+        "Leave control"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  },
+  {
+    "name": "modal-stops",
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(()=>{const el=document.querySelector('.app');let f=el[Object.keys(el).find(k=>k.startsWith('__reactFiber'))];for(;f;f=f.return){if(f.memoizedProps?.app){window.__y2app=f.memoizedProps.app;return;}}throw Error('App not found');})()"
+      ],
+      [
+        "eval",
+        "window.__y2app.ui.selectProject('0192f7a1-0000-7000-8000-000000000102')"
+      ],
+      [
+        "click",
+        "Control"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "click",
+        "field-notes"
+      ],
+      [
+        "wait",
+        700
+      ]
+    ]
+  }
+]

@@ -1,0 +1,14 @@
+[
+  ["Unexpected token 'x', \"my secret\" is not valid JSON", "Unexpected token \"…\", \"…\" is not valid JSON"],
+  ["open /home/sam/work/notes.md: permission denied", "open <path>: permission denied"],
+  ["fetch https://example.com/a?b=1 failed (sam@example.com)", "fetch <url> failed (<email>)"],
+  ["order 1234567 not found", "order <n> not found"],
+  ["can't read port 8080", "can't read port 8080"],
+  ["C:\\Users\\sam failed", "<path> failed"],
+  ["   ", null],
+  ["in “private name” and `private code`", "in \"…\" and \"…\""],
+  ["open (../secret/file), then [~/secret].", "open (<path>), then [<path>]."],
+  ["at ./file and a/b/c", "at <path> and <path>"],
+  ["tabs\tand\nspace\u0085here", "tabs and space here"],
+  ["prefix42 and id12345x678901", "prefix42 and id<n>x<n>"]
+]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clip-write"
+description = "Enables the clip_write command without any pre-configured scope."
+commands.allow = ["clip_write"]
+
+[[permission]]
+identifier = "deny-clip-write"
+description = "Denies the clip_write command without any pre-configured scope."
+commands.deny = ["clip_write"]

@@ -1,0 +1,733 @@
+[
+  {
+    "name": "U37-1-question",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('library');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.tool==='AskUserQuestion');const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.approval fieldset').length!==2||!document.body.textContent.includes('Choose one or more')) throw Error('Question card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "pending"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Always up')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Invoices')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Statements')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.approval button')].find(b=>b.textContent.includes('Send answer'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "picked"
+      ],
+      [
+        "click",
+        "Send answer"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.approval')?.textContent.includes('Answered')||!document.body.textContent.includes('Rounding: Always up')) throw Error('Answered card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-1-question-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('library');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.tool==='AskUserQuestion');const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.approval fieldset').length!==2||!document.body.textContent.includes('Choose one or more')) throw Error('Question card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "pending"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Always up')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Invoices')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Statements')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.approval button')].find(b=>b.textContent.includes('Send answer'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "picked"
+      ],
+      [
+        "click",
+        "Send answer"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.approval')?.textContent.includes('Answered')||!document.body.textContent.includes('Rounding: Always up')) throw Error('Answered card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-1-question-large",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('library');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.tool==='AskUserQuestion');const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.approval fieldset').length!==2||!document.body.textContent.includes('Choose one or more')) throw Error('Question card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "pending"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Always up')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Invoices')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Statements')"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.approval fieldset')[0].scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "rounding"
+      ],
+      [
+        "fill",
+        "Add your own answer",
+        "Only paid ones"
+      ],
+      [
+        "eval",
+        "document.querySelectorAll('.approval textarea')[1].scrollIntoView({block:'end'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "own"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.approval button')].find(b=>b.textContent.includes('Send answer'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "picked"
+      ],
+      [
+        "click",
+        "Send answer"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.approval')?.textContent.includes('Answered')||!document.body.textContent.includes('Rounding: Always up')) throw Error('Answered card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "settled-top"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.approval .approval__settled-what')].at(-1).scrollIntoView({block:'end'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-1-question-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('library');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.tool==='AskUserQuestion');const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.approval fieldset').length!==2||!document.body.textContent.includes('Choose one or more')) throw Error('Question card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "pending"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Always up')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Invoices')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Statements')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.approval button')].find(b=>b.textContent.includes('Send answer'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "picked"
+      ],
+      [
+        "click",
+        "Send answer"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.approval')?.textContent.includes('Answered')||!document.body.textContent.includes('Rounding: Always up')) throw Error('Answered card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-1-question-landscape",
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.selectTab('library');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {approvalCases:cases}=await import('/src/dev/sim/scenario.ts');const c=cases.find(c=>c.tool==='AskUserQuestion');const h=window.__sim.host;const a={...h.approvals[0],...c.approval,raw_request:JSON.stringify(c.input)};h.approvals=[a];h.emit({type:'approval_upserted',approval:a})})()"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "click",
+        "Talk"
+      ],
+      [
+        "wait",
+        600
+      ],
+      [
+        "eval",
+        "if(document.querySelectorAll('.approval fieldset').length!==2||!document.body.textContent.includes('Choose one or more')) throw Error('Question card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "pending"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Always up')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Invoices')"
+      ],
+      [
+        "clickSel",
+        ".approval__option:has-text('Statements')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.approval button')].find(b=>b.textContent.includes('Send answer'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "picked"
+      ],
+      [
+        "click",
+        "Send answer"
+      ],
+      [
+        "wait",
+        800
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.approval')?.textContent.includes('Answered')||!document.body.textContent.includes('Rounding: Always up')) throw Error('Answered card missing')"
+      ],
+      [
+        "eval",
+        "document.querySelector('.approval')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-23-receipt",
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5',state:'completed',ended_at:Date.now()-60000,outcome:{summary:'Replaced the fixed sleep in `retries_on_503` with a mock clock, so the retry no longer races the timer.',changed_files:[{path:'tests/retries.rs',change:'modified',added:14,removed:5}],checks:[{name:'cargo test -p payments-client',command:'cargo test -p payments-client',status:'passed',detail:'48 passed',provenance:'native'},{name:'cargo test --workspace',command:'cargo test --workspace',status:'not_run',detail:'Denied before it ran: Not on the shared runner',provenance:'native'},{name:'cargo clippy -- -D warnings',command:'cargo clippy -- -D warnings',status:'failed',detail:'1 warning: unused import',provenance:'native'}],still_active:[],unknowns:[],usage:{input_tokens:52100,output_tokens:3400,duration_ms:540000,reported_cost:null}}};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;for(const s of ['Claude Opus (latest)','Claude Opus 5.5','Denied before it ran: Not on the shared runner','1 warning: unused import'])if(!t.includes(s))throw Error('Missing '+s);if(t.includes('Opus 5 5'))throw Error('Unformatted model name')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "models"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('*')].find(e=>e.children.length===0&&e.textContent.includes('Denied before it ran'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-23-receipt-dark",
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5',state:'completed',ended_at:Date.now()-60000,outcome:{summary:'Replaced the fixed sleep in `retries_on_503` with a mock clock, so the retry no longer races the timer.',changed_files:[{path:'tests/retries.rs',change:'modified',added:14,removed:5}],checks:[{name:'cargo test -p payments-client',command:'cargo test -p payments-client',status:'passed',detail:'48 passed',provenance:'native'},{name:'cargo test --workspace',command:'cargo test --workspace',status:'not_run',detail:'Denied before it ran: Not on the shared runner',provenance:'native'},{name:'cargo clippy -- -D warnings',command:'cargo clippy -- -D warnings',status:'failed',detail:'1 warning: unused import',provenance:'native'}],still_active:[],unknowns:[],usage:{input_tokens:52100,output_tokens:3400,duration_ms:540000,reported_cost:null}}};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;for(const s of ['Claude Opus (latest)','Claude Opus 5.5','Denied before it ran: Not on the shared runner','1 warning: unused import'])if(!t.includes(s))throw Error('Missing '+s);if(t.includes('Opus 5 5'))throw Error('Unformatted model name')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "models"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('*')].find(e=>e.children.length===0&&e.textContent.includes('Denied before it ran'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-23-receipt-large",
+    "width": 360,
+    "height": 780,
+    "dark": true,
+    "text": 2,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5',state:'completed',ended_at:Date.now()-60000,outcome:{summary:'Replaced the fixed sleep in `retries_on_503` with a mock clock, so the retry no longer races the timer.',changed_files:[{path:'tests/retries.rs',change:'modified',added:14,removed:5}],checks:[{name:'cargo test -p payments-client',command:'cargo test -p payments-client',status:'passed',detail:'48 passed',provenance:'native'},{name:'cargo test --workspace',command:'cargo test --workspace',status:'not_run',detail:'Denied before it ran: Not on the shared runner',provenance:'native'},{name:'cargo clippy -- -D warnings',command:'cargo clippy -- -D warnings',status:'failed',detail:'1 warning: unused import',provenance:'native'}],still_active:[],unknowns:[],usage:{input_tokens:52100,output_tokens:3400,duration_ms:540000,reported_cost:null}}};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;for(const s of ['Claude Opus (latest)','Claude Opus 5.5','Denied before it ran: Not on the shared runner','1 warning: unused import'])if(!t.includes(s))throw Error('Missing '+s);if(t.includes('Opus 5 5'))throw Error('Unformatted model name')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "models"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('*')].find(e=>e.children.length===0&&e.textContent.includes('Denied before it ran'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-23-receipt-tablet",
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5',state:'completed',ended_at:Date.now()-60000,outcome:{summary:'Replaced the fixed sleep in `retries_on_503` with a mock clock, so the retry no longer races the timer.',changed_files:[{path:'tests/retries.rs',change:'modified',added:14,removed:5}],checks:[{name:'cargo test -p payments-client',command:'cargo test -p payments-client',status:'passed',detail:'48 passed',provenance:'native'},{name:'cargo test --workspace',command:'cargo test --workspace',status:'not_run',detail:'Denied before it ran: Not on the shared runner',provenance:'native'},{name:'cargo clippy -- -D warnings',command:'cargo clippy -- -D warnings',status:'failed',detail:'1 warning: unused import',provenance:'native'}],still_active:[],unknowns:[],usage:{input_tokens:52100,output_tokens:3400,duration_ms:540000,reported_cost:null}}};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;for(const s of ['Claude Opus (latest)','Claude Opus 5.5','Denied before it ran: Not on the shared runner','1 warning: unused import'])if(!t.includes(s))throw Error('Missing '+s);if(t.includes('Opus 5 5'))throw Error('Unformatted model name')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "models"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('*')].find(e=>e.children.length===0&&e.textContent.includes('Denied before it ran'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  },
+  {
+    "name": "U37-23-receipt-landscape",
+    "width": 844,
+    "height": 390,
+    "dark": true,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.selectTask(ids.pTide,ids.tFlaky);ui.push({screen:'receipt',taskId:ids.tFlaky,runId:ids.rFlaky},'work');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "eval",
+        "(async()=>{const {ids}=await import('/src/dev/sim/scenario.ts');const h=window.__sim.host;const r=h.runs.find(r=>r.run_id===ids.rFlaky);const next={...r,requested_model:'opus',actual_model:'claude-opus-5-5',state:'completed',ended_at:Date.now()-60000,outcome:{summary:'Replaced the fixed sleep in `retries_on_503` with a mock clock, so the retry no longer races the timer.',changed_files:[{path:'tests/retries.rs',change:'modified',added:14,removed:5}],checks:[{name:'cargo test -p payments-client',command:'cargo test -p payments-client',status:'passed',detail:'48 passed',provenance:'native'},{name:'cargo test --workspace',command:'cargo test --workspace',status:'not_run',detail:'Denied before it ran: Not on the shared runner',provenance:'native'},{name:'cargo clippy -- -D warnings',command:'cargo clippy -- -D warnings',status:'failed',detail:'1 warning: unused import',provenance:'native'}],still_active:[],unknowns:[],usage:{input_tokens:52100,output_tokens:3400,duration_ms:540000,reported_cost:null}}};h.runs=h.runs.map(x=>x.run_id===r.run_id?next:x);h.emit({type:'run_upserted',run:next})})()"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "const t=document.body.textContent;for(const s of ['Claude Opus (latest)','Claude Opus 5.5','Denied before it ran: Not on the shared runner','1 warning: unused import'])if(!t.includes(s))throw Error('Missing '+s);if(t.includes('Opus 5 5'))throw Error('Unformatted model name')"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('dt')].find(d=>d.textContent.startsWith('Requested'))?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "shot",
+        "models"
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('*')].find(e=>e.children.length===0&&e.textContent.includes('Denied before it ran'))?.scrollIntoView({block:'center'})"
+      ],
+      [
+        "wait",
+        300
+      ]
+    ]
+  }
+]

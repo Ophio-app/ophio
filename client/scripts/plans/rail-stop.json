@@ -1,0 +1,365 @@
+[
+  {
+    "name": "U20-1-rail-390",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav button:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety .named-stop__button')?.textContent.includes('DP-1')) throw Error('Stop does not name caption display')"
+      ],
+      [
+        "log",
+        "({fonts:document.fonts.check('14px \"Inter Variable\"'),rail:document.querySelector('.app__safety').innerText})"
+      ]
+    ]
+  },
+  {
+    "name": "U20-1-rail-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "clickSel",
+        ".nav button:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ]
+    ]
+  },
+  {
+    "name": "U20-2-handback",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"talk\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "eval",
+        "(async()=>{await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'take_over',target_id:'0192f7a1-0000-7000-8000-000000000601',geometry_revision:3}})})()"
+      ],
+      [
+        "wait",
+        1100
+      ],
+      [
+        "eval",
+        "(async()=>{const lease=window.__sim.host.control.find(v=>v.target_id.endsWith('0601')).lease; await window.__sim.host.command({command_id:crypto.randomUUID(),issued_at:Date.now(),expires_at:null,expected_revision:null,body:{command:'release_lease',lease_id:lease.lease_id}})})()"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "eval",
+        "document.querySelector('.talk .screen__body').scrollTop=99999"
+      ],
+      [
+        "shot",
+        "released"
+      ],
+      [
+        "click",
+        "Give input back"
+      ],
+      [
+        "wait",
+        1200
+      ],
+      [
+        "click",
+        "Return to agent"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "if(document.querySelector('.nav .is-on')?.textContent.trim()!=='Talk') throw Error('Left Talk'); if([...document.querySelectorAll('.talk-note')].filter(e=>e.textContent.includes('Handed back')).length!==1) throw Error('Missing/duplicate hand-back'); document.querySelector('.talk .screen__body').scrollTop=99999"
+      ]
+    ]
+  },
+  {
+    "name": "U20-3-force-stopped-row",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"talk\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "eval",
+        "window.__sim.stops.ignore('0192f7a1-0000-7000-8000-000000000204')"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Stop sent once \u00b7 not confirmed')) throw Error('First Stop rail wording missing')"
+      ],
+      [
+        "shot",
+        "once"
+      ],
+      [
+        "click",
+        "Stop again \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Stop sent twice \u00b7 not confirmed')) throw Error('Repeated Stop rail wording missing')"
+      ],
+      [
+        "shot",
+        "twice"
+      ],
+      [
+        "click",
+        "Force stop"
+      ],
+      [
+        "shot",
+        "confirm"
+      ],
+      [
+        "click",
+        "Force stop on studio"
+      ],
+      [
+        "wait",
+        1400
+      ],
+      [
+        "clickSel",
+        ".nav button:nth-child(3)"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "[...document.querySelectorAll('.route:not(.is-hidden) h2')].find(e=>e.textContent==='Recent')?.scrollIntoView({block:'start'}); if([...document.querySelectorAll('.route:not(.is-hidden) .work-row-line')].some(e=>e.textContent.includes('Still running after Stop'))) throw Error('Stale live activity')"
+      ]
+    ]
+  },
+  {
+    "name": "U20-4-terminal",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "dark": true,
+    "steps": [
+      [
+        "clickSel",
+        ".nav button:nth-child(2)"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "clickSel",
+        "section:has(#control-terminals) button:has-text(\"New\")"
+      ],
+      [
+        "click",
+        "Open new terminal"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "shot",
+        "second-header"
+      ],
+      [
+        "click",
+        "Back"
+      ],
+      [
+        "eval",
+        "document.querySelector('#control-terminals')?.scrollIntoView({block:'start'})"
+      ],
+      [
+        "shot",
+        "list"
+      ],
+      [
+        "clickSel",
+        "section:has(#control-terminals) .row:last-child button:has-text(\"Attach\")"
+      ],
+      [
+        "wait",
+        500
+      ],
+      [
+        "click",
+        "Close terminal"
+      ],
+      [
+        "shot",
+        "close"
+      ],
+      [
+        "clickSel",
+        "dialog[open] .sheet__footer button"
+      ],
+      [
+        "wait",
+        700
+      ],
+      [
+        "eval",
+        "document.querySelector('.terminal-screen .screen__body').scrollTop=0; if([...document.querySelectorAll('.terminal-session button')].some(e=>e.textContent.includes('Detach'))) throw Error('Ended session still offers Detach')"
+      ]
+    ]
+  },
+  {
+    "name": "U20-5-force-stop-sheet",
+    "width": 390,
+    "height": 844,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "window.addEventListener('pagehide',()=>localStorage.setItem('ui.sim-studio',\"{\\\"version\\\": 2, \\\"state\\\": {\\\"tab\\\": \\\"talk\\\", \\\"stacks\\\": {\\\"talk\\\": [{\\\"screen\\\": \\\"talk\\\"}], \\\"control\\\": [{\\\"screen\\\": \\\"control\\\"}], \\\"work\\\": [{\\\"screen\\\": \\\"work\\\"}], \\\"library\\\": [{\\\"screen\\\": \\\"library\\\"}]}, \\\"projectId\\\": \\\"0192f7a1-0000-7000-8000-000000000101\\\", \\\"taskByProject\\\": {\\\"0192f7a1-0000-7000-8000-000000000101\\\": \\\"0192f7a1-0000-7000-8000-000000000204\\\"}, \\\"drafts\\\": {}, \\\"targetId\\\": null}}\"),{once:true});location.reload()"
+      ],
+      [
+        "wait",
+        2400
+      ],
+      [
+        "eval",
+        "window.__sim.stops.ignore('0192f7a1-0000-7000-8000-000000000204')"
+      ],
+      [
+        "click",
+        "Stop \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Stop sent once \u00b7 not confirmed')) throw Error('First Stop rail wording missing')"
+      ],
+      [
+        "shot",
+        "once"
+      ],
+      [
+        "click",
+        "Stop again \u00b7 Check the staging"
+      ],
+      [
+        "wait",
+        1600
+      ],
+      [
+        "eval",
+        "if(!document.querySelector('.app__safety')?.textContent.includes('Stop sent twice \u00b7 not confirmed')) throw Error('Repeated Stop rail wording missing')"
+      ],
+      [
+        "shot",
+        "twice"
+      ],
+      [
+        "click",
+        "Force stop"
+      ],
+      [
+        "eval",
+        "const d=document.querySelector('dialog[open]');if(!d)throw Error('No force-stop sheet'); if([...d.querySelector('.sheet__urgent .safety-rail').querySelectorAll('button')].some(b=>b.textContent.includes('Stop again') || b.textContent.includes('Force stop')))throw Error('Duplicate task controls');if(!d.querySelector('.named-stop__button')?.textContent.includes('Fix the flaky'))throw Error('Other Stop missing')"
+      ]
+    ]
+  },
+  {
+    "name": "U20-5-revoked-200",
+    "width": 360,
+    "height": 780,
+    "text": 2,
+    "scale": 1,
+    "steps": [
+      [
+        "eval",
+        "(async()=>{const {UiStore}=await import('/src/app/ui.ts');const {ids}=await import('/src/dev/sim/scenario.ts');const ui=new UiStore('sim-studio');ui.push({screen:'desktop',targetId:ids.tgDp1},'control');window.addEventListener('pagehide',()=>ui.persistNow(),{once:true});location.reload()})()"
+      ],
+      [
+        "wait",
+        1500
+      ],
+      [
+        "click",
+        "Take over"
+      ],
+      [
+        "wait",
+        900
+      ],
+      [
+        "click",
+        "Keyboard"
+      ],
+      [
+        "wait",
+        300
+      ],
+      [
+        "eval",
+        "window.__sim.revoke()"
+      ],
+      [
+        "wait",
+        400
+      ],
+      [
+        "eval",
+        "const body=document.querySelector('.desktop-screen .screen__body');const notice=body.querySelector('.notice');const bottom=document.querySelector('.app__safety').getBoundingClientRect().top;if(!notice?.textContent.includes('This device was removed'))throw Error('Revoke explanation missing');if(notice.getBoundingClientRect().bottom>bottom)throw Error('Alert clipped below rail');if(document.querySelector('.desktop-screen > .screen__footer'))throw Error('Duplicate sticky warning');"
+      ],
+      [
+        "log",
+        "({rail:document.querySelector('.app__safety').getBoundingClientRect().height,body:document.querySelector('.desktop-screen .screen__body').getBoundingClientRect().height,alert:document.querySelector('.desktop-screen .notice').getBoundingClientRect().toJSON()})"
+      ]
+    ]
+  }
+]
