@@ -339,7 +339,12 @@
 │  ┊                 │  3  Check that the fingerprint your      ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
 │  ○ Extras          │     phone shows is the one here.         ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
 │  ┊                 │                                          ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
-│  ○ Check           │  Link  ophio://pair?d=eyJob3N0X2lkIjoi   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│  ○ Check           │  · Fingerprint       5F1C 9A0E 7D3B      ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │                      2A4C 6E8F 0A1B      ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │                      3C5D 7E9F           ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │  ●── Waiting for your phone              ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │                                          ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
+│                    │  Link  ophio://pair?d=eyJob3N0X2lkIjoi   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
 │                    │        MGY4YjZjMWUtMmQzYS00YjVjLThkOWU   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
 │                    │        tMGExYjJjM2Q0ZTVmIiwiaG9zdF9uYW   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
 │                    │        1lIjoiZGVzayIsImFkZHJlc3NlcyI6W   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
@@ -354,12 +359,7 @@
 │                    │        DgiLCJleHBpcmVzX2F0IjoxOTAwMDAw   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
 │                    │        NjAwMDAwLCJwcm90b2NvbCI6eyJtYWp   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
 │                    │        vciI6MSwibWlub3IiOjB9fQ&alerts=   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
-│                    │        on                                ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
-│                    │                                          ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
-│                    │  · Fingerprint       5F1C 9A0E 7D3B      ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
-│                    │                      2A4C 6E8F 0A1B      ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
-│                    │                      3C5D 7E9F           ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │
-│                    │  ●── Waiting for your phone                        Expires at 13:56, in 10 minutes.             │
+│                    │        on                                          Expires at 13:56, in 10 minutes.             │
 │                    │                                                                                                 │
 │                    │                                                                                                 │
 │                    │                                                                                                 │
@@ -988,6 +988,47 @@
 │  ● Keep running    │  Connect your agents                                                                            │
 │  │                 ├──────────────────────╴                                                                          │
 │  ● Reach           │                                                                                                 │
+│  │                 │  ●── Looking for Claude Code…                                                                   │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────────╯
+── 26 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
 │  │                 │  ✓ Claude Code  Installed                                                                       │
 │  ◉ Agents ─────────┤                                                                                                 │
 │  ┊                 │                                                                                                 │
@@ -1023,7 +1064,7 @@
 │                    │  ╾─◆ [n] Continue                                                                               │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
-── 26 · Connect your agents ──
+── 27 · Connect your agents ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Connect your agents                                                                            │
@@ -1064,7 +1105,7 @@
 │                    │      [x] Skip the rest of setup                                                                 │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
-── 27 · Connect your agents ──
+── 28 · Connect your agents ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Connect your agents                                                                            │
@@ -1105,7 +1146,7 @@
 │                    │  ╾─◆ [c] Cancel sign-in                                                                         │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
-── 28 · Connect your agents ──
+── 29 · Connect your agents ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Connect your agents                                                                            │
@@ -1146,7 +1187,7 @@
 │                    │  ╾─◆ [c] Cancel sign-in                                                                         │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
-── 29 · Connect your agents ──
+── 30 · Connect your agents ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Connect your agents                                                                            │
@@ -1187,7 +1228,130 @@
 │                    │  ╾─◆ [n] Continue                                                                               │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
-── 30 · Welcome to Øphio ──
+── 31 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  This installs Codex on this computer with its maker's own installer:                           │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │  ▸ npm install -g @openai/codex                                                                 │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │  Its output shows here as it runs.                                                              │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │  If npm says EACCES, it needs a folder of your own for global packages:                         │
+│  ○ Check           │                                                                                                 │
+│                    │  npm's guide  https://docs.npmjs.com/resolving-eacces-permissions-errors-when-ins               │
+│                    │               talling-packages-globally                                                         │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [y] Run it · recommended                                                                   │
+│                    │      [b] Back                                                                                   │
+│                    │                                                                                                 │
+╰────────────────────┴─╴↑↓ move · enter choose · esc back · ctrl-c leave╶──────────────────────────────────────────────╯
+── 32 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ●── Looking for Codex…                                                                         │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Phone           │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │                                                                                                 │
+│  ┊                 │                                                                                                 │
+│  ○ Check           │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────────╯
+── 33 · Connect your agents ──
+╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 3 of 6╶─╮
+│                    │                                                                                                 │
+│  ● Keep running    │  Connect your agents                                                                            │
+│  │                 ├──────────────────────╴                                                                          │
+│  ● Reach           │                                                                                                 │
+│  │                 │  ! Codex  The installer stopped before it finished                                              │
+│  ◉ Agents ─────────┤                                                                                                 │
+│  ┊                 │  npm isn't allowed to write to the folder it installs programs in for everyone,                 │
+│  ○ Phone           │  which needs an administrator. It said EACCES, which means permission denied.                   │
+│  ┊                 │                                                                                                 │
+│  ○ Extras          │  Set npm to install into a folder of your own, as npm's guide shows, then choose                │
+│  ┊                 │  Install Codex again. Don't run npm with sudo.                                                  │
+│  ○ Check           │                                                                                                 │
+│                    │  npm's guide  https://docs.npmjs.com/resolving-eacces-permissions-errors-when-ins               │
+│                    │               talling-packages-globally                                                         │
+│                    │                                                                                                 │
+│                    │  Other ways to install Codex  https://github.com/openai/codex                                   │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │                                                                                                 │
+│                    │  ╾─◆ [n] Continue                                                                               │
+│                    │                                                                                                 │
+╰────────────────────┴─╴enter choose · ctrl-c leave╶───────────────────────────────────────────────────────────────────╯
+── 34 · Welcome to Øphio ──
 ╭─╴Øphio setup╶────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                                      │
 │                                           ╭────╮ ╱         ╷                                                         │
@@ -1228,7 +1392,7 @@
 │                             Run ophio setup whenever you want it.                                                    │
 │                                                                                                                      │
 ╰─╴↑↓ move · enter choose · ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────╯
-── 31 · Extras ──
+── 35 · Extras ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Extras                                                                                         │
@@ -1269,7 +1433,7 @@
 │                    │      [l] Leave this for later                                                                   │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
-── 32 · Extras ──
+── 36 · Extras ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Extras                                                                                         │
@@ -1310,7 +1474,7 @@
 │                    │      [b] Back                                                                                   │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴↑↓ move · enter choose · esc back · ctrl-c leave╶──────────────────────────────────────────────╯
-── 33 · Extras ──
+── 37 · Extras ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Extras                                                                                         │
@@ -1351,7 +1515,7 @@
 │                    │                                                                                                 │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴ctrl-c leave╶──────────────────────────────────────────────────────────────────────────────────╯
-── 34 · Extras ──
+── 38 · Extras ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Extras                                                                                         │
@@ -1392,7 +1556,7 @@
 │                    │          It carries on; follow it in the app.                                                   │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴↑↓ move · enter choose · ctrl-c leave╶─────────────────────────────────────────────────────────╯
-── 35 · Extras ──
+── 39 · Extras ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Extras                                                                                         │
@@ -1433,7 +1597,7 @@
 │                    │          It carries on; follow it in the app.                                                   │
 │                    │                                                                                                 │
 ╰────────────────────┴─╴↑↓ move · space tick · enter choose · ctrl-c leave╶────────────────────────────────────────────╯
-── 36 · Extras ──
+── 40 · Extras ──
 ╭─╴Øphio setup╶──────┬───────────────────────────────────────────────────────────────────────────────────╴Step 5 of 6╶─╮
 │                    │                                                                                                 │
 │  ● Keep running    │  Extras                                                                                         │

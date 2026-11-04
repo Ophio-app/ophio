@@ -383,7 +383,8 @@ impl CompanionHub {
                 };
                 let (program, env) = match (name, copy) {
                     (Some(_), Some((path, env))) => (Some((path, args)), env),
-                    (name, _) => (name.map(|name| (PathBuf::from(name), args)), Vec::new()),
+                    (Some(name), None) => installed_agent(name, args),
+                    (None, _) => (None, Vec::new()),
                 };
                 let terminal = self
                     .inner
@@ -1553,5 +1554,81 @@ mod readiness_tests {
         hub.shutdown().await.unwrap();
         drop(hub);
         std::fs::remove_dir_all(path).unwrap();
+    }
+}
+
+/// The computer's own agent program `name` for a terminal, found where its
+/// tasks find it (see [`ports::agent_program`]), with its folder on PATH when
+/// that is elsewhere. Not found, it is left to the terminal's PATH.
+#[allow(clippy::type_complexity)]
+fn installed_agent(
+    name: &str,
+    args: Vec<String>,
+) -> (Option<(PathBuf, Vec<String>)>, Vec<(String, String)>) {
+    #[cfg(not(windows))]
+    let found = ports::agent_program::on_this_computer(name);
+    #[cfg(windows)]
+    let found = None;
+    agent_in_terminal(name, found, std::env::var_os("PATH").as_deref(), args)
+}
+
+/// [`installed_agent`], given where the agent was found and the PATH the
+/// terminal starts with.
+#[allow(clippy::type_complexity)]
+fn agent_in_terminal(
+    name: &str,
+    found: Option<PathBuf>,
+    path: Option<&std::ffi::OsStr>,
+    args: Vec<String>,
+) -> (Option<(PathBuf, Vec<String>)>, Vec<(String, String)>) {
+    let Some(found) = found else {
+        return (Some((PathBuf::from(name), args)), Vec::new());
+    };
+    let env = ports::agent_program::path_for(&found, path)
+        .and_then(|path| path.into_string().ok())
+        .map(|path| vec![("PATH".to_owned(), path)])
+        .unwrap_or_default();
+    (Some((found, args)), env)
+}
+
+#[cfg(all(test, unix))]
+mod installed_agent_tests {
+    use super::installed_agent;
+    use std::path::PathBuf;
+
+    #[test]
+    fn a_terminal_agent_starts_from_where_tasks_find_it() {
+        let args = vec!["--x".to_owned()];
+        // On PATH: the program found there, and PATH left as it is.
+        let (program, env) = installed_agent("sh", args.clone());
+        let (path, given) = program.unwrap();
+        assert!(path.is_absolute() && path.ends_with("sh"), "{path:?}");
+        assert_eq!(given, args);
+        assert!(env.is_empty());
+        // Nowhere: left to the terminal's PATH, which says it can't start.
+        let (program, env) = installed_agent("ophio-no-such-agent", args.clone());
+        assert_eq!(program, Some((PathBuf::from("ophio-no-such-agent"), args)));
+        assert!(env.is_empty());
+    }
+
+    /// Found outside the terminal's PATH (say in ~/.local/bin before the
+    /// next login), the agent starts from there with its folder on PATH.
+    #[test]
+    fn an_agent_off_path_starts_with_its_folder_on_path() {
+        let found = PathBuf::from("/home/you/.local/bin/claude");
+        let (program, env) = super::agent_in_terminal(
+            "claude",
+            Some(found.clone()),
+            Some(std::ffi::OsStr::new("/usr/bin:/bin")),
+            vec![],
+        );
+        assert_eq!(program, Some((found, vec![])));
+        assert_eq!(
+            env,
+            [(
+                "PATH".to_owned(),
+                "/usr/bin:/bin:/home/you/.local/bin".to_owned()
+            )]
+        );
     }
 }

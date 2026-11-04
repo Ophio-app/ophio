@@ -1,11 +1,17 @@
 # Trying the Android-and-Linux beta
 
-This guide covers the 0.1.0 Android-and-Linux beta. Once published, the
-[v0.1.0 release](https://github.com/ophio-app/ophio/releases/tag/v0.1.0)
-identifies the official matching Android app and Linux archive and states
-what was actually checked. This guide alone is not approval of a release or
-proof that an arbitrary build passed: use only the files identified in an
-approved release, not a build from an automated check. Physical-device and
+This guide covers the 0.1.1 Android-and-Linux beta. The official files are
+attached to the [v0.1.1
+release](https://github.com/ophio-app/ophio/releases/tag/v0.1.1): the Linux
+archive `ophio-0.1.1-x86_64-linux.tar.gz`, the source
+`ophio-0.1.1-source.tar.gz`, the Android app `ophio-0.1.0-arm64.apk`
+(unchanged in 0.1.1, so it keeps its 0.1.0 name), and `SHA256SUMS`, which
+lists the SHA-256 digest of each. Check what you downloaded against it, for
+example with `sha256sum -c SHA256SUMS` in the folder that holds the files (it
+reports the files you did not download as missing; `--ignore-missing` skips
+them). The Android app is signed with Øphio's release key; its certificate
+digest is in [packaging/android/SIGNING.md](../packaging/android/SIGNING.md).
+Use only these files, not a build from some other source. Physical-device and
 real-agent checks remain separate from the virtual-device lab results.
 
 The first beta is for Android phones and the Linux desktop combinations listed
@@ -34,12 +40,27 @@ Do not disable system security globally to make a check pass.
 
 ## 1. Install and check the computer
 
-Extract the approved Linux archive. From the extracted directory, run as your
-ordinary user:
+Download the Linux archive from the release and unpack it. The 0.1.1 archive
+is `ophio-0.1.1-x86_64-linux.tar.gz`; use the name of the file you
+downloaded. It unpacks to a folder of the same name without `.tar.gz`. From
+the folder you downloaded it to, run as your ordinary user:
 
 ```sh
+tar -xzf ophio-0.1.1-x86_64-linux.tar.gz
+cd ophio-0.1.1-x86_64-linux
 sh install.sh
 ```
+
+On a fresh Ubuntu Desktop, a few things commonly get in the way when you set
+up an agent; the [Linux guide](../packaging/linux/INSTALL.md#installing-claude-code-or-codex)
+explains each. Ubuntu does not include `curl`, which Claude Code's installer
+needs (`sudo apt install curl`). Codex installed with Ubuntu's own Node.js
+fails with a permission error. Your terminal finds a newly installed agent in
+`~/.local/bin` only after you log out and back in, or after you add the
+`export PATH` line the installer shows to `~/.bashrc` and open a new
+terminal. Chats kept to a project can start an agent only if it was installed
+with its own installer (into `~/.local/bin`) or for everyone on the computer,
+not one installed with npm inside your home folder.
 
 The installer normally opens setup on a new installation. If it does not, run:
 
@@ -48,8 +69,10 @@ ophio setup
 ```
 
 Follow its steps for automatic startup, the phone connection and agent sign-in.
-Use the approved Android app from the same release when setup asks you to
-install the phone app. Do not grant optional desktop, microphone or background
+Use the Android app from the same release when setup asks you to install the
+phone app. If you download the APK in Chrome, it may say "File might be
+harmful"; choose **Download anyway**, and allow installing from that source
+when Android asks. Do not grant optional desktop, microphone or background
 permissions just to get past setup; enable them when you want the feature.
 
 Then run:
@@ -117,10 +140,12 @@ desktop control is qualified on your machine.
 
 ## 4. Check updates and recovery
 
-When an approved newer Linux archive is available, give that archive to the
-installed `ophio update` command. It normally waits for active work to finish;
-`ophio update` without arguments shows its progress. Do not use a forced update
-while important work is running.
+When a newer Linux archive is available on the releases page, give that
+archive to the installed `ophio update` command. From 0.1.0, that is `ophio
+update ophio-0.1.1-x86_64-linux.tar.gz`; the phone app is the same in both, so
+the phone isn't offered an update. It normally waits for active work to
+finish; `ophio update` without arguments shows its progress. Do not use a
+forced update while important work is running.
 
 After the computer updates, use **Settings → Versions → Update now** on the
 phone when the matching Android update is offered.

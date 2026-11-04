@@ -232,6 +232,7 @@ async fn screens() -> Vec<Screen> {
         agents: Script::of([
             vec![agent(claude, None), agent(HarnessKind::Codex, None)],
             vec![agent(claude, Some(signed_out()))],
+            vec![agent(claude, Some(signed_out()))],
             vec![agent(claude, Some(signed_in()))],
         ]),
         stages: Script::of([
@@ -252,6 +253,25 @@ async fn screens() -> Vec<Screen> {
         c("run"),
         c("next"),
         c("sign-in-claude"),
+        c("next"),
+        Answer::Quit,
+    ];
+    let (_, ui) = go(&mut host, at(Step::Agent), answers).await;
+    keep(ui);
+
+    // An installer that fails, explained on the screen.
+    let mut host = Fake {
+        agents: Script::of([vec![agent(claude, None), agent(HarnessKind::Codex, None)]]),
+        runs: VecDeque::from([false]),
+        printed: VecDeque::from([
+            "npm ERR! code EACCES\nnpm ERR! Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules'\n",
+        ]),
+        ..Fake::default()
+    };
+    let answers = vec![
+        c("start"),
+        c("install-codex"),
+        c("run"),
         c("next"),
         Answer::Quit,
     ];

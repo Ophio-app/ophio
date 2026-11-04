@@ -33,6 +33,28 @@ pub(crate) async fn probe(binary: &Path) -> Vec<ModeSupport> {
 /// in, the question tool Codex otherwise keeps to its own Plan mode.
 pub(crate) const QUESTIONS: &str = "default_mode_request_user_input";
 
+/// Every under-development Codex feature Øphio switches on itself. Codex
+/// warns about each one it is given, so the warning is not worth showing when
+/// it names only these.
+pub(crate) const ENABLED_FEATURES: [&str; 1] = [QUESTIONS];
+
+/// Whether `message` is Codex's under-development warning naming only
+/// features Øphio enabled itself. Text it cannot read is never one.
+pub(crate) fn is_own_feature_warning(message: &str) -> bool {
+    const LEAD: &str = "Under-development features enabled:";
+    let Some(rest) = message.trim_start().strip_prefix(LEAD) else {
+        return false;
+    };
+    let Some((list, _)) = rest.split_once(". ") else {
+        return false;
+    };
+    let names: Vec<&str> = list.split(',').map(str::trim).collect();
+    !names.is_empty()
+        && names
+            .iter()
+            .all(|name| !name.is_empty() && ENABLED_FEATURES.contains(name))
+}
+
 /// Whether this Codex knows [`QUESTIONS`]. Setting a feature it doesn't
 /// know would only be warned about, but the instruction to use the tool
 /// would then name one the run doesn't have.
@@ -205,6 +227,25 @@ pub(crate) fn restricted_response(result: &Value) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_the_warning_about_features_ophio_enabled_is_its_own() {
+        let tail = " Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in /home/you/.codex/config.toml.";
+        let own =
+            format!("Under-development features enabled: default_mode_request_user_input.{tail}");
+        assert!(is_own_feature_warning(&own));
+        for other in [
+            format!(
+                "Under-development features enabled: default_mode_request_user_input, foo_bar.{tail}"
+            ),
+            format!("Under-development features enabled: foo_bar.{tail}"),
+            format!("Under-development features enabled: .{tail}"),
+            "Under-development features enabled: default_mode_request_user_input".to_owned(),
+            "Model metadata not found.".to_owned(),
+        ] {
+            assert!(!is_own_feature_warning(&other), "{other}");
+        }
+    }
 
     #[test]
     fn native_read_only_acknowledgement_is_required() {

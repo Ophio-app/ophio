@@ -1,10 +1,9 @@
 # Platform support and qualification
 
-The 0.1.0 beta targets Android ARM64 phones and Linux x86_64 computers.
-The [v0.1.0 release](https://github.com/ophio-app/ophio/releases/tag/v0.1.0)
-identifies the official files and their exact qualification once published;
-this source document alone is neither release approval nor proof that a
-particular download passed. A Windows build exists and is partly qualified
+The 0.1.1 beta targets Android ARM64 phones and Linux x86_64 computers.
+The [v0.1.1 release](https://github.com/ophio-app/ophio/releases/tag/v0.1.1) carries the official files: the
+Linux archive, the source, the Android app (unchanged from 0.1.0) and
+`SHA256SUMS`. A Windows build exists and is partly qualified
 in a virtual machine, but Windows is not an initial beta support promise.
 macOS and iPhone are not supported release targets; experimental
 implementations do not establish support.

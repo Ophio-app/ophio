@@ -23,8 +23,16 @@ unless something is changed.
    it.
 3. **Agents.** Finds Claude Code and Codex, offers to install one that is
    missing and to sign in to one that is signed out, and asks which one new
-   projects start with. It then asks once whether Øphio keeps them up to
-   date, and recommends it (see
+   projects start with. Setup, sign-in, tasks and terminals all look for them
+   on Øphio's PATH and then in `~/.local/bin`, `~/.cargo/bin`,
+   `~/.claude/local`, `~/.npm-global/bin` and nvm's default Node.js. After an
+   install, setup says "Installed" only once Øphio finds the agent there, and
+   if an installer fails it shows why. Chats kept to a project run the agent
+   in a sandbox without your home folder, so they need Claude Code's or
+   Codex's own installer (into `~/.local/bin`) or an install for everyone on
+   the computer; Codex installed by setup with npm inside your home folder
+   works for tasks but not for those chats, and setup says so. It then asks
+   once whether Øphio keeps them up to date, and recommends it (see
    [Keeping Claude Code and Codex up to date](upgrading.md#keeping-claude-code-and-codex-up-to-date)).
 4. **Phone.** Gets the app onto the phone and pairs it. Setup shows how to
    install it, or installs it from this computer over the phone's Wireless

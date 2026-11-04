@@ -3330,7 +3330,10 @@ mod uninstall_tests {
             vault: Arc::new(accounts::vault::MemoryVault::default()),
             opener: Arc::new(accounts::desktop::Recorder::default()),
             tools: accounts::tool::Tools {
-                env: vec![("PATH".into(), dir.join("missing-tools").into())],
+                env: vec![
+                    ("PATH".into(), dir.join("missing-tools").into()),
+                    ("HOME".into(), dir.join("missing-home").into()),
+                ],
             },
             http: accounts::http(),
             sign_in_limit: Duration::from_secs(1),
@@ -3544,7 +3547,10 @@ mod uninstall_tests {
             vault: kept,
             opener: Arc::new(accounts::desktop::Recorder::default()),
             tools: accounts::tool::Tools {
-                env: vec![("PATH".into(), empty.into())],
+                env: vec![
+                    ("PATH".into(), empty.clone().into()),
+                    ("HOME".into(), empty.into()),
+                ],
             },
             http: accounts::http(),
             sign_in_limit: Duration::from_secs(1),

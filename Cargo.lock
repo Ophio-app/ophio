@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "accounts"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -393,7 +393,7 @@ dependencies = [
 
 [[package]]
 name = "browser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -666,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "channels"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "axum",
@@ -763,7 +763,7 @@ dependencies = [
 
 [[package]]
 name = "companion"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "accounts",
  "async-trait",
@@ -831,7 +831,7 @@ dependencies = [
 
 [[package]]
 name = "computer-mcp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "harness-claude",
@@ -857,7 +857,7 @@ checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 
 [[package]]
 name = "containment"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ports",
  "protocol",
@@ -1250,7 +1250,7 @@ dependencies = [
 
 [[package]]
 name = "domain"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "protocol",
  "schemars",
@@ -1850,7 +1850,7 @@ dependencies = [
 
 [[package]]
 name = "harness-claude"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -1872,7 +1872,7 @@ dependencies = [
 
 [[package]]
 name = "harness-codex"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2244,7 +2244,7 @@ dependencies = [
 
 [[package]]
 name = "intake"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -2350,7 +2350,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jev"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "protocol",
@@ -2449,7 +2449,7 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "library"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "cap-fs-ext",
@@ -2606,7 +2606,7 @@ checksum = "4facc753ae494aeb6e3c22f839b158aebd4f9270f55cd3c79906c45476c47ab4"
 
 [[package]]
 name = "media"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3038,7 +3038,7 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 
 [[package]]
 name = "platform-linux"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ashpd",
  "async-trait",
@@ -3068,7 +3068,7 @@ dependencies = [
 
 [[package]]
 name = "platform-windows"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "ports",
@@ -3123,7 +3123,7 @@ dependencies = [
 
 [[package]]
 name = "ports"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3188,7 +3188,7 @@ dependencies = [
 
 [[package]]
 name = "protocol"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "schemars",
  "serde",
@@ -3601,7 +3601,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "report-fixer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -3626,7 +3626,7 @@ dependencies = [
 
 [[package]]
 name = "report-pipeline"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ed25519-dalek",
  "getrandom 0.3.4",
@@ -3873,7 +3873,7 @@ dependencies = [
 
 [[package]]
 name = "sandbox"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4055,7 +4055,7 @@ dependencies = [
 
 [[package]]
 name = "services"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "accounts",
  "async-trait",
@@ -4248,7 +4248,7 @@ dependencies = [
 
 [[package]]
 name = "speech"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "candle-core",
@@ -4317,7 +4317,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "store"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "domain",
  "protocol",
@@ -4494,7 +4494,7 @@ dependencies = [
 
 [[package]]
 name = "terminal"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4513,7 +4513,7 @@ dependencies = [
 
 [[package]]
 name = "test-support"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde_json",
  "tempfile",
@@ -5147,7 +5147,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "voice-control"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "jev",

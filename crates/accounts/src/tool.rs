@@ -55,29 +55,46 @@ impl Tools {
         argv: &[String],
         extra: &[(String, OsString)],
     ) -> std::process::Command {
-        let mut command = std::process::Command::new(self.find(&argv[0]));
+        let program = self.find(&argv[0]);
+        let mut command = std::process::Command::new(&program);
         command
             .args(&argv[1..])
             .envs(self.env.iter().map(|(k, v)| (k, v)))
             .envs(extra.iter().map(|(k, v)| (k, v)));
+        // Found outside the tools' PATH, an npm-installed agent still finds
+        // the `node` installed beside it.
+        #[cfg(not(windows))]
+        {
+            let path = (extra.iter().rev())
+                .find(|(k, _)| k == "PATH")
+                .map(|(_, v)| v.clone())
+                .or_else(|| self.var("PATH"));
+            if let Some(path) = ports::agent_program::path_for(&program, path.as_deref()) {
+                command.env("PATH", path);
+            }
+        }
         command
     }
 
-    /// The program on the tools' `PATH`, or the name as given.
+    /// The program on the tools' `PATH`, or the name as given. Elsewhere
+    /// than Windows, the folders where installers put agents for a person
+    /// without admin rights come after `PATH`, as for tasks and setup (see
+    /// [`ports::agent_program`]): Øphio's own `PATH` may not have them yet.
     pub fn find(&self, name: &str) -> PathBuf {
         if name.contains(std::path::MAIN_SEPARATOR) {
             return PathBuf::from(name);
         }
         let path = self.var("PATH").unwrap_or_default();
-        for dir in std::env::split_paths(&path) {
-            for candidate in candidates(name) {
-                let full = dir.join(&candidate);
-                if full.is_file() {
-                    return full;
-                }
-            }
-        }
-        PathBuf::from(name)
+        #[cfg(not(windows))]
+        let found = ports::agent_program::find(name, Some(&path), self.home().as_deref());
+        #[cfg(windows)]
+        let found = std::env::split_paths(&path).find_map(|dir| {
+            candidates(name)
+                .into_iter()
+                .map(|candidate| dir.join(candidate))
+                .find(|full| full.is_file())
+        });
+        found.unwrap_or_else(|| PathBuf::from(name))
     }
 
     /// Runs `argv` to the end, or until `limit`. What it leaves running is
@@ -273,16 +290,13 @@ impl Contained {
     }
 }
 
+#[cfg(windows)]
 fn candidates(name: &str) -> Vec<String> {
-    if cfg!(windows) {
-        vec![
-            format!("{name}.exe"),
-            format!("{name}.cmd"),
-            name.to_owned(),
-        ]
-    } else {
-        vec![name.to_owned()]
-    }
+    vec![
+        format!("{name}.exe"),
+        format!("{name}.cmd"),
+        name.to_owned(),
+    ]
 }
 
 #[derive(Debug, Clone)]

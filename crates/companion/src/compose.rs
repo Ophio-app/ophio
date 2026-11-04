@@ -1526,9 +1526,14 @@ fn desktop_failure(error: &Error) -> Availability {
 /// What the phone is told when sharing could not be opened.
 #[cfg(not(windows))]
 fn desktop_failure(error: &Error) -> Availability {
+    // Said to the person, so without the "configuration error: " a log adds.
+    let reason = match error {
+        Error::Config(message) => message.clone(),
+        other => other.to_string(),
+    };
     Availability::PermissionMissing {
         remedy: format!(
-            "{error}. Run ophio desktop enable from the computer's graphical login session after fixing it"
+            "{reason}. Run ophio desktop enable from the computer's graphical login session after fixing it"
         ),
     }
 }
@@ -1664,6 +1669,21 @@ mod path_tests {
         assert!(
             earlier.is_cancelled(),
             "the earlier enable was not withdrawn"
+        );
+    }
+    /// A declined desktop sharing dialog reads as a sentence for the person,
+    /// not as a log line.
+    #[cfg(not(windows))]
+    #[test]
+    fn a_declined_sharing_dialog_is_said_plainly() {
+        let Availability::PermissionMissing { remedy } = desktop_failure(&Error::Config(
+            "Approve screen sharing and remote input in the desktop portal dialog".into(),
+        )) else {
+            panic!("not a permission to give")
+        };
+        assert_eq!(
+            remedy,
+            "Approve screen sharing and remote input in the desktop portal dialog. Run ophio desktop enable from the computer's graphical login session after fixing it"
         );
     }
     #[test]

@@ -178,11 +178,11 @@
  ! Code  Make this window taller, at least 34 rows, to show
          the code here.
 
+ · Fingerprint               5F1C 9A0E 7D3B 2A4C 6E8F 0A1B
+                             3C5D 7E9F
+ ●── Waiting for your phone
+
  Link  ophio://pair?d=eyJob3N0X2lkIjoiMGY4YjZjMWUtMmQzYS00Y
-       jVjLThkOWUtMGExYjJjM2Q0ZTVmIiwiaG9zdF9uYW1lIjoiZGVza
-       yIsImFkZHJlc3NlcyI6WyIxMDAuNjQuMC4xOjQ3MTAwIiwiZGVza
-       y50YWlsLnRzLm5ldDo0NzEwMCJdLCJjZXJ0X3NoYTI1NiI6IjVmM
-       WM5YTBlN2QzYjJhNGM2ZThmMGExYjNjNWQ3ZTlmMmE0YjZjOGQwZ
 
      [l] Leave this for later
      [x] Skip the rest of setup
@@ -506,6 +506,27 @@
  Step 3 of 6 · Connect your agents
  ──────────────────────────────────────────────────────────
 
+ ●── Looking for Claude Code…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ctrl-c leave
+── 26 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
  ✓ Claude Code  Installed
 
 
@@ -523,7 +544,7 @@
 
  ╾─◆ [n] Continue
  enter choose · ctrl-c leave
-── 26 · Connect your agents ──
+── 27 · Connect your agents ──
  Step 3 of 6 · Connect your agents
  ──────────────────────────────────────────────────────────
 
@@ -544,7 +565,7 @@
      [l] Leave this for later
      [x] Skip the rest of setup
  ↑↓ move · enter choose · ctrl-c leave
-── 27 · Connect your agents ──
+── 28 · Connect your agents ──
  Step 3 of 6 · Connect your agents
  ──────────────────────────────────────────────────────────
 
@@ -565,7 +586,7 @@
 
  ╾─◆ [c] Cancel sign-in
  enter choose · ctrl-c leave
-── 28 · Connect your agents ──
+── 29 · Connect your agents ──
  Step 3 of 6 · Connect your agents
  ──────────────────────────────────────────────────────────
 
@@ -586,7 +607,7 @@
 
  ╾─◆ [c] Cancel sign-in
  enter choose · ctrl-c leave
-── 29 · Connect your agents ──
+── 30 · Connect your agents ──
  Step 3 of 6 · Connect your agents
  ──────────────────────────────────────────────────────────
 
@@ -607,7 +628,70 @@
 
  ╾─◆ [n] Continue
  enter choose · ctrl-c leave
-── 30 · Welcome to Øphio ──
+── 31 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ This installs Codex on this computer with its maker's own
+ installer:
+
+ ▸ npm install -g @openai/codex
+
+ Its output shows here as it runs.
+
+ If npm says EACCES, it needs a folder of your own for
+ global packages:
+
+ npm's guide  https://docs.npmjs.com/resolving-eacces-permi
+              ssions-errors-when-installing-packages-global
+              ly
+
+ ╾─◆ [y] Run it · recommended
+     [b] Back
+ ↑↓ move · enter choose · esc back · ctrl-c leave
+── 32 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ ●── Looking for Codex…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ctrl-c leave
+── 33 · Connect your agents ──
+ Step 3 of 6 · Connect your agents
+ ──────────────────────────────────────────────────────────
+
+ ! Codex  The installer stopped before it finished
+
+ npm isn't allowed to write to the folder it installs
+ programs in for everyone, which needs an administrator. It
+ said EACCES, which means permission denied.
+
+ Set npm to install into a folder of your own, as npm's
+ guide shows, then choose Install Codex again. Don't run
+ npm with sudo.
+
+ npm's guide  https://docs.npmjs.com/resolving-eacces-permi
+              ssions-errors-when-installing-packages-global
+              ly
+
+
+ ╾─◆ [n] Continue
+ pgdn for more · enter choose · ctrl-c leave
+── 34 · Welcome to Øphio ──
  Welcome to Øphio
  ──────────────────────────────────────────────────────────
 
@@ -628,7 +712,7 @@
  ╾─◆ [s] Carry on · recommended
      [x] Skip setup
  pgdn for more · ↑↓ move · enter choose · ctrl-c leave
-── 31 · Extras ──
+── 35 · Extras ──
  Step 5 of 6 · Extras
  ──────────────────────────────────────────────────────────
 
@@ -649,7 +733,7 @@
          asks you before it installs or changes anything.
      [l] Leave this for later
  ↑↓ move · enter choose · ctrl-c leave
-── 32 · Extras ──
+── 36 · Extras ──
  Step 5 of 6 · Extras
  ──────────────────────────────────────────────────────────
 
@@ -670,7 +754,7 @@
  ╾─◆ [s] Start it · recommended
      [b] Back
  ↑↓ move · enter choose · esc back · ctrl-c leave
-── 33 · Extras ──
+── 37 · Extras ──
  Step 5 of 6 · Extras
  ──────────────────────────────────────────────────────────
 
@@ -691,7 +775,7 @@
 
 
  ctrl-c leave
-── 34 · Extras ──
+── 38 · Extras ──
  Step 5 of 6 · Extras
  ──────────────────────────────────────────────────────────
 
@@ -712,7 +796,7 @@
      [s] Stop it
      [b] Leave it running
  ↑↓ move · enter choose · ctrl-c leave
-── 35 · Extras ──
+── 39 · Extras ──
  Step 5 of 6 · Extras
  ──────────────────────────────────────────────────────────
 
@@ -733,7 +817,7 @@
      [b] Leave it running
          It carries on; follow it in the app.
  ↑↓ move · space tick · enter choose · ctrl-c leave
-── 36 · Extras ──
+── 40 · Extras ──
  Step 5 of 6 · Extras
  ──────────────────────────────────────────────────────────
 

@@ -28,11 +28,18 @@ You pair a phone by running `ophio pair` on the computer and scanning its code.
 The phone can connect only after you confirm, at the computer, that it shows
 the same six-digit code.
 
-> The 0.1.0 beta is for Android and Linux. This source document is not release
-> approval or proof that any download has passed its checks. After publication,
-> use only the official files and exact qualification in the
-> [v0.1.0 release](https://github.com/ophio-app/ophio/releases/tag/v0.1.0).
-> Start with the [beta walkthrough](docs/beta.md) and [platform limits](SUPPORT.md).
+## Install
+
+The 0.1.1 beta is for Android and Linux. Download the Linux archive,
+`ophio-0.1.1-x86_64-linux.tar.gz`, and the Android app,
+`ophio-0.1.0-arm64.apk`, from the [v0.1.1
+release](https://github.com/ophio-app/ophio/releases/tag/v0.1.1) (the [latest
+release](https://github.com/ophio-app/ophio/releases/latest) page always shows
+the newest), and check them against the release's `SHA256SUMS` file. The phone
+app is unchanged in 0.1.1, so it keeps its 0.1.0 name. Then follow the [Linux
+installation guide](packaging/linux/INSTALL.md) and the [beta
+walkthrough](docs/beta.md); [setup](docs/setup.md) describes what `ophio
+setup` does. [Platform limits](SUPPORT.md) lists what is supported.
 
 ## Layout
 

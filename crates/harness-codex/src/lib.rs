@@ -524,7 +524,9 @@ fn arguments(
         "model_provider=\"openai\"".into(),
     ];
     if asks {
-        args.extend(["-c".into(), format!("features.{}=true", modes::QUESTIONS)]);
+        for feature in modes::ENABLED_FEATURES {
+            args.extend(["-c".into(), format!("features.{feature}=true")]);
+        }
     }
     if let Some(computer) = computer {
         args.extend(computer.arguments());

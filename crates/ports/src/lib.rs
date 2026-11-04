@@ -9,6 +9,7 @@ pub mod accounts;
 pub mod agent_browser;
 pub mod agent_copy;
 pub mod agent_logins;
+pub mod agent_program;
 pub mod bridge;
 pub mod checks;
 pub mod clock;

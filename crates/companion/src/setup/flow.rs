@@ -264,6 +264,19 @@ pub(crate) struct Survey {
     pub codex: bool,
     pub tailscale: bool,
     pub npm: bool,
+    /// Claude Code's installer for Linux and macOS downloads with it, and
+    /// stock Ubuntu Desktop doesn't have it.
+    pub curl: bool,
+}
+
+/// How a program setup ran ended.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub(crate) struct Ran {
+    pub success: bool,
+    /// The end of what an installer printed, so that setup can say why it
+    /// failed after taking the terminal back. Empty for Øphio's own commands,
+    /// which keep the terminal to themselves.
+    pub output: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -399,8 +412,8 @@ pub(crate) trait Host {
     async fn set_grants(&mut self, device: DeviceId, grants: Grants) -> Result<()>;
     /// Adds the folder as a project; the folder as it was added.
     async fn add_project(&mut self, folder: &str, agent: Option<HarnessKind>) -> Result<String>;
-    /// Whether it ended well.
-    async fn run(&mut self, run: &Run) -> Result<bool>;
+    /// How it ended.
+    async fn run(&mut self, run: &Run) -> Result<Ran>;
     async fn readiness(&mut self) -> Result<ReadinessReport>;
     fn now(&self) -> Timestamp;
     /// This computer's offset from UTC at that moment, if it can tell.
@@ -814,8 +827,8 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
         self.ui.ask(&screen, None).await;
     }
 
-    /// Runs a program in the terminal; whether it ended well.
-    async fn run_program(&mut self, run: &Run) -> Go<bool> {
+    /// Runs a program in the terminal; how it ended.
+    async fn run_program(&mut self, run: &Run) -> Go<Ran> {
         self.ui.suspend().await;
         let ended = self.host.run(run).await;
         self.ui.resume().await;
@@ -1540,8 +1553,9 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
     async fn install(&mut self, kind: HarnessKind) -> Go<()> {
         const STEP: Step = Step::Agent;
         let name = agent_name(kind);
+        let survey = self.host.survey();
         let run = match kind {
-            HarnessKind::Codex if !self.host.survey().npm => {
+            HarnessKind::Codex if !survey.npm => {
                 let blocks = vec![
                     text(
                         "Codex installs with npm, which comes with Node.js, and this computer doesn't have it. Install Node.js, then check again.",
@@ -1557,6 +1571,23 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                 return Ok(());
             }
             HarnessKind::Codex => codex_installer(),
+            _ if !cfg!(windows) && !survey.curl => {
+                let blocks = vec![
+                    text(
+                        "Claude Code's installer downloads with curl, and this computer doesn't have it.",
+                    ),
+                    text(
+                        "Install curl, then check again. On Ubuntu or Debian, run this in a terminal:",
+                    ),
+                    Block::Command("sudo apt install curl".into()),
+                ];
+                let choices = vec![
+                    Choice::new('c', "check", "Check again").recommended(),
+                    back(),
+                ];
+                self.choose(STEP, blocks, choices).await?;
+                return Ok(());
+            }
             _ => claude_installer(),
         };
         let mut blocks = vec![
@@ -1576,16 +1607,58 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
         if self.choose(STEP, blocks, choices).await? != "run" {
             return Ok(());
         }
-        let notice = if self.run_program(&run).await? {
-            fact(Mark::Ok, name, "Installed")
-        } else {
-            fact(
-                Mark::Warn,
-                name,
-                "The installer stopped before it finished; its output says why.",
-            )
+        let ran = self.run_program(&run).await?;
+        // What the installer says isn't enough: look for the program where
+        // tasks and sign-in will.
+        self.busy(STEP, &format!("Looking for {name}…")).await;
+        let found = self
+            .host
+            .agents()
+            .await?
+            .iter()
+            .any(|agent| agent.kind == kind && agent.installed == Availability::Available);
+        let blocks = match (ran.success, found) {
+            (_, true) => {
+                let mut blocks = vec![fact(Mark::Ok, name, "Installed")];
+                if kind == HarnessKind::Codex && cfg!(target_os = "linux") {
+                    // A chat kept to a project runs in a sandbox that shows
+                    // it no home folder, so npm's script and Node.js there
+                    // aren't in it.
+                    blocks.push(text(
+                        "Tasks can use it. If npm put it in your home folder, as it does with nvm or a folder of your own for global packages, chats kept to a project can't start it. For those chats, install Codex with its own installer, which puts it in ~/.local/bin, or for everyone on this computer.",
+                    ));
+                }
+                blocks
+            }
+            (false, false) => install_failed(kind, &run, &ran.output),
+            (true, false) => {
+                let looks = if cfg!(windows) {
+                    format!(
+                        "Øphio looks for {program} on its PATH and in the folders its installers use.",
+                        program = program_name(kind)
+                    )
+                } else {
+                    format!(
+                        "Øphio looks for {program} on its PATH and in ~/.local/bin, ~/.cargo/bin, ~/.claude/local, ~/.npm-global/bin and nvm's default Node.js.",
+                        program = program_name(kind)
+                    )
+                };
+                let mut blocks = vec![
+                    fact(
+                        Mark::Warn,
+                        name,
+                        "The installer finished, but Øphio can't find it",
+                    ),
+                    text(looks),
+                    text(
+                        "If the installer put it somewhere else, log out of this computer and back in, so that Øphio starts with your new PATH, then run setup again.",
+                    ),
+                ];
+                blocks.extend(said(&ran.output));
+                blocks
+            }
         };
-        self.notice(STEP, vec![notice]).await
+        self.notice(STEP, blocks).await
     }
 
     async fn sign_in(&mut self, kind: HarnessKind, remedy: Option<String>) -> Go<()> {
@@ -2238,13 +2311,14 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                     }
                 }
             }
+            // The fingerprint and whether a phone has come stay in sight
+            // above the long link, which a small terminal scrolls to.
             let mut blocks = vec![
                 Block::Steps(steps.clone()),
                 Block::Qr {
                     data: packed.clone(),
                     caption: caption.clone(),
                 },
-                link("Link", full.clone()),
                 fact(
                     Mark::Info,
                     "Fingerprint",
@@ -2258,6 +2332,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
             );
             blocks.extend(news.clone());
             blocks.push(fact(Mark::Wait, "Waiting for your phone", ""));
+            blocks.push(link("Link", full.clone()));
             let screen = self.screen(STEP, blocks, Ask::Choose(vec![later(), skip()]));
             self.reply(&screen, Some(POLL)).await?;
         }
@@ -2538,7 +2613,12 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                     Block::Command(Run::ophio(&["desktop", "enable"]).shown()),
                 ];
                 if cfg!(target_os = "linux") {
-                    blocks.push(text("The first time a phone looks, your desktop may ask here whether to share the screen."));
+                    blocks.push(text(
+                        "On GNOME, a Remote Desktop window opens next and asks to share this screen: choose Share. Turn on Allow Remote Interaction in it only if you want your phone to control this desktop as well as watch it.",
+                    ));
+                    blocks.push(text(
+                        "Other desktops may ask here the first time a phone looks.",
+                    ));
                 }
                 self.command(
                     pick,
@@ -2968,7 +3048,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
             self.ensure_running(STEP).await?;
         }
         for run in runs {
-            if !self.run_program(run).await? {
+            if !self.run_program(run).await?.success {
                 let blocks = vec![fact(
                     Mark::Warn,
                     pick.label(),
@@ -3073,8 +3153,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                     CheckStatus::NotRun | CheckStatus::Unknown => Mark::Info,
                 };
                 let detail = match said(&check.remedy) {
-                    Some(remedy) if detail.is_empty() => remedy,
-                    Some(remedy) => format!("{detail} {remedy}"),
+                    Some(remedy) => with_remedy(&detail, &remedy),
                     None => detail,
                 };
                 blocks.push(fact(mark, shown(&check.label), detail));
@@ -3263,7 +3342,7 @@ fn channel(connector: &str) -> [Run; 2] {
 }
 
 /// Claude Code's own installer.
-fn claude_installer() -> Run {
+pub(super) fn claude_installer() -> Run {
     if cfg!(windows) {
         let script = "irm https://claude.ai/install.ps1 | iex";
         Run::Program {
@@ -3273,9 +3352,11 @@ fn claude_installer() -> Run {
         }
     } else {
         let script = "curl -fsSL https://claude.ai/install.sh | bash";
+        // Without pipefail, a download that fails hands bash an empty
+        // script, which "succeeds".
         Run::Program {
             program: "bash".into(),
-            args: vec!["-c".into(), script.into()],
+            args: vec!["-c".into(), format!("set -o pipefail; {script}")],
             shown: script.into(),
         }
     }
@@ -3295,5 +3376,91 @@ fn codex_installer() -> Run {
             args: vec!["install".into(), "-g".into(), "@openai/codex".into()],
             shown: script.into(),
         }
+    }
+}
+
+/// The program an agent is started as.
+fn program_name(kind: HarnessKind) -> &'static str {
+    match kind {
+        HarnessKind::Codex => "codex",
+        _ => "claude",
+    }
+}
+
+/// Why an agent's installer failed, as far as its output tells, and what to
+/// do about it.
+fn install_failed(kind: HarnessKind, run: &Run, output: &str) -> Vec<Block> {
+    let name = agent_name(kind);
+    let mut blocks = vec![fact(
+        Mark::Warn,
+        name,
+        "The installer stopped before it finished",
+    )];
+    if kind == HarnessKind::Codex && output.contains("EACCES") {
+        blocks.extend([
+            text(
+                "npm isn't allowed to write to the folder it installs programs in for everyone, which needs an administrator. It said EACCES, which means permission denied.",
+            ),
+            text(
+                "Set npm to install into a folder of your own, as npm's guide shows, then choose Install Codex again. Don't run npm with sudo.",
+            ),
+            link("npm's guide", NPM_EACCES_URL),
+            link("Other ways to install Codex", CODEX_URL),
+        ]);
+        return blocks;
+    }
+    let lower = output.to_lowercase();
+    if lower.contains("could not resolve host") || lower.contains("failed to connect") {
+        blocks.push(text(
+            "It couldn't download what it needs. Check that this computer is connected to the internet, then try again.",
+        ));
+    } else if lower.contains("curl: command not found") || lower.contains("'curl' not found") {
+        blocks.extend([
+            text("It needs curl, and this computer doesn't have it. On Ubuntu or Debian, install it with:"),
+            Block::Command("sudo apt install curl".into()),
+        ]);
+    }
+    blocks.extend(said(output));
+    blocks.extend([
+        text("To see everything it says, run it yourself in a terminal:"),
+        Block::Command(run.shown()),
+    ]);
+    blocks
+}
+
+/// The last lines an installer printed, when it printed any.
+fn said(output: &str) -> Option<Block> {
+    let lines: Vec<&str> = output
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+    let last = lines[lines.len().saturating_sub(SAID_LINES)..].join(" · ");
+    (!last.is_empty()).then(|| fact(Mark::Info, "It said", shown(&last)))
+}
+/// How many of the installer's last lines setup shows.
+const SAID_LINES: usize = 3;
+
+/// A check's finding and what to do about it, as separate sentences. A
+/// remedy that is only one of Øphio's own commands, such as
+/// `ophio channels enable telegram`, is said as one to run.
+pub(super) fn with_remedy(detail: &str, remedy: &str) -> String {
+    let sentence = |text: &str| {
+        let text = text.trim();
+        if text.is_empty() || text.ends_with(['.', '!', '?', ':']) {
+            text.to_owned()
+        } else {
+            format!("{text}.")
+        }
+    };
+    let remedy = remedy.trim();
+    let remedy = if remedy.starts_with(&format!("{COMMAND} ")) {
+        format!("Run {}.", remedy.trim_end_matches('.'))
+    } else {
+        sentence(remedy)
+    };
+    match sentence(detail) {
+        detail if detail.is_empty() => remedy,
+        detail => format!("{detail} {remedy}"),
     }
 }

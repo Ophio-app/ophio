@@ -491,12 +491,54 @@ impl Systemctl for UserSystemctl {
     async fn run(&self, args: &[&str]) -> std::io::Result<bool> {
         let mut command = tokio::process::Command::new("systemctl");
         command.arg("--user").args(args);
-        if args.first() == Some(&"is-active") {
-            command
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null());
+        match printed(args) {
+            // `ophio service status` is systemctl's own report.
+            Printed::Shown => return Ok(command.status().await?.success()),
+            Printed::Dropped => {
+                command
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null());
+                return Ok(command.status().await?.success());
+            }
+            Printed::Kept => {}
         }
-        Ok(command.status().await?.success())
+        // What it prints, such as "Created symlink …" on enable, would land
+        // on top of setup's full-screen display; it is kept for a failure.
+        let output = command.stdin(std::process::Stdio::null()).output().await?;
+        if output.status.success() {
+            return Ok(true);
+        }
+        let said = String::from_utf8_lossy(&output.stderr);
+        let said = said.trim();
+        if said.is_empty() {
+            return Ok(false);
+        }
+        Err(std::io::Error::other(format!(
+            "systemctl --user {} failed: {said}",
+            args.join(" ")
+        )))
+    }
+}
+
+/// What becomes of what a systemctl command prints.
+#[cfg(target_os = "linux")]
+#[derive(Debug, PartialEq)]
+enum Printed {
+    /// Shown as systemctl prints it: its report is what was asked for.
+    Shown,
+    /// Kept from the screen, and quoted if the command fails: changes that
+    /// setup makes while it has the screen.
+    Kept,
+    /// Not wanted: a question answered by the exit status alone.
+    Dropped,
+}
+
+#[cfg(target_os = "linux")]
+fn printed(args: &[&str]) -> Printed {
+    match args.first().copied() {
+        Some("enable" | "disable" | "start" | "stop" | "daemon-reload") => Printed::Kept,
+        Some("is-active") => Printed::Dropped,
+        _ => Printed::Shown,
     }
 }
 
@@ -747,6 +789,28 @@ mod tests {
                     Ok(self.fail_on != Some(args[0]))
                 }
             }
+        }
+
+        /// Only the changes setup makes keep what systemctl prints off the
+        /// screen; `ophio service status` shows systemctl's own report.
+        #[test]
+        fn only_changes_keep_what_systemctl_prints_from_the_screen() {
+            for change in ["enable", "disable", "start", "stop", "daemon-reload"] {
+                assert_eq!(
+                    printed(&[change, "ophio.service"]),
+                    Printed::Kept,
+                    "{change}"
+                );
+            }
+            assert_eq!(
+                printed(&["status", "--no-pager", "ophio.service"]),
+                Printed::Shown
+            );
+            assert_eq!(
+                printed(&["is-enabled", "--quiet", "ophio.service"]),
+                Printed::Shown
+            );
+            assert_eq!(printed(&["is-active", "ophio.service"]), Printed::Dropped);
         }
 
         const OLD_UNIT: &str = "# Managed by ophio; remove with the service uninstall command.\n[Unit]\nDescription=Ophio\nAfter=network-online.target\n\n[Service]\nType=simple\nExecStart=\"/opt/ophio\" run\nRestart=on-failure\nRestartSec=3\nUMask=0077\nNoNewPrivileges=yes\n\n[Install]\nWantedBy=default.target\n";

@@ -727,6 +727,61 @@ while [ ! -s "$HOME/held.pid" ]; do sleep 0.005; done
 echo done
 "#;
 
+/// Signing in right after an installer put the agent in `~/.local/bin`,
+/// before Øphio's own `PATH` has that folder, finds it where setup and tasks
+/// do, and starts it with its folder on `PATH` for what it runs in turn.
+#[cfg(unix)]
+#[tokio::test]
+async fn an_agent_installed_for_the_person_alone_is_found_off_path() {
+    let root = tempfile::tempdir().unwrap();
+    let bin = root.path().join("bin");
+    let home = root.path().join("home");
+    let installed = home.join(".local/bin");
+    std::fs::create_dir(&bin).unwrap();
+    std::fs::create_dir_all(&installed).unwrap();
+    put_script(
+        &installed.join("claude"),
+        "#!/bin/sh\nprintf '%s' \"$PATH\"\n",
+    );
+    let tools = Tools {
+        env: vec![
+            ("PATH".into(), bin.clone().into()),
+            ("HOME".into(), home.clone().into()),
+        ],
+    };
+    assert_eq!(tools.find("claude"), installed.join("claude"));
+    assert_eq!(tools.find("codex"), PathBuf::from("codex"), "not installed");
+    let ran = tools
+        .run(&["claude".into()], &[], Duration::from_secs(10))
+        .await
+        .unwrap();
+    assert!(ran.success);
+    assert_eq!(
+        std::env::split_paths(&ran.stdout).collect::<Vec<_>>(),
+        [bin, installed]
+    );
+
+    // On PATH, it is found there first, and PATH is left as it is.
+    let on_path = root.path().join("on-path");
+    std::fs::create_dir(&on_path).unwrap();
+    put_script(
+        &on_path.join("claude"),
+        "#!/bin/sh\nprintf '%s' \"$PATH\"\n",
+    );
+    let tools = Tools {
+        env: vec![
+            ("PATH".into(), on_path.clone().into()),
+            ("HOME".into(), home.into()),
+        ],
+    };
+    assert_eq!(tools.find("claude"), on_path.join("claude"));
+    let ran = tools
+        .run(&["claude".into()], &[], Duration::from_secs(10))
+        .await
+        .unwrap();
+    assert_eq!(ran.stdout, on_path.to_str().unwrap());
+}
+
 #[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_tool_keeps_to_its_limit_when_a_helper_holds_its_output() {

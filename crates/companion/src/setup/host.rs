@@ -3,7 +3,7 @@
 //! channel, and the computer's own programs and network.
 use super::{
     Progress,
-    flow::{Answered, Asked, Host, Mark, Network, Run, Service, Survey, Tailscale, TaskView},
+    flow::{Answered, Asked, Host, Mark, Network, Ran, Run, Service, Survey, Tailscale, TaskView},
 };
 use crate::{
     Error, Result,
@@ -123,6 +123,7 @@ impl Host for Real {
             codex: program("codex").is_some(),
             tailscale: program("tailscale").is_some(),
             npm: program("npm").is_some(),
+            curl: program("curl").is_some(),
         }
     }
 
@@ -375,22 +376,56 @@ impl Host for Real {
         Ok(host_path)
     }
 
-    async fn run(&mut self, run: &Run) -> Result<bool> {
+    async fn run(&mut self, run: &Run) -> Result<Ran> {
         let mut command = match run {
             Run::Ophio(args) => {
                 let mut command = tokio::process::Command::new(std::env::current_exe()?);
                 command.args(args);
-                command
+                // It has the terminal to itself until it ends.
+                let status = command.kill_on_drop(true).status().await?;
+                return Ok(Ran {
+                    success: status.success(),
+                    output: String::new(),
+                });
             }
             Run::Program { program, args, .. } => {
-                let mut command = tokio::process::Command::new(program);
+                // Found where setup looked for it, such as npm under nvm.
+                #[cfg(not(windows))]
+                let found = self::program(program);
+                #[cfg(windows)]
+                let found: Option<PathBuf> = None;
+                let mut command =
+                    tokio::process::Command::new(found.as_deref().unwrap_or(Path::new(program)));
+                #[cfg(not(windows))]
+                if let Some(path) = found.as_deref().and_then(|found| {
+                    ports::agent_program::path_for(found, std::env::var_os("PATH").as_deref())
+                }) {
+                    command.env("PATH", path);
+                }
                 command.args(args);
                 command
             }
         };
-        // It has the terminal to itself until it ends.
-        let status = command.kill_on_drop(true).status().await?;
-        Ok(status.success())
+        // An installer prints to the terminal as it runs, and what it printed
+        // last is kept, so that setup can still say why it failed once it has
+        // the terminal back.
+        command
+            .kill_on_drop(true)
+            .stdin(std::process::Stdio::inherit())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+        let mut child = command.spawn()?;
+        let kept = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let out = relay(child.stdout.take(), tokio::io::stdout(), kept.clone());
+        let err = relay(child.stderr.take(), tokio::io::stderr(), kept.clone());
+        let (status, ..) = tokio::join!(child.wait(), out, err);
+        let output = plain(&String::from_utf8_lossy(
+            &kept.lock().expect("kept output").clone(),
+        ));
+        Ok(Ran {
+            success: status?.success(),
+            output,
+        })
     }
 
     async fn readiness(&mut self) -> Result<ReadinessReport> {
@@ -809,8 +844,16 @@ pub(super) fn expand_home(folder: &str) -> PathBuf {
 }
 
 /// Where a program is, looking where its installer puts it as well as on
-/// `PATH`: an installer run by setup changes no `PATH` setup can see.
-fn program(name: &str) -> Option<PathBuf> {
+/// `PATH`: an installer run by setup changes no `PATH` setup can see. Agents
+/// are looked for where tasks and sign-in look for them (see
+/// [`ports::agent_program`]), so setup never finds one they won't.
+#[cfg(not(windows))]
+pub(super) fn program(name: &str) -> Option<PathBuf> {
+    ports::agent_program::on_this_computer(name)
+}
+
+#[cfg(windows)]
+pub(super) fn program(name: &str) -> Option<PathBuf> {
     let mut folders: Vec<PathBuf> = std::env::var_os("PATH")
         .map(|path| std::env::split_paths(&path).collect())
         .unwrap_or_default();
@@ -827,19 +870,81 @@ fn program(name: &str) -> Option<PathBuf> {
             .map(|folder| home.join(folder)),
         );
     }
-    if cfg!(windows) {
-        folders.push(PathBuf::from(r"C:\Program Files\Tailscale"));
-    }
-    let names: Vec<String> = if cfg!(windows) {
-        ["exe", "cmd", "bat"]
-            .iter()
-            .map(|extension| format!("{name}.{extension}"))
-            .collect()
-    } else {
-        vec![name.to_owned()]
-    };
+    folders.push(PathBuf::from(r"C:\Program Files\Tailscale"));
+    let names: Vec<String> = ["exe", "cmd", "bat"]
+        .iter()
+        .map(|extension| format!("{name}.{extension}"))
+        .collect();
     folders
         .iter()
         .flat_map(|folder| names.iter().map(move |name| folder.join(name)))
         .find(|path| path.is_file())
+}
+
+/// How much of what an installer printed setup keeps: its end.
+const KEPT: usize = 16 * 1024;
+
+/// Copies what a program prints to `to` as it comes, keeping the end of it.
+async fn relay<R, W>(from: Option<R>, mut to: W, kept: std::sync::Arc<std::sync::Mutex<Vec<u8>>>)
+where
+    R: tokio::io::AsyncRead + Unpin,
+    W: tokio::io::AsyncWrite + Unpin,
+{
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let Some(mut from) = from else {
+        return;
+    };
+    let mut buffer = [0; 4096];
+    while let Ok(read) = from.read(&mut buffer).await {
+        if read == 0 {
+            break;
+        }
+        let _ = to.write_all(&buffer[..read]).await;
+        let _ = to.flush().await;
+        let mut kept = kept.lock().expect("kept output");
+        kept.extend_from_slice(&buffer[..read]);
+        let over = kept.len().saturating_sub(KEPT);
+        kept.drain(..over);
+    }
+}
+
+/// Printed text as it ended up on the screen, without colours or cursor
+/// moves: of a line redrawn with carriage returns, its last drawing.
+pub(super) fn plain(printed: &str) -> String {
+    let mut out = String::with_capacity(printed.len());
+    let mut chars = printed.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\x1b' => match chars.next() {
+                // CSI, such as colours: parameters, ending in a letter.
+                Some('[') => {
+                    for c in chars.by_ref() {
+                        if ('@'..='~').contains(&c) {
+                            break;
+                        }
+                    }
+                }
+                // OSC, such as a link: to BEL or ESC \.
+                Some(']') => {
+                    while let Some(c) = chars.next() {
+                        if c == '\x07' || (c == '\x1b' && chars.next_if_eq(&'\\').is_some()) {
+                            break;
+                        }
+                    }
+                }
+                // A character set, such as ESC ( B.
+                Some('(' | ')' | '*' | '+') => {
+                    chars.next();
+                }
+                _ => {}
+            },
+            '\r' if chars.peek() == Some(&'\n') => {}
+            '\r' => {
+                let start = out.rfind('\n').map_or(0, |at| at + 1);
+                out.truncate(start);
+            }
+            c => out.push(c),
+        }
+    }
+    out
 }

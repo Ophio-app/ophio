@@ -398,13 +398,11 @@ impl CompanionHub {
                     .ok_or_else(|| unsupported("Selected harness readiness"))?;
                 domain::availability(&info.capabilities.start_run)?;
                 domain::task_mode(info, mode.unwrap_or_default())?;
-                if matches!(
-                    info.account,
-                    protocol::capability::AccountReadiness::SignedOut { .. }
-                ) {
+                if let protocol::capability::AccountReadiness::SignedOut { remedy } = &info.account
+                {
                     return Err(error(
                         ErrorCode::AccountNotReady,
-                        "Sign in with the native harness before starting work",
+                        signed_out_message(info.kind, &info.display_name, remedy),
                     ));
                 }
                 if *kind == TaskKind::ComputerUse
@@ -3161,4 +3159,65 @@ fn verified_review(r: &store::Read<'_>, command_id: CommandId) -> store::Result<
     Ok((waiting.into_iter())
         .find(|v| v.command_id == command_id)
         .map(|v| v.review))
+}
+
+/// What to tell the person when an agent they asked for is signed out. The
+/// phone shows this as it is and may add a sentence after it ("Your text is
+/// still here."), so it is whole sentences that end with a full stop.
+fn signed_out_message(kind: protocol::capability::HarnessKind, name: &str, remedy: &str) -> String {
+    let remedy = remedy.trim().trim_end_matches('.').trim();
+    let how = match remedy.chars().next() {
+        Some(first) => format!("{}{}", first.to_lowercase(), &remedy[first.len_utf8()..]),
+        None => match kind {
+            protocol::capability::HarnessKind::Codex => {
+                "run codex login on the computer".to_owned()
+            }
+            _ => "run claude auth login on the computer".to_owned(),
+        },
+    };
+    format!(
+        "{name} isn't signed in on this computer. To sign in, {how}. You can also run {program} setup on the computer and choose Sign in to {name}.",
+        program = ports::PROGRAM_NAME
+    )
+}
+
+#[cfg(test)]
+mod signed_out_tests {
+    use super::*;
+
+    #[test]
+    fn a_signed_out_agent_is_told_how_to_sign_in() {
+        assert_eq!(
+            signed_out_message(
+                protocol::capability::HarnessKind::ClaudeCode,
+                "Claude Code",
+                "Run claude auth login on the computer"
+            ),
+            "Claude Code isn't signed in on this computer. To sign in, run claude auth login on the computer. You can also run ophio setup on the computer and choose Sign in to Claude Code."
+        );
+        assert_eq!(
+            signed_out_message(
+                protocol::capability::HarnessKind::Codex,
+                "Codex",
+                "Run codex login on the computer."
+            ),
+            "Codex isn't signed in on this computer. To sign in, run codex login on the computer. You can also run ophio setup on the computer and choose Sign in to Codex."
+        );
+    }
+
+    #[test]
+    fn a_missing_remedy_falls_back_to_the_agents_own_command() {
+        assert!(
+            signed_out_message(protocol::capability::HarnessKind::Codex, "Codex", " ")
+                .contains("run codex login on")
+        );
+        assert!(
+            signed_out_message(
+                protocol::capability::HarnessKind::ClaudeCode,
+                "Claude Code",
+                ""
+            )
+            .contains("run claude auth login on")
+        );
+    }
 }

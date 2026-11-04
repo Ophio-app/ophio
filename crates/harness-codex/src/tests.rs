@@ -1947,3 +1947,44 @@ fn a_read_only_turn_answering_on_the_checklist_gets_the_disabled_block() {
             toml_string(&skill.to_string_lossy())
         )));
 }
+
+#[tokio::test]
+async fn known_quiet_updates_and_the_feature_warning_ophio_causes_say_nothing() {
+    let (dir, adapter, mut spec) = fixture();
+    let lines = [
+        r#"{"method":"thread/readState/changed","params":{"threadId":"thread-fixture"}}"#,
+        r#"{"method":"turn/moderationMetadata","params":{"threadId":"thread-fixture"}}"#,
+        r#"{"method":"future/other","params":{"threadId":"thread-fixture"}}"#,
+        r#"{"method":"warning","params":{"threadId":"thread-fixture","message":"Under-development features enabled: default_mode_request_user_input. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in /home/you/.codex/config.toml."}}"#,
+        r#"{"method":"warning","params":{"threadId":"thread-fixture","message":"Under-development features enabled: default_mode_request_user_input, foo_bar. Under-development features are incomplete and may behave unpredictably."}}"#,
+        r#"{"method":"warning","params":{"threadId":"thread-fixture","message":"Something else is wrong."}}"#,
+    ];
+    std::fs::write(dir.path().join("after-thread.jsonl"), lines.join("\n")).unwrap();
+    spec.prompt.text = "complete".into();
+    let mut run = adapter.start_run(spec).await.unwrap();
+    let mut notes = vec![];
+    loop {
+        match event(&mut run.events).await {
+            HarnessEvent::Warning { text } => notes.push(text),
+            HarnessEvent::Exited { .. } => break,
+            _ => {}
+        }
+    }
+    assert!(
+        !notes
+            .iter()
+            .any(|n| n.contains("readState") || n.contains("moderationMetadata")),
+        "{notes:?}"
+    );
+    assert!(
+        notes.iter().any(|n| n.contains("(future/other)")),
+        "{notes:?}"
+    );
+    let warns: Vec<_> = notes
+        .iter()
+        .filter(|n| n.starts_with("Codex warns"))
+        .collect();
+    assert_eq!(warns.len(), 2, "{notes:?}");
+    assert!(warns[0].contains("default_mode_request_user_input, foo_bar"));
+    assert!(warns[1].contains("Something else is wrong."));
+}

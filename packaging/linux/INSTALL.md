@@ -14,10 +14,14 @@ Plasma 6.7 and Hyprland 0.56 on Arch Linux, all in x86_64 virtual machines
 with software rendering. Later changes are covered by automated tests, not by
 another such install. Other distributions and desktops have not been tested.
 
-Extract the archive and, from its directory, run the installer as your
-ordinary user:
+Unpack the archive, enter the folder it makes, and run the installer as your
+ordinary user. The 0.1.1 archive is `ophio-0.1.1-x86_64-linux.tar.gz` and
+unpacks to `ophio-0.1.1-x86_64-linux`; use the name of the file you
+downloaded. In the folder you downloaded it to:
 
 ```sh
+tar -xzf ophio-0.1.1-x86_64-linux.tar.gz
+cd ophio-0.1.1-x86_64-linux
 sh install.sh
 ```
 
@@ -41,6 +45,41 @@ export PATH="$HOME/.local/bin:$PATH"
 ```
 
 Until then, run `~/.local/opt/ophio/bin/ophio` in place of `ophio`.
+
+## Installing Claude Code or Codex
+
+Øphio drives Claude Code or Codex, which you install and sign in to yourself
+(`ophio setup` can do it for you). On a fresh Ubuntu Desktop:
+
+- **`curl` is missing.** Ubuntu Desktop does not include it, and Claude Code's
+  installer needs it. Run `sudo apt install curl` first.
+- **Codex with Ubuntu's Node.js.** Installing Codex with `npm install -g` when
+  Node.js came from Ubuntu's own packages fails with a permission error
+  (`EACCES`), because npm tries to write to a system folder. Either set up a
+  folder of your own for global npm packages, as
+  [npm's guide](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally)
+  describes, or follow Codex's own install instructions at
+  <https://github.com/openai/codex>. Do not use `sudo npm`.
+- **"Command not found" right after installing.** Claude Code's installer
+  puts `claude` in `~/.local/bin` without changing your shell's startup
+  files, and Ubuntu adds that folder to your PATH only when you next log in.
+  Log out and back in, or add the line the installer shows to `~/.bashrc`
+  and open a new terminal:
+
+  ```sh
+  export PATH="$HOME/.local/bin:$PATH"
+  ```
+
+  Øphio itself also looks in the usual install folders (`~/.local/bin`,
+  `~/.cargo/bin`, `~/.claude/local`, `~/.npm-global/bin` and the default
+  Node.js installed by nvm), so tasks find an agent installed there even
+  before you log out and in.
+- **Chats kept to a project.** These run the agent in a sandbox that hides
+  your home folder, so they can start Claude Code or Codex only when it was
+  installed with its own installer (into `~/.local/bin`) or for everyone on
+  the computer. An agent installed with npm inside your home folder (with
+  nvm, or in a folder of your own for global packages) works for tasks and
+  unlimited chats, but not for chats kept to a project.
 
 ## Chat access controls
 
@@ -255,6 +294,10 @@ installed app, so a phone keeps the app it trusts. Android 12 and later
 install it without asking; earlier versions ask you to confirm. The device
 needs the File transfers permission. The first app with this updater has to be
 installed by `ophio phone install` or by hand.
+
+Øphio 0.1.1 carries the same phone app as 0.1.0, byte for byte. A phone that
+has the 0.1.0 app from the release shows it is up to date and is offered
+nothing.
 
 ## Uninstalling
 

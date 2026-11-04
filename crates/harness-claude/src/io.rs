@@ -67,43 +67,56 @@ pub(crate) async fn write<W: AsyncWrite + Unpin>(
     .map_err(|_| HarnessError::Protocol("native stdin stalled; delivery unknown".into()))??;
     Ok(())
 }
+/// The agent's program: the one given by path, or else the computer's own,
+/// found where setup and sign-in find it (see [`ports::agent_program`]).
 pub(crate) fn locate(explicit: &Option<PathBuf>, name: &str) -> Option<PathBuf> {
     if let Some(path) = explicit {
         return path.is_file().then(|| path.clone());
     }
-    let executable = if cfg!(windows) {
-        format!("{name}.exe")
-    } else {
-        name.into()
-    };
-    if let Some(path) = std::env::var_os("PATH") {
-        for dir in std::env::split_paths(&path) {
-            let path = dir.join(&executable);
-            if path.is_file() {
-                return Some(path);
-            }
-        }
-    }
-    for root in [std::env::var_os("HOME"), std::env::var_os("USERPROFILE")]
-        .into_iter()
-        .flatten()
+    #[cfg(not(windows))]
+    return ports::agent_program::on_this_computer(name);
+    #[cfg(windows)]
     {
-        for suffix in [
-            ".local/bin",
-            ".cargo/bin",
-            "AppData/Local/Programs",
-            "AppData/Roaming/npm",
-        ] {
-            let path = PathBuf::from(&root).join(suffix).join(&executable);
-            if path.is_file() {
-                return Some(path);
+        let executable = format!("{name}.exe");
+        if let Some(path) = std::env::var_os("PATH") {
+            for dir in std::env::split_paths(&path) {
+                let path = dir.join(&executable);
+                if path.is_file() {
+                    return Some(path);
+                }
             }
         }
+        for root in [std::env::var_os("HOME"), std::env::var_os("USERPROFILE")]
+            .into_iter()
+            .flatten()
+        {
+            for suffix in [
+                ".local/bin",
+                ".cargo/bin",
+                "AppData/Local/Programs",
+                "AppData/Roaming/npm",
+            ] {
+                let path = PathBuf::from(&root).join(suffix).join(&executable);
+                if path.is_file() {
+                    return Some(path);
+                }
+            }
+        }
+        None
     }
-    None
 }
 pub(crate) fn command(binary: &Path) -> Command {
     let mut cmd = Command::new(binary);
+    // Found outside the service's PATH, an npm-installed agent still finds
+    // the `node` installed beside it. Øphio's own copies are programs alone.
+    // Windows starts agents as it always has.
+    #[cfg(not(windows))]
+    if !ports::agent_copy::is_copy(binary)
+        && let Some(path) =
+            ports::agent_program::path_for(binary, std::env::var_os("PATH").as_deref())
+    {
+        cmd.env("PATH", path);
+    }
     cmd.kill_on_drop(true)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -321,4 +334,34 @@ pub(crate) fn no_token_in_arguments(
         ));
     }
     Ok(())
+}
+
+#[cfg(all(test, unix))]
+mod locate_tests {
+    use super::*;
+
+    /// An agent found outside the service's PATH (say npm's under nvm, a
+    /// script that starts `node` from PATH) starts with its folder on PATH;
+    /// one on PATH starts with PATH as it is.
+    #[test]
+    fn an_agent_found_off_path_starts_with_its_folder_on_path() {
+        let path = |cmd: &Command| {
+            cmd.as_std()
+                .get_envs()
+                .find(|(k, _)| *k == "PATH")
+                .and_then(|(_, v)| v.map(std::ffi::OsStr::to_owned))
+        };
+        let folder = std::env::temp_dir().join(format!("ophio-locate-{}", std::process::id()));
+        let added = path(&command(&folder.join("agent"))).expect("PATH set");
+        assert_eq!(
+            std::env::split_paths(&added).last().as_deref(),
+            Some(folder.as_path())
+        );
+        if let Some(first) = std::env::var_os("PATH")
+            .as_deref()
+            .and_then(|p| std::env::split_paths(p).next())
+        {
+            assert_eq!(path(&command(&first.join("agent"))), None);
+        }
+    }
 }

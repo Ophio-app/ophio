@@ -9,7 +9,7 @@ unsafe_code = "deny"
 
 [package]
 name = "phone-shell"
-version = "0.1.0"
+version = "0.1.1"
 description = "Android client native shell"
 edition = "2024"
 rust-version = "1.92"

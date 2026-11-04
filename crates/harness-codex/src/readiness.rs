@@ -57,27 +57,38 @@ fn version_number(text: &str) -> Option<(u64, u64, u64)> {
 }
 pub(crate) fn candidates() -> Vec<PathBuf> {
     let executable = if cfg!(windows) { "codex.exe" } else { "codex" };
-    let mut paths = std::env::var_os("PATH")
-        .map(|p| {
-            std::env::split_paths(&p)
-                .map(|p| p.join(executable))
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-    for root in [std::env::var_os("HOME"), std::env::var_os("USERPROFILE")]
-        .into_iter()
-        .flatten()
-    {
-        for suffix in [
-            ".local/bin",
-            ".cargo/bin",
-            ".local/opt/codex",
-            "AppData/Local/Programs",
-            "AppData/Roaming/npm",
-        ] {
-            paths.push(PathBuf::from(&root).join(suffix).join(executable));
+    // Where tasks look (see `ports::agent_program`), and where Codex's
+    // older installs kept it.
+    #[cfg(not(windows))]
+    let folders = {
+        let home = std::env::var_os("HOME").map(PathBuf::from);
+        let mut folders =
+            ports::agent_program::folders(std::env::var_os("PATH").as_deref(), home.as_deref());
+        folders.extend(home.map(|home| home.join(".local/opt/codex")));
+        folders
+    };
+    #[cfg(windows)]
+    let folders = {
+        let mut folders: Vec<PathBuf> = std::env::var_os("PATH")
+            .map(|p| std::env::split_paths(&p).collect())
+            .unwrap_or_default();
+        for root in [std::env::var_os("HOME"), std::env::var_os("USERPROFILE")]
+            .into_iter()
+            .flatten()
+        {
+            for suffix in [
+                ".local/bin",
+                ".cargo/bin",
+                ".local/opt/codex",
+                "AppData/Local/Programs",
+                "AppData/Roaming/npm",
+            ] {
+                folders.push(PathBuf::from(&root).join(suffix));
+            }
         }
-    }
+        folders
+    };
+    let paths = folders.into_iter().map(|folder| folder.join(executable));
     let mut unique = Vec::new();
     let mut canonical = Vec::new();
     for path in paths {

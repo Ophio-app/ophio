@@ -259,7 +259,10 @@ impl Actor {
                     .filter(|c| !c.is_control())
                     .take(1000)
                     .collect();
-                if !message.is_empty() && self.unknown.insert(format!("warning {message}")) {
+                if !message.is_empty()
+                    && !crate::modes::is_own_feature_warning(&message)
+                    && self.unknown.insert(format!("warning {message}"))
+                {
                     self.emit(HarnessEvent::Warning {
                         text: plain_warning(&message),
                     })?;
@@ -297,7 +300,9 @@ impl Actor {
             | "hook/started"
             | "hook/completed"
             | "mcpServer/startupStatus/updated"
-            | "account/updated" => {}
+            | "account/updated"
+            | "thread/readState/changed"
+            | "turn/moderationMetadata" => {}
             // A running step's output as it streams, such as a command's
             // (`item/commandExecution/outputDelta`, from Codex 0.16x). The
             // step's finished item carries all of it.

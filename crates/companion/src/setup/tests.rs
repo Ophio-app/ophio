@@ -5,7 +5,7 @@ use super::{
     Finished, Outcome, Pick, Progress, Start, Step,
     flow::{
         self, APP_DOWNLOAD_URL, Answer, Answered, Ask, Asked, Block, Choice, Ending, Host, Mark,
-        Network, Run, Screen, Service, Survey, Tailscale, TaskView, Tick, Ui,
+        Network, Ran, Run, Screen, Service, Survey, Tailscale, TaskView, Tick, Ui,
     },
     host::{self as real, expand_home, grant_changes, telling},
     plain::{Input, Lines, Plain},
@@ -98,6 +98,8 @@ struct Fake {
     granted: Vec<Grants>,
     /// Whether each program run ends well; well when none are left.
     runs: VecDeque<bool>,
+    /// What each program run printed last; nothing when none are left.
+    printed: VecDeque<&'static str>,
     reports: Script<ReadinessReport>,
     /// Calls that fail, once each.
     fail: Vec<&'static str>,
@@ -138,6 +140,7 @@ impl Default for Fake {
                 codex: false,
                 tailscale: true,
                 npm: true,
+                curl: true,
             },
             service: Service {
                 running: true,
@@ -162,6 +165,7 @@ impl Default for Fake {
             devices: Script::of([Vec::new()]),
             granted: Vec::new(),
             runs: VecDeque::new(),
+            printed: VecDeque::new(),
             reports: Script::of([report(&[
                 ("Tailscale", CheckStatus::Passed),
                 ("Terminal", CheckStatus::Passed),
@@ -333,13 +337,16 @@ impl Host for Fake {
             _ => Ok(folder.into()),
         }
     }
-    async fn run(&mut self, run: &Run) -> Result<bool> {
+    async fn run(&mut self, run: &Run) -> Result<Ran> {
         let shown = match run {
             Run::Ophio(args) => format!("ophio {}", args.join(" ")),
             Run::Program { shown, .. } => shown.clone(),
         };
         self.act(format!("run {shown}"))?;
-        Ok(self.runs.pop_front().unwrap_or(true))
+        Ok(Ran {
+            success: self.runs.pop_front().unwrap_or(true),
+            output: self.printed.pop_front().unwrap_or_default().into(),
+        })
     }
     async fn readiness(&mut self) -> Result<ReadinessReport> {
         self.look("readiness")?;
@@ -1064,6 +1071,8 @@ async fn an_agent_is_installed_and_signed_in() {
     let mut host = Fake {
         agents: Script::of([
             vec![agent(claude, None), agent(HarnessKind::Codex, None)],
+            // Looked for again once its installer ends.
+            vec![agent(claude, Some(signed_out()))],
             vec![agent(claude, Some(signed_out()))],
             vec![agent(claude, Some(signed_in()))],
         ]),
@@ -1106,6 +1115,7 @@ async fn an_agent_is_installed_and_signed_in() {
     assert!(!next.recommended);
     assert!(words(first).contains("Install Codex"));
     assert!(ui.saw("Claude Code: Installed"));
+    assert!(!ui.saw("chats kept to a project"));
     assert!(ui.saw("Sign in on claude.ai in this computer's browser."));
     assert!(ui.saw("Enter ABCD-1234 on claude.ai"));
     assert!(ui.saw("Signed in as me@example.com"));
@@ -1159,6 +1169,204 @@ async fn an_installer_that_fails_is_said_to() {
         Some(&Outcome::Later)
     );
     assert_eq!(host.progress().agent, None);
+}
+
+/// An installer that ends well but leaves nothing tasks can find (stock
+/// Ubuntu without curl once handed bash an empty script) isn't "Installed".
+#[tokio::test]
+async fn an_installer_that_succeeds_without_installing_is_not_believed() {
+    let mut host = Fake {
+        agents: Script::of([vec![agent(HarnessKind::ClaudeCode, None)]]),
+        printed: VecDeque::from(["Setting up…\n"]),
+        ..Fake::default()
+    };
+    let answers = vec![
+        c("start"),
+        c("install-claude"),
+        c("run"),
+        c("next"),
+        c("next"),
+        Answer::Quit,
+    ];
+    let (_, ui) = go(&mut host, at(Step::Agent), answers).await;
+    assert!(!ui.saw("Claude Code: Installed"));
+    assert!(ui.saw("The installer finished, but Øphio can't find it"));
+    assert!(ui.saw("~/.local/bin"));
+    assert!(ui.saw("log out of this computer and back in"));
+    assert!(ui.saw("It said: Setting up…"));
+}
+
+#[tokio::test]
+async fn an_installer_s_failure_is_explained_on_the_setup_screen() {
+    let npm = "npm ERR! code EACCES\nnpm ERR! syscall mkdir\nnpm ERR! path /usr/local/lib/node_modules\nnpm ERR! Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules'\n";
+    let mut host = Fake {
+        agents: Script::of([vec![agent(HarnessKind::Codex, None)]]),
+        runs: VecDeque::from([false, false]),
+        printed: VecDeque::from([npm, "curl: (6) Could not resolve host: claude.ai\n"]),
+        ..Fake::default()
+    };
+    let answers = vec![
+        c("start"),
+        c("install-codex"),
+        c("run"),
+        c("next"),
+        c("install-claude"),
+        c("run"),
+        c("next"),
+        c("next"),
+        Answer::Quit,
+    ];
+    let (_, ui) = go(&mut host, at(Step::Agent), answers).await;
+    assert!(ui.saw("Codex: The installer stopped before it finished"));
+    assert!(ui.saw("It said EACCES, which means permission denied."));
+    assert!(ui.saw("Don't run npm with sudo."));
+    assert!(ui.saw("https://github.com/openai/codex"));
+    assert!(ui.saw("resolving-eacces-permissions-errors"));
+    assert!(ui.saw("Claude Code: The installer stopped before it finished"));
+    assert!(ui.saw("Check that this computer is connected to the internet"));
+    assert!(ui.saw("It said: curl: (6) Could not resolve host: claude.ai"));
+    assert!(ui.saw("curl -fsSL https://claude.ai/install.sh | bash"));
+}
+
+/// Codex installed with npm runs tasks; a chat kept to a project, in a
+/// sandbox without the home folder, may not reach it, and setup says so
+/// rather than promising more.
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn codex_installed_with_npm_is_not_promised_to_limited_chats() {
+    let codex = HarnessKind::Codex;
+    let mut host = Fake {
+        agents: Script::of([
+            vec![agent(HarnessKind::ClaudeCode, None), agent(codex, None)],
+            vec![agent(codex, Some(signed_out()))],
+        ]),
+        ..Fake::default()
+    };
+    let answers = vec![
+        c("start"),
+        c("install-codex"),
+        c("run"),
+        c("next"),
+        c("next"),
+        Answer::Quit,
+    ];
+    let (_, ui) = go(&mut host, at(Step::Agent), answers).await;
+    assert!(ui.saw("Codex: Installed"));
+    assert!(ui.saw("chats kept to a project can't start it"));
+    assert!(ui.saw("install Codex with its own installer, which puts it in ~/.local/bin"));
+}
+
+#[cfg(not(windows))]
+#[tokio::test]
+async fn claude_code_without_curl_says_how_to_get_it() {
+    let mut host = Fake {
+        agents: Script::of([vec![agent(HarnessKind::ClaudeCode, None)]]),
+        survey: Survey {
+            curl: false,
+            ..Fake::default().survey
+        },
+        ..Fake::default()
+    };
+    let answers = vec![
+        c("start"),
+        c("install-claude"),
+        c("check"),
+        c("next"),
+        Answer::Quit,
+    ];
+    let (_, ui) = go(&mut host, at(Step::Agent), answers).await;
+    assert!(host.calls.is_empty(), "nothing ran: {:?}", host.calls);
+    assert!(ui.lent.is_empty());
+    assert!(ui.saw("downloads with curl, and this computer doesn't have it"));
+    assert!(ui.saw("sudo apt install curl"));
+}
+
+/// The real installer's pipeline fails when its download does, and what it
+/// printed comes back to setup without colours.
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn a_failed_download_fails_the_installer_and_its_words_are_kept() {
+    let root = tempfile::tempdir().unwrap();
+    let mut real = real::Real::new(paths(root.path(), "run")).unwrap();
+    let installer = |script: &str| Run::Program {
+        program: "bash".into(),
+        args: vec!["-c".into(), script.into()],
+        shown: script.into(),
+    };
+    let Run::Program { args, .. } = flow::claude_installer() else {
+        unreachable!()
+    };
+    assert!(args[1].starts_with("set -o pipefail; "), "{args:?}");
+    // Its download failing, as curl missing or offline does: bash is given
+    // nothing to run, and on its own would "succeed".
+    let download = "printf '\\033[31mno download\\033[0m\\n' >&2; exit 6";
+    let ran = real
+        .run(&installer(&format!(
+            "set -o pipefail; {{ {download}; }} | bash"
+        )))
+        .await
+        .unwrap();
+    assert!(!ran.success);
+    assert_eq!(ran.output, "no download\n");
+    let without = real
+        .run(&installer(&format!("{{ {download}; }} | bash")))
+        .await
+        .unwrap();
+    assert!(without.success, "why pipefail is needed");
+}
+
+#[test]
+fn a_check_s_remedy_is_a_sentence_of_its_own() {
+    let joined = flow::with_remedy;
+    assert_eq!(
+        joined(
+            "Claude Code is signed out",
+            "Run claude auth login on the computer"
+        ),
+        "Claude Code is signed out. Run claude auth login on the computer."
+    );
+    assert_eq!(
+        joined(
+            "You can’t reach agents from Telegram",
+            "ophio channels enable telegram"
+        ),
+        "You can’t reach agents from Telegram. Run ophio channels enable telegram."
+    );
+    assert_eq!(
+        joined("It stopped.", "Check the network, then restart it."),
+        "It stopped. Check the network, then restart it."
+    );
+    assert_eq!(
+        joined("", "ophio desktop enable"),
+        "Run ophio desktop enable."
+    );
+    // Only Øphio's own commands are said as ones to run.
+    assert_eq!(
+        joined(
+            "Desktop sharing is off",
+            "configuration error: approve screen sharing in the desktop portal dialog"
+        ),
+        "Desktop sharing is off. configuration error: approve screen sharing in the desktop portal dialog."
+    );
+    assert_eq!(
+        joined("Not ready", "ophioish thing"),
+        "Not ready. ophioish thing."
+    );
+}
+
+#[test]
+fn printed_text_is_kept_as_it_was_seen() {
+    assert_eq!(
+        real::plain("\x1b[1;32m✔\x1b[0m done\r\nfetching 10%\rfetching 100%\nend"),
+        "✔ done\nfetching 100%\nend"
+    );
+    // A character set reset (tput sgr0 prints ESC ( B) and a link.
+    assert_eq!(
+        real::plain(
+            "\x1b(B\x1b[mok\x1b(B \x1b]8;;https://example.com/guide\x1b\\the guide\x1b]8;;\x1b\\ and \x1b]8;;https://example.com\x07more\x1b]8;;\x07"
+        ),
+        "ok the guide and more"
+    );
 }
 
 #[tokio::test]
@@ -2200,6 +2408,27 @@ async fn an_extra_that_fails_can_be_tried_again() {
     );
     assert!(ui.saw("That didn't finish; its output says why."));
     assert!(host.progress().left.is_empty());
+}
+
+/// GNOME's sharing dialog comes up as desktop sharing is turned on; setup
+/// says so first, and what its remote-interaction switch is for.
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn turning_on_desktop_sharing_warns_of_gnome_s_dialog() {
+    let mut host = Fake::default();
+    let answers = vec![
+        c("start"),
+        Answer::Ticks(vec!["desktop"]),
+        c("run"),
+        c("next"),
+        Answer::Quit,
+    ];
+    let (_, ui) = go(&mut host, at(Step::Options), answers).await;
+    assert_eq!(host.calls, ["run ophio desktop enable"]);
+    assert!(ui.saw("a Remote Desktop window opens next and asks to share this screen"));
+    assert!(ui.saw(
+        "Turn on Allow Remote Interaction in it only if you want your phone to control this desktop"
+    ));
 }
 
 #[tokio::test]
