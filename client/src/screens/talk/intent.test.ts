@@ -318,8 +318,8 @@ describe("settled approvals", () => {
 
   it("names the reported outcome, and a mismatch with what was sent", () => {
     const ok = { ...base, state: "denied" as const, outcome: "denied" as const, resolved_by: null };
-    expect(settledText(ok, me)).toEqual({ title: "Denied", meta: "Denied" });
+    expect(settledText(ok, me)).toEqual({ title: "Declined", meta: "Declined" });
     const odd = { ...base, state: "allowed" as const, outcome: "denied" as const, resolved_by: null };
-    expect(settledText(odd, me)).toEqual({ title: "Denied", meta: "Allowed, but the agent reported it denied" });
+    expect(settledText(odd, me)).toEqual({ title: "Declined", meta: "Allowed, but the agent reported it declined" });
   });
 });

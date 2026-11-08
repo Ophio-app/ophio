@@ -2,6 +2,7 @@
 //! Small native ownership primitives shared by the Windows adapters.
 pub(crate) mod background;
 pub(crate) mod dpapi;
+pub(crate) mod environment;
 pub(crate) mod fs;
 pub(crate) mod open_url;
 pub(crate) mod pipe;

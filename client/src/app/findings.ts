@@ -46,6 +46,11 @@ const ONLY_CONFIRMED = 'Fix only findings whose last "Verdict:" line says confir
 
 const ASK_TO_DELETE = "ask me whether to delete FINDINGS.md, and delete it only if I say yes.";
 
+/** How a fixer answers a finding: the least that fixes it, shown to work. */
+const FIX = "Check it is real, then fix it with the smallest change that does, and add nothing else because of it: no tidying, renaming or extra features.";
+
+const PROVE = "Prove each fix: run the check or test that showed the problem and see it pass now, and add one test that fails without the fix, or say under the finding why it can't be tested that way. If the fix changes what a screen shows, run the app, take a picture of the screen and show it to me.";
+
 /**
  * What a reviewer is asked: to review and write what it finds in
  * FINDINGS.md, changing nothing else. `checked` is a computer that has a
@@ -70,7 +75,8 @@ export function reviewPrompt(r: { focus: FindFocus | null; where: FindWhere; mos
  */
 export function fixAllPrompt(r: { checked?: boolean } = {}): string {
   return [
-    "Work through FINDINGS.md at the project's root, one unticked finding at a time, in order. For each, check it is real, fix it, and test the fix the way this project tests things.",
+    `Work through FINDINGS.md at the project's root, one unticked finding at a time, in order. For each: ${FIX[0]!.toLowerCase()}${FIX.slice(1)}`,
+    PROVE,
     r.checked ? ONLY_CONFIRMED : SKIP_SET_ASIDE,
     TICKING,
     KEEP_OUT,
@@ -82,7 +88,8 @@ export function fixAllPrompt(r: { checked?: boolean } = {}): string {
 /** What a fixer is asked to do with one finding. */
 export function fixOnePrompt(f: Pick<Finding, "number" | "title">): string {
   return [
-    `Fix finding ${f.number} in FINDINGS.md at the project's root, "${f.title}". Check it is real, fix it, and test the fix the way this project tests things.`,
+    `Fix finding ${f.number} in FINDINGS.md at the project's root, "${f.title}". ${FIX}`,
+    PROVE,
     "If it has a \"Verdict:\" line, a second agent checked it: read what it says. I chose this finding myself, so fix it even if that agent set it aside, unless you find it isn't real.",
     TICKING,
     KEEP_OUT,

@@ -178,6 +178,8 @@ function host() {
   } as unknown as typeof emptyHostState;
 }
 it("notifies only new eligible hidden attention with minimal/default or task-title detail", () => {
+  // A finished task stays quiet by default; this device is set to alert for it.
+  localStorage.setItem("alert-tiers", JSON.stringify({ finished: "alert" }));
   const state = new Store(host()),
     notify = vi.fn();
   const stop = watchAttention(

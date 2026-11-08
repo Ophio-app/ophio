@@ -31,6 +31,12 @@ manage_url: string | null, needs: AccountNeed | null,
  */
 browser_sign_in: boolean, 
 /**
+ * Sign in can instead be finished in the phone's own browser, with
+ * `SignIn { on_phone: true }`: Claude Code and Codex. Older computers
+ * send none.
+ */
+phone_sign_in?: boolean, 
+/**
  * Signed in, but short of something Ophio asks for, and what to do:
  * GitHub without permission to change Actions workflows, for one.
  * Older computers send none.

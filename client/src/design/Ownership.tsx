@@ -35,6 +35,18 @@ export function ownership(view: TargetControlView | undefined, myDeviceId: strin
     case "revoking":
       return { state, icon: Hourglass, tone: "warn", title: "Stopping input", detail: "Requested; the computer has not confirmed yet" };
     case "paused":
+      // A person's control that ended stays paused under its lease, whether
+      // it was stopped at the computer, left from a device or timed out.
+      if (lease?.owner.kind === "human") {
+        const mine = lease.owner.device_id === myDeviceId;
+        return {
+          state, icon: Pause, tone: "warn",
+          title: mine ? "Your control ended" : "Control ended",
+          detail: lease.state === "expired"
+            ? "It timed out. Take over to control the screen again."
+            : "It was stopped at the computer or from a device. Take over to control the screen again.",
+        };
+      }
       return { state, icon: Pause, tone: "warn", title: "Agent paused", detail: "It can’t use the screen until you resume it." };
     case "unavailable":
       return { state, icon: Ban, tone: "neutral", title: "Input unavailable", detail: "This screen can be watched but not controlled" };

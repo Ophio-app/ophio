@@ -130,15 +130,29 @@ impl CompanionHub {
         task_id: TaskId,
         command: CommandId,
     ) -> Result<(), ProtocolError> {
+        self.apply_access(task_id, command, None).await.map(|_| ())
+    }
+
+    /// Applies `task_id`'s access to its running turn: within the turn when
+    /// its sandbox can change as it runs, otherwise by ending the turn and
+    /// carrying on in a fresh one of the same session. `allowed`: the
+    /// access request the person allowed, and what the fresh turn tells the
+    /// agent; it is settled as allowed before that turn ends.
+    pub(crate) async fn apply_access(
+        &self,
+        task_id: TaskId,
+        command: CommandId,
+        allowed: Option<(&crate::api::Caller, ApprovalId, String)>,
+    ) -> Result<AccessApplied, ProtocolError> {
         let lock = self.access_lock(task_id);
         let guard = lock.lock().await;
         let task: Task = self.read(|r| r.require("task", task_id))?;
         let Some(run_id) = task.current_run else {
-            return Ok(());
+            return Ok(AccessApplied::Live);
         };
         let control = self.inner.runs.lock().await.get(&run_id).cloned();
         let Some(control) = control else {
-            return Ok(());
+            return Ok(AccessApplied::Live);
         };
         let sandbox = self
             .inner
@@ -165,11 +179,21 @@ impl CompanionHub {
             None => Applied::NeedsRestart("The conversation now needs a sandbox.".into()),
         };
         let Applied::NeedsRestart(reason) = result else {
-            return Ok(());
+            return Ok(AccessApplied::Live);
         };
         // Terminate, not SIGSTOP or a native interrupt: open file descriptors
         // must close before the smaller grant can be considered enforced.
-        self.write(|tx| tx.put("stopped", run_id, &true))?;
+        self.write(|tx| {
+            if let Some((caller, id, _)) = &allowed {
+                crate::switch_work::settle_allowed(
+                    tx,
+                    *id,
+                    caller.principal,
+                    self.inner.clock.now(),
+                )?;
+            }
+            tx.put("stopped", run_id, &true)
+        })?;
         control
             .terminate()
             .await
@@ -186,13 +210,20 @@ impl CompanionHub {
                 "Waiting for the previous sandbox to end",
             )
         })?;
+        if let Some((_, id, _)) = &allowed {
+            // The turn that waited on it has ended; nothing answers it there.
+            self.inner.waits.lock().await.remove(id);
+        }
         let previous: Run = self.read(|r| r.require("run", run_id))?;
         if previous.state == RunState::Completed {
-            return Ok(());
+            return Ok(AccessApplied::Restarted);
         }
         tracing::debug!(%reason, "conversation access needs a new turn");
         // The turn hears the new access ahead of this (see [`note`]).
-        let text = "Ophio stopped your previous turn to apply this. Commands you started in it have ended: check what finished before starting any again, then carry on with the same request.".to_owned();
+        let text = match allowed {
+            Some((_, _, text)) => text,
+            None => "Ophio stopped your previous turn to apply this. Commands you started in it have ended: check what finished before starting any again, then carry on with the same request.".to_owned(),
+        };
         let next = self.write(|tx| {
             let mut task: Task = tx.read().require("task", task_id)?;
             if task.current_run != Some(run_id) { return Ok(None); }
@@ -211,7 +242,7 @@ impl CompanionHub {
         if let Some(next) = next {
             self.dispatch_task(task_id, next).await?;
         }
-        Ok(())
+        Ok(AccessApplied::Restarted)
     }
 
     /// What a conversation's turn tells its agent about its access, put
@@ -316,6 +347,15 @@ impl CompanionHub {
     }
 }
 
+/// How a change of access reached a running turn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AccessApplied {
+    /// Within the turn, or there was no turn to change.
+    Live,
+    /// The turn ended, and a fresh one of the same session carries on.
+    Restarted,
+}
+
 /// The access a conversation's agent was last told, by task: what its
 /// native session has heard.
 pub(crate) const TOLD: &str = "access_told";
@@ -366,7 +406,7 @@ fn note(
         )),
         None if now.unrestricted() => None,
         None => Some(format!(
-            "Ophio holds this {what} to what the person allows in its access bar, and the computer enforces it. {reaches} They can change it at any time, even during your turn; your next turn starts with what changed. Something refused, like a \"Read-only file system\" error, a folder that looks empty or a 403 from the proxy, is their choice, not a fault: don't work around it with another path, tool or copy. Say what you need and why, finish what you can, then end your turn so they can allow it from their phone."
+            "Ophio holds this {what} to what the person allows in its access bar, and the computer enforces it. {reaches} They can change it at any time, even during your turn; your next turn starts with what changed. Something refused, like a \"Read-only file system\" error, a folder that looks empty or a 403 from the proxy, is their choice, not a fault: don't work around it with another path, tool or copy. Ask for what you need with request_access, saying why: they allow it from their phone in one tap. If they decline, finish what you can, then say what's left."
         )),
     }
 }

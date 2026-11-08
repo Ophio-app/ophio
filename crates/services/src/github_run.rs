@@ -542,6 +542,7 @@ impl CompanionHub {
                     let link = GithubLink::Issue {
                         number: item.number,
                         review_with: settings.workflow.review_with.clone(),
+                        when_green: None,
                     };
                     let mut envelope = CommandEnvelope::new(create(
                         project_id,

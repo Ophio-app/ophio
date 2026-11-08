@@ -1,14 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// The computers this device is paired with: switch between them, rename them
-// here, pair another. Two pairings can carry one name (a reinstalled
+// The computers this device is paired with: switch between them, rename them,
+// pair another. A computer that keeps its own name takes the new one, so
+// every phone and tablet paired with it shows it; an older one is renamed on
+// this device alone. Two pairings can carry one name (a reinstalled
 // computer, an old pairing at another port); then each shows what tells
 // them apart: the fingerprint `pair` printed, its address and when this
 // device last reached it.
 
 import { useId, useMemo, useState } from "react";
-import { useApp, useHost, useLink } from "../../app/context";
-import type { HostProfile } from "../../host/link";
+import { Pencil } from "lucide-react";
+import { useApp } from "../../app/context";
+import { COMPUTER_NAME_MAX, renameHint, renameWay, sharedNames } from "../../app/computerName";
+import { useComputerEntries, useComputerFreshness, type ComputerEntry } from "../../app/fleet";
+import { emptyHostState } from "../../state/projection";
+import { Store, useStore } from "../../state/store";
+import type { LinkState } from "../../host/link";
+import { later, useHeardInBackground } from "../../app/lastHeard";
 import { Age } from "../../design/Age";
 import { Button } from "../../design/Button";
 import { TextField } from "../../design/Field";
@@ -19,25 +27,19 @@ import { Sheet } from "../../design/Sheet";
 import { cachedState } from "../../platform/offline";
 import { fingerprintWords } from "../../protocol/pairing";
 
+/** The longest name this device keeps for a computer. */
 const NAME_MAX = 64;
 
-const key = (name: string) => name.trim().toLocaleLowerCase();
-
-/** Profiles whose name another paired computer also has. */
-export function sharedNames(profiles: readonly HostProfile[]): Set<string> {
-  const seen = new Map<string, number>();
-  for (const p of profiles) seen.set(key(p.name), (seen.get(key(p.name)) ?? 0) + 1);
-  return new Set(profiles.filter((p) => (seen.get(key(p.name)) ?? 0) > 1).map((p) => p.profileId));
-}
+export { sharedNames };
 
 export function PairedComputers() {
   const app = useApp();
-  const { profile, profiles } = app;
-  const online = useLink().state === "online";
-  const lastHeard = useHost((s) => s.lastHeardAt);
-  const [renaming, setRenaming] = useState<HostProfile | null>(null);
+  const entries = useComputerEntries();
+  const profiles = useMemo(() => entries.map((e) => e.profile), [entries]);
+  const [renaming, setRenaming] = useState<ComputerEntry | null>(null);
   const shared = useMemo(() => sharedNames(profiles), [profiles]);
-  // Other computers are only known from what this device kept after its last visit.
+  const heard = useHeardInBackground(shared.size > 0);
+  // A computer let go of while the app was away is known from what this device kept.
   const reached = useMemo(
     () => new Map(profiles.filter((p) => shared.has(p.profileId)).map((p) => [p.profileId, cachedState(p)?.lastHeardAt ?? null])),
     [profiles, shared],
@@ -45,37 +47,41 @@ export function PairedComputers() {
   return (
     <Section title="Paired computers">
       <div className="settings-stack">
-        {profiles.map((computer) => {
-          const current = computer.profileId === profile.profileId;
-          return (
-            <Computer
-              key={computer.profileId}
-              computer={computer}
-              current={current}
-              online={online}
-              lastReached={current ? lastHeard ?? reached.get(computer.profileId) ?? null : reached.get(computer.profileId) ?? null}
-              distinguish={shared.has(computer.profileId)}
-              onSwitch={() => app.switchTo(computer.profileId)}
-              onRename={() => setRenaming(computer)}
-            />
-          );
-        })}
+        {entries.map((entry) => (
+          <Computer
+            key={entry.profile.profileId}
+            entry={entry}
+            lastReached={reached.get(entry.profile.profileId)}
+            heard={heard?.[entry.profile.profileId]}
+            distinguish={shared.has(entry.profile.profileId)}
+            onSwitch={() => app.switchTo(entry.profile.profileId)}
+            onRename={() => setRenaming(entry)}
+          />
+        ))}
         <Button onClick={app.pairAnother}>Pair another computer</Button>
       </div>
-      {renaming && <Rename computer={renaming} onClose={() => setRenaming(null)} />}
+      {renaming && <Rename entry={entries.find((e) => e.profile.profileId === renaming.profile.profileId) ?? renaming} onClose={() => setRenaming(null)} />}
     </Section>
   );
 }
 
-function Computer({ computer, current, online, lastReached, distinguish, onSwitch, onRename }: {
-  computer: HostProfile; current: boolean; online: boolean; lastReached: number | null; distinguish: boolean;
+const IDLE = new Store<LinkState>({ state: "idle" });
+const EMPTY = new Store(emptyHostState);
+
+function Computer({ entry, lastReached, heard, distinguish, onSwitch, onRename }: {
+  entry: ComputerEntry; lastReached: number | null | undefined; heard: number | undefined; distinguish: boolean;
   onSwitch(): void; onRename(): void;
 }) {
   const facts = useId();
+  const { profile: computer, current } = entry;
+  const f = useComputerFreshness(entry);
+  const own = useStore(entry.session?.state ?? EMPTY, (s) => s.lastHeardAt);
+  const reached = later(own ?? lastReached, heard);
+  const live = f.live;
   return (
     <div className="settings-card settings-stack">
       <h3>{computer.name}</h3>
-      {current && <p className="settings-meta">Current computer · {online ? "Connected" : "Disconnected"}</p>}
+      <p className="settings-meta">{current ? "Current computer · " : ""}{live ? "Connected" : f.label}</p>
       {distinguish && (
         <dl className="settings-facts" id={facts}>
           <div>
@@ -89,7 +95,7 @@ function Computer({ computer, current, online, lastReached, distinguish, onSwitc
           <div>
             <dt>Last reached</dt>
             <dd>
-              {current && online ? "Now" : lastReached ? <Age at={lastReached} suffix=" ago" /> : "Not recorded on this device"}
+              {live ? "Now" : reached ? <Age at={reached} suffix=" ago" /> : "Not recorded on this device"}
             </dd>
           </div>
         </dl>
@@ -100,7 +106,7 @@ function Computer({ computer, current, online, lastReached, distinguish, onSwitc
             Switch to {computer.name}
           </Button>
         )}
-        <Button onClick={onRename} aria-describedby={distinguish ? facts : undefined}>
+        <Button icon={Pencil} onClick={onRename} aria-describedby={distinguish ? facts : undefined}>
           Rename {computer.name}
         </Button>
       </div>
@@ -108,16 +114,25 @@ function Computer({ computer, current, online, lastReached, distinguish, onSwitc
   );
 }
 
-function Rename({ computer, onClose }: { computer: HostProfile; onClose(): void }) {
+function Rename({ entry, onClose }: { entry: ComputerEntry; onClose(): void }) {
   const app = useApp();
+  const computer = entry.profile;
+  const state = useStore(entry.session?.state ?? EMPTY, (s) => s);
+  const link = useStore(entry.session?.link ?? IDLE, (l) => l);
+  const way = entry.session ? renameWay(state, link) : "phone";
   const [name, setName] = useState(computer.name);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const trimmed = name.trim();
+  const max = way === "phone" ? NAME_MAX : COMPUTER_NAME_MAX;
   const save = async () => {
+    // The computer's name changes here at once; if it refuses, it goes back
+    // and a message says why.
+    if (way === "computer") { void app.rename(computer.profileId, trimmed); onClose(); return; }
     setPending(true);
     setError(null);
     try {
-      await app.rename(computer.profileId, name.trim());
+      await app.rename(computer.profileId, trimmed);
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : "This device couldn’t save the name. Try again.");
@@ -131,7 +146,7 @@ function Rename({ computer, onClose }: { computer: HostProfile; onClose(): void 
       title={`Rename ${computer.name}`}
       onClose={() => { if (!pending) onClose(); }}
       footer={
-        <Button variant="primary" pending={pending} disabled={!name.trim() || name.trim() === computer.name} onClick={() => void save()}>
+        <Button variant="primary" pending={pending} disabled={way === "wait" || !trimmed || trimmed === computer.name || [...trimmed].length > max} onClick={() => void save()}>
           Save name
         </Button>
       }
@@ -140,9 +155,10 @@ function Rename({ computer, onClose }: { computer: HostProfile; onClose(): void 
         label="Computer name"
         value={name}
         onChange={setName}
-        maxLength={NAME_MAX}
+        maxLength={max}
         autoComplete="off"
-        hint={`Only this ${deviceKind()} uses this name. The computer keeps its own.`}
+        disabled={way === "wait"}
+        hint={renameHint(way, computer.name, deviceKind(), state, link)}
       />
       {error && <Notice tone="stop" title="Name not saved">{error}</Notice>}
     </Sheet>

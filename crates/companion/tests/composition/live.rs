@@ -295,6 +295,7 @@ async fn qualify(harness: HarnessKind) {
     let QueryData::Snapshot(snapshot) = phone
         .query(Query::Snapshot {
             reads_withheld: None,
+            account_items: false,
         })
         .await
     else {

@@ -59,7 +59,7 @@ pub(crate) enum Allowance {
 }
 
 /// Whether an agent can be started now, and if not, why not.
-fn ready(h: &HarnessInfo) -> Result<(), String> {
+pub(crate) fn ready(h: &HarnessInfo) -> Result<(), String> {
     let unavailable = |a: &Availability| match a {
         Availability::Available => None,
         Availability::Unsupported { reason } | Availability::TemporarilyUnavailable { reason } => {
@@ -454,6 +454,7 @@ impl CompanionHub {
                 already_fixed: false,
                 approval: None,
                 review: None,
+                when_green: None,
             },
             repo,
             settings,
@@ -681,6 +682,7 @@ impl CompanionHub {
             github: Some(Box::new(GithubLink::Issue {
                 number,
                 review_with,
+                when_green: None,
             })),
             mission: None,
             target_id: None,

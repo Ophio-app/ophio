@@ -20,12 +20,22 @@ pub(crate) struct Bus {
 impl Bus {
     pub(crate) fn start() -> Self {
         let dir = tempfile::tempdir().unwrap();
-        let mut child = Command::new("dbus-daemon")
-            .args(["--session", "--nofork", "--print-address=1"])
-            .arg(format!(
-                "--address=unix:path={}",
+        // A bus of its own, which starts no service: the session bus's
+        // configuration would start the desktop's real at-spi on it.
+        let config = dir.path().join("bus.conf");
+        std::fs::write(
+            &config,
+            format!(
+                "<busconfig><type>session</type><listen>unix:path={}</listen>\
+                 <policy context=\"default\"><allow send_destination=\"*\" eavesdrop=\"true\"/>\
+                 <allow eavesdrop=\"true\"/><allow own=\"*\"/></policy></busconfig>",
                 dir.path().join("bus").display()
-            ))
+            ),
+        )
+        .unwrap();
+        let mut child = Command::new("dbus-daemon")
+            .args(["--nofork", "--print-address=1"])
+            .arg(format!("--config-file={}", config.display()))
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
@@ -60,6 +70,10 @@ impl Drop for Bus {
 pub(crate) enum Seen {
     Dialog,
     Closed(String),
+    /// NotifyPointerAxis: dx, dy and the finish option.
+    Axis(f64, f64, bool),
+    /// NotifyPointerButton: button and state.
+    Button(i32, u32),
 }
 
 /// Serves the portal until the returned connection is dropped.
@@ -153,6 +167,28 @@ impl Remote {
     ) -> OwnedObjectPath {
         let _ = self.0.send(Seen::Dialog);
         handle(&header, "request", &options, "handle_token")
+    }
+    fn notify_pointer_axis(
+        &self,
+        _session: OwnedObjectPath,
+        options: HashMap<String, OwnedValue>,
+        dx: f64,
+        dy: f64,
+    ) {
+        let finish = options
+            .get("finish")
+            .and_then(|v| v.downcast_ref::<bool>().ok())
+            .unwrap_or(false);
+        let _ = self.0.send(Seen::Axis(dx, dy, finish));
+    }
+    fn notify_pointer_button(
+        &self,
+        _session: OwnedObjectPath,
+        _options: HashMap<String, OwnedValue>,
+        button: i32,
+        state: u32,
+    ) {
+        let _ = self.0.send(Seen::Button(button, state));
     }
     #[zbus(property)]
     fn version(&self) -> u32 {

@@ -192,6 +192,32 @@ with “Skip permissions”." It is on each new work card whose mode differs
 from its task's, above **Carry out this plan**, and above Review's own start
 button.
 
+## Requests for approval
+
+A request card opens with the agent's own one-line description, then a line
+the computer works out from the exact request, never from the agent's
+account of it, such as "changes notes.md, makes a git commit, connects to
+nas.local". Deleting, pushing, using administrator rights, installing
+software and running a downloaded script are marked, and where Ophio can't
+follow part of a command the line says so. The buttons sit on the card, and
+it offers only what the computer would accept: **Allow** and **Decline** for
+most requests; **Switch to Work and allow** when a Plan or Ask task asks to
+change something; **Turn into a task** when a chat asks for something only a
+task may do, such as using a saved login or posting on GitHub. After
+**Decline**, the agent is told not to ask again in that turn.
+
+An agent that needs more than it has asks with one card, such as "Claude
+Code needs to change files in ophio and reach your own network". In a chat,
+**Allow** gives the chat that access; in a Plan or Ask task, **Switch to
+Work** switches the task to Work and the same session carries on. **Not
+now** declines.
+
+Every chat and task says in one line whether it is a chat or a task and what
+it may do. Tapping the line opens what changes it: a chat's access bar, or a
+task's mode, with **Switch to Work** in one tap for a Plan or Ask task, even
+while it is working. With an older computer, the card offers Allow and Decline
+only.
+
 ## Projects and unread results
 
 The project switcher shows each project's unread results, and the switcher

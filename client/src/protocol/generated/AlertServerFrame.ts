@@ -3,4 +3,9 @@ import type { Alert } from "./Alert";
 import type { AttentionId } from "./AttentionId";
 import type { Timestamp } from "./Timestamp";
 
-export type AlertServerFrame = { "type": "open", alerts: Array<Alert>, now: Timestamp, gone: Array<AttentionId>, } | { "type": "raised", alert: Alert, } | { "type": "resolved", attention_id: AttentionId, };
+export type AlertServerFrame = { "type": "open", alerts: Array<Alert>, now: Timestamp, gone: Array<AttentionId>, 
+/**
+ * The computer takes [`AlertClientFrame::Handled`]. Older
+ * computers say nothing, and close a connection that sends it.
+ */
+handled?: boolean, } | { "type": "raised", alert: Alert, } | { "type": "resolved", attention_id: AttentionId, } | { "type": "handled", attention_id: AttentionId, };

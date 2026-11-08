@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ReactNode } from "react";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AppProvider, type App } from "../app/context";
 import { UiStore } from "../app/ui";
 import { createSimPlatform } from "../dev/sim/platform";
 import { ids } from "../dev/sim/scenario";
 import { Toasts } from "../design/Toast";
-import { CommandError, HostSession, type PendingCommand } from "../host/session";
+import { HostSession, type PendingCommand } from "../host/session";
 import type { NotificationPermission } from "../host/link";
 import { AlertsOffer, TaskAlerts } from "../shell/AlertsOffer";
 import { RouteProvider } from "../shell/Screen";
 import { Notifications } from "../screens/settings/Notifications";
 import { notificationSettings } from "./notificationSettings";
+import { Store } from "../state/store";
 import { appLock } from "./lock";
 import { notificationAccess, notificationDetail, taskAlertsOffer, TaskAlertsOffer, viewingTask, watchAttention } from "./notifications";
 
@@ -31,6 +32,9 @@ beforeEach(async () => {
   visibility("visible");
   notificationDetail.set("minimal");
   const platform = createSimPlatform();
+  // A finished task stays quiet by default; most of these tests are about how an alert is raised.
+  const device = window.__sim!.device;
+  device.setAlerts({ tiers: { ...device.alerts.tiers, finished: "alert" } });
   const profile = (await platform.profiles())[0];
   if (!profile) throw new Error("Missing fixture profile");
   const session = new HostSession(profile.profileId, platform.control(profile.profileId));
@@ -53,9 +57,15 @@ function miss(id: string) {
   if (!original) throw new Error("Missing attention fixture");
   act(() => app.session.state.set((s) => ({ ...s, attention: { ...s.attention, [id]: { ...original, attention_id: id } } })));
 }
+/** A computer that doesn't know the types, as before: the old permission offer and topic switches hold. */
+function older() {
+  const caps = app.session.state.get().capabilities!;
+  act(() => app.session.state.set((s) => ({ ...s, capabilities: { ...caps, features: caps.features.filter((f) => f !== "alert_types_v1") } })));
+}
 function offer() { render(<><TaskAlerts /><AlertsOffer projectId={ids.pTide} taskId={ids.tHeaders} /></>, { wrapper }); }
 
 it("asks only after an accepted task action, remembers Not now across reload, and keeps profiles separate", async () => {
+  older();
   permission("promptable"); offer(); await advance();
   expect(screen.queryByText(/Get an alert/)).toBeNull();
   command("pending", "sending"); await advance();
@@ -77,7 +87,44 @@ it("asks only after an accepted task action, remembers Not now across reload, an
   expect(other.get()?.taskId).toBe(ids.tHeaders); offOther();
 });
 
+it("after an accepted task action, offers to tell you when the task is done, and the bell goes on the task", async () => {
+  offer(); await advance();
+  expect(screen.queryByText(/Tell you when this/)).toBeNull();
+  command("continue"); await advance();
+  expect(screen.getByText("Tell you when this task is done?")).toBeTruthy();
+  expect(screen.queryByText(/Get an alert/)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Tell me" }));
+  await advance(900);
+  expect(window.__sim!.host.tasks.find((t) => t.task_id === ids.tHeaders)?.notify_done).toBe(true);
+  expect(screen.getByRole("status").textContent).toContain("We’ll tell you when it’s done");
+  expect(screen.queryByText("Tell you when this task is done?")).toBeNull();
+});
+
+it("someone who answered the older Get alerts offer is still offered the bell once", async () => {
+  localStorage.setItem(`task-alerts-offer.${app.profile.profileId}`, "seen");
+  offer(); await advance();
+  command("continue"); await advance();
+  expect(screen.getByText("Tell you when this task is done?")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Not now" }));
+  expect(screen.queryByText("Tell you when this task is done?")).toBeNull();
+  // Once, across a reload; the older offer's answer is kept as it was.
+  const reloaded = new TaskAlertsOffer(app.profile.profileId);
+  const off = reloaded.watch(app.session, notificationAccess(app.platform));
+  command("after-reload"); await advance();
+  expect(reloaded.get()).toBeNull(); off();
+  expect(localStorage.getItem(`task-bell-offer.${app.profile.profileId}`)).toBe("seen");
+  expect(localStorage.getItem(`task-alerts-offer.${app.profile.profileId}`)).toBe("seen");
+});
+
+it("answering the bell offer leaves the older offer for an older computer", async () => {
+  localStorage.setItem(`task-bell-offer.${app.profile.profileId}`, "seen");
+  older(); permission("promptable"); offer(); await advance();
+  command("continue"); await advance();
+  expect(screen.getByText(/Get an alert when this/)).toBeTruthy();
+});
+
 it("Allow alerts calls the foreground request and disappears only on confirmed grant", async () => {
+  older();
   permission("promptable"); offer(); command("start"); await advance();
   fireEvent.click(screen.getByRole("button", { name: "Allow alerts" })); await advance();
   expect(window.__sim?.device.notificationRequests).toBe(1);
@@ -86,12 +133,14 @@ it("Allow alerts calls the foreground request and disappears only on confirmed g
 });
 
 it.each(["granted", "blocked"] as const)("%s does not offer or invoke permission on a task action", async (value) => {
+  older();
   permission(value); offer(); command("start"); await advance();
   expect(screen.queryByText(/Get an alert/)).toBeNull();
   expect(window.__sim?.device.notificationRequests).toBe(0);
 });
 
 it("accepted new task offers in its exact task context, queued work does not", async () => {
+  older();
   permission("promptable"); offer(); await advance();
   const send = (mode: "queue" | "start_now") => {
     const id = mode;
@@ -109,8 +158,8 @@ it("settings displays all three real states and refreshes on foreground return",
   expect(screen.getByText("Alerts are off")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Allow alerts" })).toBeTruthy();
   act(() => visibility("hidden")); permission("blocked"); act(() => visibility("visible")); await advance();
-  expect(screen.getByText("Alerts are blocked in Android settings")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Open Android settings" })); await advance();
+  expect(screen.getByText("Alerts are blocked in the phone’s settings")).toBeTruthy();
+  fireEvent.click(screen.getAllByRole("button", { name: "Open Android settings" })[0]!); await advance();
   expect(window.__sim?.device.notificationSettingsOpened).toBe(1);
   act(() => visibility("hidden")); permission("granted"); act(() => visibility("visible")); await advance();
   expect(screen.getByText("Alerts are on")).toBeTruthy();
@@ -122,7 +171,7 @@ it("denial is not reported as permission granted and query failure stays unknown
   render(<Notifications />, { wrapper }); await advance();
   fireEvent.click(screen.getByRole("button", { name: "Allow alerts" })); await advance();
   expect(screen.queryByText("Alerts are on")).toBeNull();
-  expect(screen.getByText("Alerts are blocked in Android settings")).toBeTruthy();
+  expect(screen.getByText("Alerts are blocked in the phone’s settings")).toBeTruthy();
   vi.spyOn(app.platform, "notificationPermission").mockRejectedValue(new Error("Unavailable"));
   act(() => visibility("visible")); await advance();
   expect(screen.getByText(/couldn’t check whether task alerts/)).toBeTruthy();
@@ -153,6 +202,7 @@ it("respects task-title detail, and reports other delivery failures without blam
 });
 
 it("enabling alerts keeps the missed event visible without claiming alerts are still off", async () => {
+  older();
   permission("promptable"); render(<TaskAlerts />, { wrapper }); await advance();
   act(() => visibility("hidden")); miss("missed"); await advance();
   act(() => visibility("visible")); await advance();
@@ -190,6 +240,7 @@ it("never raises what the computer raised quietly, as part of something that ale
 it("holds back what the computer's settings turn off, and folds a project's alerts into one note that leads to Needs you", async () => {
   const device = window.__sim!.device;
   const profileId = app.profile.profileId;
+  older();
   const settle = async (body: Parameters<HostSession["command"]>[0], expectedRevision: number) => {
     const done = app.session.command(body, { label: "Notifications", expectedRevision });
     await advance(900);
@@ -253,37 +304,28 @@ it("opening a task takes its alerts out of the shade, answered or not, and they 
   offLock();
 });
 
-it("a choice in Settings shows on the tap over a slow link, stays usable, and goes back with a toast when refused", async () => {
-  window.__sim!.latency(1500);
+it("a choice in Settings shows on the tap, and goes back with a toast when Android refuses", async () => {
+  const device = window.__sim!.device;
   render(<><Notifications /><Toasts /></>, { wrapper });
   await advance(3000);
-  const box = (name: string) => screen.getByRole("checkbox", { name }) as HTMLInputElement;
-  expect(box("Questions").checked).toBe(true);
-  fireEvent.click(box("Questions"));
+  const questions = () => within(screen.getByRole("radiogroup", { name: "Questions" }));
+  expect(questions().getByRole("radio", { name: "Alert, recommended" }).getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(questions().getByRole("radio", { name: "Off" }));
   await advance(100);
-  expect(box("Questions").checked).toBe(false);
-  // Usable while the first is on its way; the second goes once it is answered.
-  expect(box("Approvals").disabled).toBe(false);
-  fireEvent.click(box("Approvals"));
-  await advance(100);
-  expect(box("Approvals").checked).toBe(false);
-  await advance(8000);
-  const read = app.session.query({ kind: "notification_settings" });
-  await advance(2000);
-  expect((await read).view).toMatchObject({ off: expect.arrayContaining(["question", "approval"]), revision: 2 });
-  expect(box("Questions").checked).toBe(false);
-  expect(box("Approvals").checked).toBe(false);
+  expect(questions().getByRole("radio", { name: "Off" }).getAttribute("aria-checked")).toBe("true");
+  await advance(3000);
+  expect(device.tierChanges).toContainEqual({ alertType: "question", tier: "off" });
+  expect(questions().getByRole("radio", { name: "Off" }).getAttribute("aria-checked")).toBe("true");
 
-  const refused = vi.spyOn(app.session, "command").mockRejectedValueOnce(new CommandError({ code: "stale_revision", message: "" }, null));
-  fireEvent.click(box("Finished tasks"));
-  expect(box("Finished tasks").checked).toBe(false);
-  await advance();
-  expect(refused).toHaveBeenCalledOnce();
-  expect(box("Finished tasks").checked).toBe(true);
-  expect(screen.getByText("Couldn’t change finished tasks alerts. It changed on the computer. Review the current version first.")).toBeTruthy();
+  device.refuseTier("Android said no.");
+  fireEvent.click(questions().getByRole("radio", { name: "Silent" }));
+  await advance(3000);
+  expect(questions().getByRole("radio", { name: "Off" }).getAttribute("aria-checked")).toBe("true");
+  expect(screen.getByText("Couldn’t change how questions notify you. Android said no.")).toBeTruthy();
 });
 
 it("raises report alerts without a task and respects the Reports topic", async () => {
+  older();
   await advance(200);
   visibility("hidden");
   const sample = app.session.state.get().attention[ids.atReady]!;
@@ -293,4 +335,23 @@ it("raises report alerts without a task and respects the Reports topic", async (
   act(() => notificationSettings(app.session).set({ view: { off: ["reports"], projects: [], bundle: false, revision: 1 }, error: null }));
   raise("quiet-report-alert"); await advance(100);
   expect(window.__sim!.device.notifications.some(n => n.id.endsWith("/quiet-report-alert"))).toBe(false);
+});
+
+it("raises another computer's alerts while the app shows a different one, and stops once it shows that computer", async () => {
+  stop();
+  const shown = new Store(false);
+  stop = watchAttention(app.platform, app.session, app.profile.name, { get: shown.get, subscribe: shown.subscribe });
+  // Unlocked on the screen, as the app is once opened.
+  const offLock = appLock(app.platform).start();
+  await advance();
+  const notify = vi.spyOn(app.platform, "notify");
+  // The app is on screen, but showing another computer: this one's new
+  // item isn't seen there, so it alerts.
+  miss("elsewhere"); await advance();
+  expect(notify.mock.calls.map((c) => c[0].id)).toEqual([`${app.profile.profileId}/elsewhere`]);
+  // Once the screen shows this computer, its new items are seen there.
+  act(() => shown.set(true));
+  miss("here"); await advance();
+  expect(notify).toHaveBeenCalledTimes(1);
+  offLock();
 });

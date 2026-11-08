@@ -17,8 +17,17 @@ import type {
 export const REVIEW_RULES_FEATURE = "review_rules_v1";
 export const useReviewSupported = () => useHost((s) => !!s.capabilities?.features.includes(REVIEW_RULES_FEATURE));
 
+/** The computer gives a change that needs the person's approval more rounds of review. */
+export const REVIEW_ROUNDS_FEATURE = "review_rounds_v2";
+export const useSensitiveRounds = () => useHost((s) => !!s.capabilities?.features.includes(REVIEW_ROUNDS_FEATURE));
+
 /** Rounds of review a pull request gets before it waits for the person. */
 export const MAX_ROUNDS = 3;
+/** Rounds for one that touches something sensitive, such as security or stored data. */
+export const SENSITIVE_ROUNDS = 5;
+/** The rounds a pull request gets, as the computer counts them: more where it needs approval and the computer gives those more. */
+export const maxRounds = (approval: ApprovalNeed | null | undefined, sensitiveRounds = false): number =>
+  sensitiveRounds && approval ? SENSITIVE_ROUNDS : MAX_ROUNDS;
 
 const NUMBERS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 
@@ -141,6 +150,8 @@ export interface ReviewResultInput {
   checks: ChecksCount | null;
   /** Merged, closed or still open. */
   state: PrSummary["state"];
+  /** The computer gives a change needing approval more rounds (`REVIEW_ROUNDS_FEATURE`). */
+  sensitiveRounds?: boolean;
 }
 
 export interface ReviewResult {
@@ -156,6 +167,11 @@ export interface ReviewResult {
   approvalHead: string | null;
   /** A commit newer than the last review is on the pull request and no review of it is under way. */
   unreviewed: boolean;
+  /** Rounds of review used, and the most it gets. */
+  rounds: number;
+  maxRounds: number;
+  /** The review covered the newest commit and left nothing to fix: what the pull request's description says under it too. */
+  clear: boolean;
 }
 
 function groupBy(findings: ReviewFinding[]) {
@@ -233,7 +249,7 @@ function evidenceFact(findings: ReviewFinding[], done: boolean): Fact {
  * commit and checks. Kept apart from any screen so every combination can be
  * read in a test.
  */
-export function reviewResult({ review, approval, head, checks, state }: ReviewResultInput): ReviewResult {
+export function reviewResult({ review, approval, head, checks, state, sensitiveRounds }: ReviewResultInput): ReviewResult {
   const findings = review?.findings ?? [];
   const reviewed = review?.reviewed_head ?? null;
   const reviewing = review?.reviewing_head && review.reviewing_head !== reviewed ? review.reviewing_head : null;
@@ -248,6 +264,9 @@ export function reviewResult({ review, approval, head, checks, state }: ReviewRe
   const corrected = sure.some((f) => f.disposition.state === "corrected");
   const notRun = (review?.not_run ?? []).map((s) => s.trim().replace(/[.]+$/, "")).filter(Boolean);
   const approvalCurrent = !!approval && open && (!head || approval.head === head);
+  const most = maxRounds(approval, sensitiveRounds);
+  const outstanding = sure.some((f) => f.disposition.state === "open" || f.disposition.state === "fixing");
+  const clear = done && rounds > 0 && state !== "closed" && !escalated && !reviewing && !unreviewed && (!head || head === reviewed) && !outstanding && !waiting;
 
   const headline: string[] = [];
   if (!done) {
@@ -275,7 +294,7 @@ export function reviewResult({ review, approval, head, checks, state }: ReviewRe
     : reviewing
       ? { word: "Under way", tone: "accent", text: `Reviewing commit ${shortCommit(reviewing)}${rounds >= 1 ? `, after ${counted(rounds, "round")} so far` : ""}.` }
       : done
-        ? { word: "Done", tone: "ok", text: `Reviewed up to commit ${shortCommit(reviewed!)}. That took ${counted(rounds || 1, "round")} of at most ${numberWord(MAX_ROUNDS)}.${unreviewed ? " Newer commits haven’t been reviewed." : ""}` }
+        ? { word: "Done", tone: "ok", text: `Reviewed up to commit ${shortCommit(reviewed!)}. That took ${counted(rounds || 1, "round")} of at most ${numberWord(most)}.${unreviewed ? " Newer commits haven’t been reviewed." : ""}` }
         : { word: "Not yet", tone: "neutral", text: "No review of it has been recorded." };
 
   const approvalFact: Fact = !open
@@ -295,11 +314,14 @@ export function reviewResult({ review, approval, head, checks, state }: ReviewRe
     needsYou: !open ? null : escalated ? "escalated" : approvalCurrent ? "approval" : null,
     approvalHead: approvalCurrent ? approval!.head : null,
     unreviewed,
+    rounds,
+    maxRounds: most,
+    clear,
   };
 }
 
 /** A task's pull request review, if the computer recorded one or a need for approval. */
-export function taskReviewInput(task: Task, pr?: PrSummary | null): ReviewResultInput | null {
+export function taskReviewInput(task: Task, pr?: PrSummary | null, sensitiveRounds = false): ReviewResultInput | null {
   const github = task.github;
   if (!github?.review && !github?.approval) return null;
   const summary = pr ?? github.pr ?? null;
@@ -309,6 +331,7 @@ export function taskReviewInput(task: Task, pr?: PrSummary | null): ReviewResult
     head: summary?.head ?? null,
     checks: summary ? { passed: summary.passed, failed: summary.failed, pending: summary.pending } : null,
     state: summary?.state ?? "open",
+    sensitiveRounds,
   };
 }
 

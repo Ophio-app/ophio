@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "accounts"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -250,9 +250,9 @@ dependencies = [
 
 [[package]]
 name = "async-executor"
-version = "1.14.0"
+version = "1.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c96bf972d85afc50bf5ab8fe2d54d1586b4e0b46c97c50a0c9e71e2f7bcd812a"
+checksum = "f426a31126c735126297bc5ea7a521263c9faff4f63ca415267ee625651c4f37"
 dependencies = [
  "async-task",
  "concurrent-queue",
@@ -587,7 +587,7 @@ dependencies = [
 
 [[package]]
 name = "browser"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -964,7 +964,7 @@ dependencies = [
 
 [[package]]
 name = "channels"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -1081,7 +1081,7 @@ dependencies = [
 
 [[package]]
 name = "companion"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "accounts",
  "async-trait",
@@ -1106,6 +1106,7 @@ dependencies = [
  "library",
  "media",
  "platform-linux",
+ "platform-macos",
  "platform-windows",
  "ports",
  "protocol",
@@ -1145,7 +1146,7 @@ dependencies = [
 
 [[package]]
 name = "computer-mcp"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "interprocess",
@@ -1177,8 +1178,9 @@ checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 
 [[package]]
 name = "containment"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
+ "libc",
  "ports",
  "rustix",
  "tokio",
@@ -1774,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "domain"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "protocol",
  "serde",
@@ -2717,7 +2719,7 @@ dependencies = [
 
 [[package]]
 name = "harness-claude"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2737,7 +2739,7 @@ dependencies = [
 
 [[package]]
 name = "harness-codex"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -3180,7 +3182,7 @@ dependencies = [
 
 [[package]]
 name = "intake"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -3327,7 +3329,7 @@ dependencies = [
 
 [[package]]
 name = "jev"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "protocol",
@@ -3590,7 +3592,7 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "library"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "cap-fs-ext",
@@ -3757,7 +3759,7 @@ checksum = "4facc753ae494aeb6e3c22f839b158aebd4f9270f55cd3c79906c45476c47ab4"
 
 [[package]]
 name = "media"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4133,6 +4135,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc2-core-audio"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1eebcea8b0dbff5f7c8504f3107c68fc061a3eb44932051c8cf8a68d969c3b2"
+dependencies = [
+ "dispatch2",
+ "objc2",
+ "objc2-core-audio-types",
+ "objc2-core-foundation",
+]
+
+[[package]]
+name = "objc2-core-audio-types"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a89f2ec274a0cf4a32642b2991e8b351a404d290da87bb6a9a9d8632490bd1c"
+dependencies = [
+ "bitflags 2.13.2",
+ "objc2",
+]
+
+[[package]]
 name = "objc2-core-data"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4187,6 +4211,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc2-core-media"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05ec576860167a15dd9fce7fbee7512beb4e31f532159d3482d1f9c6caedf31d"
+dependencies = [
+ "bitflags 2.13.2",
+ "dispatch2",
+ "objc2",
+ "objc2-core-audio",
+ "objc2-core-audio-types",
+ "objc2-core-foundation",
+ "objc2-core-video",
+]
+
+[[package]]
 name = "objc2-core-text"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4196,6 +4235,19 @@ dependencies = [
  "objc2",
  "objc2-core-foundation",
  "objc2-core-graphics",
+]
+
+[[package]]
+name = "objc2-core-video"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d425caf1df73233f29fd8a5c3e5edbc30d2d4307870f802d18f00d83dc5141a6"
+dependencies = [
+ "bitflags 2.13.2",
+ "objc2",
+ "objc2-core-foundation",
+ "objc2-core-graphics",
+ "objc2-io-surface",
 ]
 
 [[package]]
@@ -4245,6 +4297,20 @@ dependencies = [
  "bitflags 2.13.2",
  "objc2",
  "objc2-core-foundation",
+ "objc2-foundation",
+]
+
+[[package]]
+name = "objc2-screen-capture-kit"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74b7c5390f477482f001bc354d6571a70db7e4f8d5288e860c45521fbce11394"
+dependencies = [
+ "block2",
+ "dispatch2",
+ "objc2",
+ "objc2-core-graphics",
+ "objc2-core-media",
  "objc2-foundation",
 ]
 
@@ -4501,7 +4567,7 @@ dependencies = [
 
 [[package]]
 name = "phone-shell"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -4598,7 +4664,7 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 
 [[package]]
 name = "platform-linux"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "ashpd",
  "async-trait",
@@ -4626,8 +4692,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "platform-macos"
+version = "0.2.0"
+dependencies = [
+ "async-trait",
+ "block2",
+ "dispatch2",
+ "libc",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-core-foundation",
+ "objc2-core-media",
+ "objc2-core-video",
+ "objc2-foundation",
+ "objc2-screen-capture-kit",
+ "platform-windows",
+ "ports",
+ "protocol",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "platform-windows"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "ports",
@@ -4731,7 +4819,7 @@ dependencies = [
 
 [[package]]
 name = "ports"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4846,7 +4934,7 @@ dependencies = [
 
 [[package]]
 name = "protocol"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "schemars 1.2.2",
  "serde",
@@ -4860,9 +4948,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.13.4"
+version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9f068eba8e7071c5f9511831b44f32c740d5adf574e990f946ddb53db2f314e"
+checksum = "3db2be46835f013dd3f4fa7f5f7402c537787b54ebb6fe2b94bbdd7e2669bb7b"
 dependencies = [
  "bitflags 2.13.2",
  "memchr",
@@ -5274,7 +5362,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "report-fixer"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "containment",
@@ -5295,7 +5383,7 @@ dependencies = [
 
 [[package]]
 name = "report-pipeline"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "ed25519-dalek",
  "getrandom 0.3.4",
@@ -5575,7 +5663,7 @@ dependencies = [
 
 [[package]]
 name = "sandbox"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5588,6 +5676,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "tokio",
 ]
@@ -5904,7 +5993,7 @@ dependencies = [
 
 [[package]]
 name = "services"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5916,6 +6005,7 @@ dependencies = [
  "getrandom 0.3.4",
  "intake",
  "jev",
+ "libc",
  "ports",
  "protocol",
  "pulldown-cmark",
@@ -6149,7 +6239,7 @@ dependencies = [
 
 [[package]]
 name = "speech"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "candle-core",
@@ -6217,7 +6307,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "store"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "domain",
  "protocol",
@@ -6779,13 +6869,14 @@ dependencies = [
 
 [[package]]
 name = "terminal"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "bytes",
  "containment",
  "libc",
  "nix 0.29.0",
+ "platform-macos",
  "portable-pty",
  "ports",
  "protocol",
@@ -7486,7 +7577,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "voice-control"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "jev",

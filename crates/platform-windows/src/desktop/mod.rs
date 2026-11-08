@@ -14,7 +14,9 @@ use async_trait::async_trait;
 use geometry::{Layout, Monitor};
 use input::{Injector, ManagedInput};
 use ports::{Clock, SystemClock, desktop::*};
-use protocol::capability::{Availability, InputScope};
+use protocol::capability::Availability;
+#[cfg(any(windows, test))]
+use protocol::capability::InputScope;
 use protocol::{
     control::{ControlTarget, DesktopLockState, InputAction, TargetGeometry, TargetKind},
     ids::TargetId,
@@ -254,12 +256,16 @@ impl DesktopBackend for WindowsDesktop {
         )
     }
     async fn capabilities(&self) -> DesktopCapabilities {
+        let mut capabilities = self.driver.capabilities();
         if self.lifecycle.closed.load(Ordering::Acquire) {
-            return capabilities(Availability::TemporarilyUnavailable {
+            let ended = Availability::TemporarilyUnavailable {
                 reason: "Desktop sharing has ended".into(),
-            });
+            };
+            capabilities.capture = ended.clone();
+            capabilities.input = ended.clone();
+            capabilities.lock_session = ended;
         }
-        self.driver.capabilities()
+        capabilities
     }
     async fn targets(&self) -> Result<Vec<ControlTarget>, PlatformError> {
         let _operation = self.enter().await?;
@@ -408,6 +414,7 @@ impl InputSink for Sink {
             .map_or(Ok(()), ManagedInput::barrier)
     }
 }
+#[cfg(any(windows, test))]
 pub(crate) fn capabilities(availability: Availability) -> DesktopCapabilities {
     DesktopCapabilities {
         backend: "windows".into(),

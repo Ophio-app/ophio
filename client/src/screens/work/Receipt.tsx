@@ -91,6 +91,7 @@ import { Composer } from "../talk/Composer";
 import { CommandError } from "../../host/session";
 import { useWholeRun, withReportedDiffs } from "./wholeRun";
 import { useViewingTask } from "../../app/viewing";
+import { ReportLine } from "./ReportTask";
 
 export default function Receipt({ route }: RouteProps<"receipt">) {
   const { session, profile } = useApp();
@@ -401,6 +402,7 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
         <header className="work-receipt-head">
           <h1>{receiptTitle(task.title, timeline?.items ?? [])}</h1>
           <p className="work-receipt-state">{receiptHeadline(task, run)}</p>
+          {task.report && <ReportLine task={task} />}
           {run && followUpLine(run) && <p className="work-caption">{followUpLine(run)}</p>}
           {run?.human_resolution && <p className="work-caption">Marked {run.human_resolution.resolution === "mark_failed" ? "failed" : "completed"} {run.human_resolution.by.kind === "device" && run.human_resolution.by.device_id === profile.deviceId ? "by you" : "by a person"} · {new Date(run.human_resolution.at).toLocaleString([], { dateStyle: "short", timeStyle: "short" })} · not verified by the computer</p>}
         </header>

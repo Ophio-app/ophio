@@ -18,6 +18,10 @@ ignore = [
     "RUSTSEC-2026-0367",
     "RUSTSEC-2026-0368",
     "RUSTSEC-2026-0369",
+    # zip 7.2.0 again: ZipArchive::extract aborts the process on a symlink
+    # entry with a large declared size; fixed only in zip 9, which no candle
+    # release accepts. candle never calls extract, as above.
+    "RUSTSEC-2026-0429",
     # zvariant, zvariant_derive and zbus_names, unmaintained: merged into
     # zbus 6, with no flaw reported. ashpd 0.13.13 (platform-linux), the
     # latest, still requires zbus 5, so moving accounts and platform-linux

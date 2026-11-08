@@ -39,6 +39,7 @@ platform-windows = { path = "../platform-windows" }
 
 [dev-dependencies]
 tempfile = "3.23.0"
+tracing-subscriber = "0.3"
 tokio = { version = "1.53.1", features = ["test-util"] }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]

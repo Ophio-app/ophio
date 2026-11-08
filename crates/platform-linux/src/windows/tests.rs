@@ -96,3 +96,24 @@ impl ports::windows::WindowAuthority for Permit {
         Ok(())
     }
 }
+#[test]
+fn focused_window_and_its_place_from_hyprland_and_sway() {
+    let hypr = parse_hyprland_focus(
+        r#"{"address":"0x5576b24b9200","mapped":true,"at":[1720,0],"size":[1720,1440],"class":"Alacritty","title":"~"}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        (hypr.id.as_str(), hypr.app.as_str(), hypr.x, hypr.width),
+        ("0x5576b24b9200", "Alacritty", 1720., 1720.)
+    );
+    // Nothing focused, or a reply that isn't a window.
+    assert!(parse_hyprland_focus("{}").is_none());
+    assert!(
+        parse_hyprland_focus(r#"{"address":"0x1; exec bad","at":[0,0],"size":[1,1]}"#).is_none()
+    );
+    let sway = parse_sway_focus(r#"{"type":"root","nodes":[{"type":"output","nodes":[{"type":"workspace","nodes":[{"id":7,"type":"con","app_id":"foot","focused":false,"rect":{"x":0,"y":0,"width":10,"height":10}},{"id":8,"type":"con","app_id":"kitty","focused":true,"rect":{"x":960,"y":30,"width":960,"height":1050}}]}]}]}"#).unwrap();
+    assert_eq!(
+        (sway.id.as_str(), sway.app.as_str(), sway.y, sway.height),
+        ("8", "kitty", 30., 1050.)
+    );
+}

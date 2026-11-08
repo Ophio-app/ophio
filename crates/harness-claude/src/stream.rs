@@ -17,6 +17,8 @@ pub(crate) struct StreamState {
     helpers: HashMap<String, String>,
     unknown: std::collections::HashSet<String>,
     limited: Option<String>,
+    /// The sign-in was refused, and said so once.
+    signed_out: bool,
     results: crate::results::Results,
 }
 fn string(value: &Value, key: &str) -> String {
@@ -34,11 +36,35 @@ fn unsuccessful(value: &Value) -> &'static str {
         _ => "Claude Code ended this turn with an error",
     }
 }
+/// Claude Code's own words when its claude.ai sign-in is gone or expired, on
+/// an API error or a failed result (2.1.289): "Not logged in · Please run
+/// /login", "Login expired · Please run /login", "OAuth token revoked ·
+/// Please run /login", "Authentication required · Sign in again to
+/// continue", and in print mode "Failed to authenticate…". A key or token
+/// set outside Ophio ("Fix external API key") isn't its sign-in.
+fn sign_in_gone(value: &Value, text: &str) -> bool {
+    if text.contains("Fix external API key") || text.contains("Fix external auth token") {
+        return false;
+    }
+    value["error"] == "authentication_failed"
+        || text.contains("Please run /login")
+        || text.contains("Sign in again to continue")
+        || text.trim_start().starts_with("Failed to authenticate")
+        || text.contains("OAuth token revoked")
+        || text.contains("OAuth session expired")
+}
 /// A count the phone can represent; any other reads as not reported.
 fn count(value: &Value) -> Option<u64> {
     value.as_u64().filter(|n| *n <= protocol::MAX_SAFE_INTEGER)
 }
 impl StreamState {
+    fn signed_out(&mut self, out: &mut Vec<HarnessEvent>) {
+        if !std::mem::replace(&mut self.signed_out, true) {
+            out.push(HarnessEvent::SignedOut {
+                reason: "Claude Code's sign-in was refused".into(),
+            });
+        }
+    }
     pub fn expected_plan_callback(&self, value: &Value) -> bool {
         self.plan_reply
             && value["request"]["subtype"] == "can_use_tool"
@@ -169,6 +195,9 @@ impl StreamState {
                     // as an assistant message. It is not the agent's reply and
                     // proves nothing about usage, so it stays a note.
                     if value["is_api_error_message"] == true && !text.is_empty() {
+                        if sign_in_gone(value, &text) {
+                            self.signed_out(&mut out);
+                        }
                         out.push(HarnessEvent::Warning { text });
                     } else if !text.is_empty() {
                         out.push(HarnessEvent::AgentMessage {
@@ -277,6 +306,9 @@ impl StreamState {
                     || value["subtype"].as_str().is_some_and(|s| s != "success");
                 if self.failed && !self.interrupted {
                     out.push(warning(unsuccessful(value)));
+                    if sign_in_gone(value, value["result"].as_str().unwrap_or_default()) {
+                        self.signed_out(&mut out);
+                    }
                 }
                 out.push(HarnessEvent::Results {
                     outcome: self.results.outcome(),
@@ -349,6 +381,9 @@ impl StreamState {
                     value["subtype"].as_str(),
                     Some("task_updated" | "task_progress")
                 ) => {}
+            // The slash commands Claude Code offers changed, as when a skill or
+            // plugin loads (2.1.319). Nothing here offers them to the person.
+            "system" if value["subtype"] == "commands_changed" => {}
             // Claude Code reports the fate of each message it was sent. Delivery
             // is confirmed by the replayed message; only a message it will never
             // act on is worth a line.
@@ -626,6 +661,14 @@ mod quiet_lines {
         ] {
             assert!(state.parse(&line).is_empty());
         }
+    }
+
+    #[test]
+    fn a_change_to_the_slash_commands_is_read_without_a_note() {
+        let mut state = StreamState::new(TaskMode::Work);
+        // As Claude Code 2.1.319 sends it when its commands change mid-session.
+        let line = json!({"type":"system","subtype":"commands_changed","commands":[{"name":"review","description":"Review a change"}],"uuid":"u","session_id":"native-session"});
+        assert!(state.parse(&line).is_empty());
     }
 
     #[test]
@@ -910,6 +953,72 @@ mod wire_bounds {
                 (protocol::MAX_SAFE_INTEGER / 1000 * 1000) as i64
             ))]
         );
+    }
+}
+
+#[cfg(test)]
+mod sign_in_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn signed_out(lines: &[Value]) -> usize {
+        let mut state = StreamState::new(TaskMode::Work);
+        lines
+            .iter()
+            .flat_map(|line| state.parse(line))
+            .filter(|e| matches!(e, HarnessEvent::SignedOut { .. }))
+            .count()
+    }
+    fn api_error(text: &str, error: Option<&str>) -> Value {
+        let mut line = json!({"type":"assistant","is_api_error_message":true,
+            "message":{"id":"e","model":"<synthetic>","content":[{"type":"text","text":text}]}});
+        if let Some(error) = error {
+            line["error"] = json!(error);
+        }
+        line
+    }
+
+    #[test]
+    fn a_refused_sign_in_is_reported_once_for_the_run() {
+        let refused = api_error("Login expired \u{b7} Please run /login", None);
+        let failed = json!({"type":"result","subtype":"success","is_error":true,
+            "result":"Failed to authenticate. API Error: 401 OAuth session expired"});
+        assert_eq!(signed_out(&[refused.clone(), failed.clone()]), 1);
+        assert_eq!(signed_out(std::slice::from_ref(&failed)), 1);
+        assert_eq!(
+            signed_out(&[api_error("Something failed", Some("authentication_failed"))]),
+            1
+        );
+        assert_eq!(
+            signed_out(&[api_error(
+                "Authentication required \u{b7} Sign in again to continue",
+                None
+            )]),
+            1
+        );
+    }
+
+    #[test]
+    fn only_claude_code_s_own_sign_in_counts() {
+        // A key set outside Ophio is not its sign-in.
+        assert_eq!(
+            signed_out(&[api_error(
+                "Invalid API key \u{b7} Fix external API key",
+                Some("authentication_failed")
+            )]),
+            0
+        );
+        // The agent saying the words in its reply isn't a refusal.
+        let reply = json!({"type":"assistant","message":{"id":"m","content":[
+            {"type":"text","text":"If that fails, Please run /login."}]}});
+        assert_eq!(signed_out(&[reply]), 0);
+        // Nor is another error.
+        assert_eq!(
+            signed_out(&[api_error("API Error: 529 Overloaded", None)]),
+            0
+        );
+        let ok = json!({"type":"result","subtype":"success","is_error":false,"result":"Please run /login"});
+        assert_eq!(signed_out(&[ok]), 0);
     }
 }
 

@@ -33,6 +33,8 @@ fn written_anywhere(dir: &std::path::Path, value: &str) -> bool {
 
 #[path = "access_tests.rs"]
 mod conversation_access;
+#[path = "more_access_tests.rs"]
+mod more_access_tests;
 #[path = "readiness_tests.rs"]
 mod readiness;
 
@@ -44,6 +46,9 @@ mod upgrade;
 
 #[path = "device_tests.rs"]
 mod devices;
+
+#[path = "computer_name_tests.rs"]
+mod computer_name;
 
 #[path = "approval_tests.rs"]
 mod approvals;
@@ -71,6 +76,9 @@ mod alerts;
 
 #[path = "accounts_tests.rs"]
 mod accounts_tests;
+
+#[path = "sign_in_watch_tests.rs"]
+mod sign_in_watch_tests;
 
 #[path = "agent_logins_tests.rs"]
 mod agent_logins_tests;
@@ -454,6 +462,7 @@ async fn concurrent_journal_subscribe_has_no_gap_or_duplicate() {
             &Caller::local_owner(),
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -1247,6 +1256,7 @@ async fn stop_is_idempotent_and_fences_late_bridge_calls() {
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     };
     assert!(matches!(
         f.hub
@@ -1617,6 +1627,7 @@ async fn queue_edits_invalidate_authority_and_reconnect_never_starts() {
             &owner,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -1690,7 +1701,8 @@ async fn channels_never_receive_control_and_revocation_blocks_existing_caller() 
             .query(
                 &device,
                 Query::Snapshot {
-                    reads_withheld: None
+                    reads_withheld: None,
+                    account_items: false,
                 }
             )
             .await
@@ -2265,6 +2277,8 @@ async fn native_approval_compares_revision_and_routes_once() {
         .emit(
             run,
             ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "native-1".into(),
                 kind: ApprovalKind::Tool,
                 title: "Synthetic approval".into(),
@@ -3057,6 +3071,7 @@ async fn bridge_permissions_use_typed_mcp_ids_instead_of_optional_tool_ids() {
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     };
     let mut ids = Vec::new();
     for native_id in ["7", "\"7\""] {
@@ -3182,6 +3197,8 @@ async fn initial_start_admission_preserves_availability_remedy_without_dispatch(
 
 #[path = "hand_back_tests.rs"]
 mod hand_back;
+#[path = "open_app_tests.rs"]
+mod open_app;
 #[path = "queue_completion_tests.rs"]
 mod queue_completion_tests;
 #[path = "results_tests.rs"]
@@ -3575,6 +3592,8 @@ mod ask_tests;
 mod checklist_tests;
 #[path = "native_text_tests.rs"]
 mod native_text_tests;
+#[path = "report_task_tests.rs"]
+mod report_task_tests;
 #[path = "reported_tests.rs"]
 mod reported_tests;
 #[path = "unarchive_tests.rs"]

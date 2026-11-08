@@ -3,7 +3,7 @@
 use crate::{Caller, CompanionHub, error};
 use async_trait::async_trait;
 use base64::Engine;
-use ports::{DesktopBackend, InputSink, MediaEncoder};
+use ports::{DesktopBackend, InputSink, MediaEncoder, windows::WindowActions};
 use protocol::{
     auth::Principal, capability::Availability, command::CommandResult, control::*, voice::*, *,
 };
@@ -14,7 +14,7 @@ use std::{
 };
 use tokio::sync::Mutex as AsyncMutex;
 use voice_control::{
-    Accessibility, Driver, DriverFactory, Error as VoiceError, Interpreter, Snapshot,
+    Accessibility, Driver, DriverFactory, Error as VoiceError, Interpreter, Launcher, Snapshot,
     policy::Decision, session::Session,
 };
 
@@ -27,6 +27,8 @@ pub(crate) struct VoiceRuntime {
 pub struct VoiceConfig {
     pub browser: Arc<dyn DriverFactory>,
     pub desktop: Arc<dyn Accessibility>,
+    /// Opens apps and addresses for desktop voice control.
+    pub launcher: Arc<dyn Launcher>,
     pub assessor: Arc<dyn ::jev::questions::VoiceAssessor>,
 }
 struct LiveSession {
@@ -36,6 +38,9 @@ struct LiveSession {
     device: DeviceId,
     target: TargetId,
     detached: std::sync::atomic::AtomicBool,
+    /// Set the moment anything begins to stop the session, before it waits
+    /// for an action in progress: that action's authority ends here.
+    stopping: std::sync::atomic::AtomicBool,
     /// Its stop is not yet recorded. It stays until it is, so the phone
     /// learns why it stopped rather than of a restart.
     unrecorded: std::sync::atomic::AtomicBool,
@@ -44,7 +49,7 @@ fn mapped(e: VoiceError) -> ProtocolError {
     let code = match e {
         VoiceError::Superseded => ErrorCode::AlreadyResolved,
         VoiceError::StaleTarget => ErrorCode::StaleRevision,
-        VoiceError::OutcomeUnknown => ErrorCode::OutcomeUnknown,
+        VoiceError::OutcomeUnknown | VoiceError::LaunchUnstopped => ErrorCode::OutcomeUnknown,
         VoiceError::Stopped => ErrorCode::Expired,
         _ => ErrorCode::TemporarilyUnavailable,
     };
@@ -55,7 +60,7 @@ impl CompanionHub {
         *self.inner.voice.config.lock().map_err(crate::internal)? = Some(Arc::new(config));
         Ok(())
     }
-    fn voice_config(&self) -> Result<Arc<VoiceConfig>, ProtocolError> {
+    pub(crate) fn voice_config(&self) -> Result<Arc<VoiceConfig>, ProtocolError> {
         self.inner
             .voice
             .config
@@ -164,11 +169,12 @@ impl CompanionHub {
         let (browser, desktop) = if jev == ::jev::Connection::Connected {
             if let Ok(config) = self.voice_config() {
                 let browser = config.browser.availability(VoiceTarget::Browser).await;
-                let desktop = match config.desktop.snapshot().await {
-                    Ok(_) => Availability::Available,
-                    Err(e) => Availability::TemporarilyUnavailable {
-                        reason: e.to_string(),
-                    },
+                // Desktop voice control needs the desktop's input. Readable
+                // controls only add clicking by name: opening apps, keys,
+                // typing and scrolling work without them.
+                let desktop = match self.desktop_option() {
+                    Some(desktop) => desktop.capabilities().await.input,
+                    None => self.desktop_absent(),
                 };
                 (browser, desktop)
             } else {
@@ -287,9 +293,14 @@ impl CompanionHub {
                 config.browser.open(*target).await
             } else {
                 let backend = self.desktop()?;
+                let launches = self.target(*target_id).await?.lock().await.launches.clone();
                 match backend.input_sink(*target_id).await {
                     Ok(sink) => Ok(Arc::new(DesktopDriver {
+                        unfenced: std::sync::atomic::AtomicU64::new(u64::MAX),
+                        launches,
                         a11y: config.desktop.clone(),
+                        launcher: config.launcher.clone(),
+                        windows: self.inner.windows.clone(),
                         backend,
                         sink: AsyncMutex::new(sink),
                         target: *target_id,
@@ -327,6 +338,7 @@ impl CompanionHub {
                     picture: None,
                     steps: vec![],
                     ended: None,
+                    offer: None,
                 },
                 self.inner.clock.clone(),
             );
@@ -337,6 +349,7 @@ impl CompanionHub {
                 device: device_id,
                 target: *target_id,
                 detached: Default::default(),
+                stopping: Default::default(),
                 unrecorded: Default::default(),
             });
             let lock = self.target(*target_id).await?;
@@ -374,7 +387,7 @@ impl CompanionHub {
         };
         let live = self.voice_session(caller, id)?;
         if matches!(operation, VoiceOperation::Stop { .. }) {
-            self.revoke_target(live.target, false).await?;
+            self.revoke_own(&live).await?;
             return Ok(None);
         }
         let lock = self.target(live.target).await?;
@@ -403,24 +416,58 @@ impl CompanionHub {
                         "Voice command is too large",
                     ));
                 }
-                if *final_segment {
+                if !*final_segment {
+                    // Words still being spoken are shown, never acted on, and
+                    // cost nothing: Jev hears the finished command only.
+                    let mut state = live.state.lock().await;
+                    if state.view.ended.is_some() {
+                        return Err(mapped(VoiceError::Stopped));
+                    }
+                    // Nor do they replace a command being interpreted or
+                    // acted on, or one waiting for a reply.
+                    if !matches!(
+                        state.view.phase,
+                        VoicePhase::Assessing
+                            | VoicePhase::Acting
+                            | VoicePhase::Confirm
+                            | VoicePhase::Disambiguation
+                    ) {
+                        state.view.transcript = text.clone();
+                        state.view.phase = VoicePhase::Waiting;
+                        state.view.understood = "Listening…".into();
+                    }
+                    return Ok(Some(CommandResult::VoiceSession {
+                        session: Box::new(state.view.clone()),
+                    }));
+                }
+                {
                     let mut state = live.state.lock().await;
                     let prompt = state.view.prompt_id;
-                    let spoken = text.trim().to_lowercase();
-                    let resolved = if spoken == "cancel"
-                        && matches!(
-                            state.view.phase,
-                            VoicePhase::Confirm | VoicePhase::Disambiguation
-                        ) {
+                    let spoken = reply(text);
+                    let resolved = if matches!(
+                        spoken.as_str(),
+                        "cancel" | "cancel that" | "no" | "never mind" | "nevermind"
+                    ) && matches!(
+                        state.view.phase,
+                        VoicePhase::Confirm | VoicePhase::Disambiguation
+                    ) {
                         state.present(&Decision::Cancel);
                         Some(Decision::Cancel)
-                    } else if spoken == "confirm" && state.view.phase == VoicePhase::Confirm {
+                    } else if matches!(
+                        spoken.as_str(),
+                        "confirm" | "confirmed" | "yes confirm" | "confirm it"
+                    ) && state.view.phase == VoicePhase::Confirm
+                    {
                         Some(state.confirm(prompt).map_err(mapped)?)
                     } else if state.view.phase == VoicePhase::Disambiguation {
-                        let number = match spoken.as_str() {
-                            "1" | "one" => Some(0),
-                            "2" | "two" => Some(1),
-                            "3" | "three" => Some(2),
+                        let number = match spoken
+                            .trim_start_matches("number ")
+                            .trim_start_matches("the ")
+                            .trim_end_matches(" one")
+                        {
+                            "1" | "one" | "first" => Some(0),
+                            "2" | "two" | "second" => Some(1),
+                            "3" | "three" | "third" => Some(2),
                             _ => None,
                         };
                         if let Some(id) = number
@@ -441,7 +488,10 @@ impl CompanionHub {
                     }
                 }
                 live.interpreter.cancel();
-                let snapshot = live.driver.snapshot().await.map_err(mapped)?;
+                let snapshot = tokio::time::timeout(SNAPSHOT_LIMIT, live.driver.snapshot())
+                    .await
+                    .map_err(|_| mapped(VoiceError::Unavailable(SLOW_SCREEN.into())))?
+                    .map_err(mapped)?;
                 {
                     let mut state = live.state.lock().await;
                     state
@@ -450,7 +500,14 @@ impl CompanionHub {
                     self.save_voice(live.device, &state.view)?;
                 }
                 let answer = live.interpreter.assess(text.clone(), &snapshot).await;
+                // An agent is offered only where one could start: this
+                // device may start computer use and the computer can run it.
+                let agents = self
+                    .authorize(caller, |g| g.tasks && g.computer_use)
+                    .is_ok()
+                    && self.host_capabilities().await.computer_use.is_available();
                 let mut state = live.state.lock().await;
+                state.agents = agents;
                 if state.view.ended.is_some()
                     || state.utterance != *utterance_id
                     || state.revision != *revision
@@ -462,7 +519,10 @@ impl CompanionHub {
                 let answer = match answer {
                     Ok(a) => a,
                     Err(e) => {
-                        if matches!(e, VoiceError::Timeout | VoiceError::Assessment) {
+                        // Only a refused key needs the person to link Jev
+                        // again. A slow, busy or garbled answer fails this
+                        // command alone; the next one asks again.
+                        if matches!(e, VoiceError::KeyRefused) {
                             let access = ::jev::Access {
                                 connection: ::jev::Connection::LastCheckFailed,
                                 checked_at: Some(self.inner.clock.now()),
@@ -474,20 +534,7 @@ impl CompanionHub {
                         return Err(mapped(e));
                     }
                 };
-                let mut decision = state.assessed(answer, *final_segment);
-                if matches!(decision, Decision::Wait) && !final_segment {
-                    let remaining = state.silence_remaining();
-                    drop(state);
-                    tokio::time::sleep(remaining).await;
-                    state = live.state.lock().await;
-                    if state.view.ended.is_some()
-                        || state.utterance != *utterance_id
-                        || state.revision != *revision
-                    {
-                        return Err(mapped(VoiceError::Superseded));
-                    }
-                    decision = state.evaluate(false);
-                }
+                let decision = state.assessed(answer, true);
                 self.save_voice(live.device, &state.view)?;
                 (decision, state.stamp())
             }
@@ -530,10 +577,15 @@ impl CompanionHub {
         stamp: (String, u64, u64),
     ) -> Result<Option<CommandResult>, ProtocolError> {
         if let Decision::Act(action) = decision {
+            // The display's lock is held only to check the lease, never while
+            // the screen is read or the action runs: renewals and a lock's
+            // revocation never wait behind voice control.
             let lock = self.target(live.target).await?;
-            let mut target = lock.lock().await;
-            self.refresh_geometry(&mut target).await?;
-            self.check_voice_lease(caller, live, &mut target).await?;
+            {
+                let mut target = lock.lock().await;
+                self.refresh_geometry(&mut target).await?;
+                self.check_voice_lease(caller, live, &mut target).await?;
+            }
             {
                 let state = live.state.lock().await;
                 if state.stamp() != stamp
@@ -547,7 +599,10 @@ impl CompanionHub {
                 }
             }
             self.voice_gate(kind_for(live).await).await?;
-            let fresh = live.driver.snapshot().await.map_err(mapped)?;
+            let fresh = tokio::time::timeout(SNAPSHOT_LIMIT, live.driver.snapshot())
+                .await
+                .map_err(|_| mapped(VoiceError::Unavailable(SLOW_SCREEN.into())))?
+                .map_err(mapped)?;
             let execute = {
                 let mut state = live.state.lock().await;
                 if state.stamp() != stamp {
@@ -557,12 +612,42 @@ impl CompanionHub {
                 self.save_voice(live.device, &state.view)?;
                 claim.map_err(mapped)?
             };
-            let outcome = if execute {
-                tokio::time::timeout(Duration::from_millis(500), live.driver.act(&action, &fresh))
-                    .await
-                    .unwrap_or(Err(VoiceError::OutcomeUnknown))
-            } else {
+            // Authority again now that the screen has been read, and once
+            // more inside the driver just before it sends or opens anything.
+            let mut refused = None;
+            let outcome = if !execute {
                 Ok(())
+            } else {
+                let authority = {
+                    let mut target = lock.lock().await;
+                    match self.check_voice_lease(caller, live, &mut target).await {
+                        Ok(()) => {
+                            let lease = live.state.lock().await.view.lease.clone();
+                            Some(Arc::new(VoiceAuthority {
+                                hub: self.clone(),
+                                caller: caller.clone(),
+                                lease: target.live.clone(),
+                                lease_id: lease.lease_id,
+                                generation: lease.generation,
+                                live: live.clone(),
+                            })
+                                as Arc<dyn voice_control::Authority>)
+                        }
+                        Err(e) => {
+                            refused = Some(e);
+                            None
+                        }
+                    }
+                };
+                match authority {
+                    Some(authority) => tokio::time::timeout(
+                        act_limit(&action),
+                        live.driver.act(&action, &fresh, authority),
+                    )
+                    .await
+                    .unwrap_or(Err(VoiceError::OutcomeUnknown)),
+                    None => Err(VoiceError::Stopped),
+                }
             };
             let failed = outcome.is_err();
             let after = if failed || !execute {
@@ -580,9 +665,11 @@ impl CompanionHub {
                 state.view.ended.is_some()
             };
             if failed || ended {
-                let _ = self.revoke_locked(&mut target, false).await;
+                let _ = self.revoke_own(live).await;
             }
-            drop(target);
+            if let Some(e) = refused {
+                return Err(e);
+            }
             self.voice_picture(live).await;
         }
         let state = live.state.lock().await;
@@ -590,6 +677,29 @@ impl CompanionHub {
         Ok(Some(CommandResult::VoiceSession {
             session: Box::new(state.view.clone()),
         }))
+    }
+    /// Lets go of the display only while `live`'s own lease still holds it.
+    /// A session stopped meanwhile was fenced by whatever stopped it, and
+    /// the display may since belong to another session or device.
+    async fn revoke_own(&self, live: &LiveSession) -> Result<(), ProtocolError> {
+        let lease = live.state.lock().await.view.lease.clone();
+        let lock = self.target(live.target).await?;
+        let mut target = lock.lock().await;
+        let own = target.view.lease.as_ref().is_some_and(|l| {
+            l.lease_id == lease.lease_id
+                && l.generation == lease.generation
+                && l.boot_epoch == lease.boot_epoch
+        });
+        if !own {
+            // Its lease is gone already; this session still ends.
+            drop(target);
+            live.stopping
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+            let mut state = live.state.lock().await;
+            state.stop(VoiceStopCause::Stop);
+            return self.save_voice(live.device, &state.view);
+        }
+        self.revoke_locked(&mut target, false).await
     }
     async fn voice_picture(&self, live: &LiveSession) {
         if let Ok(Some(png_base64)) = live.driver.picture().await
@@ -604,8 +714,10 @@ impl CompanionHub {
     }
     /// Stops and lets go of every voice session on `target`, whatever cannot
     /// be recorded. The first result says whether input was let go, the second
-    /// whether the stops were recorded; a session that could not let go, or
-    /// whose stop went unrecorded, is left for the next fence to retry.
+    /// whether the stops were recorded; a session that could not let go of
+    /// input, or whose stop went unrecorded, is left for the next fence to
+    /// retry. One left only with a launch it couldn't stop has let go: it
+    /// is done, and its launch is the display's mark from here on.
     pub(crate) async fn voice_fence_target(
         &self,
         target: TargetId,
@@ -622,6 +734,8 @@ impl CompanionHub {
                     || s.unrecorded.load(std::sync::atomic::Ordering::SeqCst))
         }) {
             let detached = live.detached.load(std::sync::atomic::Ordering::SeqCst);
+            live.stopping
+                .store(true, std::sync::atomic::Ordering::SeqCst);
             live.interpreter.cancel();
             {
                 let mut state = live.state.lock().await;
@@ -656,6 +770,16 @@ impl CompanionHub {
                 Ok(Ok(())) => live
                     .detached
                     .store(true, std::sync::atomic::Ordering::SeqCst),
+                // Its driver let go of input and takes no more actions; only
+                // a launch it couldn't stop is left, and the release that
+                // called this marks the display with it, which stays until
+                // the launch is confirmed stopped. The session is done: releasing it again could
+                // only say the same, on every expiry tick.
+                Ok(Err(VoiceError::LaunchUnstopped)) => {
+                    live.detached
+                        .store(true, std::sync::atomic::Ordering::SeqCst);
+                    released = released.and(Err(mapped(VoiceError::LaunchUnstopped)));
+                }
                 Ok(Err(e)) => released = released.and(Err(mapped(e))),
                 Err(_) => released = released.and(Err(mapped(VoiceError::OutcomeUnknown))),
             }
@@ -665,6 +789,8 @@ impl CompanionHub {
     pub(crate) async fn voice_mark_all(&self, cause: VoiceStopCause) {
         if let Ok(sessions) = self.voice_sessions() {
             for live in sessions {
+                live.stopping
+                    .store(true, std::sync::atomic::Ordering::SeqCst);
                 live.state.lock().await.stop(cause);
                 live.interpreter.cancel();
             }
@@ -673,6 +799,8 @@ impl CompanionHub {
     pub(crate) async fn voice_mark_device(&self, id: DeviceId) {
         if let Ok(sessions) = self.voice_sessions() {
             for live in sessions.into_iter().filter(|s| s.device == id) {
+                live.stopping
+                    .store(true, std::sync::atomic::Ordering::SeqCst);
                 live.state.lock().await.stop(VoiceStopCause::Revoked);
                 live.interpreter.cancel();
             }
@@ -717,6 +845,7 @@ impl CompanionHub {
             .lock()
             .map_err(crate::internal)?
             .retain(|_, live| !live.detached.load(SeqCst) || live.unrecorded.load(SeqCst));
+        let mut failure = None;
         for live in self.voice_sessions()? {
             if live.detached.load(std::sync::atomic::Ordering::SeqCst) {
                 continue;
@@ -735,18 +864,100 @@ impl CompanionHub {
                     state.view.ended.is_some()
                 }
             };
+            // One session that can't be let go of never keeps the others
+            // from being checked.
             if idle {
-                self.revoke_target(live.target, false).await?;
+                crate::control::keep_worse(&mut failure, self.revoke_own(&live).await);
             }
+        }
+        failure.map_or(Ok(()), Err)
+    }
+}
+/// How long reading the screen may take, and what is said when it takes
+/// longer. Nothing is sent then.
+const SNAPSHOT_LIMIT: Duration = Duration::from_millis(2500);
+const SLOW_SCREEN: &str =
+    "The computer didn’t read the screen in time. Nothing was sent; ask again";
+/// Asked by the driver just before it sends or opens anything: the
+/// session's lease is the display's active one now, on its deadline as
+/// renewed so far, nothing has begun to stop or revoke it, nothing is
+/// stopping control, and the device still may send input.
+struct VoiceAuthority {
+    hub: CompanionHub,
+    caller: Caller,
+    lease: Arc<crate::control::LiveLease>,
+    lease_id: LeaseId,
+    generation: u64,
+    live: Arc<LiveSession>,
+}
+impl voice_control::Authority for VoiceAuthority {
+    fn check(&self) -> Result<(), VoiceError> {
+        let inner = &self.hub.inner;
+        if !self
+            .lease
+            .holds(self.lease_id, self.generation, inner.clock.monotonic())
+            || self.live.stopping.load(std::sync::atomic::Ordering::SeqCst)
+            || *inner.shutdown.borrow()
+            || inner.local_stops.load(std::sync::atomic::Ordering::SeqCst) != 0
+            || self.live.detached.load(std::sync::atomic::Ordering::SeqCst)
+            || self
+                .hub
+                .authorize(&self.caller, |g| g.view && g.control_input)
+                .is_err()
+        {
+            return Err(VoiceError::Stopped);
         }
         Ok(())
     }
 }
+/// A spoken reply to a prompt, as words: "Confirm." is "confirm".
+fn reply(text: &str) -> String {
+    text.to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { ' ' })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+/// How long an action may take before its outcome counts as unknown. No
+/// display lock is held meanwhile, so renewals never wait on it. Opening an
+/// app or address waits for the launcher's own limit, which includes
+/// stopping a hung launch: the answer is then what the launch found, never
+/// an unknown given while it was still stopping what it started.
+///
+/// The margin is at least a second, so a launch at its own worst case still
+/// answers first; one cut off would count as dropped, and its display would
+/// stay marked until restart.
+fn act_limit(action: &VoiceAction) -> Duration {
+    match action.kind {
+        VoiceActionKind::Launch | VoiceActionKind::Navigate => {
+            voice_control::LAUNCH_LIMIT.saturating_add(LAUNCH_MARGIN)
+        }
+        _ => Duration::from_millis(2000),
+    }
+}
+/// How much longer voice control waits for a launch than the launcher may
+/// take.
+const LAUNCH_MARGIN: Duration = Duration::from_millis(1000);
+// With the launcher's own worst case, which platform crates check is
+// within `LAUNCH_LIMIT`, a second or more to spare.
+const _: () = assert!(LAUNCH_MARGIN.as_millis() >= 1000);
 async fn kind_for(live: &LiveSession) -> VoiceTarget {
     live.state.lock().await.view.target
 }
 struct DesktopDriver {
+    /// A launch whose stop couldn't be confirmed: an app may still open, so
+    /// the barrier never reports that nothing is left, until the display's
+    /// mark is next cleared. Which clear of it came last when the launch
+    /// ended, or `u64::MAX` for none.
+    unfenced: std::sync::atomic::AtomicU64,
+    /// The display's launches in flight, which every release of it waits
+    /// for, as it does for an agent's.
+    launches: Arc<crate::control::Launches>,
     a11y: Arc<dyn Accessibility>,
+    launcher: Arc<dyn Launcher>,
+    windows: Option<Arc<dyn WindowActions>>,
     backend: Arc<dyn DesktopBackend>,
     sink: AsyncMutex<Box<dyn InputSink>>,
     target: TargetId,
@@ -757,15 +968,142 @@ impl std::fmt::Debug for DesktopDriver {
         f.write_str("DesktopVoiceDriver")
     }
 }
+fn reason(e: VoiceError) -> String {
+    match e {
+        VoiceError::Unavailable(reason) => reason,
+        other => other.to_string(),
+    }
+}
+impl DesktopDriver {
+    /// What is on the desktop now. Unreadable controls are a fact about the
+    /// app in front, not a failure: commands that need none still work.
+    /// The focused window, when the compositor names it, is the context an
+    /// action is checked against, so a key meant for one window never goes
+    /// to another.
+    async fn observe(&self, controls: bool, apps: bool) -> Snapshot {
+        let listed = async {
+            if apps {
+                Some(self.launcher.apps().await)
+            } else {
+                None
+            }
+        };
+        let seen = async {
+            let focused = match &self.windows {
+                Some(windows) => windows.focused().await,
+                None => None,
+            };
+            // Where the compositor doesn't say which window has focus
+            // (GNOME, KDE, X11, Windows), accessibility's focused window is
+            // the context, so its controls are read even for an action
+            // aimed at none.
+            let read = if controls || focused.is_none() {
+                self.a11y.snapshot().await
+            } else {
+                Err(VoiceError::Unavailable(String::new()))
+            };
+            (focused, read)
+        };
+        let (listed, (focused, read)) = tokio::join!(listed, seen);
+        let mut snapshot = match read {
+            Ok(snapshot) => snapshot,
+            Err(e) => Snapshot::unreadable(String::new(), reason(e)),
+        };
+        if let Some(window) = focused {
+            snapshot.context = format!("window:{}:{}", window.id, window.app);
+            snapshot.window = Some(VoiceBounds {
+                x: window.x,
+                y: window.y,
+                width: window.width,
+                height: window.height,
+            });
+        }
+        if let Some(listed) = listed {
+            snapshot.apps = listed.map_err(reason);
+        }
+        snapshot.desktop = true;
+        snapshot
+    }
+}
+impl DesktopDriver {
+    /// Opens `app`, or else `url`, counted among the display's launches
+    /// from before its final authority check until it has ended, and
+    /// remembers one that couldn't be stopped, for the barrier, and the
+    /// display with how its launcher can check it again.
+    ///
+    /// Counted first, a launch is either refused at that check by a release
+    /// that has fenced the display, or waited for by it: the release never
+    /// says it let go while an app may still open. It runs inside the fenced
+    /// driver's own task, so voice control giving up on its answer never
+    /// cuts its cleanup short; one that never ends (its task dropped) counts
+    /// as unstopped.
+    async fn launching(
+        &self,
+        authority: &dyn voice_control::Authority,
+        app: Option<&VoiceApp>,
+        url: Option<&str>,
+    ) -> Result<(), VoiceError> {
+        let guard = self.launches.begin();
+        let authority = crate::launch_recheck::Recording::new(authority);
+        let outcome = match (app, url) {
+            (Some(app), _) => self.launcher.launch(app, &authority).await,
+            (None, Some(url)) => self.launcher.open_url(url, &authority).await,
+            (None, None) => Err(VoiceError::StaleTarget),
+        };
+        let unstopped = matches!(outcome, Err(VoiceError::LaunchUnstopped));
+        // Read while the launch still counts as running, so no clear of the
+        // display's mark can pass between this and its being kept there.
+        if unstopped {
+            self.unfenced.store(
+                self.launches
+                    .cleared
+                    .load(std::sync::atomic::Ordering::SeqCst),
+                std::sync::atomic::Ordering::SeqCst,
+            );
+        }
+        guard.ended(!unstopped, authority.take());
+        outcome
+    }
+}
+fn keys(keys: &[&str]) -> InputAction {
+    InputAction::KeyChord {
+        keys: keys.iter().map(|k| (*k).to_owned()).collect(),
+    }
+}
 #[async_trait]
 impl Driver for DesktopDriver {
     async fn snapshot(&self) -> Result<Snapshot, VoiceError> {
-        self.a11y.snapshot().await
+        Ok(self.observe(true, true).await)
     }
-    async fn act(&self, action: &VoiceAction, old: &Snapshot) -> Result<(), VoiceError> {
-        let fresh = self.a11y.snapshot().await?;
+    async fn act(
+        &self,
+        action: &VoiceAction,
+        old: &Snapshot,
+        authority: Arc<dyn voice_control::Authority>,
+    ) -> Result<(), VoiceError> {
+        match action.kind {
+            VoiceActionKind::Launch => {
+                let app = action.app.as_ref().ok_or(VoiceError::StaleTarget)?;
+                authority.check()?;
+                return self.launching(&*authority, Some(app), None).await;
+            }
+            VoiceActionKind::Navigate => {
+                let url = action.literal.as_deref().ok_or(VoiceError::StaleTarget)?;
+                authority.check()?;
+                return self.launching(&*authority, None, Some(url)).await;
+            }
+            _ => {}
+        }
+        // Controls are read again only for an action aimed at one.
+        let fresh = self.observe(action.target.is_some(), false).await;
         if !fresh.still_matches(old, action) {
             return Err(VoiceError::StaleTarget);
+        }
+        // An unknown focus fails closed: two empty contexts are not a match.
+        if fresh.context.is_empty() && action.kind != VoiceActionKind::Scroll {
+            return Err(VoiceError::Unavailable(
+                voice_control::policy::UNKNOWN_FOCUS.into(),
+            ));
         }
         let t = self
             .backend
@@ -775,11 +1113,23 @@ impl Driver for DesktopDriver {
             .into_iter()
             .find(|t| t.target_id == self.target)
             .ok_or(VoiceError::StaleTarget)?;
+        let centre = |b: &VoiceBounds| (b.x + b.width / 2., b.y + b.height / 2.);
         let at = if let Some(e) = &action.target {
-            self.backend.accessibility_point(self.target,t.geometry.revision,e.bounds.x+e.bounds.width/2.,e.bounds.y+e.bounds.height/2.).await.map_err(|_|VoiceError::Unavailable("The control’s position cannot be verified on this display. Use the remote keyboard".into()))?
+            let (x, y) = centre(&e.bounds);
+            self.backend.accessibility_point(self.target,t.geometry.revision,x,y).await.map_err(|_|VoiceError::Unavailable("The control’s position cannot be verified on this display. Use the remote keyboard".into()))?
+        } else if let Some(window) = &fresh.window {
+            // Scrolling reaches the window under the pointer, so aim at the
+            // focused one; one on another display falls back to this one's
+            // centre.
+            let (x, y) = centre(window);
+            self.backend
+                .accessibility_point(self.target, t.geometry.revision, x, y)
+                .await
+                .unwrap_or(TargetPoint { x: 0.5, y: 0.5 })
         } else {
             TargetPoint { x: 0.5, y: 0.5 }
         };
+        authority.check()?;
         if let Some(e) = &action.target
             && matches!(action.kind, VoiceActionKind::Click | VoiceActionKind::Focus)
             && self
@@ -796,14 +1146,17 @@ impl Driver for DesktopDriver {
                 count: 1,
             },
             VoiceActionKind::Type => {
-                let e = action.target.as_ref().ok_or(VoiceError::StaleTarget)?;
-                if e.sensitive {
-                    return Err(VoiceError::Unavailable(
-                        "Use the remote keyboard for sensitive fields".into(),
-                    ));
-                }
-                if !e.focused && !self.a11y.activate(e, true).await? {
-                    return Err(VoiceError::StaleTarget);
+                // With no readable controls, the text goes to the focused
+                // app, as the remote keyboard's would.
+                if let Some(e) = &action.target {
+                    if e.sensitive {
+                        return Err(VoiceError::Unavailable(
+                            "Use the remote keyboard for sensitive fields".into(),
+                        ));
+                    }
+                    if !e.focused && !self.a11y.activate(e, true).await? {
+                        return Err(VoiceError::StaleTarget);
+                    }
                 }
                 InputAction::Text {
                     text: action.literal.clone().ok_or(VoiceError::StaleTarget)?,
@@ -814,41 +1167,38 @@ impl Driver for DesktopDriver {
                 dx: 0.,
                 dy: action.scroll_y.into(),
             },
-            VoiceActionKind::PressKey => {
-                let literal = action
+            VoiceActionKind::PressKey => InputAction::KeyChord {
+                // The space bar's one name every desktop's input takes.
+                keys: action
                     .literal
                     .as_deref()
-                    .filter(|key| voice_control::policy::allowed_key(key))
-                    .ok_or(VoiceError::StaleTarget)?;
-                let key = match literal {
-                    "enter" => "Enter",
-                    "tab" => "Tab",
-                    "escape" => "Escape",
-                    "delete" => "Delete",
-                    "backspace" => "Backspace",
-                    other => other,
-                };
-                InputAction::KeyChord {
-                    keys: vec![key.into()],
-                }
-            }
+                    .and_then(voice_control::keys::keys)
+                    .ok_or(VoiceError::StaleTarget)?
+                    .into_iter()
+                    .map(|k| if k == "Space" { " ".into() } else { k })
+                    .collect(),
+            },
+            // The shortcuts browsers, file managers and most apps share.
+            VoiceActionKind::Back => keys(&["alt", "ArrowLeft"]),
+            VoiceActionKind::Forward => keys(&["alt", "ArrowRight"]),
+            VoiceActionKind::SwitchTab if action.previous_tab => keys(&["ctrl", "shift", "Tab"]),
+            VoiceActionKind::SwitchTab => keys(&["ctrl", "Tab"]),
             _ => {
                 return Err(VoiceError::Unavailable(
                     "That command is available in Browser voice control".into(),
                 ));
             }
         };
-        self.sink
-            .lock()
+        let mut sink = self.sink.lock().await;
+        authority.check()?;
+        sink.inject(&input, &t.geometry)
             .await
-            .inject(&input, &t.geometry)
-            .await
-            .map_err(|e| {
-                if matches!(e, ports::PlatformError::OutcomeUnknown(_)) {
-                    VoiceError::OutcomeUnknown
-                } else {
-                    VoiceError::Unavailable("Desktop input was refused".into())
-                }
+            .map_err(|e| match e {
+                ports::PlatformError::OutcomeUnknown(_) => VoiceError::OutcomeUnknown,
+                ports::PlatformError::TextUnavailable { .. } => VoiceError::Unavailable(
+                    "Some of these characters can’t be typed with the computer’s keyboard layout. Nothing was typed. Use the remote keyboard’s Paste".into(),
+                ),
+                _ => VoiceError::Unavailable("Desktop input was refused".into()),
             })
     }
     async fn picture(&self) -> Result<Option<String>, VoiceError> {
@@ -873,7 +1223,20 @@ impl Driver for DesktopDriver {
             .await
             .release_all()
             .await
-            .map_err(|_| VoiceError::OutcomeUnknown)
+            .map_err(|_| VoiceError::OutcomeUnknown)?;
+        // Unless the display's mark has been cleared since, which proved
+        // that launch stopped too.
+        let unfenced = self.unfenced.load(std::sync::atomic::Ordering::SeqCst);
+        if unfenced != u64::MAX
+            && unfenced
+                == self
+                    .launches
+                    .cleared
+                    .load(std::sync::atomic::Ordering::SeqCst)
+        {
+            return Err(VoiceError::LaunchUnstopped);
+        }
+        Ok(())
     }
     async fn detach(&self) -> Result<(), VoiceError> {
         self.barrier().await

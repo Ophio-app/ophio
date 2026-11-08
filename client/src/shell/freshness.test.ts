@@ -22,6 +22,14 @@ describe("freshness wording", () => {
     expect(stale.detail).toContain("Trying again now.");
   });
 
+  it("says Tailscale is off rather than only offline when the phone is off it", () => {
+    const reason = "This phone isn’t connected to Tailscale. Turn Tailscale on to reach the computer.";
+    const off = freshness({ state: "offline", since: 0, reason, retryAt: null, noTailscale: true }, true, 1, 50_001, "studio");
+    expect(off.label).toBe("Tailscale off");
+    expect(off.detail).toBe(`${reason} Last heard 50 s ago.`);
+    expect(freshness(offline(null), true, 1, 50_001, "studio").label).toBe("Offline");
+  });
+
   it("ends a reason that is already a sentence only once", () => {
     const silent = { state: "offline", since: 0, reason: "Cannot reach the computer. Check its address and private network.", retryAt: null } as const;
     expect(freshness(silent, true, 1, 50_001, "studio").detail).toBe(

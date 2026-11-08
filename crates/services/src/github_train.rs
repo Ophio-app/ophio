@@ -194,16 +194,25 @@ impl CompanionHub {
         let here = repo_key(&owner, &name);
         let path = format!("/repos/{owner}/{name}");
         let repo = repo.filter(|kept| repo_key(&kept.owner, &kept.name) == here);
-        let waiting = waiting(&tasks, &here);
-        // Through merge turned off, or no longer allowed: what waits is the
-        // person's to merge.
-        if !self.merges(settings, repo.as_ref()) {
+        // Through merge turned off or no longer allowed, or the person's
+        // choice for its task now to leave it to them: what waits is the
+        // person's to merge. A batch it was in is given up below.
+        let (waiting, leaving): (Vec<Car>, Vec<Car>) =
+            waiting(&tasks, &here).into_iter().partition(|car| {
+                let github = (tasks.iter())
+                    .find(|t| t.task_id == car.task_id)
+                    .and_then(|t| t.github.as_deref());
+                github.is_some_and(|g| self.merges(settings, g, repo.as_ref()))
+            });
+        if waiting.is_empty() {
             self.abandon(&*gh, &path, project_id, &mut train).await?;
             train.split.clear();
             self.save_train(project_id, &train)?;
-            for car in waiting {
-                self.to_person(car.task_id, car.number, None)?;
-            }
+        }
+        for car in leaving {
+            self.to_person(car.task_id, car.number, None)?;
+        }
+        if waiting.is_empty() {
             return Ok(());
         }
         let Some(repo) = repo else {

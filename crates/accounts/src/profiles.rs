@@ -17,6 +17,9 @@ pub enum Method {
         sign_out: Vec<String>,
         /// The tool opens the browser only when it has a terminal.
         pty: bool,
+        /// How it signs in from the phone's own browser instead.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        phone: Option<PhoneSignIn>,
     },
     /// A command-line tool signed in with its own config folder per account.
     Cli {
@@ -40,6 +43,18 @@ pub enum Method {
         variable: String,
         check_url: Option<String>,
     },
+}
+
+/// A sign-in the owner finishes in the phone's own browser: the tool prints
+/// the page's whole link rather than waiting on a page opened on this
+/// computer, and either shows a one-time code to enter there (Codex's device
+/// code) or takes back the code the page shows (Claude Code's manual flow).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PhoneSignIn {
+    pub sign_in: Vec<String>,
+    pub pty: bool,
+    /// The page shows a code that is pasted back into the tool.
+    pub paste_code: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -90,6 +105,12 @@ impl Profile {
     pub fn browser_sign_in(&self) -> bool {
         !matches!(self.method, Method::ApiKey { .. })
     }
+    pub fn phone_sign_in(&self) -> Option<&PhoneSignIn> {
+        match &self.method {
+            Method::Agent { phone, .. } => phone.as_ref(),
+            _ => None,
+        }
+    }
 }
 
 pub const GOOGLE_CREDENTIALS: &str = "GOOGLE_APPLICATION_CREDENTIALS";
@@ -110,6 +131,14 @@ pub fn builtins() -> Vec<Profile> {
                 status: argv("claude auth status"),
                 sign_out: argv("claude auth logout"),
                 pty: true,
+                // The same command: on a terminal it also prints the page's
+                // link for signing in elsewhere, whose page shows a code to
+                // paste back.
+                phone: Some(PhoneSignIn {
+                    sign_in: argv("claude auth login --claudeai"),
+                    pty: true,
+                    paste_code: true,
+                }),
             },
             manage_url: Some("https://claude.ai/settings/account".into()),
             builtin: true,
@@ -123,6 +152,13 @@ pub fn builtins() -> Vec<Profile> {
                 status: argv("codex login status"),
                 sign_out: argv("codex logout"),
                 pty: false,
+                // Works only once the ChatGPT account allows it, in its
+                // security settings.
+                phone: Some(PhoneSignIn {
+                    sign_in: argv("codex login --device-auth"),
+                    pty: false,
+                    paste_code: false,
+                }),
             },
             manage_url: Some("https://chatgpt.com/#settings/Security".into()),
             builtin: true,

@@ -312,12 +312,36 @@ fn opened_path(dir: &Dir) -> std::io::Result<PathBuf> {
         std::ffi::OsString::from_wide(&buffer[..size]),
     )))
 }
-#[cfg(not(any(target_os = "linux", windows)))]
+#[cfg(target_os = "macos")]
+#[allow(unsafe_code)]
+fn opened_path(dir: &Dir) -> std::io::Result<PathBuf> {
+    use std::os::{fd::AsRawFd, unix::ffi::OsStringExt};
+    let mut path = vec![0u8; libc::PATH_MAX as usize];
+    // SAFETY: dir owns the live descriptor, and F_GETPATH writes at most PATH_MAX
+    // bytes, which `path` holds.
+    if unsafe { libc::fcntl(dir.as_raw_fd(), libc::F_GETPATH, path.as_mut_ptr()) } < 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    let end = path
+        .iter()
+        .position(|byte| *byte == 0)
+        .unwrap_or(path.len());
+    path.truncate(end);
+    Ok(PathBuf::from(std::ffi::OsString::from_vec(path)))
+}
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 fn opened_path(_: &Dir) -> std::io::Result<PathBuf> {
     Err(std::io::ErrorKind::Unsupported.into())
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+fn disks() -> Vec<(String, PathBuf)> {
+    vec![
+        ("Computer".into(), "/".into()),
+        ("Other disks".into(), "/Volumes".into()),
+    ]
+}
+#[cfg(not(any(windows, target_os = "macos")))]
 fn disks() -> Vec<(String, PathBuf)> {
     vec![
         ("Computer".into(), "/".into()),

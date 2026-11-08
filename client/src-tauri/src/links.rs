@@ -48,6 +48,10 @@ pub enum LinkState {
         /// the computer may answer again once the phone is back on its network.
         #[serde(skip_serializing_if = "std::ops::Not::not")]
         mismatch: bool,
+        /// The computer is reached over Tailscale and this phone is not on it,
+        /// so the page can say so where it would only say offline.
+        #[serde(rename = "noTailscale", skip_serializing_if = "std::ops::Not::not")]
+        no_tailscale: bool,
     },
     Failed {
         reason: &'static str,
@@ -109,9 +113,11 @@ struct Handle {
     generation: AtomicU64,
     start: AtomicBool,
     wake: Notify,
-    /// The person asked to try again: ends a wait before the next attempt,
-    /// or restarts a link that failed.
+    /// The page asked to try again: ends a wait before the next attempt,
+    /// or restarts a link that failed, as [`backoff::Asks`] allows.
     retry: Notify,
+    /// The strongest request to try again since the link last looked.
+    asked: std::sync::Mutex<Option<backoff::Ask>>,
     reset: Notify,
     stop: CancellationToken,
     queue: mpsc::Sender<Outgoing>,
@@ -190,6 +196,7 @@ impl Links {
             start: AtomicBool::new(kind != ConnectionKind::Control),
             wake: Notify::new(),
             retry: Notify::new(),
+            asked: std::sync::Mutex::new(None),
             reset: Notify::new(),
             stop: CancellationToken::new(),
             queue,
@@ -205,7 +212,7 @@ impl Links {
         tauri::async_runtime::spawn(run(handle, receiver, vault, audio, clock, foreground));
         Ok(id)
     }
-    pub async fn connect(&self, id: u32) -> Result<()> {
+    pub async fn connect(&self, id: u32, ask: backoff::Ask) -> Result<()> {
         let handle = self
             .handles
             .lock()
@@ -216,6 +223,9 @@ impl Links {
         if !handle.start.swap(true, Ordering::SeqCst) {
             handle.wake.notify_one();
         } else if handle.kind == ConnectionKind::Control {
+            if let Ok(mut asked) = handle.asked.lock() {
+                *asked = (*asked).max(Some(ask));
+            }
             handle.retry.notify_one();
         }
         Ok(())
@@ -396,6 +406,7 @@ async fn run(
     foreground: Arc<AtomicBool>,
 ) {
     let mut backoff = Backoff::default();
+    let mut asks = backoff::Asks::default();
     let mut reachability = Reachability::default();
     let mut attempt = 0_u32;
     let mut generation = 0_u64;
@@ -413,6 +424,7 @@ async fn run(
         };
         let error = match connection {
             Ok((socket, challenge, auth)) => {
+                let connected = clock.monotonic();
                 reachability.heard();
                 if handle.kind == ConnectionKind::Control
                     && let Ok(mut owner) = handle.preview_owner.lock()
@@ -422,7 +434,6 @@ async fn run(
                         .as_ref()
                         .map(|id| (id.clone(), handle.stop.child_token()));
                 }
-                backoff.reset();
                 attempt = 0;
                 generation = generation.saturating_add(1).max(1);
                 handle.generation.store(generation, Ordering::SeqCst);
@@ -436,11 +447,16 @@ async fn run(
                 {
                     break;
                 }
-                tokio::select! {
+                let ended = tokio::select! {
                     _ = handle.stop.cancelled() => Error::Closed,
                     _ = handle.reset.notified() => Error::Busy,
                     result = session(&handle, socket, &mut queue, audio.as_ref(), &foreground, generation) => result.err().unwrap_or(Error::Closed),
-                }
+                };
+                // From a problem report: the phone connected and lost the computer
+                // dozens of times in a row. Only a connection that lasted
+                // starts the waits over.
+                backoff.ended_after(clock.monotonic().saturating_duration_since(connected));
+                ended
             }
             Err(e) => e,
         };
@@ -466,7 +482,7 @@ async fn run(
             );
             // Only the person asking tries again, as after updating the
             // computer or returning to the network it was paired on.
-            tokio::select! { _ = handle.stop.cancelled() => break, _ = handle.retry.notified() => continue }
+            tokio::select! { _ = handle.stop.cancelled() => break, _ = asked_now(&handle, clock.as_ref(), &mut asks) => continue }
         }
         let entropy = crate::keys::random::<2>()
             .map(|r| u16::from_ne_bytes(*r))
@@ -481,6 +497,7 @@ async fn run(
                 code: error.remote_code(),
                 retry_at: retry.as_ref().map(|r| r.wall_ms),
                 mismatch: matches!(error, Error::CertificateMismatch),
+                no_tailscale: matches!(error, Error::NoTailscale),
             },
         )
         .is_err()
@@ -488,12 +505,28 @@ async fn run(
             break;
         }
         let Some(retry) = retry else { return };
-        tokio::select! { _ = handle.stop.cancelled() => break, _ = handle.retry.notified() => {}, _ = backoff::wait(clock.as_ref(), retry.at) => {} }
+        tokio::select! { _ = handle.stop.cancelled() => break, _ = asked_now(&handle, clock.as_ref(), &mut asks) => {}, _ = backoff::wait(clock.as_ref(), retry.at) => {} }
     }
     handle.generation.store(0, Ordering::SeqCst);
     let _ = state(&handle, LinkState::Idle);
 }
 
+/// Returns once the page has asked to try now and [`backoff::Asks`] lets
+/// the request end the wait. One it drops leaves the wait as it was.
+async fn asked_now(handle: &Handle, clock: &dyn ports::Clock, asks: &mut backoff::Asks) {
+    loop {
+        handle.retry.notified().await;
+        let ask = handle
+            .asked
+            .lock()
+            .ok()
+            .and_then(|mut asked| asked.take())
+            .unwrap_or(backoff::Ask::Page);
+        if asks.take(ask, clock.monotonic()) {
+            return;
+        }
+    }
+}
 async fn session(
     handle: &Handle,
     mut socket: Socket,
@@ -563,7 +596,7 @@ impl Reachability {
     fn failed(&mut self, error: Error) -> Error {
         match error {
             Error::Timeout if self.unreachable => return Error::Unreachable,
-            Error::Unreachable => self.unreachable = true,
+            Error::Unreachable | Error::NoTailscale => self.unreachable = true,
             // The computer answered, if only to refuse.
             Error::Remote(_) => self.heard(),
             _ => {}
@@ -866,6 +899,38 @@ mod tests {
         assert!(matches!(fresh.failed(Error::Closed), Error::Closed));
         assert!(matches!(fresh.failed(Error::Timeout), Error::Timeout));
     }
+    #[test]
+    fn a_phone_off_tailscale_says_so_until_it_reaches_the_computer() {
+        let mut link = Reachability::default();
+        assert!(matches!(
+            link.failed(Error::NoTailscale),
+            Error::NoTailscale
+        ));
+        assert!(matches!(
+            link.failed(Error::NoTailscale),
+            Error::NoTailscale
+        ));
+        // Tailscale back on, and the computer still silent in the handshake.
+        assert!(matches!(link.failed(Error::Timeout), Error::Unreachable));
+        link.heard();
+        assert!(matches!(link.failed(Error::Timeout), Error::Timeout));
+    }
+    #[test]
+    fn the_page_is_told_when_the_phone_is_off_tailscale() {
+        let offline = |no_tailscale| {
+            serde_json::to_value(LinkState::Offline {
+                since: 1,
+                reason: "r".into(),
+                code: None,
+                retry_at: None,
+                mismatch: false,
+                no_tailscale,
+            })
+            .unwrap()
+        };
+        assert_eq!(offline(true)["noTailscale"], true);
+        assert!(offline(false).get("noTailscale").is_none());
+    }
     struct States(mpsc::UnboundedSender<LinkState>);
     impl Events for States {
         fn event(&self, event: LinkEvent) -> Result<()> {
@@ -1028,7 +1093,7 @@ mod tests {
             .port();
         let (links, id, mut states) =
             control_link(format!("127.0.0.1:{port}"), "ab".repeat(32)).await;
-        links.connect(id).await.unwrap();
+        links.connect(id, backoff::Ask::Page).await.unwrap();
         assert!(matches!(
             states.recv().await,
             Some(LinkState::Connecting { attempt: 1 })
@@ -1041,13 +1106,53 @@ mod tests {
             })
         ));
         // The person asks to try again while the link waits.
-        links.connect(id).await.unwrap();
+        links.connect(id, backoff::Ask::Person).await.unwrap();
         let next = tokio::time::timeout(Duration::from_secs(5), states.recv()).await;
         assert!(
             matches!(next, Ok(Some(LinkState::Connecting { attempt: 2 }))),
             "{next:?}"
         );
         links.close(id).await;
+    }
+    /// From a problem report: the phone cycled offline, connecting and connected
+    /// dozens of times a second. A page that asks to try again every time
+    /// the link goes offline gets one attempt at once, then waits its turn.
+    #[tokio::test]
+    async fn asking_again_on_every_failure_does_not_make_a_storm() {
+        let port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+        let links = Links::new(
+            Arc::new(NoKeys),
+            Arc::new(NoAudio),
+            Arc::new(ports::SystemClock),
+        );
+        let (seen, mut states) = mpsc::unbounded_channel();
+        let id = links
+            .open(
+                links.page(),
+                studio(format!("127.0.0.1:{port}"), "ab".repeat(32)),
+                ConnectionKind::Control,
+                Arc::new(States(seen)),
+            )
+            .await
+            .unwrap();
+        links.connect(id, backoff::Ask::Page).await.unwrap();
+        let mut attempts = 0;
+        let watching = tokio::time::Instant::now() + Duration::from_secs(3);
+        while let Ok(Some(state)) = tokio::time::timeout_at(watching, states.recv()).await {
+            match state {
+                LinkState::Connecting { .. } => attempts += 1,
+                // Nothing listens there, so each attempt fails at once, and
+                // the page asks again each time.
+                LinkState::Offline { .. } => links.connect(id, backoff::Ask::Page).await.unwrap(),
+                _ => {}
+            }
+        }
+        links.close(id).await;
+        assert!((1..=2).contains(&attempts), "{attempts} attempts in 3 s");
     }
     /// Hands the page each state but an offline one, as a webview that
     /// failed to take it.
@@ -1091,7 +1196,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(links.sent(id).await.unwrap(), 0);
-        links.connect(id).await.unwrap();
+        links.connect(id, backoff::Ask::Page).await.unwrap();
         assert!(matches!(
             states.recv().await,
             Some(LinkState::Connecting { attempt: 1 })
@@ -1141,7 +1246,7 @@ mod tests {
             }
         });
         let (links, id, mut states) = control_link(address, pin).await;
-        links.connect(id).await.unwrap();
+        links.connect(id, backoff::Ask::Page).await.unwrap();
         assert!(matches!(
             states.recv().await,
             Some(LinkState::Connecting { .. })
@@ -1167,7 +1272,7 @@ mod tests {
                 .await
                 .is_err()
         );
-        links.connect(id).await.unwrap();
+        links.connect(id, backoff::Ask::Page).await.unwrap();
         let next = tokio::time::timeout(Duration::from_secs(5), states.recv()).await;
         assert!(
             matches!(next, Ok(Some(LinkState::Connecting { .. }))),
@@ -1193,10 +1298,13 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(matches!(links.connect(earlier).await, Err(Error::Closed)));
+        assert!(matches!(
+            links.connect(earlier, backoff::Ask::Page).await,
+            Err(Error::Closed)
+        ));
         // A link the new page opened is never the earlier page's to end.
         links.end_earlier_pages().await;
-        assert!(links.connect(id).await.is_ok());
+        assert!(links.connect(id, backoff::Ask::Page).await.is_ok());
         links.close(id).await;
     }
     #[tokio::test]
@@ -1238,7 +1346,7 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(links.connect(id).await.is_ok());
+        assert!(links.connect(id, backoff::Ask::Page).await.is_ok());
         links.close(id).await;
     }
     #[test]

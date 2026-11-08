@@ -10,7 +10,8 @@ use protocol::{
     auth::{ChannelIdentity, ChannelKind, Grants, Principal},
     command::{ApprovalDecision, CommandResult, CommandStage, MessageDelivery, TaskPlacement},
     model::{
-        Approval, ApprovalKind, ApprovalState, AttentionKind, Snapshot, Task, TaskKind, TaskState,
+        Approval, ApprovalAction, ApprovalKind, ApprovalState, AttentionKind, Snapshot, Task,
+        TaskKind, TaskState,
     },
     time::Timestamp,
     *,
@@ -290,6 +291,7 @@ impl Core {
                 caller,
                 Query::Snapshot {
                     reads_withheld: None,
+                    account_items: false,
                 },
             )
             .await
@@ -1318,6 +1320,9 @@ impl Core {
                     && item.task_id.is_some()
                     && item.resolved_at.is_none()
                     && !item.quiet
+                    // Handled on a phone: told the person there already, and
+                    // published again only so their other phones put it away.
+                    && item.alert_handled_at.is_none()
                     && !matches!(item.kind, AttentionKind::Completed | AttentionKind::Failure) =>
             {
                 let snapshot = self.snapshot(&Self::caller(&current)).await?;
@@ -1461,16 +1466,25 @@ impl Core {
                 if a.kind == ApprovalKind::Question {
                     message.text.push_str("\nReply to this message with your answer (Discord guild: /answer with this message ID).");
                 } else {
-                    message.buttons = vec![
-                        Button {
-                            label: "Allow",
-                            data: format!("{reference}:allow"),
-                        },
-                        Button {
-                            label: "Deny",
-                            data: format!("{reference}:deny"),
-                        },
-                    ];
+                    // Allow only where the computer says it can be taken;
+                    // the rest is settled in the app.
+                    let allows = (a.actions.as_ref())
+                        .is_none_or(|actions| actions.contains(&ApprovalAction::Allow));
+                    if !allows {
+                        message
+                            .text
+                            .push_str("\nOpen it in the app: it can’t be allowed as it is.");
+                    }
+                    message.buttons = (allows.then(|| Button {
+                        label: "Allow",
+                        data: format!("{reference}:allow"),
+                    }))
+                    .into_iter()
+                    .chain([Button {
+                        label: "Deny",
+                        data: format!("{reference}:deny"),
+                    }])
+                    .collect();
                 }
             }
         }

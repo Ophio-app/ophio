@@ -1,11 +1,13 @@
 # Platform support and qualification
 
-The 0.1.1 beta targets Android ARM64 phones and Linux x86_64 computers.
-The [v0.1.1 release](https://github.com/ophio-app/ophio/releases/tag/v0.1.1) carries the official files: the
-Linux archive, the source, the Android app (unchanged from 0.1.0) and
-`SHA256SUMS`. A Windows build exists and is partly qualified
-in a virtual machine, but Windows is not an initial beta support promise.
-macOS and iPhone are not supported release targets; experimental
+The 0.2.0 beta targets Android ARM64 phones and Linux x86_64 computers.
+The [v0.2.0 release](https://github.com/ophio-app/ophio/releases/tag/v0.2.0)
+carries the official files: the Linux archive
+`ophio-0.2.0-x86_64-linux.tar.gz`, the source `ophio-0.2.0-source.tar.gz`,
+the Android app `ophio-0.2.0-arm64.apk` and `SHA256SUMS`. A Windows build can
+be made from the source and is partly qualified in a virtual machine, but it
+has no download and Windows is not a beta support promise. macOS and iPhone
+are not supported release targets and have no download; experimental
 implementations do not establish support.
 
 The table below records prior qualification, not a passing result for every
@@ -22,6 +24,8 @@ details and limits are in `docs/qualification/linux.md`.
 | Linux x86_64, desktop portals | ScreenCast + RemoteDesktop with PipeWire and explicit session consent | GNOME 46 (Ubuntu 24.04) and KDE Plasma 6.7 qualified independently in KVM guests: consent and restore, lock fencing, input, disconnect/reconnect and phone Stop. GNOME 46 ends capture when the display is rescaled; sharing must be reopened explicitly and may ask for consent again. Characters outside the portal keymap are refused as a whole; explicit paste works. |
 | Linux x86_64, X11 | GetImage, RandR, XFixes cursor composition and XTest input | Implemented fallback; native interoperability remains unqualified. MIT-SHM acceleration is not implemented. |
 | Windows 11 x86_64 | WGC monitor capture with DXGI fallback, SendInput, ConPTY, per-user protected storage/IPC and logon startup; every agent run Øphio launches starts suspended in a Job Object that allows no breakaway; private handoff for restricted Claude runs | Partly qualified in a KVM guest running Windows 11 Enterprise LTSC 2024 (24H2) with one 1280×800 display on the Microsoft Basic Display Adapter. Binaries are cross-compiled on Linux. The native tests of twelve crates, `containment` and `harness-claude` included, passed in the recorded standard-user desktop session; four were also exercised on a GitHub-hosted Windows Server 2025 runner. Those results do not establish that Windows checks run for the current candidate. Run in the guest: cross-account DPAPI refusal; owner-pipe refusal of another account and of SYSTEM; the packaged archive's install, login start, stop and update; console Ctrl+C, Ctrl+Break and close; and, with an Android emulator, pairing, the PowerShell terminal, file transfer, desktop watching, Take over, typing on US and German layouts and the lock state. In a classic console window, characters needing a dead-key composition or missing from the keyboard layout are dropped; Windows Terminal receives them. A physical PC, hardware GPU, more than one monitor, DPI or rotation changes, DXGI fallback, an elevated or UAC desktop, pointer input from the phone, a real Claude or Codex run, private handoff and Windows 10 are untested. `crates/platform-windows/README.md` lists what remains. |
+| iPhone | Tauri native shell with a Swift device plugin, iOS 16 or later | In development, not released, and no download exists in this release. Builds and starts in the iPhone simulator. Never run on a real iPhone, so Face ID, camera, microphone and the local network prompt are untested. Alerts arrive only while the app is open. |
+| Mac, Apple silicon | System sandbox, launchd login agent, ScreenCaptureKit capture, CoreGraphics input, menu bar Stop | In development, not released, and no download exists in this release. The automated tests pass on one Apple silicon Mac. Screen capture and input have not been run, because they need permissions given at the Mac. Voice control and window actions aren't implemented. |
 
 Use an ordinary logged-in desktop session with explicit capture/input permission.
 Input targets the session's focus and does not guarantee isolation to one window.

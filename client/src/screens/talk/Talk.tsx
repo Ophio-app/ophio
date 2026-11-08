@@ -21,6 +21,7 @@ import { Empty } from "../../design/ListRow";
 import { Notice } from "../../design/Notice";
 import type { CatalogKind, Project, Run, Task } from "../../protocol/types";
 import { projectTasks, replyAttention, reviewAttention } from "../../state/projection";
+import { ContextHeader } from "../../shell/ContextHeader";
 import { Screen, useRoute } from "../../shell/Screen";
 import type { RouteProps } from "../types";
 import { HandBack } from "./HandBack";
@@ -58,7 +59,8 @@ export default function Talk(_: RouteProps<"talk">) {
   const replying = useHost((s) => !!pid && selected === undefined && !!talkTask(s, pid, undefined));
 
   if (!project) {
-    return <Screen>{caughtUp ? <NoProjects /> : <div className="talk-loading" aria-busy="true" aria-label="Loading projects"><span /><span /><span /></div>}</Screen>;
+    // Still catching up, the header names the screen, so it always has its heading.
+    return <Screen header={caughtUp ? undefined : <ContextHeader heading />}>{caughtUp ? <NoProjects /> : <div className="talk-loading" aria-busy="true" aria-label="Loading projects"><span /><span /><span /></div>}</Screen>;
   }
   if (list || (selected === undefined && !replying && !conversing)) return <TalkConversations key={project.project_id} project={project} />;
   return <TalkProject key={project.project_id} project={project} />;

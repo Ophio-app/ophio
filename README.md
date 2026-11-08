@@ -17,8 +17,8 @@ phone.
   on them, with a project picker and an all-projects view.
 
 The Øphio app on your phone pairs directly with Øphio on each computer
-(Linux; a Windows build exists and is partly qualified, see
-[SUPPORT.md](SUPPORT.md)). There is no Øphio-operated server between your phone
+(Linux; Windows and Mac code is in the source, but has no download and isn't
+supported, see [SUPPORT.md](SUPPORT.md)). There is no Øphio-operated server between your phone
 and computer. Agents use your own signed-in accounts and send their requests
 to the provider you choose. Optional integrations and problem reports have
 separate destinations; [problem reports](docs/reports.md) are reviewed before
@@ -26,20 +26,27 @@ sending and require a configured receiving service.
 
 You pair a phone by running `ophio pair` on the computer and scanning its code.
 The phone can connect only after you confirm, at the computer, that it shows
-the same six-digit code.
+the same six-digit code. A phone can pair with several computers: the menu at
+the top of the app switches between them, and **All computers** shows the
+tasks, Needs you and To-Do of every one together.
 
 ## Install
 
-The 0.1.1 beta is for Android and Linux. Download the Linux archive,
-`ophio-0.1.1-x86_64-linux.tar.gz`, and the Android app,
-`ophio-0.1.0-arm64.apk`, from the [v0.1.1
-release](https://github.com/ophio-app/ophio/releases/tag/v0.1.1) (the [latest
+The 0.2.0 beta is for Android and Linux. Download the Linux archive,
+`ophio-0.2.0-x86_64-linux.tar.gz`, and the Android app,
+`ophio-0.2.0-arm64.apk`, from the [v0.2.0
+release](https://github.com/ophio-app/ophio/releases/tag/v0.2.0) (the [latest
 release](https://github.com/ophio-app/ophio/releases/latest) page always shows
-the newest), and check them against the release's `SHA256SUMS` file. The phone
-app is unchanged in 0.1.1, so it keeps its 0.1.0 name. Then follow the [Linux
-installation guide](packaging/linux/INSTALL.md) and the [beta
-walkthrough](docs/beta.md); [setup](docs/setup.md) describes what `ophio
+the newest), and check them against the release's `SHA256SUMS` file. Then
+follow the [Linux installation guide](packaging/linux/INSTALL.md) and the
+[beta walkthrough](docs/beta.md); [setup](docs/setup.md) describes what `ophio
 setup` does. [Platform limits](SUPPORT.md) lists what is supported.
+
+0.2.0 has a new phone app. If you already use Øphio, update the computer
+first with `ophio update ophio-0.2.0-x86_64-linux.tar.gz`; a paired phone is
+then offered the new app by the computer, under Settings › Versions ›
+**Update now**. You can also install `ophio-0.2.0-arm64.apk` from the release
+by hand. [Upgrading](docs/upgrading.md) has the details.
 
 ## Layout
 

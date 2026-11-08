@@ -100,7 +100,7 @@ impl Fixture {
     }
     async fn alerts(&self) -> Vec<Alert> {
         self.hub
-            .open_alerts(&Caller::local_owner())
+            .open_alerts(&Caller::local_owner(), false)
             .await
             .unwrap()
             .0
@@ -112,6 +112,7 @@ impl Fixture {
                 &Caller::local_owner(),
                 Query::Snapshot {
                     reads_withheld: Some(true),
+                    account_items: false,
                 },
             )
             .await

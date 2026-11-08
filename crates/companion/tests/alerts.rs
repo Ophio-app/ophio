@@ -32,6 +32,10 @@ fn alert(kind: AttentionKind, at: i64) -> Alert {
         quiet: false,
         bundle: false,
         report: None,
+        sign_in: None,
+        alert_type: None,
+        follow: false,
+        project_tier: None,
     }
 }
 fn item(alert: &Alert, resolved: bool) -> AttentionItem {
@@ -50,6 +54,9 @@ fn item(alert: &Alert, resolved: bool) -> AttentionItem {
         topic: None,
         quiet: false,
         report_id: None,
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
     }
 }
 async fn watching(fixture: &Fixture) -> support::Client {
@@ -62,6 +69,9 @@ async fn watching_quietly(fixture: &Fixture, quiet: bool) -> support::Client {
             showing: Vec::new(),
             quiet,
             reports: false,
+            sign_in: false,
+            handled: vec![],
+            types: false,
         })
         .await;
     client
@@ -325,6 +335,64 @@ async fn alerts_turned_off_reach_only_a_phone_that_holds_them_quietly() {
     fixture.stop().await;
 }
 
+/// The person mutes a project, or turns a type Off in it: a phone that
+/// chooses by type is sent the open list again, where what it already
+/// shows from that project is quiet, so it puts it away. A task the person
+/// asked to hear about stays loud.
+#[tokio::test]
+async fn muting_a_project_sends_a_phone_choosing_by_type_its_alerts_quiet() {
+    use protocol::notifications::{AlertType, Tier};
+    let fixture = Fixture::new().await;
+    let project = ProjectId::new();
+    let muted = Alert {
+        project_id: project,
+        alert_type: Some(AlertType::Question),
+        ..alert(AttentionKind::Question, 10)
+    };
+    let followed = Alert {
+        project_id: project,
+        alert_type: Some(AlertType::Finished),
+        follow: true,
+        ..alert(AttentionKind::Completed, 11)
+    };
+    (fixture.hub.alerts.lock().unwrap()).extend([(muted.clone(), true), (followed.clone(), true)]);
+    let mut client = fixture.authenticated(ConnectionKind::Alerts).await;
+    client
+        .send(&AlertClientFrame::Watch {
+            showing: Vec::new(),
+            quiet: true,
+            reports: false,
+            sign_in: false,
+            handled: vec![],
+            types: true,
+        })
+        .await;
+    let AlertServerFrame::Open { alerts, .. } = client.receive().await else {
+        panic!("open list first")
+    };
+    assert_eq!(alerts, vec![muted.clone(), followed.clone()]);
+    // As the hub marks them once the project is muted.
+    for (a, _) in fixture.hub.alerts.lock().unwrap().iter_mut() {
+        a.project_tier = Some(Tier::Off);
+        a.quiet = !a.follow;
+    }
+    fixture.hub.publish(Event::NotificationSettingsChanged {});
+    let AlertServerFrame::Open { alerts, gone, .. } = client.receive().await else {
+        panic!("a fresh list")
+    };
+    let listed: Vec<_> = alerts.iter().map(|a| (a.attention_id, a.quiet)).collect();
+    assert_eq!(
+        listed,
+        [(muted.attention_id, true), (followed.attention_id, false)]
+    );
+    assert!(gone.is_empty());
+    assert_eq!(
+        fixture.hub.open_types.lock().unwrap().as_slice(),
+        [true, true]
+    );
+    fixture.stop().await;
+}
+
 #[tokio::test]
 async fn a_reconnect_behind_a_full_list_names_what_the_phone_shows_that_closed_meanwhile() {
     let fixture = Fixture::new().await;
@@ -353,6 +421,9 @@ async fn a_reconnect_behind_a_full_list_names_what_the_phone_shows_that_closed_m
                 shown.attention_id,
             ],
             reports: false,
+            sign_in: false,
+            handled: vec![],
+            types: false,
         })
         .await;
     let AlertServerFrame::Open {
@@ -413,6 +484,9 @@ async fn watch_names_a_bounded_list() {
                 .map(|_| AttentionId::new())
                 .collect(),
             reports: false,
+            sign_in: false,
+            handled: vec![],
+            types: false,
         })
         .await;
     assert!(
@@ -527,6 +601,9 @@ async fn report_alerts_require_the_watch_capability_in_lists_and_live_events() {
             showing: Vec::new(),
             quiet: true,
             reports: true,
+            sign_in: false,
+            handled: vec![],
+            types: false,
         })
         .await;
     let AlertServerFrame::Open { alerts, .. } = supported.receive().await else {
@@ -569,6 +646,274 @@ async fn report_alerts_require_the_watch_capability_in_lists_and_live_events() {
     assert_eq!(
         supported.receive::<AlertServerFrame>().await,
         AlertServerFrame::Raised { alert: normal }
+    );
+    fixture.stop().await;
+}
+
+#[tokio::test]
+async fn sign_in_alerts_reach_only_a_phone_that_says_it_reads_them() {
+    let fixture = Fixture::new().await;
+    let mut lapsed = alert(AttentionKind::WaitingForYou, 10);
+    lapsed.project_id = "00000000-0000-0000-0000-000000000000".parse().unwrap();
+    lapsed.task_id = "00000000-0000-0000-0000-000000000000".parse().unwrap();
+    lapsed.project.clear();
+    lapsed.task.clear();
+    lapsed.headline = Some("Claude isn't signed in on Studio".into());
+    lapsed.sign_in = Some(Box::new(protocol::alerts::SignInAlert {
+        account_id: "claude".into(),
+        service: "Claude".into(),
+    }));
+    fixture
+        .hub
+        .alerts
+        .lock()
+        .unwrap()
+        .push((lapsed.clone(), true));
+    // An older phone, which couldn't read it, isn't sent it.
+    let mut old = watching(&fixture).await;
+    let AlertServerFrame::Open { alerts, .. } = old.receive().await else {
+        panic!("open")
+    };
+    assert!(alerts.is_empty());
+    let mut current = fixture.authenticated(ConnectionKind::Alerts).await;
+    current
+        .send(&AlertClientFrame::Watch {
+            showing: Vec::new(),
+            quiet: true,
+            reports: false,
+            sign_in: true,
+            handled: vec![],
+            types: false,
+        })
+        .await;
+    let AlertServerFrame::Open { alerts, .. } = current.receive().await else {
+        panic!("open")
+    };
+    assert_eq!(alerts, vec![lapsed.clone()]);
+    // Live, the same: the older phone's next frame is the task alert after.
+    let mut again = lapsed.clone();
+    again.attention_id = AttentionId::new();
+    let normal = alert(AttentionKind::Completed, 20);
+    fixture
+        .hub
+        .alerts
+        .lock()
+        .unwrap()
+        .extend([(again.clone(), true), (normal.clone(), true)]);
+    for raised in [&again, &normal] {
+        fixture.hub.publish(Event::AttentionUpserted {
+            item: item(raised, false),
+        });
+    }
+    assert_eq!(
+        current.receive::<AlertServerFrame>().await,
+        AlertServerFrame::Raised { alert: again }
+    );
+    assert_eq!(
+        old.receive::<AlertServerFrame>().await,
+        AlertServerFrame::Raised {
+            alert: normal.clone()
+        }
+    );
+    fixture.stop().await;
+}
+
+async fn watching_by_type(fixture: &Fixture, handled: Vec<AttentionId>) -> support::Client {
+    let mut client = fixture.authenticated(ConnectionKind::Alerts).await;
+    client
+        .send(&AlertClientFrame::Watch {
+            showing: Vec::new(),
+            quiet: true,
+            reports: true,
+            sign_in: true,
+            types: true,
+            handled,
+        })
+        .await;
+    client
+}
+
+/// A phone that chooses by type is told the computer takes its word that
+/// a notification was handled; what it handled while away is recorded
+/// before its list is read; and each it handles goes from every phone that
+/// can be told, itself included, once.
+#[tokio::test]
+async fn a_notification_handled_on_one_phone_goes_from_every_phone_that_can_be_told() {
+    let fixture = Fixture::new().await;
+    let swiped = alert(AttentionKind::Question, 10);
+    let away = alert(AttentionKind::Failure, 11);
+    let other = alert(AttentionKind::Approval, 12);
+    (fixture.hub.alerts.lock().unwrap()).extend([
+        (swiped.clone(), true),
+        (away.clone(), true),
+        (other.clone(), true),
+    ]);
+    let mut tablet = watching_by_type(&fixture, Vec::new()).await;
+    let AlertServerFrame::Open {
+        alerts, handled, ..
+    } = tablet.receive().await
+    else {
+        panic!("open list first")
+    };
+    assert!(handled, "the computer takes Handled frames");
+    assert_eq!(alerts.len(), 3);
+    let mut older = watching(&fixture).await;
+    let AlertServerFrame::Open { handled, .. } = older.receive().await else {
+        panic!("open list first")
+    };
+    assert!(!handled, "an older phone isn't asked for Handled frames");
+
+    // The phone comes back and says what it handled while away: recorded
+    // before its list, which then holds it quietly.
+    let mut phone = watching_by_type(&fixture, vec![away.attention_id]).await;
+    let AlertServerFrame::Open { alerts, .. } = phone.receive().await else {
+        panic!("open list first")
+    };
+    assert_eq!(*fixture.hub.handled.lock().unwrap(), [away.attention_id]);
+    let quiet: Vec<_> = alerts.iter().map(|a| (a.attention_id, a.quiet)).collect();
+    assert_eq!(
+        quiet,
+        [
+            (swiped.attention_id, false),
+            (away.attention_id, true),
+            (other.attention_id, false),
+        ]
+    );
+    let handled = |attention_id| AlertServerFrame::Handled { attention_id };
+    assert_eq!(
+        tablet.receive::<AlertServerFrame>().await,
+        handled(away.attention_id)
+    );
+
+    // Swiped now: every phone that can be told puts it away, this one too.
+    phone
+        .send(&AlertClientFrame::Handled {
+            attention_ids: vec![swiped.attention_id],
+        })
+        .await;
+    assert_eq!(
+        phone.receive::<AlertServerFrame>().await,
+        handled(swiped.attention_id)
+    );
+    assert_eq!(
+        tablet.receive::<AlertServerFrame>().await,
+        handled(swiped.attention_id)
+    );
+    // Changed again later, handled still: not said twice.
+    let mut again = item(&swiped, false);
+    again.alert_handled_at = Some(Timestamp(99));
+    fixture
+        .hub
+        .publish(Event::AttentionUpserted { item: again });
+    for (a, open) in fixture.hub.alerts.lock().unwrap().iter_mut() {
+        *open &= a.attention_id != other.attention_id;
+    }
+    fixture.hub.publish(Event::AttentionResolved {
+        attention_id: other.attention_id,
+    });
+    let resolved = AlertServerFrame::Resolved {
+        attention_id: other.attention_id,
+    };
+    for client in [&mut phone, &mut tablet, &mut older] {
+        // The older phone is told nothing of either until it closes.
+        assert_eq!(client.receive::<AlertServerFrame>().await, resolved);
+    }
+    // The open list of a phone that reconnects holds both quietly.
+    drop(phone);
+    let mut phone = watching_by_type(&fixture, Vec::new()).await;
+    let AlertServerFrame::Open { alerts, .. } = phone.receive().await else {
+        panic!("open list first")
+    };
+    assert_eq!(alerts.len(), 2);
+    assert!(alerts.iter().all(|a| a.quiet), "{alerts:?}");
+    assert_eq!(
+        *fixture.hub.open_types.lock().unwrap(),
+        [true, false, true, true]
+    );
+    fixture.stop().await;
+}
+
+/// Only a phone that said it chooses by type may say what it handled, and
+/// no more than it may show; any other request after watch is refused.
+#[tokio::test]
+async fn handled_frames_are_refused_from_older_phones_and_when_too_long() {
+    let fixture = Fixture::new().await;
+    let refused = async |client: &mut support::Client| {
+        assert!(
+            matches!(client.receive::<ServerFrame>().await, ServerFrame::Fatal(e) if e.code == ErrorCode::InvalidRequest)
+        );
+    };
+    let one = AlertClientFrame::Handled {
+        attention_ids: vec![AttentionId::new()],
+    };
+    let mut older = watching(&fixture).await;
+    let _: AlertServerFrame = older.receive().await;
+    older.send(&one).await;
+    refused(&mut older).await;
+
+    let too_many: Vec<_> = (0..=protocol::alerts::MAX_SHOWING)
+        .map(|_| AttentionId::new())
+        .collect();
+    let mut phone = watching_by_type(&fixture, Vec::new()).await;
+    let _: AlertServerFrame = phone.receive().await;
+    phone
+        .send(&AlertClientFrame::Handled {
+            attention_ids: too_many.clone(),
+        })
+        .await;
+    refused(&mut phone).await;
+    let mut phone = watching_by_type(&fixture, too_many).await;
+    refused(&mut phone).await;
+    // A second watch, or Handled first, isn't a request it takes either.
+    let mut phone = watching_by_type(&fixture, Vec::new()).await;
+    let _: AlertServerFrame = phone.receive().await;
+    phone
+        .send(&AlertClientFrame::Watch {
+            showing: Vec::new(),
+            quiet: true,
+            reports: false,
+            sign_in: false,
+            types: true,
+            handled: Vec::new(),
+        })
+        .await;
+    refused(&mut phone).await;
+    let mut first = fixture.authenticated(ConnectionKind::Alerts).await;
+    first.send(&one).await;
+    refused(&mut first).await;
+    assert!(fixture.hub.handled.lock().unwrap().is_empty());
+    fixture.stop().await;
+}
+
+/// What the phone chooses by reaches it as the computer says it.
+#[tokio::test]
+async fn an_alert_carries_its_type_its_projects_choice_and_follow() {
+    use protocol::notifications::{AlertType, Tier};
+    let fixture = Fixture::new().await;
+    let followed = Alert {
+        alert_type: Some(AlertType::Finished),
+        project_tier: Some(Tier::Alert),
+        follow: true,
+        ..alert(AttentionKind::Completed, 10)
+    };
+    let muted = Alert {
+        alert_type: Some(AlertType::Question),
+        project_tier: Some(Tier::Off),
+        ..alert(AttentionKind::Question, 11)
+    };
+    (fixture.hub.alerts.lock().unwrap()).push((followed.clone(), true));
+    let mut phone = watching_by_type(&fixture, Vec::new()).await;
+    let AlertServerFrame::Open { alerts, .. } = phone.receive().await else {
+        panic!("open list first")
+    };
+    assert_eq!(alerts, [followed]);
+    (fixture.hub.alerts.lock().unwrap()).push((muted.clone(), true));
+    fixture.hub.publish(Event::AttentionUpserted {
+        item: item(&muted, false),
+    });
+    assert_eq!(
+        phone.receive::<AlertServerFrame>().await,
+        AlertServerFrame::Raised { alert: muted }
     );
     fixture.stop().await;
 }

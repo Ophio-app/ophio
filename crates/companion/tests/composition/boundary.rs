@@ -17,6 +17,7 @@ async fn snapshot(phone: &mut Phone) -> Box<Snapshot> {
     let QueryData::Snapshot(snapshot) = phone
         .query(Query::Snapshot {
             reads_withheld: None,
+            account_items: false,
         })
         .await
     else {

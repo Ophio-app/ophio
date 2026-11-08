@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { useHandledOnScreen } from "../../platform/handled";
 import { ReportAttention } from "../../reports/Questions";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useApp, useHost, useLink, useCommand, shallowEqual } from "../../app/context";
@@ -18,7 +19,10 @@ import { APPROVALS_NOT_GRANTED, UnsavedAnswer, useApprovalDecision } from "./sha
 import "./work.css";
 import { useQueue, pendingQueueItems } from "./useQueue";
 import { PrChip } from "../github/PrSheet";
+import { ReportTask } from "./ReportTask";
 import { unlockFor, useGithubRun } from "../github/common";
+import { isSignInItem, usePhoneSignIn } from "../settings/signIn";
+import { NotNowButton, SignInAgainButton } from "../settings/SignInAgain";
 
 type Destination =
   | { kind: "inbox" }
@@ -27,6 +31,7 @@ type Destination =
   | { kind: "request"; approval: Approval }
   | { kind: "talk"; task: Task }
   | { kind: "queue"; task: Task }
+  | { kind: "sign_in"; accountId: string }
   | { kind: "missing"; reason: string };
 
 /** A problem report someone sent to the owner's intake, for the owner to read. */
@@ -37,6 +42,7 @@ export function isInboxItem(item: AttentionItem): boolean {
 /** Never substitute the task's newest run for the immutable alert reference. */
 export function attentionDestination(item: AttentionItem | undefined, state: Pick<HostState, "tasks" | "runs" | "approvals" | "caughtUp"> & Partial<Pick<HostState, "grants">>, now: number): Destination {
   if (!item) return { kind: "missing", reason: state.caughtUp ? "This item is no longer available on the computer." : "Waiting for the computer’s current items…" };
+  if (isSignInItem(item)) return item.resolved_at === null ? { kind: "sign_in", accountId: item.account_id! } : { kind: "missing", reason: "This notice is closed: the agent was signed in again or the notice was put away." };
   if (item.resolved_at !== null) return { kind: "missing", reason: "This update has already been handled. It no longer needs a decision." };
   if (item.kind === "approval" || item.approval_id) {
     const approval = item.approval_id ? state.approvals[item.approval_id] : undefined;
@@ -79,8 +85,10 @@ export function placeAttention(ui: UiStore, attentionId: string, destination: Ro
 
 /** Opening an alert is navigation only. Decisions still quote the request revision. */
 export default function Attention({ route }: RouteProps<"attention">) {
-  const { ui } = useApp();
+  const { ui, platform, profile } = useApp();
   const { active } = useRoute();
+  // Opened, its notification has done its job.
+  useHandledOnScreen(platform, profile.profileId, [route.attentionId], active);
   const state = useHost((s) => ({ attention: s.attention, tasks: s.tasks, runs: s.runs, approvals: s.approvals, projects: s.projects, caughtUp: s.caughtUp, grants: s.grants }), shallowEqual);
   const link = useLink();
   const now = useNow();
@@ -107,6 +115,7 @@ export default function Attention({ route }: RouteProps<"attention">) {
       placeAttention(ui, route.attentionId, kind === "receipt" && taskId ? { screen: "receipt", taskId, ...(runId ? { runId } : {}) } : route);
     }
   }, [ui, route, active, kind, taskId, projectId, runId, queueItemId]);
+  if (item && isSignInItem(item)) return <Screen title="Sign in again" className="work-screen"><SignInAttention item={item} reason={destination.kind === "missing" ? destination.reason : null} /></Screen>;
   if (item && isInboxItem(item)) return <Screen title="Problem report" className="work-screen"><InboxReport item={item} /></Screen>;
   // A fix waiting for review carries its report too; only status updates open the report.
   if (item?.report_id && kind !== "report_fix") return <Screen title="Report update"><ReportAttention reportId={item.report_id} /></Screen>;
@@ -131,7 +140,12 @@ export default function Attention({ route }: RouteProps<"attention">) {
   );
 }
 
-/** Shown as it came: the reporter's words are data, and nothing here starts work. */
+/** Shown as it came: the reporter's words are data. Work starts only when the
+ * person asks: Look into it hands the report to the contained fixer, and
+ * where none runs, ReportTask has an ordinary agent plan a fix in Plan mode.
+ * That agent can't change anything until the person reads its plan and
+ * chooses Carry out this plan; the computer, not this screen, writes its
+ * prompt, with the reporter's words fenced as data. */
 function InboxReport({ item }: { item: AttentionItem }) {
   const online = useLink().state === "online";
   const canAct = useHost((s) => s.grants?.tasks === true);
@@ -149,7 +163,25 @@ function InboxReport({ item }: { item: AttentionItem }) {
     {open && item.report_id && !item.body?.split("\n").some((line) =>
       line === "Look into it can't use it: its code can't be read safely enough to show an agent." ||
       line === "Look into it can't use it: it has a string longer than 256 bytes, which no agent is shown.") && <LookIntoReport reportId={item.report_id} />}
+    {item.report_id && <ReportTask reportId={item.report_id} open={open} />}
     {open && <Button aria-label="Put this report away" disabled={!online || !canAct} onClick={() => void send({ command: "acknowledge_attention", attention_id: item.attention_id }, { label: "Put problem report away" })}>Done</Button>}
+  </div>;
+}
+
+/** An agent the computer says isn't signed in: its words, and the way back in. */
+function SignInAttention({ item, reason }: { item: AttentionItem; reason: string | null }) {
+  const { ui } = useApp();
+  const online = useLink().state === "online";
+  const able = usePhoneSignIn();
+  return <div className="work-stack">
+    {!online && <Notice tone="unknown">Connect to the computer to check this item’s current state.</Notice>}
+    {reason && <Notice>{reason}</Notice>}
+    <h2 className="work-card-title">{item.title}</h2>
+    <p className="work-caption">Received <Age at={item.created_at} suffix=" ago" /></p>
+    {item.body && <p>{item.body}</p>}
+    {!reason && item.account_id && (able
+      ? <><SignInAgainButton accountId={item.account_id} size="md" block /><NotNowButton item={item} size="md" block then={() => ui.finish(["attention"])} /></>
+      : <Notice tone="unknown">This device may not manage the computer’s accounts, so it can’t sign the agent in.</Notice>)}
   </div>;
 }
 

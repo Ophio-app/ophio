@@ -19,7 +19,7 @@ import { stageRecovery } from "./recovery";
 import { saveDraft } from "./save";
 import { FileProvenance, readerContext } from "./Provenance";
 import Reusable from "./Reusable";
-import Recovery from "./Recovery";
+import Recovery from "./RecoveryView";
 
 let app: App,
   serial = 0;

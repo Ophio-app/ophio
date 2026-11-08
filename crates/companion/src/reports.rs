@@ -35,20 +35,25 @@ pub fn install_panic_hook(data: PathBuf, build: String) {
     INSTALL.call_once(|| {
         let previous = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |info| {
+            let text = info
+                .payload()
+                .downcast_ref::<&str>()
+                .copied()
+                .or_else(|| info.payload().downcast_ref::<String>().map(String::as_str));
+            // Not a crash: the program reading this one's output has gone,
+            // and it stops as quietly as any other command would.
+            if text.is_some_and(reader_gone) {
+                return;
+            }
             if let Ok(target) = TARGET.try_read()
                 && let Some((data, build)) = target.as_ref()
             {
                 let location = info.location();
                 let file = location
-                    .and_then(|l| repo_file(l.file()))
+                    .and_then(|l| repo_file(l.file()).or_else(|| toolchain_file(l.file())))
                     .unwrap_or_else(|| "unknown".into());
                 let line = location.map_or(0, |l| l.line());
-                let message = info
-                    .payload()
-                    .downcast_ref::<&str>()
-                    .copied()
-                    .or_else(|| info.payload().downcast_ref::<String>().map(String::as_str))
-                    .and_then(scrub);
+                let message = text.and_then(scrub);
                 let backtrace = std::backtrace::Backtrace::force_capture().to_string();
                 let record = CrashRecord {
                     at: Timestamp::now(),
@@ -64,6 +69,21 @@ pub fn install_panic_hook(data: PathBuf, build: String) {
             previous(info);
         }));
     });
+}
+/// Whether `message` is the panic Rust's `print!` family raises when the
+/// program reading this one's output has gone, as after `ophio update |
+/// head -4` has read its lines.
+fn reader_gone(message: &str) -> bool {
+    let Some(error) = (message.strip_prefix("failed printing to stdout: "))
+        .or_else(|| message.strip_prefix("failed printing to stderr: "))
+    else {
+        return false;
+    };
+    (error.rsplit_once("(os error "))
+        .and_then(|(_, code)| code.strip_suffix(')')?.parse::<i32>().ok())
+        .is_some_and(|code| {
+            std::io::Error::from_raw_os_error(code).kind() == std::io::ErrorKind::BrokenPipe
+        })
 }
 fn repo_file(file: &str) -> Option<String> {
     let file = file.replace('\\', "/");
@@ -203,6 +223,21 @@ mod tests {
         if let Ok(mut target) = TARGET.write() {
             *target = None;
         }
+    }
+    #[test]
+    fn only_a_gone_output_reader_is_not_a_crash() {
+        // Rust's own words when `print!` meets a closed pipe (seen in a problem report).
+        #[cfg(unix)]
+        let closed = "Broken pipe (os error 32)";
+        #[cfg(windows)]
+        let closed = "The pipe is being closed. (os error 232)";
+        assert!(reader_gone(&format!("failed printing to stdout: {closed}")));
+        assert!(reader_gone(&format!("failed printing to stderr: {closed}")));
+        assert!(!reader_gone(
+            "failed printing to stdout: No space left on device (os error 28)"
+        ));
+        assert!(!reader_gone(closed));
+        assert!(!reader_gone("called `Option::unwrap()` on a `None` value"));
     }
     #[test]
     fn frames_only_keep_repository_sources() {

@@ -154,6 +154,7 @@ async fn a_linked_run_opens_its_draft_pull_request_and_keeps_it_current() {
         .started(GithubLink::Issue {
             number: 12,
             review_with: None,
+            when_green: None,
         })
         .await;
     assert!(binding.github);
@@ -438,6 +439,7 @@ async fn findings_are_filed_once_each_and_within_the_runs_limit() {
         .started(GithubLink::Issue {
             number: 12,
             review_with: None,
+            when_green: None,
         })
         .await;
     let issue = |title: &str, security| GithubCall::Issue {
@@ -511,6 +513,7 @@ async fn issues_that_read_alike_are_read_before_one_is_filed() {
         .started(GithubLink::Issue {
             number: 12,
             review_with: None,
+            when_green: None,
         })
         .await;
     let issue = |title: &str, distinct_from: &[u64]| GithubCall::Issue {
@@ -593,6 +596,7 @@ async fn elsewhere_each_post_waits_for_the_person() {
         .started(GithubLink::Issue {
             number: 12,
             review_with: None,
+            when_green: None,
         })
         .await;
     let comments = "POST /repos/octo/app/issues/12/comments";
@@ -680,6 +684,7 @@ async fn an_issue_found_fixed_already_is_closed_in_the_persons_name() {
         .started(GithubLink::Issue {
             number: 12,
             review_with: None,
+            when_green: None,
         })
         .await;
     r.found_fixed(&binding, 12, true).await;
@@ -746,6 +751,7 @@ async fn trying_an_issue_again_answers_the_agent_that_couldnt_reproduce_it() {
         .started(GithubLink::Issue {
             number: 12,
             review_with: None,
+            when_green: None,
         })
         .await;
     r.found_fixed(&binding, 12, false).await;
@@ -755,6 +761,7 @@ async fn trying_an_issue_again_answers_the_agent_that_couldnt_reproduce_it() {
             GithubLink::Issue {
                 number: 12,
                 review_with: None,
+                when_green: None,
             },
             "Fix #12: Crash on save\n\nIt still crashes with a full disk.",
         )
@@ -1196,6 +1203,7 @@ async fn a_tasks_pull_request_is_never_another_tasks() {
         .started(GithubLink::Issue {
             number: 13,
             review_with: None,
+            when_green: None,
         })
         .await;
     let head = task.branch.as_ref().unwrap().name.clone();
@@ -1288,6 +1296,7 @@ async fn a_branch_already_merged_as_it_is_opens_no_second_pull_request() {
         .started(GithubLink::Issue {
             number: 13,
             review_with: None,
+            when_green: None,
         })
         .await;
     let head = task.branch.as_ref().unwrap().name.clone();
@@ -1355,6 +1364,7 @@ async fn a_task_on_github_asks_another_agent_but_plans_no_work() {
         GithubLink::Issue {
             number: 7,
             review_with: None,
+            when_green: None,
         },
         GithubLink::Pr { number: 7 },
     ] {
@@ -1411,4 +1421,74 @@ async fn a_task_on_github_asks_another_agent_but_plans_no_work() {
         assert!(spec.github.is_none());
         r.f.close().await;
     }
+}
+
+#[tokio::test]
+async fn an_agent_is_told_and_held_to_the_persons_choice_for_its_task() {
+    let told = |r: &Repo| {
+        let specs = r.f.harness.specs.lock().unwrap();
+        specs.last().unwrap().github.clone().unwrap()
+    };
+    // In Drafts, chosen to merge once green, it is taken through.
+    let r = repo(true).await;
+    r.set(drafts()).await.unwrap();
+    r.mine(12, "Crash on save");
+    r.started(GithubLink::Issue {
+        number: 12,
+        review_with: None,
+        when_green: Some(WhenGreen::Merge),
+    })
+    .await;
+    let text = told(&r);
+    assert!(
+        text.contains("the person chose that its pull request merges once it is green")
+            && text.contains(
+                "Øphio has the change reviewed, and corrections rechecked, then merges it"
+            ),
+        "{text}"
+    );
+    r.f.close().await;
+
+    // In Through merge, left for the person, it stops once green and
+    // can't merge it.
+    let r = repo(true).await;
+    let through = GithubSettings {
+        mode: GithubMode::ThroughMerge,
+        ..Default::default()
+    };
+    r.set(through).await.unwrap();
+    let keep = GithubAction::AnswerWarning {
+        project_id: r.project_id,
+        repo: "octo/app".into(),
+        keep_through_merge: true,
+    };
+    r.act(&Caller::local_owner(), keep).await.unwrap();
+    r.mine(12, "Crash on save");
+    let (_, binding) = r
+        .started(GithubLink::Issue {
+            number: 12,
+            review_with: None,
+            when_green: Some(WhenGreen::Leave),
+        })
+        .await;
+    let text = told(&r);
+    assert!(
+        text.contains("the person chose to merge its pull request themselves")
+            && text.contains("the person marks it ready and merges it")
+            && !text.contains("github_merge"),
+        "{text}"
+    );
+    for refused in [
+        GithubCall::Ready,
+        GithubCall::Merge {
+            expected_head: "aaa111".into(),
+        },
+    ] {
+        let e = call(&r.f, &binding, refused).await.unwrap_err();
+        assert!(
+            e.contains("chose to merge this pull request themselves"),
+            "{e}"
+        );
+    }
+    r.f.close().await;
 }

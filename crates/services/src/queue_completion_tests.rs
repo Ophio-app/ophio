@@ -1090,6 +1090,8 @@ async fn an_answer_the_agent_refuses_says_why_and_leaves_the_request_waiting() {
         .emit(
             run,
             ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "permissions".into(),
                 kind: ApprovalKind::Command,
                 title: "Use the network".into(),
@@ -1424,6 +1426,52 @@ async fn archiving_or_renaming_a_task_keeps_the_rest_starting_by_themselves() {
     f.hub.advance_queues().await.unwrap();
     run_started(&f, first).await;
     assert_eq!(open(), 0);
+    f.close().await;
+}
+
+/// Turning on "Tell me when it's done" for a task waiting in Next up
+/// changes nothing the person let start: it still starts by itself.
+#[tokio::test]
+async fn following_a_task_in_next_up_keeps_its_go_ahead() {
+    let f = Fixture::new().await;
+    let owner = Caller::local_owner();
+    let project = f.project().await;
+    let (busy, _) = f
+        .task(project, TaskPlacement::StartNow, &owner, false)
+        .await;
+    let busy_run = run_started(&f, busy).await;
+    let by_itself = TaskPlacement::Queue {
+        position: None,
+        authorization: QueueAuthorization::AutoStart,
+    };
+    let (followed, _) = f.task(project, by_itself, &owner, false).await;
+    let receipt = f
+        .hub
+        .submit(
+            &owner,
+            CommandEnvelope::new(Command::SetTaskNotify {
+                task_id: followed,
+                on: true,
+            }),
+        )
+        .await;
+    assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
+    let waiting = || {
+        f.hub
+            .read(|r| r.list::<AttentionItem>("attention"))
+            .unwrap()
+            .into_iter()
+            .filter(|a| a.resolved_at.is_none() && a.kind == AttentionKind::WaitingForYou)
+            .count()
+    };
+    f.hub
+        .finish_run(busy_run, RunState::Completed, None)
+        .unwrap();
+    assert_eq!(waiting(), 0, "nothing asks for a go-ahead already given");
+    f.hub.advance_queues().await.unwrap();
+    run_started(&f, followed).await;
+    let task: Task = f.hub.read(|r| r.require("task", followed)).unwrap();
+    assert!(task.notify_done);
     f.close().await;
 }
 

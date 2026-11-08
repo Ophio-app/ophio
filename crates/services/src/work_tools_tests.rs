@@ -374,6 +374,7 @@ async fn a_task_working_on_github_doesnt_plan_other_work() {
         .started(GithubLink::Issue {
             number: 9,
             review_with: None,
+            when_green: None,
         })
         .await;
     let spec = r.f.harness.specs.lock().unwrap().last().cloned().unwrap();

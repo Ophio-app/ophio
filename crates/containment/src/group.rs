@@ -20,7 +20,8 @@
 //! `/proc` is opened once for each look, and all of it is read through that
 //! one handle without crossing a mount, so none made meanwhile can change what
 //! is seen. A remount can still change what that one shows, so a look that
-//! finds none left reads its options again and counts only if they held.
+//! finds none left reads its options again and counts only if they held. On a
+//! Mac the system's process list says the same, and has no such options.
 use crate::{END_WITHIN, leader::Leader, unconfirmed};
 use ports::HarnessError;
 use rustix::{
@@ -64,6 +65,13 @@ impl Group {
                 }
                 match rustix::process::kill_process_group(leader.pid, Signal::KILL) {
                     Ok(()) | Err(Errno::SRCH) => Ok(()),
+                    // A Mac refuses to signal a group of nothing but zombies.
+                    #[cfg(target_os = "macos")]
+                    Err(Errno::PERM)
+                        if matches!(live_members(leader.pid, None, None, None), Ok(false)) =>
+                    {
+                        Ok(())
+                    }
                     Err(e) => Err(unconfirmed(format!(
                         "Ending the agent's process group: {}",
                         std::io::Error::from(e)
@@ -415,11 +423,78 @@ fn in_initial_user_namespace(link: std::io::Result<Vec<u8>>) -> bool {
     link.is_ok_and(|target| target == b"user:[4026531837]")
 }
 
+/// Whether the group `pgid` has a member that isn't a zombie. The system's
+/// process list names the group's members and says which have exited, so the
+/// unreaped leader alone leaves none. A member that goes while being looked
+/// at is gone; any other failure to look says nothing, as on Linux.
+#[cfg(target_os = "macos")]
+#[allow(unsafe_code)]
+fn live_members(
+    pgid: Pid,
+    _mounts: Option<&Path>,
+    _status: Option<&Path>,
+    _user_namespace: Option<&Path>,
+) -> std::io::Result<bool> {
+    const ZOMBIE: u32 = 5; // SZOMB in <sys/proc.h>.
+    let mut members = vec![0 as libc::c_int; 256];
+    let count = loop {
+        let capacity = i32::try_from(std::mem::size_of_val(members.as_slice()))
+            .map_err(std::io::Error::other)?;
+        // SAFETY: the pointer and size describe `members`, which outlives the call.
+        let count = unsafe {
+            libc::proc_listpgrppids(pgid.as_raw_pid(), members.as_mut_ptr().cast(), capacity)
+        };
+        let count = usize::try_from(count).map_err(|_| std::io::Error::last_os_error())?;
+        if count < members.len() {
+            break count;
+        }
+        if members.len() >= 1 << 16 {
+            return Err(std::io::Error::other(
+                "The process group is too large to read",
+            ));
+        }
+        let doubled = members.len() * 2;
+        members.resize(doubled, 0);
+    };
+    for &member in members.iter().take(count).filter(|&&pid| pid > 0) {
+        // SAFETY: an all-zero proc_bsdinfo is valid: it holds only integers and
+        // byte arrays.
+        let mut info: libc::proc_bsdinfo = unsafe { std::mem::zeroed() };
+        let size = i32::try_from(std::mem::size_of::<libc::proc_bsdinfo>())
+            .map_err(std::io::Error::other)?;
+        // SAFETY: the pointer and size describe `info`, which outlives the call.
+        let read = unsafe {
+            libc::proc_pidinfo(
+                member,
+                libc::PROC_PIDTBSDINFO,
+                0,
+                std::ptr::from_mut(&mut info).cast(),
+                size,
+            )
+        };
+        if read == size {
+            if info.pbi_status != ZOMBIE && i64::from(info.pbi_pgid) == i64::from(pgid.as_raw_pid())
+            {
+                return Ok(true);
+            }
+            continue;
+        }
+        // The system answers nothing about a process that has gone, and on some
+        // versions about a zombie. A live member the companion can't read would
+        // need another account, which the signal above would have refused.
+        let error = std::io::Error::last_os_error();
+        if !matches!(error.raw_os_error(), Some(libc::ESRCH) | Some(0)) {
+            return Err(error);
+        }
+    }
+    Ok(false)
+}
+
 /// Whether the group `pgid` has any member. Here a zombie cannot be told from
 /// a live process, so while the run's task leaves its agent unreaped the end
 /// is never confirmed and the run stays open, as for any unconfirmed end.
 /// Ophio supports no such system; this only keeps it from ending wrongly.
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn live_members(
     pgid: Pid,
     _mounts: Option<&Path>,
@@ -430,6 +505,70 @@ fn live_members(
         Err(Errno::SRCH) => Ok(false),
         Err(e) => Err(e.into()),
         Ok(()) => Ok(true),
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod macos_tests {
+    use super::*;
+    use std::os::unix::process::CommandExt;
+
+    fn group_of(child: &std::process::Child) -> Pid {
+        Pid::from_raw(i32::try_from(child.id()).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn a_live_member_counts_and_an_unreaped_leader_does_not() {
+        let mut child = std::process::Command::new("/bin/sleep")
+            .arg("30")
+            .process_group(0)
+            .spawn()
+            .unwrap();
+        let group = group_of(&child);
+        assert!(live_members(group, None, None, None).unwrap());
+        child.kill().unwrap();
+        // Left unreaped, as what drives a run leaves it: only a zombie remains.
+        let deadline = std::time::Instant::now() + Duration::from_secs(5);
+        while live_members(group, None, None, None).unwrap() {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "a zombie leader still counted as live"
+            );
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        child.wait().unwrap();
+        assert!(!live_members(group, None, None, None).unwrap());
+    }
+
+    #[test]
+    fn a_survivor_counts_after_its_leader_exits() {
+        // The leader starts a sleeper in its own group, says so, then exits.
+        let mut child = std::process::Command::new("/bin/sh")
+            .args(["-c", "/bin/sleep 30 & echo $!"])
+            .process_group(0)
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        let group = group_of(&child);
+        let mut line = String::new();
+        std::io::BufRead::read_line(
+            &mut std::io::BufReader::new(child.stdout.take().unwrap()),
+            &mut line,
+        )
+        .unwrap();
+        let survivor: i32 = line.trim().parse().unwrap();
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(live_members(group, None, None, None).unwrap());
+        rustix::process::kill_process(Pid::from_raw(survivor).unwrap(), Signal::KILL).unwrap();
+        let deadline = std::time::Instant::now() + Duration::from_secs(5);
+        while live_members(group, None, None, None).unwrap() {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "the survivor was missed"
+            );
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        child.wait().unwrap();
     }
 }
 

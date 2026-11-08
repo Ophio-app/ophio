@@ -73,6 +73,7 @@ pub(crate) mod tests {
                 browser: false,
                 github: false,
                 checklist_answers: false,
+                read_only: false,
             }),
             project_settings: false,
             env: Default::default(),

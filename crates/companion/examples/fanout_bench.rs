@@ -129,6 +129,7 @@ async fn bench(devices: tokio::runtime::Handle, phones: u64, activities: u64) {
             let mut ws = common::connect(address, &pin, &key, device_id, None).await;
             ws.send(text(&ClientFrame::Subscribe(Subscribe {
                 after_seq: Some(head),
+                account_items: false,
             })))
             .await
             .unwrap();
@@ -159,6 +160,7 @@ async fn bench(devices: tokio::runtime::Handle, phones: u64, activities: u64) {
                     received.resubscribed.fetch_add(1, Ordering::Relaxed);
                     ws.send(text(&ClientFrame::Subscribe(Subscribe {
                         after_seq: Some(applied),
+                        account_items: false,
                     })))
                     .await
                     .unwrap();

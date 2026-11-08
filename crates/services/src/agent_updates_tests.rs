@@ -119,6 +119,7 @@ async fn runs_welcome_questions_until_the_person_turns_them_off() {
     assert!(questions);
     assert!(told.contains("which system it comes from"), "{told}");
     assert!(!told.contains("turned questions off"), "{told}");
+    assert!(told.contains("say which you would pick and why"), "{told}");
     // Either way it is told never to wait in its turn, and how not to.
     assert!(told.contains("Never wait in your turn"), "{told}");
     assert!(told.contains("call the wake_me tool"), "{told}");
@@ -152,6 +153,8 @@ async fn runs_welcome_questions_until_the_person_turns_them_off() {
     assert!(told.contains("which system it comes from"), "{told}");
     assert!(told.contains("turned questions off"), "{told}");
     assert!(told.contains("call the wake_me tool"), "{told}");
+    // Held or asked, a question names the choices and the one it would pick.
+    assert!(told.contains("say which you would pick and why"), "{told}");
     f.close().await;
 }
 

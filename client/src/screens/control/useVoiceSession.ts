@@ -86,9 +86,12 @@ export function useVoiceSession(sessionId: string | undefined, active: boolean) 
     const utterance = uuidv7(Date.now());
     let revision = 0;
     setHeard(""); setListening(true); setError(null);
+    // Words still being spoken show here only. The computer hears the
+    // finished command once, so a pause never acts on half of it, Jev is
+    // asked once per command, and a refusal is shown like a typed one's.
     speech.current = captureVoice(link, utterance, (text, final) => {
       setHeard(text);
-      void sendRef.current({ operation: "transcript", session_id: sessionId, utterance_id: utterance, revision: ++revision, text, final_segment: final }, true);
+      if (final) void sendRef.current({ operation: "transcript", session_id: sessionId, utterance_id: utterance, revision: ++revision, text, final_segment: true });
     }, setError, () => { speech.current = null; setListening(false); });
   };
   const finishSpeech = () => { speech.current?.finish(); setListening(false); };

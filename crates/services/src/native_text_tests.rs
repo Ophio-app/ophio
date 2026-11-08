@@ -224,6 +224,8 @@ async fn a_native_request_too_large_to_show_is_declined_and_not_recorded() {
         .emit(
             run,
             HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "large".into(),
                 kind: ApprovalKind::Command,
                 title: "Approve native command".into(),
@@ -315,6 +317,7 @@ async fn a_bridge_request_too_large_to_show_is_refused_at_once() {
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     };
     // Under the bridge's 1 MiB limit as text, over a frame once escaped.
     let content = "\"".repeat(300 * 1024);

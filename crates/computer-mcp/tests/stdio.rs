@@ -37,6 +37,7 @@ impl BridgeHandler for Handler {
             browser: false,
             github: false,
             checklist_answers: self.answers,
+            read_only: false,
         })
     }
     async fn handle(&self, _: &BridgeBinding, request: BridgeRequest) -> BridgeResponse {
@@ -208,7 +209,7 @@ async fn end_to_end_observation_fencing_and_permissions() {
             .as_array()
             .unwrap()
             .len(),
-        6
+        7
     );
     let result = f
         .call(
@@ -293,7 +294,10 @@ async fn permission_only_and_modern_negotiation() {
         .iter()
         .map(|t| t["name"].as_str().unwrap().to_owned())
         .collect();
-    let mut want = vec![computer_mcp::PERMISSION_TOOL.to_owned()];
+    let mut want = vec![
+        computer_mcp::PERMISSION_TOOL.to_owned(),
+        ports::bridge::ACCESS_TOOL.to_owned(),
+    ];
     want.extend(PERSON_TOOLS.iter().map(|t| t.to_string()));
     want.extend(WORK_TOOLS.iter().map(|t| t.to_string()));
     assert_eq!(names, want);

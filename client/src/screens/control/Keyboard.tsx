@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useApp } from "../../app/context";
 import { Button } from "../../design/Button";
 import { TextArea } from "../../design/Field";
@@ -39,24 +39,29 @@ export function Keyboard({
   useEffect(() => {
     if (confirmedText && text === confirmedText.text) setText("");
   }, [confirmedText]);
+  const shortcutId = useId();
   const [functions, setFunctions] = useState(false);
   const [modifiers, setModifiers] = useState<string[]>([]);
+  const [shortcutKey, setShortcutKey] = useState("");
   const composing = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     const element = heading.current;
     element?.focus({ preventScroll: true });
   }, []);
+  // Android normally consumes Back for the IME before the app callback runs.
+  // Focus can remain after the IME is hidden, so do not require another Back.
   useBackLayer(true, onClose);
+  useEffect(() => { setModifiers([]); setShortcutKey(""); }, [targetId]);
   const key = (label: string) => {
-    if (["Ctrl", "Alt", "Super"].includes(label)) {
+    if (!enabled || composing.current) return;
+    if (["Ctrl", "Alt", "Super", "Shift"].includes(label)) {
       setModifiers((m) =>
         m.includes(label) ? m.filter((v) => v !== label) : [...m, label],
       );
       return;
     }
-    send(keyChord([...modifiers, label].join("+")));
-    setModifiers([]);
+    if (send(keyChord([...modifiers, label].join("+")))) setModifiers([]);
   };
   return (
     <section className="remote-keyboard" aria-label="Remote keyboard">
@@ -81,7 +86,11 @@ export function Keyboard({
           onCompositionStart={() => {
             composing.current = true;
           }}
-          onCompositionEnd={() => {
+          onCompositionEnd={(event) => {
+            // Some Android IMEs replace their pre-edit text with a corrected
+            // word or emoji only when the composition ends.
+            setText(event.currentTarget.value);
+            onEdit?.();
             composing.current = false;
           }}
         />
@@ -95,6 +104,10 @@ export function Keyboard({
       </form>
       <Button size="sm" variant="quiet" onClick={onClose}>Hide keyboard</Button>
       <details className="remote-keyboard__keys"><summary>Keys and shortcuts</summary>
+      {modifiers.length > 0 && <div role="status">
+        Next key uses {modifiers.join(" + ")}.{" "}
+        <Button size="sm" variant="quiet" onClick={() => setModifiers([])}>Clear modifiers</Button>
+      </div>}
       <div className="control-keys">
         {(functions ? FUNCTION_KEYS : COMMON_KEYS).map((label) => (
           <Button
@@ -107,13 +120,42 @@ export function Keyboard({
           />
         ))}
       </div>
+      <div className="field">
+        <label className="field__label" htmlFor={shortcutId}>Shortcut letter or number</label>
+        <select
+          className="field__input"
+          id={shortcutId}
+          value={shortcutKey}
+          disabled={!enabled}
+          onChange={(event) => setShortcutKey(event.target.value)}
+        >
+          <option value="">Choose a key</option>
+          {"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".split("").map((letter) => (
+            <option key={letter} value={letter}>{letter}</option>
+          ))}
+        </select>
+        <Button
+          size="sm"
+          disabled={!enabled || !shortcutKey || modifiers.length === 0}
+          onClick={() => {
+            if (!composing.current && send(keyChord([...modifiers, shortcutKey].join("+")))) {
+              setModifiers([]);
+              setShortcutKey("");
+            }
+          }}
+        >
+          Send shortcut
+        </Button>
+      </div>
       <div className="control-keys">
         {CHORDS.map((label) => (
           <Button
             key={label}
             size="sm"
             disabled={!enabled}
-            onClick={() => send(keyChord(label))}
+            onClick={() => {
+              if (!composing.current && send(keyChord(label))) setModifiers([]);
+            }}
           >
             {label}
           </Button>

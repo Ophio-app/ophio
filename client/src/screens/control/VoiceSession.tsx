@@ -13,8 +13,11 @@ import type { VoiceOperation, VoiceSessionView } from "../../protocol/types";
 import { Screen } from "../../shell/Screen";
 import { useVoiceVisible } from "./VoiceState";
 import { useVoiceSession } from "./useVoiceSession";
+import { VoiceHandOff, handOffs } from "./VoiceHandOff";
+import { useStore } from "../../state/store";
 import "./voice.css";
 export function VoicePrompt({ value, disabled, send }: { value: VoiceSessionView; disabled: boolean; send: (operation: VoiceOperation) => void }) {
+  const handing = useStore(handOffs, (all) => !!all[value.session_id]);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (["confirm", "disambiguation", "refused"].includes(value.phase)) { ref.current?.focus({ preventScroll: true }); announce(value.understood); }
@@ -24,10 +27,12 @@ export function VoicePrompt({ value, disabled, send }: { value: VoiceSessionView
     {value.phase === "disambiguation" && <ol className="voice-choices">{value.choices.map((e, i) => <li key={e.id}><Button block disabled={disabled} onClick={() => send({ operation: "choose", session_id: value.session_id, prompt_id: value.prompt_id, element_id: e.id })}>{i + 1}. {e.name || "Unnamed control"} · {e.role}</Button></li>)}</ol>}
     {value.phase === "confirm" && <><p>This action needs your confirmation. Say “confirm” or use the button.</p><Button variant="warn" disabled={disabled} onClick={() => send({ operation: "confirm", session_id: value.session_id, prompt_id: value.prompt_id })}>Confirm action</Button></>}
     {(value.phase === "confirm" || value.phase === "disambiguation") && <Button disabled={disabled} onClick={() => send({ operation: "cancel", session_id: value.session_id, prompt_id: value.prompt_id })}>Cancel command</Button>}
+    {!value.ended && (value.offer || handing) && <VoiceHandOff value={value} />}
   </div>;
 }
 export function VoiceEnded({ value, action }: { value: VoiceSessionView; action?: ReactNode }) {
-  return <Notice title="Voice control ended" action={action}>{value.ended === "heartbeat" ? "The computer stopped receiving this device’s heartbeat." : value.ended === "idle" ? "No commands were given for 10 minutes." : "The computer has ended this session."} Review a new session before sending more input.</Notice>;
+  const handing = useStore(handOffs, (all) => !!all[value.session_id]);
+  return <><Notice title="Voice control ended" action={action}>{value.ended === "heartbeat" ? "The computer stopped receiving this device’s heartbeat." : value.ended === "idle" ? "No commands were given for 10 minutes." : "The computer has ended this session."} Review a new session before sending more input.</Notice>{handing && <VoiceHandOff value={value} />}</>;
 }
 /** The session's latest actions, newest first. */
 export function VoiceSteps({ value, last }: { value: VoiceSessionView; last: number }) {
@@ -54,7 +59,7 @@ export default function VoiceSession({ sessionId }: { sessionId: string }) {
         <Button icon={Mic} block aria-label={listening ? "Release to finish speaking" : "Hold to talk"} aria-pressed={listening} disabled={!usable || view?.speech.state !== "available"} onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); startSpeech(); }} onPointerUp={finishSpeech} onPointerCancel={closeSpeech} onClick={e => { if (e.detail === 0) listening ? finishSpeech() : startSpeech(); }}>{listening ? "Listening… release to finish" : "Hold to talk"}</Button>
         <p className="fine">With a keyboard or screen reader, activate once to start and again to finish.</p>
         {(heard || value?.transcript) && <p className="voice-transcript" aria-label="Live transcript">{heard || value?.transcript}</p>}
-        <TextArea label="Typed command" value={text} onChange={save} placeholder="Click Sign in, or type “hello”" rows={3} />
+        <TextArea label="Typed command" value={text} onChange={save} placeholder={value?.target === "desktop" ? "Open the browser, or press Super Enter" : "Click Sign in, or type “hello”"} rows={3} />
         <Button variant="primary" disabled={!usable || !text.trim()} pending={busy} onClick={() => void sendTyped()}>Send command</Button>
         {busy && <StateLine phase="sending" />}
       </div></Section>

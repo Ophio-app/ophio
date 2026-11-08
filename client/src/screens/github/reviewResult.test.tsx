@@ -54,6 +54,8 @@ it("leads a pull request with its review: corrected problems, the recheck, and w
     "EvidenceMixedOne was shown by running it. One was found by reading the code, without running anything.",
     "Your approvalNot neededNothing it changes needs your approval. You still choose when to merge it.",
   ]);
+  // Nothing left to fix on its newest commit, said by whoever checked it.
+  expect(sheet.getByText("Checked by Claude Code · Opus 5.5 · High in two rounds, nothing left to fix.")).toBeTruthy();
   // No approval needed: the merge is the usual one.
   expect(sheet.getByRole("button", { name: "Squash and merge" })).toBeTruthy();
   expect(sheet.queryByRole("button", { name: "Approve and merge" })).toBeNull();

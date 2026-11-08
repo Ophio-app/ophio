@@ -55,6 +55,7 @@ ALLOWED = {
     "client/src/screens/library/recovery.test.tsx": "tests hiding those backups",
     "client/src/platform/links.ts": "opens object links made before the rename",
     "client/src-tauri/plugins/device/android/src/main/java/AppLinks.kt": "accepts object links made before the rename",
+    "client/src-tauri/plugins/device/ios/Sources/AppLinks.swift": "accepts object links made before the rename",
     "crates/channels/src/context_links.rs": "checks that phone and app agree on the earlier link prefix",
     "docs/app-links.md": "documents object links made before the rename",
     "crates/protocol/src/event.rs": "keeps the event source's wire and stored name, which earlier installs' journals hold",

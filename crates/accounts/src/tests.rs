@@ -236,6 +236,7 @@ async fn github_signs_in_with_its_code_and_tasks_get_its_own_folder() {
     let f = Fixture::new();
     f.act(AccountAction::SignIn {
         account_id: "github".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -249,7 +250,8 @@ async fn github_signs_in_with_its_code_and_tasks_get_its_own_folder() {
     .await;
     assert!(matches!(
         f.act(AccountAction::SignIn {
-            account_id: "claude".into()
+            account_id: "claude".into(),
+            on_phone: false,
         })
         .await,
         Err(AccountsError::Busy(_))
@@ -358,6 +360,7 @@ async fn github_without_permission_for_workflows_says_to_sign_in_again() {
     // Signing in again asks GitHub for it.
     f.act(AccountAction::SignIn {
         account_id: "github".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -376,6 +379,7 @@ async fn claude_signs_in_through_a_terminal_and_signs_out_with_its_own_command()
     let f = Fixture::new();
     f.act(AccountAction::SignIn {
         account_id: "claude".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -415,6 +419,7 @@ async fn forgetting_all_ends_what_it_can_and_keeps_the_agents_logins() {
     for id in ["github", "claude"] {
         f.act(AccountAction::SignIn {
             account_id: id.into(),
+            on_phone: false,
         })
         .await
         .unwrap();
@@ -451,14 +456,16 @@ async fn a_sign_in_can_be_cancelled_and_runs_out_of_time() {
     let f = Fixture::with(Duration::from_secs(3), Saved::default());
     assert!(matches!(
         f.act(AccountAction::SignIn {
-            account_id: "openrouter".into()
+            account_id: "openrouter".into(),
+            on_phone: false,
         })
         .await,
         Err(AccountsError::Invalid(_))
     ));
     assert!(matches!(
         f.act(AccountAction::SignIn {
-            account_id: "google".into()
+            account_id: "google".into(),
+            on_phone: false,
         })
         .await,
         Err(AccountsError::Invalid(_))
@@ -466,6 +473,7 @@ async fn a_sign_in_can_be_cancelled_and_runs_out_of_time() {
 
     f.act(AccountAction::SignIn {
         account_id: "github".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -481,6 +489,7 @@ async fn a_sign_in_can_be_cancelled_and_runs_out_of_time() {
     // The next one may start, and stops at the limit.
     f.act(AccountAction::SignIn {
         account_id: "github".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -488,6 +497,7 @@ async fn a_sign_in_can_be_cancelled_and_runs_out_of_time() {
     assert!(!f.dir().join("signin").exists());
 }
 
+#[cfg(target_os = "linux")]
 /// Left behind by a sign-in: it ignores being asked to stop, and once
 /// `TEST_GO` exists writes the login at `$1`, as a helper that outlived its
 /// sign-in would restore a removed one. Its id is in `$HOME/$2.pid`.
@@ -501,6 +511,7 @@ printf 'restored\n' > "$1"
 touch "$HOME/$2.wrote"
 "#;
 
+#[cfg(target_os = "linux")]
 /// Signs in by leaving `linger` behind, and another in a session of its own
 /// where `$HOME/escape` exists, then waits.
 const LINGERING_LOGIN: &str = r#"#!/bin/sh
@@ -568,6 +579,7 @@ async fn nothing_a_stopped_sign_in_started_outlives_it() {
     // A cancelled sign-in says so only once nothing it started is left.
     f.act(AccountAction::SignIn {
         account_id: "github".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -582,6 +594,7 @@ async fn nothing_a_stopped_sign_in_started_outlives_it() {
     // Signing out during a sign-in on a terminal ends all it started first.
     f.act(AccountAction::SignIn {
         account_id: "claude".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -606,6 +619,7 @@ async fn nothing_a_stopped_sign_in_started_outlives_it() {
     assert!(!f.dir().join("config").join("github").join("login").exists());
 }
 
+#[cfg(target_os = "linux")]
 /// A sign-in that prints on both streams without end, the helper printing
 /// on the second having its id in `$HOME/err.pid`.
 const FLOODING_LOGIN: &str = r#"#!/bin/sh
@@ -630,10 +644,11 @@ async fn a_sign_in_that_prints_without_end_is_ended_at_the_output_limit() {
         let began = std::time::Instant::now();
         f.act(AccountAction::SignIn {
             account_id: account.into(),
+            on_phone: false,
         })
         .await
         .unwrap();
-        let SignInStage::Failed { reason } = f
+        let SignInStage::Failed { reason, .. } = f
             .until_stage(|s| matches!(s, SignInStage::Failed { .. }))
             .await
         else {
@@ -656,6 +671,7 @@ async fn a_sign_in_that_prints_without_end_is_ended_at_the_output_limit() {
     }
 }
 
+#[cfg(target_os = "linux")]
 /// Asks for Enter on and on in a raw terminal, never reading it, then
 /// waits with its id in `$HOME/deaf.pid`.
 const DEAF_LOGIN: &str = r#"#!/bin/sh
@@ -695,6 +711,7 @@ async fn a_sign_in_that_asks_for_enter_without_reading_still_stops() {
     let sign_in = || {
         f.act(AccountAction::SignIn {
             account_id: "claude".into(),
+            on_phone: false,
         })
     };
 
@@ -716,6 +733,7 @@ async fn a_sign_in_that_asks_for_enter_without_reading_still_stops() {
     assert!(!running(&pid), "the timed-out sign-in still runs");
 }
 
+#[cfg(target_os = "linux")]
 /// Exits at once, leaving a helper in a session of its own that keeps the
 /// output open. The helper's id is in `$HOME/held.pid`.
 const HOLDS_OUTPUT: &str = r#"#!/bin/sh
@@ -829,6 +847,7 @@ async fn a_tool_keeps_to_its_limit_when_a_helper_holds_its_output() {
     }
 }
 
+#[cfg(target_os = "linux")]
 /// Prints without end on both streams. The helper writing to stderr has its
 /// id in `$HOME/err.pid`.
 const FLOODS: &str = r#"#!/bin/sh
@@ -838,6 +857,7 @@ echo $! > "$HOME/err.pid"
 exec yes out
 "#;
 
+#[cfg(target_os = "linux")]
 /// Prints past the limit and exits.
 const PRINTS_TOO_MUCH: &str = r#"#!/bin/sh
 PATH=/usr/bin:/bin
@@ -1318,6 +1338,7 @@ async fn an_oauth_service_signs_in_through_the_browser_and_refreshes_for_tasks()
 
     f.act(AccountAction::SignIn {
         account_id: "mail".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -1542,6 +1563,7 @@ async fn a_sign_out_ends_the_sign_in_going_first() {
     let f = Fixture::new();
     f.act(AccountAction::SignIn {
         account_id: "github".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -1574,11 +1596,12 @@ async fn a_login_that_exits_with_an_error_is_not_a_sign_in() {
     );
     f.act(AccountAction::SignIn {
         account_id: "claude".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
     f.go();
-    let SignInStage::Failed { reason } = f
+    let SignInStage::Failed { reason, .. } = f
         .until_stage(|s| matches!(s, SignInStage::Failed { .. }))
         .await
     else {
@@ -2041,6 +2064,7 @@ async fn nothing_starts_on_an_account_while_it_is_signed_out() {
         let refused = f
             .act(AccountAction::SignIn {
                 account_id: "github".into(),
+                on_phone: false,
             })
             .await;
         assert!(
@@ -2519,6 +2543,7 @@ async fn a_refusal_answered_after_a_new_sign_in_changes_nothing() {
         asked.recv().await.unwrap();
         f.act(AccountAction::SignIn {
             account_id: "mail".into(),
+            on_phone: false,
         })
         .await
         .unwrap();
@@ -2545,6 +2570,7 @@ async fn the_oauth_client_is_not_replaced_during_its_sign_in() {
     let f = restarted_oauth("http://127.0.0.1:9/token".into()).await;
     f.act(AccountAction::SignIn {
         account_id: "mail".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -2571,11 +2597,12 @@ async fn what_a_provider_says_in_error_is_not_shown_or_kept() {
     let f = restarted_oauth(url).await;
     f.act(AccountAction::SignIn {
         account_id: "mail".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
     come_back(&f).await;
-    let SignInStage::Failed { reason } = f
+    let SignInStage::Failed { reason, .. } = f
         .until_stage(|s| matches!(s, SignInStage::Failed { .. }))
         .await
     else {
@@ -2684,6 +2711,7 @@ async fn an_identity_showing_a_held_secret_is_masked() {
 
     f.act(AccountAction::SignIn {
         account_id: "mail".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -2780,6 +2808,7 @@ async fn a_tool_token_read_before_a_new_sign_in_is_not_given() {
         }
         f.act(AccountAction::SignIn {
             account_id: "github".into(),
+            on_phone: false,
         })
         .await
         .unwrap();
@@ -3009,6 +3038,7 @@ async fn github_calls_go_as_the_signed_in_account_and_say_what_github_refused() 
     );
     f.act(AccountAction::SignIn {
         account_id: "github".into(),
+        on_phone: false,
     })
     .await
     .unwrap();
@@ -3064,4 +3094,410 @@ async fn github_calls_go_as_the_signed_in_account_and_say_what_github_refused() 
         asked[4].0,
         "DELETE /repos/octo/app/git/refs/heads/x HTTP/1.1"
     );
+}
+
+// ---- Signing in from the phone's own browser ---------------------------
+
+/// Claude Code as 2.1.289 is on a terminal: it opens the page that returns
+/// to this computer, prints the one to finish elsewhere as a terminal link,
+/// and reads the code that page shows. Every line it reads is written down,
+/// to count them; an unknown code is refused and another read.
+const CLAUDE_ON_PHONE: &str = r#"#!/bin/sh
+PATH=/usr/bin:/bin
+case "$1 $2" in
+"auth login")
+  "$BROWSER" 'https://claude.com/cai/oauth/authorize?code=true&redirect_uri=http%3A%2F%2Flocalhost%3A40401%2Fcallback&state=s1'
+  link='https://claude.com/cai/oauth/authorize?code=true&redirect_uri=https%3A%2F%2Fplatform.claude.com%2Foauth%2Fcode%2Fcallback&state=s1'
+  printf 'Opening browser to sign in\342\200\246\r\nIf the browser didn'"'"'t open, visit: \033]8;;%s\007%s\033]8;;\007\r\nPaste code here if prompted > ' "$link" "$link"
+  while read -r code; do
+    printf '%s\n' "$code" >> "$HOME/claude-codes"
+    if [ "$code" = 'good-code#s1' ]; then
+      touch "$HOME/claude-in"; printf 'Login successful.\r\n'; exit 0
+    fi
+    printf 'Invalid code. Please make sure the full code was copied.\r\n' >&2
+  done
+  exit 1 ;;
+"auth status")
+  if [ -e "$HOME/claude-in" ]; then
+    printf '{"loggedIn":true,"email":"me@example.com"}\n'
+  else
+    printf '{"loggedIn":false}\n'
+  fi ;;
+"auth logout") rm -f "$HOME/claude-in" ;;
+esac
+"#;
+
+/// `codex login --device-auth` as 0.164 prints it, coloured, then waits for
+/// the owner to finish on the page.
+const CODEX_ON_PHONE: &str = r#"#!/bin/sh
+PATH=/usr/bin:/bin
+case "$1 $2" in
+"login --device-auth")
+  printf '\nWelcome to Codex [v\033[90m0.164.0\033[0m]\n\nFollow these steps to sign in with ChatGPT using device code authorization:\n\n1. Open this link in your browser and sign in to your account\n   \033[94mhttps://auth.openai.com/codex/device\033[0m\n\n2. Enter this one-time code \033[90m(expires in 15 minutes)\033[0m\n   \033[94mAB12-CDE34\033[0m\n\n'
+  if [ -n "$TEST_OFF" ] && [ -e "$TEST_OFF" ]; then
+    printf 'Error logging in with device code: device auth failed with status 403 Forbidden\n' >&2
+    exit 1
+  fi
+  while [ ! -e "$TEST_GO" ]; do sleep 0.05; done
+  touch "$HOME/codex-in"
+  printf 'Successfully logged in\n' >&2 ;;
+"login status")
+  if [ -e "$HOME/codex-in" ]; then echo 'Logged in using ChatGPT' >&2; else echo 'Not logged in' >&2; exit 1; fi ;;
+esac
+"#;
+
+/// Everything logged while `f` runs, at every level.
+async fn logged<T>(f: impl std::future::Future<Output = T>) -> (T, String) {
+    #[derive(Clone, Default)]
+    struct Log(Arc<Mutex<Vec<u8>>>);
+    impl std::io::Write for Log {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().unwrap().extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let log = Log::default();
+    let writer = log.clone();
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::TRACE)
+        .with_writer(move || writer.clone())
+        .finish();
+    let _default = tracing::subscriber::set_default(subscriber);
+    let out = f.await;
+    let text = String::from_utf8_lossy(&log.0.lock().unwrap()).into_owned();
+    (out, text)
+}
+
+fn on_phone(id: &str) -> AccountAction {
+    AccountAction::SignIn {
+        account_id: id.into(),
+        on_phone: true,
+    }
+}
+
+/// `code`, for the sign-in the view shows now.
+async fn code(f: &Fixture, code: &str) -> AccountAction {
+    let (account_id, started_at) = f
+        .accounts
+        .view()
+        .await
+        .sign_in
+        .map(|s| (s.account_id, s.started_at))
+        .unwrap_or_else(|| ("claude".into(), Timestamp(0)));
+    AccountAction::SubmitSignInCode {
+        account_id,
+        started_at,
+        code: Secret::new(code),
+    }
+}
+
+// One thread, so everything the sign-in logs is caught.
+#[tokio::test(flavor = "current_thread")]
+async fn claude_signs_in_on_the_phone_with_the_code_its_page_shows() {
+    let f = Fixture::new();
+    f.script("claude", CLAUDE_ON_PHONE);
+    let home = f.root.path().join("home");
+    let ((), log) = logged(async {
+        tracing::trace!("the log is caught");
+        assert!(f.account("claude").await.phone_sign_in);
+        f.act(on_phone("claude")).await.unwrap();
+        let SignInStage::OnPhone {
+            link,
+            url_host,
+            code: None,
+            ..
+        } = f
+            .until_stage(|s| matches!(s, SignInStage::OnPhone { paste_code: true, .. }))
+            .await
+        else {
+            panic!("no page for the phone")
+        };
+        // The page to finish elsewhere, whole, and not the one that
+        // returns to this computer, which nothing opened here.
+        assert_eq!(
+            link.expose(),
+            "https://claude.com/cai/oauth/authorize?code=true&redirect_uri=https%3A%2F%2Fplatform.claude.com%2Foauth%2Fcode%2Fcallback&state=s1"
+        );
+        assert_eq!(url_host, "claude.com");
+        assert!(f.opener.opened().is_empty(), "nothing opens on the computer");
+
+        // A code the tool refuses: asked for again, said so.
+        f.act(code(&f, "  wrong-code \n").await).await.unwrap();
+        f.until_stage(|s| {
+            matches!(
+                s,
+                SignInStage::OnPhone {
+                    paste_code: true,
+                    code_refused: true,
+                    ..
+                }
+            )
+        })
+        .await;
+        f.act(code(&f, "good-code#s1").await).await.unwrap();
+        let done = f
+            .until_stage(|s| matches!(s, SignInStage::Done { .. }))
+            .await;
+        assert_eq!(
+            done,
+            SignInStage::Done {
+                identity: Some("me@example.com".into())
+            }
+        );
+    })
+    .await;
+    // Each code was written once, trimmed, with Enter.
+    assert_eq!(
+        std::fs::read_to_string(home.join("claude-codes")).unwrap(),
+        "wrong-code\ngood-code#s1\n"
+    );
+    // Neither code nor the page's link was logged, kept or recorded.
+    assert!(log.contains("the log is caught"));
+    let view = serde_json::to_string(&f.accounts.view().await).unwrap();
+    for secret in ["wrong-code", "good-code", "state=s1"] {
+        assert!(!log.contains(secret), "{secret} was logged");
+        assert!(!f.written().contains(secret), "{secret} was kept");
+        assert!(!view.contains(secret), "{secret} is still shown");
+    }
+    assert_eq!(f.account("claude").await.state, AccountState::Active);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_code_is_taken_only_while_a_sign_in_waits_for_one() {
+    let f = Fixture::new();
+    f.script("claude", CLAUDE_ON_PHONE);
+    f.script("codex", CODEX_ON_PHONE);
+    // Nothing running.
+    assert!(matches!(
+        f.act(code(&f, "good-code#s1").await).await,
+        Err(AccountsError::NotFound(_))
+    ));
+    // Only the agents sign in on the phone.
+    assert!(matches!(
+        f.act(on_phone("github")).await,
+        Err(AccountsError::Invalid(_))
+    ));
+    assert!(!f.account("github").await.phone_sign_in);
+    // Codex's page asks for a code it shows; it takes none back.
+    f.act(on_phone("codex")).await.unwrap();
+    f.until_stage(|s| matches!(s, SignInStage::OnPhone { .. }))
+        .await;
+    assert!(matches!(
+        f.act(code(&f, "good-code#s1").await).await,
+        Err(AccountsError::Busy(_))
+    ));
+    f.act(AccountAction::CancelSignIn).await.unwrap();
+    f.until_stage(|s| *s == SignInStage::Cancelled).await;
+    // What isn't a code is refused before anything is written.
+    f.act(on_phone("claude")).await.unwrap();
+    f.until_stage(|s| {
+        matches!(
+            s,
+            SignInStage::OnPhone {
+                paste_code: true,
+                ..
+            }
+        )
+    })
+    .await;
+    // A code typed for an earlier sign-in.
+    assert!(matches!(
+        f.act(AccountAction::SubmitSignInCode {
+            account_id: "claude".into(),
+            started_at: Timestamp(1),
+            code: Secret::new("good-code#s1"),
+        })
+        .await,
+        Err(AccountsError::Invalid(_))
+    ));
+    for bad in ["", "   ", "two\nlines"] {
+        assert!(matches!(
+            f.act(code(&f, bad).await).await,
+            Err(AccountsError::Invalid(_))
+        ));
+    }
+    assert!(!f.root.path().join("home").join("claude-codes").exists());
+    // Cancel answers once the sign-in has stopped, so the next starts at once.
+    f.act(AccountAction::CancelSignIn).await.unwrap();
+    assert_eq!(
+        f.accounts.view().await.sign_in.map(|s| s.stage),
+        Some(SignInStage::Cancelled)
+    );
+    f.act(AccountAction::SignIn {
+        account_id: "claude".into(),
+        on_phone: false,
+    })
+    .await
+    .unwrap();
+    f.act(AccountAction::CancelSignIn).await.unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn codex_signs_in_on_the_phone_with_a_device_code() {
+    let f = Fixture::new();
+    f.script("codex", CODEX_ON_PHONE);
+    f.act(on_phone("codex")).await.unwrap();
+    let page = f
+        .until_stage(|s| matches!(s, SignInStage::OnPhone { code: Some(_), .. }))
+        .await;
+    let SignInStage::OnPhone {
+        link,
+        url_host,
+        code,
+        paste_code,
+        ..
+    } = page
+    else {
+        unreachable!()
+    };
+    assert_eq!(link.expose(), "https://auth.openai.com/codex/device");
+    assert_eq!(url_host, "auth.openai.com");
+    assert_eq!(code.as_deref(), Some("AB12-CDE34"));
+    assert!(!paste_code);
+    assert!(f.opener.opened().is_empty());
+    f.go();
+    let done = f
+        .until_stage(|s| matches!(s, SignInStage::Done { .. }))
+        .await;
+    assert!(matches!(done, SignInStage::Done { .. }), "{done:?}");
+    assert_eq!(f.account("codex").await.state, AccountState::Active);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn codex_without_device_code_sign_in_says_where_to_turn_it_on() {
+    let f = Fixture::new();
+    f.script("codex", CODEX_ON_PHONE);
+    // The stand-in refuses as Codex does when the account doesn't allow it.
+    let off = f.root.path().join("off");
+    std::fs::write(&off, "").unwrap();
+    let f = {
+        let mut f = f;
+        f.accounts = ComputerAccounts::new(Config {
+            tools: Tools {
+                env: {
+                    let mut env = f.accounts.config().tools.env.clone();
+                    env.push(("TEST_OFF".into(), off.into()));
+                    env
+                },
+            },
+            dir: f.accounts.config().dir.clone(),
+            vault: f.accounts.config().vault.clone(),
+            opener: f.accounts.config().opener.clone(),
+            http: http(),
+            sign_in_limit: Duration::from_secs(20),
+        });
+        f
+    };
+    f.act(on_phone("codex")).await.unwrap();
+    let failed = f
+        .until_stage(|s| matches!(s, SignInStage::Failed { .. }))
+        .await;
+    let SignInStage::Failed { reason, help_url } = failed else {
+        unreachable!()
+    };
+    assert!(reason.contains("device code sign-in"), "{reason}");
+    assert_eq!(help_url.as_deref(), Some(CODEX_DEVICE_CODE_SETTINGS));
+}
+
+/// The installed Claude Code and Codex, in a throwaway home, as far as the
+/// page the phone opens, then cancelled: no sign-in is ever finished. Run by
+/// hand with `OPHIO_LIVE_SIGN_IN=1 cargo test -p accounts -- --ignored live`;
+/// nothing it reads is printed.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "runs the real agents' sign-in up to their page"]
+async fn live_sign_ins_reach_the_page_the_phone_opens() {
+    if std::env::var_os("OPHIO_LIVE_SIGN_IN").is_none() {
+        return;
+    }
+    let root = tempfile::tempdir().unwrap();
+    let home = root.path().join("home");
+    std::fs::create_dir(&home).unwrap();
+    let real = std::env::var_os("HOME").unwrap();
+    let bin = Path::new(&real).join(".config/ophio/agent-bin");
+    let opener = Arc::new(Recorder::default());
+    let accounts = ComputerAccounts::new(Config {
+        dir: root.path().join("accounts"),
+        vault: Arc::new(MemoryVault::default()),
+        opener: opener.clone(),
+        tools: Tools {
+            env: vec![
+                (
+                    "PATH".into(),
+                    std::env::join_paths([bin, "/usr/bin".into(), "/bin".into()]).unwrap(),
+                ),
+                ("HOME".into(), home.clone().into()),
+                ("CLAUDE_CONFIG_DIR".into(), home.join(".claude").into()),
+                ("CODEX_HOME".into(), home.join(".codex").into()),
+            ],
+        },
+        http: http(),
+        sign_in_limit: Duration::from_secs(60),
+    });
+    std::fs::create_dir(home.join(".codex")).unwrap();
+    let f = Fixture {
+        root,
+        accounts,
+        vault: Arc::new(MemoryVault::default()),
+        opener,
+    };
+    for id in ["claude", "codex"] {
+        f.act(on_phone(id)).await.unwrap();
+        let page = f
+            .until_stage(|s| matches!(s, SignInStage::OnPhone { .. } | SignInStage::Failed { .. }))
+            .await;
+        let SignInStage::OnPhone {
+            link,
+            url_host,
+            code,
+            paste_code,
+            ..
+        } = page
+        else {
+            panic!("{id} stopped before its page")
+        };
+        let url = url::Url::parse(link.expose()).unwrap();
+        match id {
+            "claude" => {
+                assert_eq!(url_host, "claude.com");
+                let back = url
+                    .query_pairs()
+                    .find(|(k, _)| k == "redirect_uri")
+                    .map(|(_, v)| v.into_owned());
+                assert_eq!(
+                    back.as_deref(),
+                    Some("https://platform.claude.com/oauth/code/callback"),
+                    "the page to finish elsewhere"
+                );
+                assert!(paste_code, "Claude Code waits for the page's code");
+                assert!(code.is_none());
+            }
+            _ => {
+                assert_eq!(link.expose(), "https://auth.openai.com/codex/device");
+                let code = code.expect("Codex's one-time code");
+                assert!(one_time_code_shape(&code), "a code of the usual shape");
+                assert!(!paste_code);
+            }
+        }
+        assert!(
+            f.opener.opened().is_empty(),
+            "nothing opened on the computer"
+        );
+        eprintln!("{id} reached the page the phone opens, on {url_host}");
+        f.act(AccountAction::CancelSignIn).await.unwrap();
+        f.until_stage(|s| *s == SignInStage::Cancelled).await;
+    }
+}
+
+fn one_time_code_shape(code: &str) -> bool {
+    let Some((a, b)) = code.split_once('-') else {
+        return false;
+    };
+    a.len() == 4
+        && (4..=6).contains(&b.len())
+        && code
+            .chars()
+            .all(|c| c == '-' || c.is_ascii_uppercase() || c.is_ascii_digit())
 }

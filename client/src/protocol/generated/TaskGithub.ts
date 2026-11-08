@@ -5,6 +5,7 @@ import type { LaunchChoice } from "./LaunchChoice";
 import type { PrReview } from "./PrReview";
 import type { PrStage } from "./PrStage";
 import type { PrSummary } from "./PrSummary";
+import type { WhenGreen } from "./WhenGreen";
 
 /**
  * A task's GitHub link, saved with it.
@@ -66,4 +67,10 @@ review?: PrReview,
  * The change touches something sensitive: it merges only once the
  * person approves this exact revision.
  */
-approval?: ApprovalNeed, };
+approval?: ApprovalNeed, 
+/**
+ * The person's choice for this task: whether its pull request merges
+ * once it is green or waits for them. Unset, the project's setting
+ * decides.
+ */
+when_green?: WhenGreen, };

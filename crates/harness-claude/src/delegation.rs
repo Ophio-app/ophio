@@ -5,7 +5,7 @@ use ports::{HarnessError, RunSpec};
 use protocol::capability::Availability;
 use serde_json::json;
 
-pub(crate) const TOOLS: [&str; 6] = ports::bridge::COMPUTER_TOOLS;
+pub(crate) const TOOLS: [&str; 7] = ports::bridge::COMPUTER_TOOLS;
 pub(crate) const SPECIALIST: &str = "computer-specialist";
 const SUPERVISOR: &str = "computer-supervisor";
 
@@ -106,7 +106,7 @@ mod tests {
         let child = &definitions[SPECIALIST];
         assert_eq!(parent["tools"], json!(["Agent(computer-specialist)"]));
         assert!(parent.get("mcpServers").is_none());
-        assert_eq!(child["tools"].as_array().unwrap().len(), 6);
+        assert_eq!(child["tools"].as_array().unwrap().len(), 7);
         assert_eq!(
             child["mcpServers"][0]["computer"]["command"],
             "/fixture/computer-mcp"

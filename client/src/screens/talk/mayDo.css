@@ -1,0 +1,36 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* What a chat or task may do (MayDoLine.tsx): quiet text, in the colour of
+   what is around it, with a faint dotted underline so it reads as something
+   to tap. One line; it ends in an ellipsis where it doesn't fit, and its
+   spoken label says it all. */
+.may-do {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+  text-align: left;
+  border-radius: var(--r-sm);
+}
+.may-do__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--line-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+.may-do:active .may-do__text {
+  color: var(--ink-2);
+}
+.may-do:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.may-do__detail {
+  margin: var(--s3) 0;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}

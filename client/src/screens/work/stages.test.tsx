@@ -8,7 +8,7 @@ import { createSimPlatform } from "../../dev/sim/platform";
 import { ids } from "../../dev/sim/scenario";
 import { HostSession } from "../../host/session";
 import { RouteProvider } from "../../shell/Screen";
-import Stages from "./Stages";
+import Stages from "./StagesView";
 import { readStageCache, StageDraftStore } from "./stages";
 
 let app: App;

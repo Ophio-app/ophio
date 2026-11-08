@@ -26,6 +26,10 @@ pub const DENIED_WITHOUT_REASON: &str = "Denied by the person";
 pub struct ToolApproval {
     pub kind: ApprovalKind,
     pub title: String,
+    /// The agent's own one-line account of the request, when it gives one.
+    pub headline: Option<String>,
+    /// The exact effect, for the computer to say what it would do.
+    pub subject: crate::request_facts::Subject,
     pub detail: Option<String>,
     pub detail_lines: Vec<ApprovalDetailLine>,
     /// AskUserQuestion's questions, whole, so they can be answered by choice.
@@ -42,6 +46,16 @@ fn bounded(text: &str, limit: usize, shortened: &mut bool) -> String {
         *shortened = true;
         text.chars().take(limit - 1).chain(['…']).collect()
     }
+}
+
+/// Characters of a headline; an agent's description is meant to be one line.
+const HEADLINE: usize = 160;
+
+/// An agent's description as one readable line: its whitespace collapsed,
+/// direction controls escaped, and cut to a headline's length.
+pub fn headline(text: &str, shortened: &mut bool) -> Option<String> {
+    let line = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    (!line.is_empty()).then(|| visible(&bounded(&line, HEADLINE, shortened)))
 }
 
 fn line(label: Option<&str>, text: impl Into<String>, code: bool) -> ApprovalDetailLine {
@@ -553,6 +567,8 @@ pub fn tool_approval(tool: &str, input: &Value) -> ToolApproval {
             .find(|value| !value.trim().is_empty())
     };
     let path = || field(&["file_path", "notebook_path", "path"]);
+    let mut headline_text = None;
+    let mut subject = crate::request_facts::Subject::None;
     let mut parts = Vec::new();
     let mut changes = Vec::new();
     let mut shortened = false;
@@ -565,15 +581,24 @@ pub fn tool_approval(tool: &str, input: &Value) -> ToolApproval {
         "Bash" => {
             if let Some(command) = field(&["command"]) {
                 parts.push(line(None, bounded(command, 640, &mut shortened), true));
+                subject = crate::request_facts::Subject::Command {
+                    command: command.into(),
+                    cwd: None,
+                };
             }
             if let Some(description) = field(&["description"]) {
                 parts.push(line(None, description, false));
+                headline_text = Some(description);
             }
             (ApprovalKind::Command, "Run a shell command".into())
         }
         "Edit" | "Write" | "MultiEdit" | "NotebookEdit" => {
             if let Some(path) = path() {
                 parts.push(line(None, path, true));
+                subject = crate::request_facts::Subject::Files {
+                    changes: vec![crate::request_facts::FileChange::Change(path.into())],
+                    grant_root: None,
+                };
             }
             match tool {
                 "Edit" => {
@@ -650,6 +675,7 @@ pub fn tool_approval(tool: &str, input: &Value) -> ToolApproval {
         "WebFetch" => {
             if let Some(url) = field(&["url"]) {
                 parts.push(line(None, url, true));
+                subject = crate::request_facts::Subject::Url(url.into());
             }
             (ApprovalKind::Network, "Use WebFetch".into())
         }
@@ -664,7 +690,10 @@ pub fn tool_approval(tool: &str, input: &Value) -> ToolApproval {
                 parts.push(line(Some("Pattern"), pattern, true));
             }
             parts.push(match field(&["path"]) {
-                Some(path) => line(Some("Path"), path, true),
+                Some(path) => {
+                    subject = crate::request_facts::Subject::Reads(path.into());
+                    line(Some("Path"), path, true)
+                }
                 None => line(Some("Path"), "project directory (default)", false),
             });
             (ApprovalKind::Tool, format!("Use {tool}"))
@@ -734,9 +763,17 @@ pub fn tool_approval(tool: &str, input: &Value) -> ToolApproval {
         .map(rendered)
         .collect::<Vec<_>>()
         .join("\n");
+    if subject == crate::request_facts::Subject::None
+        && matches!(tool, "Read" | "LS" | "NotebookRead")
+        && let Some(path) = path()
+    {
+        subject = crate::request_facts::Subject::Reads(path.into());
+    }
     ToolApproval {
         kind,
         title,
+        headline: headline_text.and_then(|text| headline(text, &mut shortened)),
+        subject,
         detail: Some(detail),
         detail_lines,
         scope: if questions.is_empty() {
@@ -786,6 +823,21 @@ mod tests {
             let mut approval = serde_json::json!({"kind":facts.kind,"title":facts.title,"detail":facts.detail,"detail_lines":facts.detail_lines,"scope":facts.scope,"shortened":facts.shortened});
             if !facts.questions.is_empty() {
                 approval["questions"] = serde_json::json!(facts.questions);
+            }
+            // As the simulator's project, tidewater-api, would read them.
+            if let Some(headline) = &facts.headline {
+                approval["headline"] = serde_json::json!(headline);
+            }
+            let said = crate::request_facts::facts(
+                &facts.subject,
+                &crate::request_facts::Place {
+                    project: Some("/home/sam/Projects/tidewater-api".into()),
+                    project_name: "tidewater-api".into(),
+                    home: Some("/home/sam".into()),
+                },
+            );
+            if !said.is_empty() {
+                approval["facts"] = serde_json::json!(said);
             }
             assert_eq!(approval, case["approval"]);
         }

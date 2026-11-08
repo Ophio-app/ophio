@@ -51,10 +51,49 @@ pub(crate) fn usage_limit_exceeded(error: &Value) -> bool {
     error["codexErrorInfo"] == "usageLimitExceeded"
 }
 
+/// A turn refused because the ChatGPT sign-in is gone: the app server's
+/// own code for it, or Codex's words when the stored login can't be renewed
+/// ("Your access token could not be refreshed … Please log out and sign in
+/// again."). An error it will retry isn't one yet.
+pub(crate) fn sign_in_lost(error: &Value, will_retry: bool) -> bool {
+    if will_retry {
+        return false;
+    }
+    let said = error["message"].as_str().unwrap_or_default();
+    error["codexErrorInfo"] == "unauthorized"
+        || said.contains("access token could not be refreshed")
+        || said.contains("Please log out and sign in again")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn a_refused_sign_in_is_told_from_other_errors() {
+        assert!(sign_in_lost(
+            &json!({"message": "Your access token could not be refreshed because your refresh token has expired. Please log out and sign in again.", "codexErrorInfo": "other"}),
+            false
+        ));
+        assert!(sign_in_lost(
+            &json!({"message": "unexpected status 401 Unauthorized", "codexErrorInfo": "unauthorized"}),
+            false
+        ));
+        // Retried, it may yet go through.
+        assert!(!sign_in_lost(
+            &json!({"message": "unexpected status 401 Unauthorized", "codexErrorInfo": "unauthorized"}),
+            true
+        ));
+        assert!(!sign_in_lost(
+            &json!({"message": "You've hit your usage limit.", "codexErrorInfo": "usageLimitExceeded"}),
+            false
+        ));
+        assert!(!sign_in_lost(
+            &json!({"message": "stream disconnected"}),
+            false
+        ));
+    }
 
     #[test]
     fn the_latest_exhausted_window_says_when_usage_returns() {

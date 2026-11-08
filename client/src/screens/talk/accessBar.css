@@ -185,3 +185,12 @@
     outline: 2px solid Highlight;
   }
 }
+
+/* Asked for from the line saying what the agent may do: each control is
+   ringed for a moment, so the eye finds them. */
+.access:focus {
+  outline: none;
+}
+.access.is-called :is(.access__pick, .access__net) {
+  box-shadow: var(--focus-ring);
+}

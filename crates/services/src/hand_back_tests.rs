@@ -17,6 +17,13 @@ struct Watched {
 /// A computer-use run that has looked at its screen, whose lease then
 /// lapsed: the person stopped watching.
 async fn lapsed() -> Watched {
+    let w = watched().await;
+    w.f.clock.advance(Duration::from_secs(4));
+    w
+}
+
+/// A computer-use run that has looked at its screen, still watched.
+async fn watched() -> Watched {
     let f = Fixture::new().await;
     let phone = f.device().await;
     let project = f.project().await;
@@ -30,6 +37,7 @@ async fn lapsed() -> Watched {
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     };
     assert!(matches!(
         f.hub
@@ -37,7 +45,6 @@ async fn lapsed() -> Watched {
             .await,
         BridgeResponse::Observation { .. }
     ));
-    f.clock.advance(Duration::from_secs(4));
     Watched {
         f,
         phone,
@@ -178,5 +185,53 @@ async fn stopping_an_agent_that_waits_for_its_screen_ends_the_wait() {
         .unwrap();
     assert_eq!(view.input_state, InputState::Ready);
     assert!(view.lease.is_none());
+    w.f.close().await;
+}
+
+/// Turning sharing off fences each display before it waits for its
+/// launches and removes it. An agent acting in between is told the desktop
+/// is unavailable, as it was before displays were fenced first, and the
+/// person is never asked to hand back a screen that is going away.
+#[tokio::test]
+async fn an_agent_acting_while_sharing_ends_is_not_paused() {
+    let w = watched().await;
+    // A launch still running keeps sharing off between the fence and the
+    // removal for as long as this test needs.
+    let target = w.f.hub.target(w.target).await.unwrap();
+    let launch = target.lock().await.launches.begin();
+    let hub = w.f.hub.clone();
+    let off = tokio::spawn(async move {
+        hub.set_desktop(
+            None,
+            protocol::capability::Availability::TemporarilyUnavailable {
+                reason: "test".into(),
+            },
+        )
+        .await
+    });
+    let mut wait = waiting();
+    loop {
+        {
+            let held = target.lock().await;
+            if held.leaving && !held.removed {
+                break;
+            }
+        }
+        assert!(wait(), "sharing off never fenced the display");
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    let typed = tokio::time::timeout(Duration::from_secs(2), w.types())
+        .await
+        .expect("the action waited to be handed back")
+        .unwrap();
+    let said = match typed {
+        BridgeResponse::Error { message } | BridgeResponse::Refused { reason: message } => message,
+        other => panic!("{other:?}"),
+    };
+    assert!(said.contains("Desktop unavailable"), "{said}");
+    assert!(w.paused().is_none(), "{:?}", w.paused());
+    assert_eq!(w.injected(), 0);
+    launch.ended(true, None);
+    off.await.unwrap().unwrap();
     w.f.close().await;
 }

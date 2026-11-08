@@ -76,10 +76,12 @@ impl Tools {
         command
     }
 
-    /// The program on the tools' `PATH`, or the name as given. Elsewhere
-    /// than Windows, the folders where installers put agents for a person
-    /// without admin rights come after `PATH`, as for tasks and setup (see
-    /// [`ports::agent_program`]): Øphio's own `PATH` may not have them yet.
+    /// The program on the tools' `PATH`, or the name as given. The folders
+    /// where installers put agents for a person without admin rights come
+    /// after `PATH`, as for tasks and setup (see [`ports::agent_program`]):
+    /// Øphio's own `PATH` may not have them yet. On Windows that lookup finds
+    /// only real programs (`.exe`), so a script on `PATH` (`.cmd`), as some
+    /// tools have, is looked for after it.
     pub fn find(&self, name: &str) -> PathBuf {
         if name.contains(std::path::MAIN_SEPARATOR) {
             return PathBuf::from(name);
@@ -88,12 +90,17 @@ impl Tools {
         #[cfg(not(windows))]
         let found = ports::agent_program::find(name, Some(&path), self.home().as_deref());
         #[cfg(windows)]
-        let found = std::env::split_paths(&path).find_map(|dir| {
-            candidates(name)
-                .into_iter()
-                .map(|candidate| dir.join(candidate))
-                .find(|full| full.is_file())
-        });
+        let found = {
+            let homes = ports::agent_program::windows_homes(|name| self.var(name));
+            ports::agent_program::windows_find(name, Some(&path), &homes).or_else(|| {
+                std::env::split_paths(&path).find_map(|dir| {
+                    candidates(name)
+                        .into_iter()
+                        .map(|candidate| dir.join(candidate))
+                        .find(|full| full.is_file())
+                })
+            })
+        };
         found.unwrap_or_else(|| PathBuf::from(name))
     }
 

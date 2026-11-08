@@ -57,11 +57,12 @@ function Setup({ watcher }: { watcher: Alerts }) {
         <Button variant="primary" onClick={async () => { await watcher.battery(); after("battery"); }}>Continue</Button></>;
   return <Sheet open={step !== null} title="Alerts" onClose={close} footer={<div className="alerts-actions">{footer}</div>}>
     {step === "ask" && <fieldset className="alerts-setup" aria-describedby={`${id}-q`}>
-      <legend id={`${id}-q`} className="alerts-setup__question">Get alerts when an agent asks something or finishes?</legend>
+      <legend id={`${id}-q`} className="alerts-setup__question">Notify me when Øphio is closed?</legend>
+      <p className="settings-meta">Only what needs you, such as a question or an approval, makes a sound by default. You can choose for each kind in Settings › Notifications.</p>
       <label className="settings-check"><input type="radio" name={`${id}-choice`} checked={turnOn} onChange={() => setTurnOn(true)} />Turn on</label>
-      <p className="settings-meta">With Øphio’s battery use Unrestricted, alerts arrive even after you swipe the app away, with nothing kept in the status bar meanwhile.</p>
+      <p className="settings-meta">With Øphio’s battery use Unrestricted, notifications come even after you swipe the app away, with nothing kept in the status bar meanwhile.</p>
       <label className="settings-check"><input type="radio" name={`${id}-choice`} checked={!turnOn} onChange={() => setTurnOn(false)} />Not now</label>
-      <p className="settings-meta">Alerts arrive only while the app is open. You can turn this on in Settings › Notifications.</p>
+      <p className="settings-meta">Notifications come only while Øphio is open. You can turn this on in Settings › Notifications.</p>
     </fieldset>}
     {step === "notifications" && <p>{permission === "blocked"
       ? "Notifications are blocked for Øphio. Turn them on in Android settings so alerts can show."

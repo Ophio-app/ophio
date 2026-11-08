@@ -311,6 +311,19 @@
   line-height: var(--leading);
   overflow-wrap: anywhere;
 }
+/* The review left nothing to fix: said once, beside its shield. */
+.review-result__verdict {
+  display: flex;
+  gap: var(--s2);
+  align-items: flex-start;
+  line-height: var(--leading);
+  overflow-wrap: anywhere;
+}
+.review-result__verdict svg {
+  flex: none;
+  margin-top: 0.2em;
+  color: var(--ok);
+}
 /* Each fact: its name and word on one line, what it means under them. */
 .review-facts {
   display: grid;

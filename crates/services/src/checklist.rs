@@ -507,7 +507,9 @@ impl CompanionHub {
                 Ok(to.display().to_string())
             }
             FileDelivery::Taildrop { device } => {
-                let mut command = quiet("tailscale");
+                let mut command = quiet(tailscale());
+                command.env(ports::tailscale::AS_CLI.0, ports::tailscale::AS_CLI.1);
+                command.env(ports::tailscale::AS_CLI.0, ports::tailscale::AS_CLI.1);
                 command.args(["file", "cp", "--name", &name]);
                 command.arg(&blob).arg(format!("{device}:"));
                 finish(command, Duration::from_secs(300), "Taildrop").await?;
@@ -1974,7 +1976,13 @@ async fn same(path: &Path, sha256: &str) -> bool {
 }
 
 /// A program run without a window or input, stopped with Ophio.
-fn quiet(program: &str) -> tokio::process::Command {
+/// The Tailscale program, where its installer put it; by name when it isn't
+/// found, so the failure says Tailscale couldn't be started.
+fn tailscale() -> std::ffi::OsString {
+    ports::tailscale::program().map_or_else(|| "tailscale".into(), Into::into)
+}
+
+fn quiet(program: impl AsRef<std::ffi::OsStr>) -> tokio::process::Command {
     let mut command = tokio::process::Command::new(program);
     command
         .kill_on_drop(true)
@@ -2027,7 +2035,7 @@ async fn finish(
 
 /// Devices Taildrop can send to, or None without Tailscale.
 async fn taildrop_targets() -> Option<Vec<String>> {
-    let mut command = quiet("tailscale");
+    let mut command = quiet(tailscale());
     command.args(["file", "cp", "--targets"]);
     let out = finish(command, Duration::from_secs(5), "Taildrop")
         .await

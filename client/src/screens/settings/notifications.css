@@ -1,0 +1,138 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Settings › Notifications: each type a calm row, its words over its choice. */
+
+.notif-intro {
+  display: grid;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+.notif-section-hint {
+  margin-bottom: var(--s3);
+}
+/* What Alert, Silent and Off do, once, as a short key. */
+.notif-legend {
+  display: grid;
+  gap: var(--s1);
+  margin: 0;
+  padding: var(--s3);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+}
+.notif-legend > div {
+  display: grid;
+  grid-template-columns: 4.5em 1fr;
+  gap: var(--s2);
+}
+.notif-legend dt {
+  font-weight: 650;
+  color: var(--ink);
+}
+.notif-legend dd {
+  margin: 0;
+  color: var(--ink-2);
+  overflow-wrap: break-word;
+}
+
+.notif-group {
+  display: grid;
+  min-width: 0;
+}
+.notif-group + .notif-group {
+  margin-top: var(--s3);
+}
+.notif-group__title {
+  font-weight: 650;
+  font-size: var(--text-lg);
+}
+.notif-group__hint {
+  margin-top: var(--s1);
+}
+.notif-group--muted .notif-type__name,
+.notif-group--muted .notif-type__desc {
+  opacity: 0.6;
+}
+
+.notif-type {
+  display: grid;
+  gap: var(--s1);
+  min-width: 0;
+  padding-block: var(--s3);
+}
+.notif-group__title + .notif-type,
+.notif-group__hint + .notif-type {
+  margin-top: var(--s1);
+}
+.notif-type + .notif-type {
+  border-top: 1px solid var(--line);
+}
+.notif-type:last-child {
+  padding-bottom: 0;
+}
+.notif-type__name {
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+.notif-type .segmented {
+  margin-top: var(--s2);
+}
+
+.notif-actions {
+  display: grid;
+  justify-items: start;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+.notif-android {
+  display: grid;
+  justify-items: start;
+  gap: var(--s1);
+  margin-top: var(--s4);
+}
+
+/* Each computer the watcher keeps a connection to, and how it is. */
+.notif-computers {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  padding: var(--s3);
+  list-style: none;
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.notif-computers__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, auto) 1fr;
+  align-items: baseline;
+  column-gap: var(--s2);
+  font-size: var(--text-sm);
+}
+.notif-computers__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  align-self: center;
+}
+.notif-computers__row--ok .notif-computers__dot { background: var(--ok); }
+.notif-computers__row--warn .notif-computers__dot { background: var(--warn); }
+.notif-computers__name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.notif-computers__state {
+  color: var(--ink-2);
+  overflow-wrap: break-word;
+}
+.notif-computers__row--warn .notif-computers__state { color: var(--warn-text); }
+
+.notif-computer + .notif-computer {
+  margin-top: var(--s4);
+}
+.notif-computer__name {
+  margin-bottom: var(--s2);
+  font-weight: 650;
+  font-size: var(--text-base, 1rem);
+  overflow-wrap: anywhere;
+}

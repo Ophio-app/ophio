@@ -35,6 +35,35 @@ const UNLOCK_PASSWORD_MAX: usize = 512;
 /// Where the times of recent tries are kept, never what was typed.
 const UNLOCK_TRIES_KEY: &str = "unlock_tries";
 
+/// How often a desktop that stays unobservable the same way is logged again.
+/// The watch tries four times a second, and a Mac whose screen sleeps, or a
+/// locked Windows session, can fail every time for hours.
+const OBSERVATION_LOG_REPEAT: Duration = Duration::from_secs(60 * 60);
+
+/// Logs observing the desktop going wrong when it starts, when it goes wrong in
+/// another way, once an hour while it stays the same, and when it recovers.
+#[derive(Debug, Default)]
+struct ObservationLog {
+    failing: Option<(ErrorCode, tokio::time::Instant)>,
+}
+impl ObservationLog {
+    fn failed(&mut self, code: ErrorCode, now: tokio::time::Instant) {
+        if let Some((was, at)) = self.failing
+            && was == code
+            && now.duration_since(at) < OBSERVATION_LOG_REPEAT
+        {
+            return;
+        }
+        tracing::warn!(code=?code, "Desktop observation unavailable");
+        self.failing = Some((code, now));
+    }
+    fn recovered(&mut self) {
+        if self.failing.take().is_some() {
+            tracing::info!("Desktop observation available again");
+        }
+    }
+}
+
 /// Unlocking takes both Control and Manage, since the password opens the
 /// whole computer.
 fn may_unlock(grants: &Grants) -> bool {
@@ -50,6 +79,7 @@ impl CompanionHub {
         let mut replaced = self.inner.desktop_changed.subscribe();
         let mut shutdown = self.inner.shutdown.subscribe();
         let mut changes = backend.lock_changes();
+        let mut log = ObservationLog::default();
         self.spawn(async move {
             let mut tick = tokio::time::interval(Duration::from_millis(250));
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -75,8 +105,9 @@ impl CompanionHub {
                     Some(changes) => *changes.borrow_and_update(),
                     None => backend.desktop_lock().await,
                 };
-                if let Err(error) = hub.observe_desktop_lock(&backend, lock).await {
-                    tracing::warn!(code=?error.code, "Desktop observation unavailable");
+                match hub.observe_desktop_lock(&backend, lock).await {
+                    Ok(()) => log.recovered(),
+                    Err(error) => log.failed(error.code, tokio::time::Instant::now()),
                 }
             }
         });
@@ -100,15 +131,22 @@ impl CompanionHub {
                 keep_worse(&mut failure, Err(e));
                 true
             });
-        // Every screen is fenced, whatever became of the one before it.
+        // Every screen is fenced, whatever became of the one before it: all
+        // at once first, when the lock lets go of them, so none still takes
+        // input while another's release waits for a launch.
         let controls: Vec<_> = self.inner.controls.lock().await.values().cloned().collect();
+        let fenced = if self.lock_releases(lock)? {
+            crate::control::fence_where(&controls, |target| target.deadline.is_some()).await
+        } else {
+            vec![false; controls.len()]
+        };
         let mut repaired = false;
-        for target in controls {
+        for (target, fenced) in controls.into_iter().zip(fenced) {
             let mut target = target.lock().await;
             repaired |= target.unsaved;
             keep_worse(
                 &mut failure,
-                self.apply_desktop_lock(&mut target, lock).await,
+                self.apply_lock(&mut target, lock, fenced).await,
             );
         }
         let published = async {
@@ -137,23 +175,37 @@ impl CompanionHub {
         failure.map_or(Ok(()), Err)
     }
 
+    /// Whether `lock` lets go of every display's input.
+    fn lock_releases(&self, lock: DesktopLockState) -> Result<bool, ProtocolError> {
+        // Legacy adapters with no lock observer keep their existing policy.
+        // Linux's native sink additionally refuses unknown lock observations.
+        Ok(lock == DesktopLockState::Locked
+            || (lock == DesktopLockState::Unknown && self.desktop()?.lock_changes().is_some()))
+    }
     pub(crate) async fn apply_desktop_lock(
         &self,
         target: &mut Target,
         lock: DesktopLockState,
     ) -> Result<(), ProtocolError> {
+        self.apply_lock(target, lock, false).await
+    }
+    /// As [`Self::apply_desktop_lock`]; `fenced` says the display's lease
+    /// was fenced for this lock already, with every other display's.
+    async fn apply_lock(
+        &self,
+        target: &mut Target,
+        lock: DesktopLockState,
+        fenced: bool,
+    ) -> Result<(), ProtocolError> {
         let mut changed = target.view.desktop_lock != Some(lock);
         target.view.desktop_lock = Some(lock);
-        // Legacy adapters with no lock observer keep their existing policy.
-        // Linux's native sink additionally refuses unknown lock observations.
-        let unknown_observer =
-            lock == DesktopLockState::Unknown && self.desktop()?.lock_changes().is_some();
-        if lock == DesktopLockState::Locked || unknown_observer {
+        let unknown_observer = lock == DesktopLockState::Unknown && self.lock_releases(lock)?;
+        if self.lock_releases(lock)? {
             if let Some(observation) = &mut target.view.model_observation {
                 changed |= observation.state != ObservationState::Withdrawn;
                 observation.state = ObservationState::Withdrawn;
             }
-            if target.deadline.is_some() {
+            if fenced || target.deadline.is_some() {
                 let released = self.revoke_locked(target, false).await;
                 let recorded = self.intervention(
                     target.view.target_id,
@@ -449,6 +501,8 @@ impl CompanionHub {
     pub(crate) async fn reopen_desktop_capture(&self) -> Result<(), ProtocolError> {
         let _operation = self.inner.desktop_operation.write().await;
         let desktop = self.desktop()?;
+        let targets: Vec<_> = self.inner.controls.lock().await.values().cloned().collect();
+        self.settle_launches(targets).await;
         let mut controls = self.inner.controls.lock().await;
         let mut failure = None;
         for target in controls.values() {
@@ -458,6 +512,8 @@ impl CompanionHub {
             }
             let released = self.revoke_locked(&mut target, false).await;
             target.removed = released.is_ok();
+            // One that stays, unreleased, is a display like any other again.
+            target.leaving = false;
             crate::control::keep_worse(&mut failure, released);
         }
         if let Some(failure) = failure {

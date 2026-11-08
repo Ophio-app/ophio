@@ -17,7 +17,7 @@
 // conversation turned into a task keeps its access, so the task keeps the bar.
 
 import { Ban, ChevronDown, Eye, FolderGit2, FolderPlus, Globe, GlobeOff, House, LoaderCircle, Monitor, Network, Pencil, type LucideIcon } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { describeError, shallowEqual, useApp, useCommand, useHost, useLink, useUi } from "../../app/context";
 import { draftKey } from "../../app/ui";
 import { useWarning } from "../../app/warnings";
@@ -33,6 +33,7 @@ import { useMay } from "../../shell/NotAllowed";
 import { isTaskRunning } from "../../state/projection";
 import { accessHeld, defaultAccess, normalizedAccess, reachesOwnNetwork } from "./access";
 import { NEW_CONVERSATION } from "./conversation";
+import { accessBarShown, useMayDoRequest } from "./MayDoLine";
 import "./accessBar.css";
 
 type Side = "read" | "write";
@@ -45,6 +46,8 @@ const SPIN_AFTER_MS = 250;
 /** How long a change may take to be in force: the computer gives a stopped
  * turn 30 s to end before it continues it. */
 const APPLY_WAIT_MS = 45_000;
+/** How long the bar stays outlined once asked for. */
+const CALLED_MS = 1_600;
 
 const widened = (a: ConversationAccess, side: Side): ConversationAccess => (side === "write" ? { ...a, whole_write: true } : { ...a, whole_read: true });
 
@@ -63,6 +66,20 @@ export function AccessBar({ project, task }: { project: Project; task: Task | un
   const online = useLink().state === "online";
   const [side, setSide] = useState<Side | null>(null);
   const [wide, setWide] = useState<Side | null>(null);
+  // Asked for from the line saying what it may do: the bar takes focus and is
+  // outlined for a moment, so the eye finds it.
+  const root = useRef<HTMLDivElement>(null);
+  const [called, setCalled] = useState(false);
+  useMayDoRequest(task?.task_id, !!task && accessBarShown(task, held), () => setCalled(true));
+  useEffect(() => {
+    if (!called) return;
+    const el = root.current;
+    el?.scrollIntoView?.({ block: "nearest" });
+    const first = el?.querySelector<HTMLButtonElement>(".access__pick:not(:disabled), .access__net:not(:disabled)");
+    (first ?? el)?.focus({ preventScroll: true });
+    const done = setTimeout(() => setCalled(false), CALLED_MS);
+    return () => clearTimeout(done);
+  }, [called]);
   const shown = task ? !!task.conversation || !!task.access : conversing;
   if (!held || !shown || task?.state === "archived") return null;
   const access = task?.access ?? drafted ?? defaultAccess(pid);
@@ -96,7 +113,7 @@ export function AccessBar({ project, task }: { project: Project; task: Task | un
   const local = reachesOwnNetwork(access);
 
   return (
-    <div className="access" role="group" aria-label="What the agent may reach">
+    <div ref={root} className={called ? "access is-called" : "access"} role="group" aria-label="What the agent may reach" tabIndex={-1}>
       <div className="access__bar">
         <AccessButton side="read" summary={summary("read", access, project, names)} busy={waiting.has("read")} disabled={locked} onOpen={() => setSide("read")} />
         <IconButton

@@ -23,10 +23,12 @@ internal class UpdateFailure(message: String) : Exception(message)
 
 /**
  * Updates the app to one a paired computer offers. Android installs only an
- * app signed as this one is, and since Android 12 an app may update itself
- * without asking; before that, or when Android wants the person to allow it,
- * Android asks first. The download goes straight into Android's own install
- * session, so nothing is left behind on the phone either way.
+ * app signed as this one is, and only once the person has allowed the app to
+ * install apps (Android's "Install unknown apps" setting). With that allowed,
+ * since Android 12 an app may update itself without asking; before that, or
+ * when another app such as a store owns its updates, Android asks first. The
+ * download goes straight into Android's own install session, so nothing is
+ * left behind on the phone either way.
  */
 internal class AppUpdate(private val context: Context) {
     private class Open(
@@ -155,7 +157,6 @@ internal class AppUpdate(private val context: Context) {
     companion object {
         /** Øphio's app is about 30 MB; this leaves room to grow. */
         private const val MAX_SIZE = 512L * 1024 * 1024
-        private const val CHANNEL = "updates"
         private const val NOTE = 3
         private const val TAG = "app-update"
         private const val INSTALLING = "installing"
@@ -178,7 +179,8 @@ internal class AppUpdate(private val context: Context) {
 
         private fun failure(status: Int, detail: String?): String =
             when (status) {
-                PackageInstaller.STATUS_FAILURE_ABORTED -> "The update was cancelled."
+                PackageInstaller.STATUS_FAILURE_ABORTED ->
+                    "The update was cancelled before it installed. Tap Try again to install it."
                 PackageInstaller.STATUS_FAILURE_BLOCKED -> "Android or this phone’s administrator blocked the update."
                 PackageInstaller.STATUS_FAILURE_CONFLICT ->
                     "Android refused the update: it isn’t signed as this app is, or is older. Install it from the computer with `ophio phone install`."
@@ -187,6 +189,31 @@ internal class AppUpdate(private val context: Context) {
                 PackageInstaller.STATUS_FAILURE_INVALID -> "The update file isn’t a valid app."
                 else -> "Android couldn’t install the update" + (detail?.let { ": $it" } ?: ".")
             }
+
+        /**
+         * Whether Android lets this app install apps: the person allowed it in
+         * Android's "Install unknown apps" setting and no policy forbids it.
+         * Without it Android stops an install to send the person to that
+         * setting, and may cancel the install on the way back.
+         */
+        fun allowed(context: Context): Boolean = context.packageManager.canRequestPackageInstalls()
+
+        /**
+         * Whether Android asks the person to confirm an update even once this
+         * app may install apps: always before Android 12, and from Android 14
+         * when another app, such as a store, owns this app's updates.
+         */
+        fun confirms(context: Context): Boolean {
+            if (Build.VERSION.SDK_INT < 31) return true
+            if (Build.VERSION.SDK_INT >= 34) {
+                val owner =
+                    runCatching {
+                        context.packageManager.getInstallSourceInfo(context.packageName).updateOwnerPackageName
+                    }.getOrNull()
+                if (owner != null && owner != context.packageName) return true
+            }
+            return false
+        }
 
         fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it) }
 
@@ -300,9 +327,11 @@ internal class AppUpdate(private val context: Context) {
         private fun note(context: Context, title: String, body: String, profileId: String?) {
             val manager = context.getSystemService(NotificationManager::class.java)
             if (!manager.areNotificationsEnabled()) return
-            manager.createNotificationChannel(
-                NotificationChannel(CHANNEL, "App updates", NotificationManager.IMPORTANCE_DEFAULT)
-            )
+            // Its own type, as the person chose it on this phone.
+            Channels.ensure(context)
+            val tier = Channels.tier(context, "app_update")
+            if (tier == "off") return
+            val channel = Channels.id(context, "app_update")
             val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
             if (profileId != null) {
                 launch.data = Uri.parse("notification://app-update/" + Uri.encode(profileId))
@@ -313,7 +342,7 @@ internal class AppUpdate(private val context: Context) {
             manager.notify(
                 TAG,
                 NOTE,
-                Notification.Builder(context, CHANNEL)
+                Notification.Builder(context, channel)
                     .setSmallIcon(R.drawable.ic_stat_ophio)
                     .setContentTitle(title)
                     .setContentText(body)

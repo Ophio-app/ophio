@@ -13,6 +13,9 @@ pub enum Error {
     CertificateMismatch,
     #[error("Cannot reach the computer. Check its address and private network.")]
     Unreachable,
+    /// The computer is reached over Tailscale and this phone is not on it.
+    #[error("This phone isn’t connected to Tailscale. Turn Tailscale on to reach the computer.")]
+    NoTailscale,
     #[error("The connection closed before the computer confirmed the operation.")]
     Closed,
     #[error("The computer did not answer in time.")]
@@ -63,7 +66,9 @@ impl Error {
     pub fn code(&self) -> ErrorCode {
         match self {
             Self::CertificateMismatch | Self::Unauthenticated => ErrorCode::Unauthenticated,
-            Self::Unreachable | Self::Closed | Self::Busy => ErrorCode::TemporarilyUnavailable,
+            Self::Unreachable | Self::NoTailscale | Self::Closed | Self::Busy => {
+                ErrorCode::TemporarilyUnavailable
+            }
             Self::Timeout => ErrorCode::Expired,
             Self::NotPaired => ErrorCode::NotFound,
             Self::Incompatible => ErrorCode::IncompatibleVersion,

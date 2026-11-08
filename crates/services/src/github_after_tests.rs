@@ -330,6 +330,7 @@ async fn a_finders_findings_are_filed_and_their_fixes_start_by_themselves() {
         GithubLink::Issue {
             number: 31,
             review_with: None,
+            when_green: None,
         }
     );
     assert_eq!(github.found_by, Some(claude()));
@@ -779,6 +780,7 @@ async fn a_sort_closes_what_an_agent_filed_twice_unless_its_fix_has_started() {
     let fix = |number| GithubLink::Issue {
         number,
         review_with: None,
+        when_green: None,
     };
     let waiting = r.link(fix(21), "Fix it").await.unwrap();
     let (working, _) = r.start(fix(20), "Fix it").await;
@@ -1082,6 +1084,15 @@ async fn the_watcher_hands_news_back_checks_once_and_hands_a_green_pr_over() {
         given.contains("- The check before merging found:\n> - Rename isn't fsynced"),
         "{given}"
     );
+    // The fixer is told to change only what fixes it, prove it, and argue
+    // a wrong finding rather than change the code for it.
+    for rule in [
+        "the smallest change that fixes it, adding nothing else",
+        "add one test that fails without the fix",
+        "Where a finding is wrong, leave the code and answer it with github_comment",
+    ] {
+        assert!(given.contains(rule), "{rule}: {given}");
+    }
     let review: Option<String> = r.f.hub.read(|x| x.get(REVIEW, task)).unwrap();
     assert!(review.is_none());
     r.ends(task, run, None).await;
@@ -1119,7 +1130,14 @@ async fn the_watcher_hands_news_back_checks_once_and_hands_a_green_pr_over() {
     );
     let recheck_run = run_started(&r.f, recheck.task_id).await;
     let spec = r.spec(recheck_run);
-    assert!(spec.github.unwrap().contains("## The recheck"));
+    let github = spec.github.unwrap();
+    assert!(github.contains("## The recheck"));
+    // The fixer's answer to a finding it thinks is wrong is weighed.
+    assert!(
+        github.contains(
+            "Where its reason holds up against the source, count the finding as corrected"
+        )
+    );
     let given = spec.prompt.text;
     assert!(
         given.contains("at commit bbb, and this round rechecks it at ccc")
@@ -3643,4 +3661,85 @@ fn codex_uses_the_app_itself_where_claude_code_briefs_its_specialist() {
     }
     assert!(!codex.contains("computer-specialist"), "{codex}");
     assert!(!codex.contains("Briefing"), "{codex}");
+}
+
+#[tokio::test]
+async fn an_agent_on_a_pull_request_answers_a_review_with_the_least_and_proves_it() {
+    let r = repo(true).await;
+    r.set(drafts()).await.unwrap();
+    r.gh.answer("GET /repos/octo/app/pulls/7", pull(7, "octo/app", "me"));
+    let (task, run) = r.start(GithubLink::Pr { number: 7 }, "Finish it").await;
+    let told = r.spec(run).github.unwrap();
+    for rule in [
+        "with the smallest change that fixes each problem it found, and add nothing else because of it",
+        "If you think a finding is wrong, leave the code as it is and answer the finding with github_comment",
+        "Add one test that fails without the fix",
+        "show it with show_person",
+    ] {
+        assert!(told.contains(rule), "{rule}: {told}");
+    }
+    r.ends(task, run, None).await;
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn a_tasks_own_choice_decides_whether_its_green_pull_request_merges() {
+    // In Drafts, its warning never answered, it is the person's to merge
+    // until they choose for the task that it merges once it is green.
+    let r = repo(true).await;
+    let mut settings = drafts();
+    settings.workflow.check_before_merge = false;
+    r.set(settings).await.unwrap();
+    r.gh.answer("GET /repos/octo/app/pulls/7", pull(7, "octo/app", "me"));
+    r.gh.answer(
+        "GET /repos/octo/app/pulls/7/files?per_page=100&page=1",
+        json!([]),
+    );
+    let (task, run) = r.start(GithubLink::Pr { number: 7 }, "Finish it").await;
+    r.ends(task, run, None).await;
+    let tick = async || {
+        r.f.clock.advance(Duration::from_secs(11 * 60));
+        r.f.hub.watch_prs().await.unwrap();
+    };
+    r.gh.query(
+        "viewer{login}",
+        ready_pr("bbb", test_check("SUCCESS"), "CLEAN"),
+    );
+    tick().await;
+    assert_eq!(r.get(task).github.unwrap().stage, Some(PrStage::Ready));
+    let merge = GithubAction::SetWhenGreen {
+        task_id: task,
+        when_green: Some(WhenGreen::Merge),
+    };
+    r.act(&Caller::local_owner(), merge).await.unwrap();
+    assert_eq!(
+        r.get(task).github.unwrap().when_green,
+        Some(WhenGreen::Merge)
+    );
+    tick().await;
+    assert_eq!(r.get(task).github.unwrap().stage, Some(PrStage::Merging));
+    r.f.close().await;
+
+    // In Through merge, left for the person, it waits for them.
+    let r = through_without_check().await;
+    let (task, run) = r.start(GithubLink::Pr { number: 7 }, "Finish it").await;
+    r.ends(task, run, None).await;
+    let leave = GithubAction::SetWhenGreen {
+        task_id: task,
+        when_green: Some(WhenGreen::Leave),
+    };
+    r.act(&Caller::local_owner(), leave).await.unwrap();
+    r.gh.query(
+        "viewer{login}",
+        ready_pr("bbb", test_check("SUCCESS"), "CLEAN"),
+    );
+    r.f.clock.advance(Duration::from_secs(11 * 60));
+    r.f.hub.watch_prs().await.unwrap();
+    assert_eq!(r.get(task).github.unwrap().stage, Some(PrStage::Ready));
+    assert!(
+        r.attention(task)
+            .iter()
+            .any(|a| a.title == "PR #7 is ready")
+    );
+    r.f.close().await;
 }

@@ -353,7 +353,7 @@ impl CompanionHub {
                 PairResponse {
                     device_id,
                     host_id: self.inner.host_id,
-                    host_name: self.inner.name.clone(),
+                    host_name: self.current_name(),
                     grants,
                 },
                 record,

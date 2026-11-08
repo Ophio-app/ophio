@@ -14,6 +14,7 @@ use protocol::{
     ProtocolVersion,
     auth::{ConnectionKind, PairRequest, PairResponse, PairingOffer, pairing_code},
     capability::AppOffer,
+    notifications::{AlertType, Tier},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -110,7 +111,12 @@ pub async fn pair(
             pairing_secret: offer.pairing_secret.clone(),
             device_public_key: public,
             device_name,
-            device_platform: "android".into(),
+            device_platform: if cfg!(target_os = "ios") {
+                "ios"
+            } else {
+                "android"
+            }
+            .into(),
             client_version: env!("CARGO_PKG_VERSION").into(),
             protocol: ProtocolVersion::CURRENT,
             shows_code: true,
@@ -271,8 +277,14 @@ pub async fn link_open(
         .await
 }
 #[tauri::command]
-pub async fn link_connect(core: State<'_, AppCore>, link_id: u32) -> Result<()> {
-    core.links.connect(link_id).await
+pub async fn link_connect(
+    core: State<'_, AppCore>,
+    link_id: u32,
+    ask: Option<String>,
+) -> Result<()> {
+    core.links
+        .connect(link_id, crate::backoff::Ask::named(ask.as_deref()))
+        .await
 }
 #[tauri::command]
 pub async fn link_send(core: State<'_, AppCore>, link_id: u32, text: String) -> Result<bool> {
@@ -368,14 +380,23 @@ pub async fn save_finish(core: State<'_, AppCore>, id: String) -> Result<Value> 
 pub async fn save_cancel(core: State<'_, AppCore>, id: String) -> Result<()> {
     core.device.call("saveCancel", json!({"id":id})).await
 }
-/// Which of the apps a computer offers this app can update to, if any.
+/// Which of the apps a computer offers this app can update to, if any, and
+/// what Android asks first. With `open_settings`, a phone that doesn't yet let
+/// the app install apps opens Android's setting for that.
 #[tauri::command]
-pub async fn app_update_check(core: State<'_, AppCore>, offers: Vec<AppOffer>) -> Result<Value> {
+pub async fn app_update_check(
+    core: State<'_, AppCore>,
+    offers: Vec<AppOffer>,
+    open_settings: Option<bool>,
+) -> Result<Value> {
     if offers.len() > 16 {
         return Err(Error::Invalid("Too many apps offered."));
     }
     core.device
-        .call("appUpdateCheck", json!({ "offers": offers }))
+        .call(
+            "appUpdateCheck",
+            json!({ "offers": offers, "openSettings": open_settings.unwrap_or(false) }),
+        )
         .await
 }
 #[tauri::command]
@@ -423,6 +444,15 @@ pub struct Notification {
     group: Option<String>,
     group_title: Option<String>,
     route: Option<Value>,
+    /// Without sound, vibration or a pop-up. Older pages send none.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    silent: bool,
+    /// What it is about, and a project's or task's choice over the phone's,
+    /// as the watcher's own alerts say them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    alert_type: Option<AlertType>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    want: Option<Tier>,
 }
 /// Android refuses an alert once the shade holds as many as the watcher
 /// keeps there, rather than dropping it unseen.
@@ -451,6 +481,10 @@ pub async fn notify(core: State<'_, AppCore>, notification: Notification) -> Res
 pub async fn cancel_notifications(core: State<'_, AppCore>, ids: Vec<String>) -> Result<()> {
     if ids.len() > 256 || ids.iter().any(|id| id.len() > 256) {
         return Err(Error::Invalid("Too many alerts."));
+    }
+    // Cleared by the app, as answered or seen: the watcher puts none back.
+    if let Err(error) = alerts::cleared_by_app(&ids) {
+        tracing::warn!(%error, "alerts: could not note alerts the app cleared");
     }
     core.device
         .call("cancelNotifications", json!({ "ids": ids }))
@@ -503,32 +537,72 @@ pub struct AlertsState {
     settings: Option<alerts::Settings>,
     /// Each paired computer's connection, while the watcher runs.
     statuses: BTreeMap<String, alerts::Status>,
+    /// When the watcher last heard from each paired computer, in
+    /// milliseconds: the app's own connection is closed while it is not on
+    /// screen.
+    heard: BTreeMap<String, i64>,
     /// Android's side: whether the service runs, and whether Android lets
     /// it run in the background, as it does only with Unrestricted battery use.
     android: Value,
+    /// This phone's choice for each notification type, as Android's
+    /// category for it says now: the person may change it there too.
+    tiers: BTreeMap<AlertType, Tier>,
 }
 #[tauri::command]
 pub async fn alerts_state(core: State<'_, AppCore>) -> Result<AlertsState> {
+    let mut android: Value = core.device.call("alertsInfo", json!({})).await?;
+    let tiers = android
+        .as_object_mut()
+        .and_then(|a| a.remove("tiers"))
+        .and_then(|t| serde_json::from_value(t).ok())
+        .unwrap_or_default();
     Ok(AlertsState {
         settings: alerts::settings()?,
         statuses: alerts::statuses(),
-        android: core.device.call("alertsInfo", json!({})).await?,
+        heard: alerts::heard(),
+        android,
+        tiers,
     })
+}
+/// Sets this phone's choice for one notification type. It takes effect at
+/// once: Android's category for it changes, and turned off, the type's
+/// notifications showing go.
+#[tauri::command]
+pub async fn alerts_set_tier(
+    core: State<'_, AppCore>,
+    alert_type: AlertType,
+    tier: Tier,
+) -> Result<AlertsState> {
+    core.device
+        .call::<()>("alertsTier", json!({ "type": alert_type, "tier": tier }))
+        .await?;
+    alerts_state(core).await
+}
+/// The person saw these items on screen: their notifications go, here and
+/// on their other devices, and none is raised again.
+#[tauri::command]
+pub async fn alerts_handled(
+    core: State<'_, AppCore>,
+    profile_id: String,
+    attention_ids: Vec<protocol::AttentionId>,
+) -> Result<()> {
+    if profile_id.len() > 256 || attention_ids.len() > protocol::alerts::MAX_OPEN_ALERTS {
+        return Err(Error::Invalid("Too many alerts."));
+    }
+    let tags = alerts::handled(&profile_id, &attention_ids)?;
+    if !tags.is_empty() {
+        core.device
+            .call::<()>("cancelNotifications", json!({ "ids": tags }))
+            .await?;
+    }
+    Ok(())
 }
 #[tauri::command]
 pub async fn alerts_configure(
     core: State<'_, AppCore>,
     settings: alerts::Settings,
 ) -> Result<AlertsState> {
-    let raised = alerts::configure(settings)?;
-    if !raised.is_empty()
-        && let Err(error) = core
-            .device
-            .call::<()>("cancelNotifications", json!({ "ids": raised }))
-            .await
-    {
-        tracing::warn!(%error, "alerts: could not clear what the watcher raised");
-    }
+    alerts::configure(settings)?;
     core.device
         .call::<()>("alertsService", json!({"run": settings.enabled}))
         .await?;
@@ -560,11 +634,14 @@ pub async fn alerts_viewing(profile_id: String, on: bool) -> Result<()> {
 pub async fn alerts_battery(core: State<'_, AppCore>) -> Result<()> {
     core.device.call("alertsBattery", json!({})).await
 }
-/// Opens Android's settings for one notification category: `needs-you` or
-/// `finished`.
+/// Opens Android's settings for one notification category: a type's, or
+/// `follow`, where a project or a task's bell raises a type above the
+/// phone's choice.
 #[tauri::command]
 pub async fn alerts_channel(core: State<'_, AppCore>, channel: String) -> Result<()> {
-    if !["needs-you", "finished"].contains(&channel.as_str()) {
+    let known = channel == "follow"
+        || serde_json::from_value::<AlertType>(Value::String(channel.clone())).is_ok();
+    if !known {
         return Err(Error::Invalid("Unknown notification category."));
     }
     core.device
@@ -698,14 +775,14 @@ pub async fn notification_permission(core: State<'_, AppCore>) -> Result<Notific
 /// The platform chooser receives only the plain text supplied by this device.
 #[tauri::command]
 pub async fn share_text(core: State<'_, AppCore>, text: String) -> Result<bool> {
-    #[cfg(target_os = "android")]
+    #[cfg(mobile)]
     {
         core.device
             .call::<()>("shareText", json!({"text":text}))
             .await?;
         Ok(true)
     }
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(mobile))]
     {
         let _ = (core, text);
         Ok(false)

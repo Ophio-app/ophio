@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Android operations are reachable only through the shell's narrow commands.
+//! Phone operations are reachable only through the shell's narrow commands.
+//! Android runs them in Kotlin, iPhone in Swift; each answers the same
+//! commands with the same payloads.
 use serde::{Serialize, de::DeserializeOwned};
 use tauri::{
     Manager, Runtime,
@@ -8,16 +10,16 @@ use tauri::{
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("This operation requires Android.")]
+    #[error("This operation requires the phone app.")]
     Unsupported,
     #[error("{0}")]
     Native(String),
 }
 
 pub struct Device<R: Runtime> {
-    #[cfg(target_os = "android")]
+    #[cfg(mobile)]
     handle: tauri::plugin::PluginHandle<R>,
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(mobile))]
     marker: std::marker::PhantomData<fn() -> R>,
 }
 
@@ -27,7 +29,7 @@ impl<R: Runtime> Device<R> {
         command: &str,
         payload: impl Serialize,
     ) -> Result<T, Error> {
-        #[cfg(target_os = "android")]
+        #[cfg(mobile)]
         {
             let handle = self.handle.clone();
             let command = command.to_owned();
@@ -47,7 +49,7 @@ impl<R: Runtime> Device<R> {
                     _ => Error::Native("The phone could not complete this operation.".into()),
                 })
         }
-        #[cfg(not(target_os = "android"))]
+        #[cfg(not(mobile))]
         {
             let _ = (command, payload);
             Err(Error::Unsupported)
@@ -64,6 +66,14 @@ impl<R: Runtime, T: Manager<R>> DeviceExt<R> for T {
     }
 }
 
+#[cfg(target_os = "ios")]
+#[allow(unsafe_code)]
+mod ios {
+    // The Swift package in `ios/` exports this as `@_cdecl("init_plugin_device")`.
+    tauri::ios_plugin_binding!(init_plugin_device);
+    pub(super) const INIT: unsafe fn() -> *const std::ffi::c_void = init_plugin_device;
+}
+
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("device")
         .on_navigation(|_, url| {
@@ -77,7 +87,11 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             let device = Device {
                 handle: _api.register_android_plugin("app.ophio.device", "DevicePlugin")?,
             };
-            #[cfg(not(target_os = "android"))]
+            #[cfg(target_os = "ios")]
+            let device = Device {
+                handle: _api.register_ios_plugin(ios::INIT)?,
+            };
+            #[cfg(not(mobile))]
             let device = Device::<R> {
                 marker: std::marker::PhantomData,
             };

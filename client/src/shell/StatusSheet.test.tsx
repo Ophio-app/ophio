@@ -84,6 +84,17 @@ it("states what each availability means and keeps the reason apart", () => {
   expect(usageLimitNow(undefined, 0)).toBeNull();
 });
 
+it("says the phone is off Tailscale, and returns to normal once it reaches the computer", async () => {
+  render(<StatusSheet open onClose={vi.fn()} />, { wrapper });
+  act(() => window.__sim!.tailscaleOff());
+  await advance(1000);
+  expect(row("Tailscale off").textContent).toMatch(/This phone isn’t connected to Tailscale\. Turn Tailscale on to reach the computer\..*Trying again/);
+  act(() => window.__sim!.online());
+  await advance(5000);
+  expect(screen.queryByText("Tailscale off")).toBeNull();
+  expect(row("Connected")).toBeTruthy();
+});
+
 it("warns that another device answered, keeps trying, and returns to normal when the computer answers", async () => {
   const forget = vi.fn(async () => undefined);
   app = { ...app, forget };

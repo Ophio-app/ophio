@@ -92,6 +92,18 @@ once checks pass** or **I'll merge them**; nothing merges by itself meanwhile. T
 warning names the repository it is for, and is refused if `origin` has moved
 since it was shown.
 
+This switch is the project's setting. Each task working on an issue or pull
+request also has its own choice, **When its checks pass**: **Merge it** or
+**Leave it for me**. It starts as the project's setting, and a task left alone
+follows the project if that changes. The issue sheet offers it before the
+task starts, and the issue and pull request sheets change it for a task
+already running, until its pull request merges or closes. **Merge it** is
+offered only where the account administers the repository and this phone may
+approve merges, as for merging itself, and only the phone can choose it: an
+agent in a chat can't. An issue written by someone who can't write to the
+repository always waits for you, and a change that needs your approval
+(below) waits for you whatever the task chose.
+
 ### Merge together
 
 **Pull requests** has **Merge several together** once two or more are open.
@@ -435,8 +447,9 @@ Behind the gear, and **GitHub settings** in Tasks:
 - **Check before merging** (on): when the agent's pull request passes its checks, its
   changes are reviewed, in Plan, before it merges or is handed to you: by
   the reviewer whose issue it fixes, or else by the task's own agent. Once
-  corrections are pushed, what changed is rechecked, three rounds at most
-  (see [Watching a pull request](#watching-a-pull-request)).
+  corrections are pushed, what changed is rechecked, three rounds at most,
+  or five for a change that needs your approval (see [Watching a pull
+  request](#watching-a-pull-request)).
 
 The settings are kept on the computer, per project, with Run all's **Fixed
 by** and **Reviewed by**; no other model is stored there. Issues anyone else
@@ -788,12 +801,25 @@ may leave some out. Every problem the verifier confirms is posted, kept and
 handed over, even one that looks like a problem still open. A finding a
 round didn't answer for, as when a whole review follows a recheck that
 didn't report, is asked about again in a recheck of the same commit, not
-taken for one the agent pushed nothing for. A pull request gets three rounds; it is left with you, under Needs
-you, with a plain reason, when a problem marked corrected comes back, when
-the last round ends with problems still open, when the change moves after
-the last round, or when the agent was handed problems and pushed nothing for
-them. Picking the task up again starts the rounds over and keeps what was
-found. One review runs at a time: a commit pushed while one runs is the next
+taken for one the agent pushed nothing for. A pull request gets three rounds,
+or five when it needs your approval (below), including when the reviewer
+calls it sensitive. It is left with you, under Needs you, with a plain
+reason, when a problem marked corrected comes back, when the last round ends
+with problems still open, or when the change moves after the last round. The
+fixing agent is told to make the smallest change that fixes each problem and
+nothing else, to prove each fix (the check that failed passes, a new test
+fails without the fix, and a picture shows a changed screen), and to answer a
+problem it thinks is wrong with its reason instead of changing the code; the
+next round weighs that answer, within the same number of rounds. Picking the
+task up again starts the rounds over and keeps what was found.
+
+When the newest commit has been reviewed and nothing is left to fix, the
+phone says so with the review, for example "Checked by Claude Code in 2
+rounds, nothing left to fix." On your own pull request, in a repository you
+own or administer, Øphio also adds a line under its description, such as
+"🤖 Øphio: checked by Claude Code in 2 rounds, nothing left to fix at
+1a2b3c4". It names the commit that was checked, so a later push can't read as
+checked, and a newer line replaces it. One review runs at a time: a commit pushed while one runs is the next
 round's, and a check you ask for while a round reviews the same commit is
 part of that round, not another. The verifier and the rechecks raise nothing of their own; you hear
 when the pull request is ready, merged or needs you.
@@ -918,4 +944,10 @@ names another one by then.
   rules, the task doing the latest round, and why it stopped, if it did), and
   `TaskGithub.approval` what makes the change need the person's approval,
   for one exact commit.
+- Capability `github_when_green_v1`: a task's own choice once its checks
+  pass, `when_green` (`merge` or `leave`; omitted, the project's setting
+  decides) on an issue's `GithubLink` and on `TaskGithub`, and the action
+  `set_when_green { task_id, when_green? }`. `merge` needs the phone's unlock
+  and is refused from a chat and where the account can't merge. A computer
+  without it isn't sent a task's own choice.
 - Events `github_changed` and `pr_changed` bump the phone's GitHub revision.

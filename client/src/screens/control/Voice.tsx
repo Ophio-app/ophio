@@ -36,7 +36,7 @@ function VoiceStart() {
       {(["browser", "desktop"] as const).map(kind => {
         const availability = kind === "browser" ? view.voice_browser : view.voice_desktop;
         const name = kind === "browser" ? "Browser" : "This desktop";
-        return <div className="voice-target" key={kind}><ListRow icon={kind === "browser" ? Globe : Monitor} title={name} subtitle={kind === "browser" ? "A separate browser window" : "The focused app on the computer"} chevron={availability.state === "available"} onClick={availability.state === "available" && online && grants?.control_input ? () => setChoice(kind) : undefined} /><CapabilityNote what={name} availability={availability} /></div>;
+        return <div className="voice-target" key={kind}><ListRow icon={kind === "browser" ? Globe : Monitor} title={name} subtitle={kind === "browser" ? "A separate browser window" : "Open apps, press shortcuts and type on the computer"} chevron={availability.state === "available"} onClick={availability.state === "available" && online && grants?.control_input ? () => setChoice(kind) : undefined} /><CapabilityNote what={name} availability={availability} /></div>;
       })}
     </Section>}
     </>}

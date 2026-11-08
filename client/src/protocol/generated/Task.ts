@@ -14,6 +14,7 @@ import type { TaskGithub } from "./TaskGithub";
 import type { TaskId } from "./TaskId";
 import type { TaskKind } from "./TaskKind";
 import type { TaskMode } from "./TaskMode";
+import type { TaskReport } from "./TaskReport";
 import type { TaskReview } from "./TaskReview";
 import type { TaskState } from "./TaskState";
 import type { TaskWake } from "./TaskWake";
@@ -84,7 +85,12 @@ wake?: TaskWake,
  * The task whose agent asked this one, read-only, for its help: its
  * answer goes back there.
  */
-asked_by?: TaskId, created_by: Principal, created_at: Timestamp, updated_at: Timestamp, 
+asked_by?: TaskId, 
+/**
+ * The problem report the person had this task look into, from the
+ * report in their inbox. Advertised as `report_task_v1`.
+ */
+report?: TaskReport, created_by: Principal, created_at: Timestamp, updated_at: Timestamp, 
 /**
  * Most recent run, if any.
  */
@@ -104,4 +110,10 @@ attention_count: number,
 /**
  * Most recent human-readable status line from the harness.
  */
-status_line: string | null, };
+status_line: string | null, 
+/**
+ * "Tell me when it's done": the task's finish, failure or reply alerts
+ * on every phone, whatever their choice for those types. Advertised
+ * as `alert_types_v1`.
+ */
+notify_done?: boolean, };

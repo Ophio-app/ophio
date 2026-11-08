@@ -132,7 +132,9 @@ async fn portable_path_escapes_and_aliases_are_rejected() {
 #[cfg(unix)]
 #[tokio::test]
 async fn symlinks_loops_replaced_roots_hardlinks_and_special_files_are_rejected() {
-    use std::os::unix::{ffi::OsStringExt, fs::symlink};
+    #[cfg(not(target_os = "macos"))]
+    use std::os::unix::ffi::OsStringExt;
+    use std::os::unix::fs::symlink;
     let f = Fixture::new().await;
     let outside = f._temp.path().join("outside");
     std::fs::create_dir(&outside).unwrap();
@@ -153,20 +155,21 @@ async fn symlinks_loops_replaced_roots_hardlinks_and_special_files_are_rejected(
         f.fs.read(f.id, "hard.md").await,
         Err(LibraryError::PathNotAllowed(_))
     ));
-    rustix::fs::mknodat(
-        rustix::fs::CWD,
-        f.root.join("pipe"),
-        rustix::fs::FileType::Fifo,
-        rustix::fs::Mode::RUSR,
-        0,
-    )
-    .unwrap();
+    assert!(
+        std::process::Command::new("mkfifo")
+            .arg(f.root.join("pipe"))
+            .status()
+            .unwrap()
+            .success()
+    );
     assert!(matches!(
         f.fs.read(f.id, "pipe").await,
         Err(LibraryError::PathNotAllowed(_))
     ));
     // A name that is not UTF-8 cannot be a path; it is left out of the
     // listing, as search leaves it out, and the rest of the folder still lists.
+    // A Mac's disks refuse such a name outright.
+    #[cfg(not(target_os = "macos"))]
     std::fs::write(f.root.join(std::ffi::OsString::from_vec(vec![0xff])), "x").unwrap();
     let names: Vec<_> =
         f.fs.list(f.id, "")
@@ -464,9 +467,12 @@ async fn search_finds_a_file_by_its_name() {
 #[cfg(unix)]
 #[tokio::test]
 async fn listing_leaves_out_names_a_path_cannot_use() {
+    #[cfg(not(target_os = "macos"))]
     use std::os::unix::ffi::OsStrExt;
     let f = Fixture::new().await;
     f.write("sub/kept.md", "kept");
+    // A Mac's disks refuse such a name outright.
+    #[cfg(not(target_os = "macos"))]
     std::fs::write(
         f.root
             .join("sub")

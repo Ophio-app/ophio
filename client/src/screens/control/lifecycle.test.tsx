@@ -434,7 +434,7 @@ it("a not-running refusal removes the stale task from safety immediately", async
 });
 
 it("Start review persists the goal and submits only the chosen eligible target and agent", async () => {
-  const { default: ComputerReview } = await import("./ComputerReview");
+  const { default: ComputerReview } = await import("./ComputerReviewScreen");
   const { RouteProvider } = await import("../../shell/Screen");
   const route = { screen: "computer_use_review" as const, projectId: ids.pNotes };
   const draw = () => render(<RouteProvider value={{ tab: "control", route, depth: 1, active: true }}><ComputerReview route={route} /></RouteProvider>, { wrapper });
@@ -460,7 +460,7 @@ it("Start review persists the goal and submits only the chosen eligible target a
 });
 
 it("an unanswered Start unlocks request checking and keeps its reviewed goal", async () => {
-  const { default: ComputerReview } = await import("./ComputerReview");
+  const { default: ComputerReview } = await import("./ComputerReviewScreen");
   const { RouteProvider } = await import("../../shell/Screen");
   const route = { screen: "computer_use_review" as const, projectId: ids.pNotes };
   app.ui.selectTab("control");

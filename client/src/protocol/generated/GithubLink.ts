@@ -3,6 +3,7 @@ import type { FindFocus } from "./FindFocus";
 import type { FindScope } from "./FindScope";
 import type { FixFindings } from "./FixFindings";
 import type { LaunchChoice } from "./LaunchChoice";
+import type { WhenGreen } from "./WhenGreen";
 
 /**
  * What GitHub work a task is for. Saved with the task like its branch.
@@ -12,7 +13,12 @@ export type GithubLink = { "type": "issue", number: number,
  * Another agent checks the change before it merges: one codes, the
  * other reviews. Omitted, only the project's Check before merging.
  */
-review_with?: LaunchChoice, } | { "type": "pr", number: number, } | { "type": "new_pr" } | { "type": "stack", number: number, } | { "type": "find", scope: FindScope, focus?: FindFocus, fix_with: LaunchChoice, 
+review_with?: LaunchChoice, 
+/**
+ * Whether its pull request merges once it is green or waits for
+ * the person. Omitted, the project's setting decides.
+ */
+when_green?: WhenGreen, } | { "type": "pr", number: number, } | { "type": "new_pr" } | { "type": "stack", number: number, } | { "type": "find", scope: FindScope, focus?: FindFocus, fix_with: LaunchChoice, 
 /**
  * The most issues this run files; omitted, the project's
  * `findings_per_run`.

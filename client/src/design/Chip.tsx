@@ -36,6 +36,9 @@ export interface SegmentOption<T extends string> {
   label: string;
   icon?: LucideIcon;
   disabled?: boolean;
+  /** Marked with a small dot and said after the label, as the recommended
+   * choice is: `mark` is what it says ("recommended"). */
+  mark?: string;
 }
 
 /**
@@ -131,7 +134,8 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
           >
             {Icon && <Icon aria-hidden strokeWidth={2.1} />}
-            <span className="segmented__label">{o.label}</span>
+            <span className="segmented__label">{o.label}{o.mark && <span className="visually-hidden">, {o.mark}</span>}</span>
+            {o.mark && <span className="segmented__mark" aria-hidden />}
           </button>
         );
       })}

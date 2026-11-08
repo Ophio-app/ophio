@@ -149,7 +149,12 @@ carried_plan?: CarriedPlan,
  * state is put back when the turn ends. Not with `mode`,
  * `carried_plan`, `model` or `effort`.
  */
-read_only?: boolean, } | { "command": "rename_task", task_id: TaskId, title: string, 
+read_only?: boolean, } | { "command": "switch_to_work", task_id: TaskId, approval_id?: ApprovalId, 
+/**
+ * The person's own words for the agent; omission says only that it
+ * may now change files.
+ */
+text?: string, } | { "command": "rename_task", task_id: TaskId, title: string, 
 /**
  * The title this rename replaces. When given, the rename is refused
  * if the task is no longer called that, and the task's revision,
@@ -180,7 +185,7 @@ shown_in_task?: boolean, } | { "command": "cancel_transfer", transfer_id: Transf
  * Start the preview's server with its command when nothing answers,
  * as a terminal in the project's folder, and wait for it to answer.
  */
-start?: boolean, } | { "command": "rename_device", device_id: DeviceId, name: string, } | { "command": "revoke_device", device_id: DeviceId, } | { "command": "set_device_grants", device_id: DeviceId, 
+start?: boolean, } | { "command": "rename_device", device_id: DeviceId, name: string, } | { "command": "rename_computer", name: string, } | { "command": "revoke_device", device_id: DeviceId, } | { "command": "set_device_grants", device_id: DeviceId, 
 /**
  * Grants the editor last saw; compared inside the service transaction.
  * Absent only in legacy stored commands; live requests must supply it.
@@ -194,4 +199,10 @@ task_id?: TaskId, } | { "command": "cancel_message", task_id: TaskId, message_se
  * Markup to go with the message. Advertised as `queue_markup_v1`;
  * omission sends only the words.
  */
-bundle?: AnnotationBundle, authorization: QueueAuthorization, } | { "command": "set_agent_updates", enabled: boolean, } | { "command": "set_agent_preferences", questions: boolean, } | { "command": "set_launch_defaults", defaults: Array<LaunchDefault>, } | { "command": "set_notification_settings", off: Array<AlertTopic>, bundle: boolean, projects: Array<ProjectNotifications>, } | { "command": "checklist_tick", project_id: ProjectId, item_id: string, step_id?: string, done: boolean, } | { "command": "checklist_answer", project_id: ProjectId, item_id: string, answer: string, } | { "command": "checklist_ask", project_id: ProjectId, item_id?: string, text: string, } | { "command": "checklist_deliver", project_id: ProjectId, sha256: string, } | { "command": "remove_checklist", project_id: ProjectId, } | { "command": "set_file_delivery", delivery: FileDelivery, } | { "command": "submit_report", bundle: ReportBundle, } | { "command": "answer_report_question", report_id: ReportId, question_id: ReportQuestionId, answer: ReportAnswer, } | { "command": "withdraw_report", report_id: ReportId, } | { "command": "set_report_verdict", report_id: ReportId, verdict: ReportVerdict, } | { "command": "look_into_report", report_id: ReportId, } | { "command": "set_report_settings", sending: boolean, ring: ReleaseRing, } | { "command": "voice", operation: VoiceOperation, } | { "command": "set_voice", browser: boolean, desktop: boolean, } | { "command": "window_action", control: WindowControl, action: WindowAction, } | { "command": "stop_child", run_id: RunId, child_id: ChildId, } | { "command": "stop_observed_session", force?: boolean, observed_id: string, confirmed: boolean, } | { "command": "library_recovery_discard", root_id: LibraryRootId, recovery_id: string, } | { "command": "set_project_stage", project_id: ProjectId, stage: ProjectStage, note: string | null, } | { "command": "account", action: AccountAction, } | { "command": "agent_login", action: AgentLoginAction, } | { "command": "github", action: GithubAction, };
+bundle?: AnnotationBundle, authorization: QueueAuthorization, } | { "command": "set_agent_updates", enabled: boolean, } | { "command": "set_agent_preferences", questions: boolean, } | { "command": "set_launch_defaults", defaults: Array<LaunchDefault>, } | { "command": "set_task_notify", task_id: TaskId, on: boolean, } | { "command": "set_notification_settings", off: Array<AlertTopic>, bundle: boolean, projects: Array<ProjectNotifications>, 
+/**
+ * The phone sends each project's choices by type in full. An
+ * older phone sends none and doesn't know of them, so its save
+ * keeps each project's as they were.
+ */
+types?: boolean, } | { "command": "checklist_tick", project_id: ProjectId, item_id: string, step_id?: string, done: boolean, } | { "command": "checklist_answer", project_id: ProjectId, item_id: string, answer: string, } | { "command": "checklist_ask", project_id: ProjectId, item_id?: string, text: string, } | { "command": "checklist_deliver", project_id: ProjectId, sha256: string, } | { "command": "remove_checklist", project_id: ProjectId, } | { "command": "set_file_delivery", delivery: FileDelivery, } | { "command": "submit_report", bundle: ReportBundle, } | { "command": "answer_report_question", report_id: ReportId, question_id: ReportQuestionId, answer: ReportAnswer, } | { "command": "withdraw_report", report_id: ReportId, } | { "command": "set_report_verdict", report_id: ReportId, verdict: ReportVerdict, } | { "command": "look_into_report", report_id: ReportId, } | { "command": "start_report_task", report_id: ReportId, project_id?: ProjectId, } | { "command": "set_report_settings", sending: boolean, ring: ReleaseRing, } | { "command": "voice", operation: VoiceOperation, } | { "command": "set_voice", browser: boolean, desktop: boolean, } | { "command": "window_action", control: WindowControl, action: WindowAction, } | { "command": "stop_child", run_id: RunId, child_id: ChildId, } | { "command": "stop_observed_session", force?: boolean, observed_id: string, confirmed: boolean, } | { "command": "library_recovery_discard", root_id: LibraryRootId, recovery_id: string, } | { "command": "set_project_stage", project_id: ProjectId, stage: ProjectStage, note: string | null, } | { "command": "account", action: AccountAction, } | { "command": "agent_login", action: AgentLoginAction, } | { "command": "github", action: GithubAction, };

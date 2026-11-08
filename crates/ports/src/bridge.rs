@@ -44,15 +44,21 @@ pub const BROWSER_TOOLS: &[&str] = &[
 /// the computer-use specialist.
 pub const HUMAN_TOOL: &str = "request_human";
 /// The computer-use specialist's tools, and the only tools it has: it sees
-/// and acts on its bound target and asks the owner, nothing else.
-pub const COMPUTER_TOOLS: [&str; 6] = [
+/// and acts on its bound target, opens installed apps and asks the owner,
+/// nothing else.
+pub const COMPUTER_TOOLS: [&str; 7] = [
     "observe_target",
     "pointer_action",
     "key_action",
     "type_text",
     "scroll",
+    OPEN_APP_TOOL,
     HUMAN_TOOL,
 ];
+/// The tool the computer-use specialist opens an installed app with, by
+/// name or kind ("Firefox", "a terminal"), the way voice control does. It
+/// is held to the same agent lease as its input.
+pub const OPEN_APP_TOOL: &str = "open_app";
 /// The tools a task linked to GitHub posts through. The agent's own `gh`
 /// reads; everything it writes on GitHub goes through these.
 pub const GITHUB_TOOLS: &[&str] = &[
@@ -107,6 +113,12 @@ pub const ASK_TOOL: &str = "ask_agent";
 /// What every run with [`WORK_TOOLS`] has, working on GitHub too: the
 /// agents there are, and asking one of them.
 pub const ASK_TOOLS: &[&str] = &["ophio_agents", ASK_TOOL];
+/// The tool an agent asks for more than it has with: changing files in its
+/// project, the internet, the person's own network or the whole computer.
+/// Ophio puts it to the person as one card. Every run with the bridge has
+/// it except the computer-use specialist's and a turn answering on the
+/// checklist; a read-only run (Plan, Ask) has it and nothing else.
+pub const ACCESS_TOOL: &str = "request_access";
 
 /// What [`BRIDGE_FILE_ARG`]'s file holds.
 #[derive(Clone, Serialize, Deserialize)]
@@ -162,6 +174,12 @@ pub enum BridgeRequest {
         dy: f64,
         observation_revision: u64,
     },
+    /// Open an installed app named, or of the kind named, by the model.
+    /// The name only chooses among the computer's own app list; it is never
+    /// run.
+    OpenApp {
+        name: String,
+    },
     /// The agent asks a person to take a step (login, 2FA, judgement).
     RequestHuman {
         reason: String,
@@ -187,6 +205,11 @@ pub enum BridgeRequest {
     /// it files and tasks it starts. The project comes from the run's task.
     Work {
         action: WorkCall,
+    },
+    /// The run asks the person for more than it has ([`ACCESS_TOOL`]).
+    RequestAccess {
+        needs: Vec<protocol::model::AccessNeed>,
+        reason: String,
     },
 }
 
@@ -457,6 +480,10 @@ pub enum BridgeResponse {
         /// (`ANSWER_TOOLS`).
         #[serde(default)]
         checklist_answers: bool,
+        /// The run only reads (Plan, Ask): its one tool is
+        /// [`ACCESS_TOOL`].
+        #[serde(default)]
+        read_only: bool,
     },
     /// Claude permission-prompt-tool answer, already in the shape Claude Code
     /// expects (`{"behavior":"allow","updatedInput":…}` or
@@ -508,6 +535,14 @@ pub enum BridgeResponse {
     WorkResult {
         text: String,
     },
+    /// What came of asking for more access, for the model.
+    AccessResult {
+        text: String,
+    },
+    /// Which app opened, for the model.
+    AppOpened {
+        text: String,
+    },
     /// Refused: no lease, stale observation, stopped, observation withdrawn…
     Refused {
         reason: String,
@@ -540,4 +575,6 @@ pub struct BridgeBinding {
     /// (`ANSWER_TOOLS`): it answers the person's question for an agent that
     /// was put away.
     pub checklist_answers: bool,
+    /// The run only reads (Plan, Ask): all it may call is [`ACCESS_TOOL`].
+    pub read_only: bool,
 }

@@ -21,6 +21,7 @@ export const COMMON_KEYS = [
   "Ctrl",
   "Alt",
   "Super",
+  "Shift",
   "←",
   "↑",
   "↓",
@@ -29,7 +30,7 @@ export const COMMON_KEYS = [
   "Backspace",
 ];
 export const FUNCTION_KEYS = Array.from({ length: 12 }, (_, i) => `F${i + 1}`);
-export const CHORDS = ["Ctrl+C", "Ctrl+V", "Ctrl+Z"];
+export const CHORDS = ["Ctrl+C", "Ctrl+V", "Ctrl+Z", "Alt+Tab", "Super+Enter"];
 export function keyChord(label: string): InputAction {
   return {
     action: "key_chord",

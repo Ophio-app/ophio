@@ -128,7 +128,8 @@ it("says a shortened request was cut in the Needs you row, before and after the 
   act(() => host.emit({ type: "approval_upserted", approval: shortened }));
   await tick();
   render(<AppProvider app={app}><ApprovalQuickActions approvalId={ids.aTest} /></AppProvider>);
-  expect([...document.querySelectorAll(".talk-quick-approval__detail .approval__line")].map(line => line.textContent).join("\n")).toBe(cut.detail);
+  // In the Needs you row the request itself is under Show command.
+  expect([...document.querySelectorAll(".talk-quick-approval .approval__more .approval__detail .approval__line")].map(line => line.textContent).join("\n")).toBe(cut.detail);
   expect(screen.getByText("Shortened · the full request is under Exact request")).toBeTruthy();
   const details = screen.getByText("Exact request").closest("details")!;
   fireEvent.click(screen.getByText("Exact request"));
@@ -141,5 +142,6 @@ it("says a shortened request was cut in the Needs you row, before and after the 
   act(() => host.emit({ type: "approval_upserted", approval }));
   await tick();
   expect(screen.queryByText("Shortened · the full request is under Exact request")).toBeNull();
-  expect(screen.queryByText("Exact request")).toBeNull();
+  // A whole request is still there to read, under Show command.
+  expect(document.querySelector(".talk-quick-approval .approval__more summary")?.textContent).toBe("Show command");
 });

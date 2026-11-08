@@ -49,3 +49,45 @@ it("records quiet and loud attention once and skips unrelated projection updates
   const events = trail.snapshot().filter(e => e.event.type === "alert_received"); expect(events).toHaveLength(2);
   expect(events.map(e => e.event)).toEqual(expect.arrayContaining([expect.objectContaining({ quiet: true }), expect.objectContaining({ quiet: false })]));
 });
+it("keeps one line in the trail for a burst of reconnects, with why the link went offline", () => {
+  // From a problem report: hundreds of "offline" lines in a row, then an offline
+  // notice for every try, crowded out everything before them.
+  const session = new HostSession("fake", {} as ControlLink, Date.now);
+  const before = trail.snapshot().length;
+  const offline = { state: "offline", since: 1, reason: "The computer closed the connection at /home/sam/x.", retryAt: null } as const;
+  for (let i = 0; i < 50; i++) session.link.set({ ...offline, since: i });
+  for (let i = 0; i < 20; i++) {
+    session.link.set({ state: "connecting", attempt: i + 1 });
+    session.link.set({ state: "authenticating" });
+    session.link.set({ state: "online", since: i, route: "direct" });
+    session.link.set({ ...offline, since: i });
+    const { unmount } = render(<Notice tone="unknown" code="storm_check">Connect to the computer.</Notice>);
+    unmount();
+    vi.advanceTimersByTime(50);
+  }
+  const events = trail.snapshot().slice(before).map(e => e.event);
+  // The first run of offline states is one line, not fifty.
+  expect(events[0]).toEqual({ type: "connection", state: "offline" });
+  expect(events[1]).not.toEqual({ type: "connection", state: "offline" });
+  expect(events.filter(e => e.type === "notice" && e.key === "storm_check")).toHaveLength(1);
+  // Why, once, without the path in it.
+  expect(events.filter(e => e.type === "error")).toEqual([{ type: "error", error: { code: "link_offline", message: "The computer closed the connection at <path>." } }]);
+  // A notice coming back after a while is recorded again.
+  vi.advanceTimersByTime(10_000);
+  render(<Notice tone="unknown" code="storm_check">Connect to the computer.</Notice>);
+  expect(trail.snapshot().filter(e => e.event.type === "notice" && e.event.key === "storm_check")).toHaveLength(2);
+});
+
+it("tells notices that share a key apart by their words, without recording the words", () => {
+  const count = () => trail.snapshot().filter(e => e.event.type === "notice" && e.event.key === "toast").length;
+  const before = count();
+  // Toasts without a code, as almost all are.
+  toast("Private: saved the draft"); toast("Private: couldn't reach the computer", { tone: "stop" }); toast("Private: renamed");
+  toast("Private: saved the draft");
+  expect(count() - before).toBe(3);
+  const inline = () => trail.snapshot().filter(e => e.event.type === "notice" && e.event.key === "inline_notice").length;
+  const inlineBefore = inline();
+  render(<><Notice tone="unknown">Private: offline</Notice><Notice tone="unknown">Private: no permission</Notice></>);
+  expect(inline() - inlineBefore).toBe(2);
+  expect(JSON.stringify(trail.snapshot())).not.toMatch(/Private/);
+});

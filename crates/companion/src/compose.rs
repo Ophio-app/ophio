@@ -55,6 +55,10 @@ const PROCESS_ENVIRONMENT: &[&str] = &[
     "SWAYSOCK",
     "XDG_DATA_HOME",
     "XDG_DATA_DIRS",
+    // Where the desktop keeps its default apps and preferred terminal.
+    "XDG_CONFIG_HOME",
+    "XDG_CONFIG_DIRS",
+    "TERMINAL",
     "APPDATA",
     "PROGRAMDATA",
     "CLAUDE_CONFIG_DIR",
@@ -68,7 +72,7 @@ impl ComposeOptions {
             .copied()
             .filter_map(|key| std::env::var(key).ok().map(|value| (key.into(), value)))
             .collect();
-        let executable_dir = std::env::current_exe()?
+        let executable_dir = crate::config::running_program()?
             .parent()
             .ok_or_else(|| Error::Config("executable directory unavailable".into()))?
             .to_owned();
@@ -92,12 +96,12 @@ pub struct DesktopSession {
     pub backend: Arc<dyn ports::DesktopBackend>,
     #[cfg(target_os = "linux")]
     pub portal: Option<platform_linux::portal::PortalDriver>,
-    #[cfg(windows)]
+    #[cfg(any(windows, target_os = "macos"))]
     pub windows: Option<platform_windows::desktop::WindowsDesktop>,
 }
 impl DesktopSession {
     async fn close(&self) -> Result<()> {
-        #[cfg(windows)]
+        #[cfg(any(windows, target_os = "macos"))]
         if let Some(windows) = &self.windows {
             windows.close().await.map_err(desktop_error)?;
         }
@@ -313,9 +317,7 @@ impl Runtime {
                 data_dir: Some(paths.data.clone()),
                 os: std::env::consts::OS.into(),
             })
-            .sandboxes(Arc::new(sandbox::Bubblewrap::new(
-                options.executable_dir.join("ophio-sandbox-shim"),
-            )))
+            .sandboxes(native_sandboxes(&options.executable_dir))
             .data_dir(paths.database())
             .host_id(identity.host_id)
             .host_name(
@@ -422,11 +424,19 @@ impl Runtime {
             builder =
                 builder.system_monitor(Arc::new(platform_windows::system::WindowsSystem::new()));
         }
+        #[cfg(target_os = "macos")]
+        {
+            builder = builder.system_monitor(Arc::new(platform_macos::system::MacSystem::new()));
+        }
         // A site served from a project's folder joins its previews by itself.
-        // Linux only: Windows doesn't say which folder a program works in.
+        // Not on Windows, which doesn't say which folder a program works in.
         #[cfg(target_os = "linux")]
         {
             builder = builder.local_servers(Arc::new(platform_linux::servers::LinuxServers::new()));
+        }
+        #[cfg(target_os = "macos")]
+        {
+            builder = builder.local_servers(Arc::new(platform_macos::servers::MacServers::new()));
         }
         // Agents browse in a browser of their own, through the bridge's
         // tools. It starts when a task first needs it.
@@ -474,7 +484,7 @@ impl Runtime {
         }
         // Again, now with the agents and one-offs folders that join them.
         hub.set_library_roots(config.root_specs()).await?;
-        crate::voice::configure(&hub, paths.data.clone(), jev).await?;
+        crate::voice::configure(&hub, paths.data.clone(), jev, &options.environment).await?;
         if let Some(home) = options
             .environment
             .get("HOME")
@@ -822,6 +832,7 @@ impl OwnerRuntime for Runtime {
                     &services::api::Caller::local_owner(),
                     protocol::Query::Snapshot {
                         reads_withheld: Some(true),
+                        account_items: false,
                     },
                 )
                 .await?
@@ -1514,17 +1525,30 @@ async fn native_desktop(paths: &Paths, options: &ComposeOptions) -> Result<Deskt
         portal,
     })
 }
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn desktop_error(error: ports::PlatformError) -> Error {
     protocol::ProtocolError::new(error.code(), error.to_string()).into()
 }
+/// What holds agents to what a conversation may reach.
+#[cfg(not(target_os = "macos"))]
+fn native_sandboxes(executable_dir: &std::path::Path) -> Arc<dyn ports::sandbox::Sandboxes> {
+    Arc::new(sandbox::Bubblewrap::new(
+        executable_dir.join("ophio-sandbox-shim"),
+    ))
+}
+/// What holds agents to what a conversation may reach.
+#[cfg(target_os = "macos")]
+fn native_sandboxes(_executable_dir: &std::path::Path) -> Arc<dyn ports::sandbox::Sandboxes> {
+    Arc::new(sandbox::Seatbelt::new())
+}
+
 /// What the phone is told when sharing could not be opened.
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn desktop_failure(error: &Error) -> Availability {
     windows_desktop_failure(error)
 }
 /// What the phone is told when sharing could not be opened.
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 fn desktop_failure(error: &Error) -> Availability {
     // Said to the person, so without the "configuration error: " a log adds.
     let reason = match error {
@@ -1537,7 +1561,7 @@ fn desktop_failure(error: &Error) -> Availability {
         ),
     }
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 fn windows_desktop_failure(error: &Error) -> Availability {
     let reason = error.to_string();
     match error {
@@ -1564,11 +1588,19 @@ async fn native_desktop(_paths: &Paths, options: &ComposeOptions) -> Result<Desk
         windows: Some(desktop),
     })
 }
-#[cfg(not(any(target_os = "linux", windows)))]
-async fn native_desktop(_paths: &Paths, _options: &ComposeOptions) -> Result<DesktopSession> {
-    Err(Error::Unsupported(
-        "desktop composition requires platform integration",
-    ))
+#[cfg(target_os = "macos")]
+async fn native_desktop(_paths: &Paths, options: &ComposeOptions) -> Result<DesktopSession> {
+    // Sharing was turned on explicitly, so the system may ask at the Mac's
+    // screen for what it needs. What is still missing, the phone is told.
+    let (screen, input) = platform_macos::desktop::permissions();
+    if !screen || !input {
+        platform_macos::desktop::ask_for_permissions();
+    }
+    let desktop = platform_macos::desktop::open(options.clock.clone());
+    Ok(DesktopSession {
+        backend: Arc::new(desktop.clone()),
+        windows: Some(desktop),
+    })
 }
 
 #[cfg(test)]
@@ -1673,7 +1705,7 @@ mod path_tests {
     }
     /// A declined desktop sharing dialog reads as a sentence for the person,
     /// not as a log line.
-    #[cfg(not(windows))]
+    #[cfg(not(any(windows, target_os = "macos")))]
     #[test]
     fn a_declined_sharing_dialog_is_said_plainly() {
         let Availability::PermissionMissing { remedy } = desktop_failure(&Error::Config(

@@ -31,7 +31,7 @@ it("zooming back out to the whole picture does not leave it shifted off the surf
 it("a late picture says input is paused on the picture, without pushing the controls down", () => {
   render(<LivePicture target={target} canvas={createRef()} retry={() => undefined}
     picture={{ at: Date.now() - 5000, revision: 1, connected: true, error: null }} />);
-  const paused = screen.getByText("Agent paused");
+  const paused = screen.getByText("Input paused");
   expect(paused.closest(".picture-surface")).not.toBeNull();
   expect(screen.getByText(/^Stale · \d+ s$/)).toBeTruthy();
 });

@@ -81,6 +81,8 @@ impl Shade for Android {
             0 => Ok(Posted::Shown),
             1 => Ok(Posted::NoRoom),
             3 => Ok(Posted::Cleared),
+            4 => Ok(Posted::Off),
+            5 => Ok(Posted::Sounded),
             _ => Err(Error::Native("Android did not show the alert.".into())),
         }
     }
@@ -121,6 +123,11 @@ impl Shade for Android {
     fn on_screen(&self) -> bool {
         call(|env, class| env.call_static_method(class, "onScreen", "()Z", &[])?.z())
             .unwrap_or(false)
+    }
+    fn effective(&self, note: &Note) -> protocol::notifications::Tier {
+        // Unknown, it doesn't make room: as if silent.
+        self.tier_of(note)
+            .unwrap_or(protocol::notifications::Tier::Silent)
     }
     fn app_updates(&self, profile_id: &str, name: &str, offers: &[protocol::capability::AppOffer]) {
         let Ok(offers) = serde_json::to_string(offers) else {
@@ -281,6 +288,85 @@ pub extern "system" fn Java_app_ophio_device_AlertWatcher_answer<'local>(
     env.new_string(super::unsent(&error))
         .map(|why| why.into_raw())
         .unwrap_or(std::ptr::null_mut())
+}
+
+/// `AlertWatcher.dismissed(dataDir, tags)`: the person swiped away, or
+/// opened, a notification standing for `tags`, one per line. Android may
+/// start the app's process just to say so; the watcher need not run.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_app_ophio_device_AlertWatcher_dismissed<'local>(
+    mut env: JNIEnv<'local>,
+    class: JClass<'local>,
+    data_dir: JString<'local>,
+    tag: JString<'local>,
+) {
+    let done = (|| -> Result<()> {
+        let native = |e: jni::errors::Error| Error::Native(e.to_string());
+        attach(&mut env, &class)?;
+        let dir: String = env.get_string(&data_dir).map_err(native)?.into();
+        let tags: String = env.get_string(&tag).map_err(native)?.into();
+        super::dismissed(&PathBuf::from(dir), &tags, &Android)
+    })();
+    if let Err(error) = done {
+        tracing::warn!(%error, "alerts: a dismissed alert was not recorded");
+    }
+}
+
+/// `AlertWatcher.types()`: every notification type, as JSON, with the
+/// words its Android category shows and the recommended choice.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_app_ophio_device_AlertWatcher_types<'local>(
+    env: JNIEnv<'local>,
+    _: JClass<'local>,
+) -> jstring {
+    let types: Vec<_> = (protocol::notifications::AlertType::ALL.iter())
+        .map(|t| t.info())
+        .collect();
+    let json = serde_json::to_string(&types).unwrap_or_else(|_| "[]".into());
+    env.new_string(json)
+        .map(|s| s.into_raw())
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// `AlertWatcher.importTiers(old)`: from the old categories' importance, as
+/// JSON `{"needs-you": 4, ...}`, the choices each type takes over, as JSON
+/// `{"question": "off", ...}`. Only quieter ones.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_app_ophio_device_AlertWatcher_importTiers<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    old: JString<'local>,
+) -> jstring {
+    let old: String = env.get_string(&old).map(Into::into).unwrap_or_default();
+    let old = serde_json::from_str(&old).unwrap_or_default();
+    let json = serde_json::to_string(&super::imported_tiers(&old)).unwrap_or_else(|_| "{}".into());
+    env.new_string(json)
+        .map(|s| s.into_raw())
+        .unwrap_or(std::ptr::null_mut())
+}
+
+impl Android {
+    fn tier_of(&self, note: &Note) -> Option<protocol::notifications::Tier> {
+        let json = serde_json::to_string(note).ok()?;
+        let tier = call(|env, class| {
+            let json = env.new_string(json)?;
+            let out = env
+                .call_static_method(
+                    class,
+                    "effective",
+                    "(Ljava/lang/String;)Ljava/lang/String;",
+                    &[JValue::Object(&json)],
+                )?
+                .l()?;
+            let out = JString::from(out);
+            if out.is_null() {
+                return Ok(None);
+            }
+            Ok(Some(String::from(env.get_string(&out)?)))
+        })
+        .ok()??;
+        serde_json::from_value(serde_json::Value::String(tier)).ok()
+    }
 }
 
 #[unsafe(no_mangle)]

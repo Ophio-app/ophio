@@ -21,6 +21,7 @@ import { ReportSpeech } from "./ReportSpeech";
 import { useReports } from "./store";
 import { CHIP_MS, ScreenshotOffer, dismissCrashes, undismissedCrashes } from "./prompts";
 import { RouteProvider } from "../shell/Screen";
+import { backgroundAlerts } from "../platform/alerts";
 
 let nativeTaken = false;
 addCrashSource(async () => {
@@ -52,7 +53,18 @@ export function ConnectedReports() {
         if (route.screen === "settings" && route.reportId === report.report_id) continue;
         const message = `Report ${report.reference} · ${progressWords(status)}`;
         if (document.visibilityState !== "hidden") toast(message, { action: { label: "Open report", run: () => ui.push({ screen: "settings", section: "settings-reports", reportId: report.report_id }) } });
-        else void Promise.resolve().then(() => platform.notify?.({ id: `${profile.profileId}/report:${report.report_id}`, title: `Report ${report.reference}`, body: progressWords(status), category: status.state === "question" ? "needs_you" : "finished", route: { kind: "report", profileId: profile.profileId, reportId: report.report_id } })).catch(() => {});
+        else {
+          // The watcher raises the report's own notification; only where it
+          // doesn't watch this computer does the app, by this device's choice.
+          if (backgroundAlerts(platform)?.covers(profile.profileId)) continue;
+          const type = status.state === "question" ? "report_question" : "reports";
+          // Loaded when needed: a static import here moves styles into the page's first sheet.
+          void import("../platform/deviceTiers").then(({ deviceTiers }) => {
+            const tier = deviceTiers(platform).tier(type);
+            if (tier === "off") return;
+            return platform.notify?.({ id: `${profile.profileId}/report:${report.report_id}`, title: `Report ${report.reference}`, body: progressWords(status), category: status.state === "question" ? "needs_you" : "finished", alertType: type, want: tier, ...(tier === "silent" ? { silent: true } : {}), route: { kind: "report", profileId: profile.profileId, reportId: report.report_id } });
+          }).catch(() => {});
+        }
       }
     });
     return () => { stop(); off(); };
@@ -105,12 +117,11 @@ export function ReportsOverlay({ computerCrashes = NONE, connected = false }: { 
     return () => clearTimeout(timer);
   }, [chip, offer]);
   const pending = undismissedCrashes([...phoneCrashes, ...computerCrashes]);
-  // A script or render error leaves Ophio running; only an exit or panic stops it.
-  const closed = pending.some(c => c.kind === "system" || c.kind === "panic");
+  const title = crashTitle(pending);
   const clearCrashes = () => { dismissCrashes(pending); crashes.acknowledge(pending.filter(c => c.side === "phone")); setPhoneCrashes([]); render(n => n + 1); };
   return <>
     {draft && request && <ReportSheet key={draft.id} draft={draft} taskId={request.context.task} requiredExtra={request.extra} onClose={() => reportRequest.set(null)} onSent={() => { if (request.origin.type === "crash") clearCrashes(); request.onSent?.(); }} speech={connected ? (words, onWords, onRecording) => <ReportSpeech words={words} onWords={onWords} onRecording={onRecording} /> : undefined} />}
-    <Sheet open={pending.length > 0 && !request} title={closed ? "Ophio closed unexpectedly" : "Ophio ran into a problem"} onClose={clearCrashes} footer={<><Button variant="primary" onClick={() => openReport({ type: "crash" }, {}, { crashes: pending })}>Send</Button><Button variant="quiet" onClick={clearCrashes}>Not now</Button></>}><p>Send what happened?</p></Sheet>
+    <Sheet open={pending.length > 0 && !request} title={title} onClose={clearCrashes} footer={<><Button variant="primary" onClick={() => openReport({ type: "crash" }, {}, { crashes: pending })}>Send</Button><Button variant="quiet" onClick={clearCrashes}>Not now</Button></>}><p>Send what happened?</p></Sheet>
     {chip && !request && <aside className="report-chip" aria-label="Screenshot report"><div className="toast">
       <Bug className="toast__icon" aria-hidden />
       <p className="toast__text">Something wrong on this screen?</p>
@@ -119,6 +130,25 @@ export function ReportsOverlay({ computerCrashes = NONE, connected = false }: { 
     </div></aside>}
     {error && <Sheet open title="Report a problem" onClose={() => setError(null)}><p role="status">{error}</p><Button onClick={() => { setError(null); openReport(); }}>Try again</Button></Sheet>}
   </>;
+}
+/** What the crash sheet says happened. A script or render error leaves
+ * Ophio running; only an exit or panic stops it. The phone's own stop is
+ * what the person just saw; one on the computer may be long past and is
+ * none of this screen's doing, so it says where and when. */
+export function crashTitle(pending: CrashRecord[], now = Date.now()): string {
+  const stopped = pending.filter(c => c.kind === "system" || c.kind === "panic");
+  if (stopped.some(c => c.side === "phone")) return "Ophio closed unexpectedly";
+  const computer = stopped.filter(c => c.side === "computer").sort((a, b) => b.at - a.at)[0];
+  return computer ? `Ophio on your computer stopped unexpectedly ${whenStopped(computer.at, now)}` : "Ophio ran into a problem";
+}
+/** "at 08:45", "yesterday at 08:45" or "on Nov 4 at 08:45". */
+function whenStopped(at: number, now: number): string {
+  const d = new Date(at), today = new Date(now);
+  const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return `at ${time}`;
+  if (d.toDateString() === yesterday.toDateString()) return `yesterday at ${time}`;
+  return `on ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} at ${time}`;
 }
 /** Resolves once the frame after the current one is on screen. */
 function painted(): Promise<void> {

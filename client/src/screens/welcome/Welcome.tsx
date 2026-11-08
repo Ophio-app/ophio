@@ -20,7 +20,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { PROGRAM_NAME, PAIRING_SCHEME, PRODUCT_NAME } from "../../brand";
 import { announce } from "../../design/Announcer";
 import { useBackLayer } from "../../design/back";
-import { deviceKind } from "../../design/formFactor";
+import { deviceKind, onIPhone } from "../../design/formFactor";
 import { Button, IconButton } from "../../design/Button";
 import { TextField } from "../../design/Field";
 import { Notice } from "../../design/Notice";
@@ -31,7 +31,7 @@ import { fingerprintWords, type PairingLinkProblem } from "../../protocol/pairin
 import type { Grants, PairingOffer } from "../../protocol/types";
 
 import { alertsPreset } from "../../platform/alerts";
-import { CompanionDownload } from "./CompanionDownload";
+import { CompanionDownload } from "./CompanionDownloadScreen";
 import { InlineCode } from "../../design/InlineCode";
 
 /** A pairing link another app opened this one with, such as `ophio setup`
@@ -134,7 +134,7 @@ function Intro({ platform, headingRef, onNext }: { platform: Platform; headingRe
       </p>
       <details className="welcome__install"><summary>Get {PRODUCT_NAME} for your computer</summary>
         <CompanionDownload platform={platform} />
-        <p className="fine">Extract the Linux or Windows archive and follow INSTALL.md. Then choose Pair a computer for the startup and pairing steps.</p>
+        <p className="fine">Extract the Linux archive and follow INSTALL.md. Then choose Pair a computer for the startup and pairing steps.</p>
       </details>
       <ul className="facts">
         <li className="facts__item">
@@ -156,7 +156,7 @@ function Intro({ platform, headingRef, onNext }: { platform: Platform; headingRe
         <li className="facts__item">
           <MonitorSmartphone className="facts__icon" aria-hidden />
           <div>
-            <p className="facts__title">Runs on Linux and Windows</p>
+            <p className="facts__title">Runs on Linux computers</p>
             <p className="facts__body">
               Install {PRODUCT_NAME} on your computer and stay signed in to its desktop. Agents keep running there when you
               put the {kind} away.
@@ -262,7 +262,7 @@ function Connect({
         <li className="steps__item">
           <span className="steps__num" aria-hidden>1</span>
           <div className="steps__text"><p>Install {PRODUCT_NAME} on your computer</p>
-            <p className="fine">Extract the Linux or Windows archive and open <InlineCode>INSTALL.md</InlineCode> inside the archive. Keep both executables together.</p>
+            <p className="fine">Extract the Linux archive and open <InlineCode>INSTALL.md</InlineCode> inside the archive. Keep both executables together.</p>
             <details className="welcome__install">
               <summary>Set up {PRODUCT_NAME}</summary>
               <p className="fine">Linux: the installer starts setup when it finishes. Otherwise run it as your ordinary user, in a terminal in your graphical login session.</p>
@@ -366,6 +366,7 @@ function Rejected({ problem, scanned, canScan }: { problem: PairingLinkProblem |
 /** Used until the platform reports the device's own name, and when it has none. */
 function defaultDeviceName(): string {
   const kind = deviceKind();
+  if (onIPhone()) return "iPhone";
   return /Android/i.test(navigator.userAgent) ? `Android ${kind}` : kind === "tablet" ? "Tablet" : "Phone";
 }
 
@@ -660,6 +661,7 @@ function pairError(e: unknown, offer: PairingOffer): string {
   if (t.includes("expired") || t.includes("unauthenticated") || t.includes("already")) return `The code expired or was already used. ${again}`;
   if (t.includes("certificate") || t.includes("fingerprint"))
     return `The computer that answered isn’t the one in the code. Make sure you scanned your own computer’s code, then try again.`;
+  if (t.includes("tailscale")) return `This ${deviceKind()} isn’t connected to Tailscale. Turn Tailscale on, then try again.`;
   if (t.includes("timed out") || t.includes("unreachable") || t.includes("connect") || t.includes("network"))
     return `Couldn’t reach ${offer.host_name}. Check that both devices are on your private network and that ${PRODUCT_NAME} is running on the computer.`;
   if (t.includes("denied") || t.includes("forbidden")) return `${offer.host_name} refused this ${deviceKind()}. ${again}`;

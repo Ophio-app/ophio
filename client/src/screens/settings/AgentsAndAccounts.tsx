@@ -7,6 +7,7 @@ import type { HarnessCapabilities } from "../../protocol/types";
 import { Age } from "../../design/Age";
 import { AgentPreferences } from "./AgentPreferences";
 import { AgentUpdates } from "./AgentUpdates";
+import { SignedOut } from "./SignInAgain";
 const CAPABILITY: Record<keyof HarnessCapabilities, string> = {
   start_run: "Start tasks",
   steer_running: "Take messages while it works",
@@ -74,19 +75,15 @@ export function AgentsAndAccounts() {
                     : ""}
                   {h.account.plan ? ` · ${h.account.plan}` : ""}
                 </p>
+              ) : h.account.state === "signed_out" ? (
+                <SignedOut harness={h.kind} fallback={
+                  <Notice tone="warn" action={<Button size="sm" onClick={accounts}>Open Accounts</Button>} title="Signed out">
+                    {h.account.remedy}
+                  </Notice>
+                } />
               ) : (
-                <Notice
-                  tone={h.account.state === "signed_out" ? "warn" : "unknown"}
-                  action={<Button size="sm" onClick={accounts}>Open Accounts</Button>}
-                  title={
-                    h.account.state === "signed_out"
-                      ? "Signed out"
-                      : "Account state unknown"
-                  }
-                >
-                  {h.account.state === "signed_out"
-                    ? h.account.remedy
-                    : h.account.reason}
+                <Notice tone="unknown" action={<Button size="sm" onClick={accounts}>Open Accounts</Button>} title="Account state unknown">
+                  {h.account.reason}
                 </Notice>
               )}
               {h.catalog && <p className="settings-meta">{"Model list checked "}<Age at={h.catalog.checked_at} suffix=" ago" /></p>}

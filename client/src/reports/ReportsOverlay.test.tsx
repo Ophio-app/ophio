@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
+import type { CrashKind, CrashRecord } from "../protocol/types";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { crashes } from "../diagnostics/crashes";
 import { reports } from "../diagnostics/reports";
 import { captureOwnView, onScreenshot } from "../platform/reportNative";
 import { Notice } from "../design/Notice";
-import { ReportsOverlay } from "./ReportsOverlay";
+import { ReportsOverlay, crashTitle } from "./ReportsOverlay";
 import { CHIP_MS, PAUSE_MS } from "./prompts";
 import { openReport, reportRequest } from "./request";
 let screenshot: (() => void) | undefined;
@@ -38,7 +39,25 @@ it("Not now clears these crashes for good, including after a remount", async () 
 });
 it("says Ophio closed only when it stopped", async () => {
   render(<ReportsOverlay computerCrashes={[{ at: Date.now(), side: "computer", kind: "panic", code: "panic:runtime.rs:1", build: "test", frames: [] }]} />); await advance();
-  expect(screen.getByRole("dialog", { name: "Ophio closed unexpectedly" })).toBeTruthy();
+  expect(screen.getByRole("dialog", { name: /^Ophio on your computer stopped unexpectedly at / })).toBeTruthy();
+});
+it("says when the computer stopped, and keeps the phone's own stop as it was", () => {
+  const now = new Date(2026, 10, 6, 9, 0).getTime();
+  const crash = (side: "phone" | "computer", at: Date, kind: CrashKind = "panic"): CrashRecord => ({ at: at.getTime(), side, kind, code: "panic:unknown:1166", build: "test", frames: [] });
+  const clock = (d: Date) => d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  // From a problem report: a computer panic half an hour before the phone opened.
+  const morning = new Date(2026, 10, 6, 8, 45);
+  expect(crashTitle([crash("computer", morning)], now)).toBe(`Ophio on your computer stopped unexpectedly at ${clock(morning)}`);
+  const lastNight = new Date(2026, 10, 5, 23, 10);
+  expect(crashTitle([crash("computer", lastNight)], now)).toBe(`Ophio on your computer stopped unexpectedly yesterday at ${clock(lastNight)}`);
+  const earlier = new Date(2026, 9, 24, 2, 30);
+  expect(crashTitle([crash("computer", earlier)], now)).toBe(`Ophio on your computer stopped unexpectedly on ${earlier.toLocaleDateString(undefined, { month: "short", day: "numeric" })} at ${clock(earlier)}`);
+  // The newest of several computer stops.
+  expect(crashTitle([crash("computer", earlier), crash("computer", morning)], now)).toContain(`at ${clock(morning)}`);
+  // The phone's own stop, alone or with the computer's.
+  expect(crashTitle([crash("phone", morning, "system")], now)).toBe("Ophio closed unexpectedly");
+  expect(crashTitle([crash("computer", morning), crash("phone", morning)], now)).toBe("Ophio closed unexpectedly");
+  expect(crashTitle([crash("phone", morning, "script")], now)).toBe("Ophio ran into a problem");
 });
 it("keeps crashes in the draft through cancelling and sending", async () => {
   crashes.capture(new Error("Fixture"));

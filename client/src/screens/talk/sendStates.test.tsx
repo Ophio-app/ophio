@@ -64,7 +64,7 @@ it("a message after control ended keeps Give input back on Chat, the rail, DP-1 
     expect(surface("Talk").getByText(/Your control ended · it can’t use Screen 1 \(DP-1\) until you resume it/)).toBeTruthy();
     expect(surface("Talk").queryByText("Your control ended · resume it when you’re ready")).toBeNull();
     expect(surface("Work").getByText("Agent paused on Screen 1 (DP-1) · Resume agent")).toBeTruthy();
-    expect(surface("Rail").getByText("Screen 1 (DP-1) · Agent paused")).toBeTruthy();
+    expect(surface("Rail").getByText("Screen 1 (DP-1) · Control ended")).toBeTruthy();
     for (const name of ["Talk", "Rail", "DP-1"]) expect(surface(name).getByRole("button", { name: "Resume agent" })).toBeTruthy();
     expect(surface("DP-1").getByRole("button", { name: "Take over" })).toBeTruthy();
   };

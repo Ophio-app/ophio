@@ -7,7 +7,7 @@ import { createSimPlatform } from "../../dev/sim/platform";
 import { ids } from "../../dev/sim/scenario";
 import { HostSession } from "../../host/session";
 import { RouteProvider } from "../../shell/Screen";
-import Attention from "./Attention";
+import Attention from "./AttentionScreen";
 import { AttentionList } from "./shared";
 
 let app: App;

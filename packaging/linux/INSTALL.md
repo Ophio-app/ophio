@@ -15,13 +15,13 @@ with software rendering. Later changes are covered by automated tests, not by
 another such install. Other distributions and desktops have not been tested.
 
 Unpack the archive, enter the folder it makes, and run the installer as your
-ordinary user. The 0.1.1 archive is `ophio-0.1.1-x86_64-linux.tar.gz` and
-unpacks to `ophio-0.1.1-x86_64-linux`; use the name of the file you
+ordinary user. The 0.2.0 archive is `ophio-0.2.0-x86_64-linux.tar.gz` and
+unpacks to `ophio-0.2.0-x86_64-linux`; use the name of the file you
 downloaded. In the folder you downloaded it to:
 
 ```sh
-tar -xzf ophio-0.1.1-x86_64-linux.tar.gz
-cd ophio-0.1.1-x86_64-linux
+tar -xzf ophio-0.2.0-x86_64-linux.tar.gz
+cd ophio-0.2.0-x86_64-linux
 sh install.sh
 ```
 
@@ -290,14 +290,17 @@ themselves: a notification says the update is ready, and Settings leads with
 an **Update now** card, also under Settings › Versions. The phone downloads it over its connection to this
 computer, on the same network or over Tailscale from anywhere, with no cable
 or wireless debugging. Android installs it only if it is signed like the
-installed app, so a phone keeps the app it trusts. Android 12 and later
-install it without asking; earlier versions ask you to confirm. The device
+installed app, so a phone keeps the app it trusts. The first time, Android
+asks you to allow Øphio to install apps, and it may ask you to confirm the
+update; `docs/upgrading.md` in Øphio's source walks through it. The device
 needs the File transfers permission. The first app with this updater has to be
 installed by `ophio phone install` or by hand.
 
-Øphio 0.1.1 carries the same phone app as 0.1.0, byte for byte. A phone that
-has the 0.1.0 app from the release shows it is up to date and is offered
-nothing.
+Øphio 0.2.0 carries a new phone app, `ophio-0.2.0-arm64.apk` on the release
+page. Once this computer runs 0.2.0, a phone with the 0.1.0 app from the
+release is offered the new one as above. Update the computer first: the new
+app works with an older computer, but leaves out what that computer can't
+do yet.
 
 ## Uninstalling
 

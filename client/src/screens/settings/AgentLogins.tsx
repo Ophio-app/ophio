@@ -102,7 +102,7 @@ export default function AgentLogins(_: RouteProps<"agent_logins">) {
                 Agents sign in only in {PRODUCT_NAME}’s own browser, which needs Chromium, Chrome, Edge or Brave on {profile.name}. Install one there; logins can be added now.
               </Notice>
             )}
-            {confirmable === false && <Notice tone="unknown">Set a secure screen lock in Android settings to add, change, show or delete logins from this phone. Each asks for it first.</Notice>}
+            {confirmable === false && <Notice tone="unknown">Set a secure screen lock in the phone’s settings to add, change, show or delete logins from this phone. Each asks for it first.</Notice>}
             {(view.enabled || view.logins.length > 0) && (
               <Section title="On this computer">
                 {view.logins.length ? (

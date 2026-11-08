@@ -27,8 +27,9 @@ import { NewWork } from "./NewWork";
 import { useArchive } from "./archive";
 import { attentionGroups } from "./attention";
 import { taskMatches } from "./logic";
-import { AttentionList, EarlierTasks, listedAttention, TaskRow } from "./shared";
+import { AttentionList, EarlierTasks, listedAttention, SeenRow, TaskRow } from "./shared";
 import { StageRow } from "./StageRow";
+import { SignInNeedsYou } from "../settings/SignInAgain";
 
 export interface WorkView {
   project: Project;
@@ -84,7 +85,7 @@ export function WorkRoot({ v }: { v: WorkView }) {
   const short = useShortScreen();
   const checklist = short && <div className="group"><ChecklistRow project={v.project} /></div>;
   // A project with nothing yet still points to what waits in another.
-  if (!v.any) return <><NewWork project={v.project} checklist={!short} /><WaitingHandoffs /><ReportNeedsYou /><OtherProjects v={v} />{checklist}{v.empty}<ProjectDoors v={v} bare /></>;
+  if (!v.any) return <><NewWork project={v.project} checklist={!short} /><WaitingHandoffs /><SignInNeedsYou /><ReportNeedsYou /><OtherProjects v={v} />{checklist}{v.empty}<ProjectDoors v={v} bare /></>;
   const id = v.project.project_id;
   return (
     <>
@@ -103,6 +104,7 @@ export function WorkRoot({ v }: { v: WorkView }) {
       {part === "open" ? (
         <div className="work-part">
           <WaitingHandoffs />
+          <SignInNeedsYou />
           <ReportNeedsYou />
           {needs > 0 && <Section title="Needs you"><AttentionList projectId={id} lead /></Section>}
           <OtherProjects v={v} />
@@ -137,6 +139,13 @@ export function WorkRoot({ v }: { v: WorkView }) {
 function Finished({ v }: { v: WorkView }) {
   const id = v.project.project_id;
   const unread = useHost((s) => [...new Set(listedAttention(s, id, true).flatMap((a) => a.task_id ?? []))].sort(), shallowEqual);
+  // Each Unread task's results, which count as seen once its row has been
+  // looked at: their notifications have done their job.
+  const results = useHost((s) => {
+    const by: Record<string, string> = {};
+    for (const a of listedAttention(s, id, true)) if (a.task_id) by[a.task_id] = by[a.task_id] ? `${by[a.task_id]} ${a.attention_id}` : a.attention_id;
+    return by;
+  }, shallowEqual);
   const archive = useArchive();
   const parts = [
     { title: "Unread", tasks: v.finished.filter((t) => unread.includes(t.task_id)) },
@@ -153,11 +162,11 @@ function Finished({ v }: { v: WorkView }) {
         )}>
           <ul className="group" role="list">
             {tasks.map((t) => (
-              <li key={t.task_id} className="work-task-row">
+              <SeenRow as="li" key={t.task_id} className="work-task-row" ids={results[t.task_id]?.split(" ") ?? NONE}>
                 <TaskRow task={t} />
                 <IconButton icon={Archive} label={`Archive ${t.title}`} disabled={!archive.can}
                   onClick={() => archive.ask([t])} />
-              </li>
+              </SeenRow>
             ))}
           </ul>
         </Section>
@@ -168,6 +177,8 @@ function Finished({ v }: { v: WorkView }) {
     </div>
   );
 }
+
+const NONE: string[] = [];
 
 /** Archived tasks, kept to read, and a search once there are a few. */
 function Archived({ v }: { v: WorkView }) {

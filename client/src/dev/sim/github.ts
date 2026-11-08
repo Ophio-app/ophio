@@ -243,6 +243,7 @@ export class GithubSim {
   }
 
   act(action: GithubAction): CommandResult | null | Promise<CommandResult | null> {
+    if (action.action === "set_when_green") return this.#setWhenGreen(action);
     const id = action.project_id;
     switch (action.action) {
       case "run_issues":
@@ -333,6 +334,24 @@ export class GithubSim {
 
   dispose(): void {
     for (const t of this.#timers) clearTimeout(t);
+  }
+
+  /** `merges_itself_allowed`: a pull request merges by itself only where the account administers the repository. */
+  #mergesItself(): void {
+    if (!this.repo.admin) throw fail("permission_denied", `Only an admin of ${this.repo.owner}/${this.repo.name} can have a pull request merge by itself, so leave it for yourself to merge.`);
+    if (!this.repo.push) throw fail("permission_denied", `The account signed in under Accounts can't push to ${this.repo.owner}/${this.repo.name}`);
+  }
+
+  /** `SetWhenGreen`: a task's own say over its pull request once it is green; none follows the project. */
+  #setWhenGreen(action: Extract<GithubAction, { action: "set_when_green" }>): null {
+    const task = this.host.tasks.find((t) => t.task_id === action.task_id);
+    if (!task) throw fail("not_found", "That task isn't on this computer");
+    if (!task.github || ["find", "triage", "check"].includes(task.github.link.type)) throw fail("invalid_request", "This task doesn't make a pull request");
+    if (action.when_green === "merge") this.#mergesItself();
+    const { when_green: _, ...github } = structuredClone(task.github);
+    this.host.touchTask(task.task_id, { github: action.when_green ? { ...github, when_green: action.when_green } : github });
+    this.#changed(task.project_id);
+    return null;
   }
 
   /**
@@ -629,6 +648,8 @@ export class GithubSim {
         const issue = read(link.number, false);
         github.issue = link.number;
         if (link.review_with) github.check_with = link.review_with;
+        if (link.when_green === "merge") this.#mergesItself();
+        if (link.when_green) github.when_green = link.when_green;
         branch = { name: `${prefix}${link.number}-${slug(issue.title)}`, new: true };
         title = issue.title;
         break;

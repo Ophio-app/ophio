@@ -19,7 +19,7 @@ async function open(newer: AppOffer | null) {
   vi.useFakeTimers(); localStorage.clear();
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   const platform = createSimPlatform();
-  const check = vi.fn<AppUpdater["check"]>().mockResolvedValue({ offer: newer, version: "0.1.0", asks: false });
+  const check = vi.fn<AppUpdater["check"]>().mockResolvedValue({ offer: newer, version: "0.1.0", allowed: true, asks: false });
   platform.appUpdate = { check, install: vi.fn(), onResult: () => () => undefined };
   window.__sim!.host.host.capabilities.app_updates = [offer];
   const profile = (await platform.profiles())[0]!;

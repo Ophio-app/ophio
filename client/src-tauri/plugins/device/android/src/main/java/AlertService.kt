@@ -64,11 +64,7 @@ class AlertService : Service() {
             return false
         }
         try {
-            AlertWatcher.attach(this)
-            // Restarting the phone or updating the app clears the alerts shown.
-            val boot = Settings.Global.getInt(contentResolver, Settings.Global.BOOT_COUNT, -1)
-            val updated = packageManager.getPackageInfo(packageName, 0).lastUpdateTime
-            check(AlertWatcher.start(dataDir.absolutePath, "$boot:$updated"))
+            check(AlertWatcher.startHere(this))
         } catch (_: Exception) {
             // The scheduled check tries again.
             stopSelf()
@@ -112,7 +108,32 @@ class AlertService : Service() {
         }
         network = null
         AlertWatcher.stop()
+        // The app open keeps watching in its own process.
+        if (AlertWatcher.screenAlive) AlertWatcher.startHere(this)
         super.onDestroy()
+    }
+}
+
+/**
+ * A notification swiped away or cleared: the person has seen it, so it
+ * never comes back for the same thing, on this phone or their others.
+ */
+class AlertDismissed : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val tag = intent.getStringExtra(Notifications.TAG) ?: return
+        // A project's note names every alert it counted when posted.
+        val tags = intent.getStringExtra(Notifications.HANDLES) ?: tag
+        val pending = goAsync()
+        val data = context.dataDir.absolutePath
+        AlertWatcher.attach(context)
+        Thread {
+            try {
+                AlertWatcher.dismissed(data, tags)
+            } catch (_: Throwable) {
+            } finally {
+                pending.finish()
+            }
+        }.start()
     }
 }
 

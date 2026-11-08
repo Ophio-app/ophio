@@ -10,7 +10,7 @@ import { uuidv7 } from "../../protocol/ids";
 import { RouteProvider } from "../../shell/Screen";
 import { blobs } from "../../state/annotations";
 import type { Route } from "../../app/ui";
-import Inbox from "../work/Inbox";
+import Inbox from "../work/InboxScreen";
 import { inboxStore } from "../work/inbox";
 import { chooseComposerFile, composerFileKey, TransferComposer, transferComposer } from "./composer";
 import { TransferManager, transferManager, type TransferJob } from "./manager";

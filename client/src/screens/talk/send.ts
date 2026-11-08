@@ -22,7 +22,7 @@ import { refreshFromSnapshot, type HostState } from "../../state/projection";
 import { uuidv7 } from "../../protocol/ids";
 import { taskBadge, taskHeadingFocus } from "./TaskBar";
 import { annotationStore, editedSinceSent, holdLabels, markSent, releaseLabels, toBundle } from "../../state/annotations";
-import { placeMoments } from "../annotate/Watch";
+import { placeMoments } from "../annotate/WatchView";
 import { NEW_CONVERSATION } from "./conversation";
 import { unplacedMoments } from "../annotate/watch";
 

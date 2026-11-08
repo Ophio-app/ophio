@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Native effects remain owned when a request future is cancelled. Stop waits for
 //! their completion; timing out a barrier never discards an unfinished effect.
-use crate::{Driver, Error, Snapshot};
+use crate::{Authority, Driver, Error, Snapshot};
 use async_trait::async_trait;
 use protocol::voice::VoiceAction;
 use std::sync::{Arc, Mutex};
@@ -34,7 +34,12 @@ impl Driver for FencedDriver {
     async fn snapshot(&self) -> Result<Snapshot, Error> {
         self.inner.snapshot().await
     }
-    async fn act(&self, action: &VoiceAction, snapshot: &Snapshot) -> Result<(), Error> {
+    async fn act(
+        &self,
+        action: &VoiceAction,
+        snapshot: &Snapshot,
+        authority: Arc<dyn Authority>,
+    ) -> Result<(), Error> {
         let (tx, rx) = oneshot::channel();
         {
             let mut jobs = self.jobs.lock().map_err(|_| Error::Stopped)?;
@@ -50,7 +55,7 @@ impl Driver for FencedDriver {
             let action = action.clone();
             let snapshot = snapshot.clone();
             let job = tokio::spawn(async move {
-                let result = inner.act(&action, &snapshot).await;
+                let result = inner.act(&action, &snapshot, authority).await;
                 let _ = tx.send(result);
             });
             jobs.pending.push(Arc::new(AsyncMutex::new(Some(job))));

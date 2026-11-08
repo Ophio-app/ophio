@@ -850,6 +850,9 @@ async fn completed_result_does_not_make_telegram_say_needs_attention() {
             topic: None,
             quiet: false,
             report_id: None,
+            account_id: None,
+            alert: None,
+            alert_handled_at: None,
         });
     }
     let snapshot = f.hub.snapshot.lock().unwrap().clone();
@@ -938,6 +941,9 @@ async fn ignored_notifications_do_not_query_snapshots() {
             topic: None,
             quiet: false,
             report_id: None,
+            account_id: None,
+            alert: None,
+            alert_handled_at: None,
         };
         let events = [
             Event::TimelineAppended {
@@ -1050,6 +1056,9 @@ async fn attention_notifications_recheck_latest_context_and_project() {
             topic: None,
             quiet: false,
             report_id: None,
+            account_id: None,
+            alert: None,
+            alert_handled_at: None,
         };
         let mut latest = item.clone();
         latest.title = "Latest title".into();
@@ -1084,4 +1093,55 @@ async fn attention_notifications_recheck_latest_context_and_project() {
         assert!(f.server.mock.texts().contains("Latest title"));
         assert!(!f.server.mock.texts().contains("Old title"));
     }
+}
+
+/// A notification handled on a phone is published again so the person's
+/// other phones put it away. A chat that was told of it isn't told twice,
+/// and one that wasn't isn't told now.
+#[tokio::test]
+async fn a_notice_handled_on_a_phone_is_not_posted_again_or_late() {
+    let f = Fixture::new(ChannelKind::Telegram, Exposure::Titles).await;
+    let identity = f.create().await;
+    let task = f.hub.task();
+    let waiting = |title: &str| AttentionItem {
+        child_id: None,
+        attention_id: AttentionId::new(),
+        kind: AttentionKind::WaitingForYou,
+        title: title.into(),
+        body: None,
+        task_id: Some(task.task_id),
+        run_id: task.current_run,
+        approval_id: None,
+        created_at: f.clock.now(),
+        resolved_at: None,
+        priority: 5,
+        topic: None,
+        quiet: false,
+        report_id: None,
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
+    };
+    let told = waiting("Told once");
+    let missed = waiting("Never told");
+    let handled = |item: &AttentionItem| AttentionItem {
+        alert_handled_at: Some(f.clock.now()),
+        ..item.clone()
+    };
+    f.hub.snapshot.lock().unwrap().attention = vec![handled(&told), handled(&missed)];
+    let before = f.server.mock.requests().len();
+    for item in [told.clone(), handled(&told), handled(&missed)] {
+        f.core
+            .notify(
+                f.io.as_ref(),
+                &f.route("7"),
+                &identity,
+                &f.hub.event(Event::AttentionUpserted { item }),
+            )
+            .await
+            .unwrap();
+    }
+    assert_eq!(f.server.mock.requests().len(), before + 1);
+    assert!(f.server.mock.texts().contains("Told once"));
+    assert!(!f.server.mock.texts().contains("Never told"));
 }

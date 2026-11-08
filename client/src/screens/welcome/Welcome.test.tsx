@@ -38,6 +38,14 @@ it.each([false, true])("two system Backs traverse confirmation and connect (addi
   } else expect(screen.getByRole("heading", { name: /Your computer/ })).toBeTruthy();
 });
 
+it("names only the computers this release supports", () => {
+  localStorage.clear();
+  const platform = { parsePairingLink: () => ({ problem: "not-pairing" }) } as unknown as Platform;
+  render(<Welcome platform={platform} onPaired={() => {}} />);
+  expect(screen.getByText("Runs on Linux computers")).toBeTruthy();
+  expect(screen.queryByText(/Mac|Windows/)).toBeNull();
+});
+
 it("system back steps back through pairing instead of leaving the app", () => {
   localStorage.clear();
   Element.prototype.scrollTo ??= () => {};

@@ -59,6 +59,37 @@ pub const MAX_FRAMES: usize = 40;
 /// A reporter strips that prefix from stack frames. `CARGO_MANIFEST_DIR` is
 /// never remapped and would compile the builder's real folder into the program.
 pub const SOURCE_FILE: &str = file!();
+
+/// A file of Rust's own library, as a crash code names it: the part from
+/// `library/` on, such as `rust/library/std/src/io/stdio.rs`. Rust names
+/// these `/rustc/<commit>/library/…`, or by where its source was installed,
+/// and the folder before `library/` is dropped, so nothing of the builder's
+/// computer stays. None for any other file.
+pub fn toolchain_file(file: &str) -> Option<String> {
+    let file = file.replace('\\', "/");
+    let from_toolchain = |before: &str| {
+        before.is_empty()
+            || before.ends_with("/rustlib/src/rust/")
+            || (before.strip_prefix("/rustc/"))
+                .and_then(|commit| commit.strip_suffix('/'))
+                .is_some_and(|c| !c.is_empty() && c.bytes().all(|b| b.is_ascii_hexdigit()))
+    };
+    let plain = |library: &str| {
+        let parts: Vec<_> = library.split('/').collect();
+        parts.len() >= 4
+            && parts[2] == "src"
+            && library.ends_with(".rs")
+            && parts.iter().all(|part| {
+                !matches!(*part, "" | "." | "..")
+                    && (part.bytes()).all(|b| b.is_ascii_alphanumeric() || b"_.-".contains(&b))
+            })
+    };
+    (file.match_indices("library/"))
+        .map(|(start, _)| file.split_at(start))
+        .find(|(before, library)| from_toolchain(before) && plain(library))
+        .map(|(_, library)| format!("rust/{library}"))
+        .filter(|name| name.len() <= 120)
+}
 /// The most reports `Query::Reports` lists, newest first.
 pub const MAX_LISTED_REPORTS: usize = 200;
 /// The most report ids one intake status request names.
@@ -1458,6 +1489,36 @@ fn digits(word: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rust_library_files_keep_a_name_without_the_builders_folders() {
+        // A crash from a problem report, as a release build names it.
+        let release = "/rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/std/src/io/stdio.rs";
+        assert_eq!(
+            toolchain_file(release).as_deref(),
+            Some("rust/library/std/src/io/stdio.rs")
+        );
+        assert_eq!(
+            toolchain_file("library/core/src/option.rs").as_deref(),
+            Some("rust/library/core/src/option.rs")
+        );
+        let installed = "/home/sam/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs";
+        assert_eq!(
+            toolchain_file(installed).as_deref(),
+            Some("rust/library/alloc/src/vec/mod.rs")
+        );
+        for other in [
+            "/home/sam/library/std/src/io/stdio.rs",
+            "crates/companion/src/main.rs",
+            "/rustc/not-a-commit/library/std/src/io/stdio.rs",
+            "/rustc/48a229ce/library/std/src/../../../secret.rs",
+            "/rustc/48a229ce/library/std/src/io/stdio.txt",
+            "library/std/io.rs",
+            "",
+        ] {
+            assert_eq!(toolchain_file(other), None, "{other}");
+        }
+    }
 
     #[test]
     fn references_are_six_crockford_characters_from_the_ids_last_bytes() {

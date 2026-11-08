@@ -1,12 +1,11 @@
 # Trying the Android-and-Linux beta
 
-This guide covers the 0.1.1 Android-and-Linux beta. The official files are
-attached to the [v0.1.1
-release](https://github.com/ophio-app/ophio/releases/tag/v0.1.1): the Linux
-archive `ophio-0.1.1-x86_64-linux.tar.gz`, the source
-`ophio-0.1.1-source.tar.gz`, the Android app `ophio-0.1.0-arm64.apk`
-(unchanged in 0.1.1, so it keeps its 0.1.0 name), and `SHA256SUMS`, which
-lists the SHA-256 digest of each. Check what you downloaded against it, for
+This guide covers the 0.2.0 Android-and-Linux beta. The official files are
+attached to the [v0.2.0
+release](https://github.com/ophio-app/ophio/releases/tag/v0.2.0): the Linux
+archive `ophio-0.2.0-x86_64-linux.tar.gz`, the source
+`ophio-0.2.0-source.tar.gz`, the Android app `ophio-0.2.0-arm64.apk`, and
+`SHA256SUMS`, which lists the SHA-256 digest of each. Check what you downloaded against it, for
 example with `sha256sum -c SHA256SUMS` in the folder that holds the files (it
 reports the files you did not download as missing; `--ignore-missing` skips
 them). The Android app is signed with Øphio's release key; its certificate
@@ -14,9 +13,9 @@ digest is in [packaging/android/SIGNING.md](../packaging/android/SIGNING.md).
 Use only these files, not a build from some other source. Physical-device and
 real-agent checks remain separate from the virtual-device lab results.
 
-The first beta is for Android phones and the Linux desktop combinations listed
-in [SUPPORT.md](../SUPPORT.md). Windows is experimental; macOS and iPhone are
-not supported beta targets. Start with a spare project containing no private
+The beta is for Android phones and the Linux desktop combinations listed
+in [SUPPORT.md](../SUPPORT.md). Windows is experimental and has no download;
+macOS and iPhone are not supported beta targets. Start with a spare project containing no private
 material. A beta can have defects, and stopping an agent does not undo the
 files it has already changed.
 
@@ -40,14 +39,14 @@ Do not disable system security globally to make a check pass.
 
 ## 1. Install and check the computer
 
-Download the Linux archive from the release and unpack it. The 0.1.1 archive
-is `ophio-0.1.1-x86_64-linux.tar.gz`; use the name of the file you
+Download the Linux archive from the release and unpack it. The 0.2.0 archive
+is `ophio-0.2.0-x86_64-linux.tar.gz`; use the name of the file you
 downloaded. It unpacks to a folder of the same name without `.tar.gz`. From
 the folder you downloaded it to, run as your ordinary user:
 
 ```sh
-tar -xzf ophio-0.1.1-x86_64-linux.tar.gz
-cd ophio-0.1.1-x86_64-linux
+tar -xzf ophio-0.2.0-x86_64-linux.tar.gz
+cd ophio-0.2.0-x86_64-linux
 sh install.sh
 ```
 
@@ -141,14 +140,20 @@ desktop control is qualified on your machine.
 ## 4. Check updates and recovery
 
 When a newer Linux archive is available on the releases page, give that
-archive to the installed `ophio update` command. From 0.1.0, that is `ophio
-update ophio-0.1.1-x86_64-linux.tar.gz`; the phone app is the same in both, so
-the phone isn't offered an update. It normally waits for active work to
-finish; `ophio update` without arguments shows its progress. Do not use a
-forced update while important work is running.
+archive to the installed `ophio update` command. From 0.1.0 or 0.1.1, that is
+`ophio update ophio-0.2.0-x86_64-linux.tar.gz`. It normally waits for active
+work to finish; `ophio update` without arguments shows its progress. Do not
+use a forced update while important work is running.
 
-After the computer updates, use **Settings → Versions → Update now** on the
-phone when the matching Android update is offered.
+0.2.0 has a new phone app, and the Linux archive carries it. Once the computer
+runs 0.2.0, a paired phone with the 0.1.0 app is offered it: a notification
+says the update is ready, and **Settings → Versions → Update now** installs it
+over the phone's connection to the computer. Installing
+`ophio-0.2.0-arm64.apk` from the release by hand does the same. Either way
+Android keeps your pairing and settings, because the new app is signed with
+the same release key. This is the app's first update of itself, so Android
+asks you to allow Øphio to install apps and may ask you to confirm;
+[Upgrading](upgrading.md#the-phones-first-update-from-010) walks through it.
 
 **Expected:** the computer starts again, the phone reconnects, the paired
 identity and granted permissions remain correct, and both versions match the

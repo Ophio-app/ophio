@@ -204,6 +204,12 @@ chips below it switch projects and show their open counts; **All** combines
 every project, with each entry linking back to its project. All is remembered
 on this phone until you choose a project, including in the header.
 
+With **All computers** chosen in the computer menu at the top, To-Do shows the
+items of every paired computer the phone can reach, each computer's under its
+name. A tick goes to that item's computer without leaving the screen, and
+opening an item switches to its computer first. A computer out of reach is
+named instead of listed.
+
 Every entry says **For you** or **For agent**. Your items keep their steps,
 questions, notes, links, copied text and files. Ticks show immediately and
 settle when the computer answers; a refusal puts the item back and says why.

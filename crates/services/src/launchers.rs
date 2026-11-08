@@ -2070,14 +2070,13 @@ mod tests {
         // The person's own folders may lead anywhere.
         assert!(read_file(&agents.join("link.md"), None).unwrap().is_some());
         // A FIFO with no writer isn't waited on.
-        rustix::fs::mknodat(
-            rustix::fs::CWD,
-            agents.join("fifo.md"),
-            rustix::fs::FileType::Fifo,
-            rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
-            0,
-        )
-        .unwrap();
+        assert!(
+            std::process::Command::new("mkfifo")
+                .arg(agents.join("fifo.md"))
+                .status()
+                .unwrap()
+                .success()
+        );
         assert_eq!(read("fifo.md").unwrap(), None);
         // Up to 64 KB.
         std::fs::write(agents.join("full.md"), vec![b'x'; MAX_FILE as usize]).unwrap();
@@ -2170,7 +2169,7 @@ mod tests {
         let base = ports::library::canonical(&std::env::temp_dir())
             .unwrap()
             .join(format!("ophio-listed-{}", uuid::Uuid::now_v7()));
-        let (project, outside) = (base.join("project"), base.join("private"));
+        let (project, outside) = (base.join("project"), base.join("elsewhere"));
         let agents = project.join(".claude/agents");
         std::fs::create_dir_all(&agents).unwrap();
         std::fs::create_dir_all(project.join(".claude")).unwrap();
@@ -2201,7 +2200,7 @@ mod tests {
             )]
         );
         let shown = catalog.problems.join("\n");
-        assert!(!shown.contains("private") && !shown.contains("tax-return"));
+        assert!(!shown.contains("elsewhere") && !shown.contains("tax-return"));
 
         // An agents folder within it that leads out can't be checked.
         let found = read_entry(

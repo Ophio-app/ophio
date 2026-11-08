@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Linux conversation isolation. See the crate README for deployment and limits.
+//! Conversation isolation on Linux and on a Mac. See the crate README for
+//! deployment and limits.
 use ports::{
     HarnessError,
     sandbox::{Sandbox, SandboxSpec, Sandboxes},
@@ -12,7 +13,7 @@ use std::{
 
 #[cfg(target_os = "linux")]
 mod disk;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 mod history;
 #[cfg(target_os = "linux")]
 pub use disk::DiskBudget;
@@ -21,7 +22,11 @@ mod linux;
 /// Host runtime trees mounted by explicit-grant Linux sandboxes.
 #[cfg(target_os = "linux")]
 pub use linux::runtime_paths;
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
+mod macos;
+#[cfg(target_os = "macos")]
+pub use macos::{Seatbelt, runtime_paths};
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 pub fn runtime_paths() -> &'static [&'static str] {
     &[]
 }
@@ -30,23 +35,23 @@ pub fn program_paths(
     program: &std::path::Path,
     home: &std::path::Path,
 ) -> std::io::Result<Vec<PathBuf>> {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     return program::files(program, home);
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     {
         let _ = home;
         Ok(vec![program.canonicalize()?])
     }
 }
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 mod program;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub mod proxy;
 #[cfg(target_os = "linux")]
 pub mod relay;
 #[cfg(target_os = "linux")]
 pub mod shim;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 #[allow(unsafe_code)]
 mod sys;
 

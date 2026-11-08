@@ -112,6 +112,8 @@ async fn asked(f: &Fixture) -> (ProjectId, TaskId, RunId, ApprovalId) {
         .emit(
             run_id,
             ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "question".into(),
                 kind: ApprovalKind::Question,
                 title: "The agent asked a question".into(),
@@ -534,6 +536,11 @@ async fn a_quiet_turn_is_reminded_then_stopped_and_next_up_goes_on() {
             .map(|b| b.starts_with("It showed no sign of work for 30 minutes")),
         Some(true)
     );
+    // Slow work by its topic, but told as the problem it is.
+    assert_eq!(
+        protocol::notifications::AlertType::of(&headline, false),
+        Some(protocol::notifications::AlertType::Failed)
+    );
     ended(&f, run_id, ports::RunExit::Interrupted).await;
     assert!(queue(&f, project).writer.is_none());
     assert!(!queue(&f, project).paused);
@@ -860,6 +867,8 @@ async fn set_questions(f: &Fixture, questions: bool) {
 
 fn native_question(id: &str, questions: Vec<ApprovalQuestion>) -> ports::HarnessEvent {
     ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+        headline: None,
+        subject: Default::default(),
         native_request_id: id.into(),
         kind: ApprovalKind::Question,
         title: "Which branch should the fix go on?".into(),
@@ -887,7 +896,13 @@ async fn the_agent_checks_whether_it_may_ask_and_a_question_while_they_are_off_g
     working(&f, run_id).await;
     let asking = task(&f, task_id);
     let can_ask = || f.hub.person_request(run_id, &asking, PersonCall::CanAsk);
-    assert!(can_ask().await.unwrap().starts_with("Questions are on"));
+    let on = can_ask().await.unwrap();
+    assert!(on.starts_with("Questions are on"), "{on}");
+    // Right before it asks, it is reminded how: the choices and its pick.
+    assert!(
+        on.contains("naming any choices and the one you would pick"),
+        "{on}"
+    );
 
     // The person turns questions off while the agent works.
     set_questions(&f, false).await;
@@ -901,6 +916,7 @@ async fn the_agent_checks_whether_it_may_ask_and_a_question_while_they_are_off_g
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     };
     let asked = f
         .hub

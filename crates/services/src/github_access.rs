@@ -232,7 +232,7 @@ impl CompanionHub {
         if !sandbox && !task.access.as_ref().is_some_and(|a| a.unrestricted()) {
             let id = ApprovalId::new();
             self.write(|tx| tx.put(START_APPROVAL, run_id, &id))?;
-            let answer = self.bridge_wait_as(id, run_id, &task, ports::tool_approval::ToolApproval {
+            let answer = self.bridge_wait_as(id, run_id, &task, ports::tool_approval::ToolApproval { headline: None, subject: Default::default(),
                 kind: ApprovalKind::Other,
                 title: "Start without project limits?".into(),
                 detail: Some("The request came from someone outside the project, and this computer can't hold the agent to the project. Starting lets it use the task's ordinary access to this computer and the internet.".into()),

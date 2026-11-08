@@ -8,6 +8,7 @@ import { recordNotice } from "../diagnostics/instrumentation";
 import { useEffect, type ReactNode } from "react";
 import type { Availability } from "../protocol/types";
 import { remedyText } from "./remedy";
+import { useReportComputer } from "../app/reportComputer";
 
 export type NoticeTone = "info" | "warn" | "stop" | "unknown";
 
@@ -15,15 +16,20 @@ const ICONS: Record<NoticeTone, LucideIcon> = { info: Info, warn: TriangleAlert,
 
 /** An inline explanation. Used for capability gaps, stale data and failures. */
 export function Notice({ tone = "info", code = "inline_notice", title, children, action, icon, className, report = true, reportDetails }: { tone?: NoticeTone; code?: string; title?: ReactNode; children?: ReactNode; action?: ReactNode; icon?: LucideIcon; className?: string; report?: boolean | "always"; reportDetails?: Partial<ReportContextInput> }) {
-  useEffect(() => recordNotice(code, tone === "info" ? "info" : "error"), [code, tone]);
+  // Most notices share the key "inline_notice": their words tell them apart
+  // for the trail's repeat check, and are never recorded.
+  const same = [title, children].filter((x) => typeof x === "string").join("\n");
+  useEffect(() => recordNotice(code, tone === "info" ? "info" : "error", same), [code, tone, same]);
   const Icon = icon ?? ICONS[tone];
+  // A note in another computer's part of All reports through that computer.
+  const profileId = useReportComputer();
   return (
     <div className={["notice", `notice--${tone}`, className].filter(Boolean).join(" ")} role={tone === "stop" ? "alert" : undefined}>
       <Icon className="notice__icon" aria-hidden strokeWidth={2.1} />
       <div className="notice__text">
         {title && <p className="notice__title">{title}</p>}
         {children && <div className="notice__body">{children}</div>}
-        {(action || (report && (tone !== "info" || report === "always"))) && <div className="notice__action">{action}{report && (tone !== "info" || report === "always") && <Button size="sm" variant="quiet" onClick={() => openReport({ type: "error" }, { error: { code, ...(typeof children === "string" ? { message: children } : {}) }, ...reportDetails })}>Report</Button>}</div>}
+        {(action || (report && (tone !== "info" || report === "always"))) && <div className="notice__action">{action}{report && (tone !== "info" || report === "always") && <Button size="sm" variant="quiet" onClick={() => openReport({ type: "error" }, { error: { code, ...(typeof children === "string" ? { message: children } : {}) }, ...(profileId ? { profileId } : {}), ...reportDetails })}>Report</Button>}</div>}
       </div>
     </div>
   );

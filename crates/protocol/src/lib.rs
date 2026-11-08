@@ -154,6 +154,12 @@ pub struct Subscribe {
     /// snapshot followed by the live tail.
     #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
     pub after_seq: Option<u64>,
+    /// The client shows attention items about an account (an agent that
+    /// isn't signed in, `AttentionItem::account_id`). An older client, which
+    /// would count them without showing them, isn't sent them.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub account_items: bool,
 }
 
 #[derive(
@@ -199,6 +205,11 @@ pub enum Query {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         #[ts(optional)]
         reads_withheld: Option<bool>,
+        /// The client shows attention items about an account, as
+        /// `Subscribe::account_items`; an older one isn't sent them.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        #[ts(as = "Option<bool>", optional)]
+        account_items: bool,
     },
     /// Look up what happened to a command the client may have sent.
     CommandStatus {
@@ -346,6 +357,10 @@ pub enum Query {
     InboxReportCode {
         report_id: ReportId,
     },
+    /// The project an agent looking into a report works in, when the
+    /// computer can tell: the one that holds Ophio's source, or the one the
+    /// person chose last time. Advertised as `report_task_v1`.
+    ReportTaskProject,
     /// The computer's part of a report about to be sent, exactly as it would
     /// go, for "See all". `salt` names ids as the phone's part does (see
     /// [`reports::pseudonym`]); it never leaves the person's devices.
@@ -398,8 +413,15 @@ pub enum Query {
         approval_id: ApprovalId,
     },
     /// The computer's accounts, the sign-in in progress and their history.
-    /// Advertised as `accounts_v1`.
-    Accounts,
+    /// Advertised as `accounts_v1`. A sign-in finished on the phone shows
+    /// its page and code (`SignInStage::OnPhone`) only to a paired device
+    /// that may manage accounts and says `on_phone`; anyone else sees the
+    /// provider's host alone, as `SignInStage::Browser`.
+    Accounts {
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        #[ts(as = "Option<bool>", optional)]
+        on_phone: bool,
+    },
     /// The computer's agent logins and their history, without secrets.
     /// Advertised as `agent_logins_v1`.
     AgentLogins,
@@ -593,6 +615,10 @@ pub enum QueryData {
     },
     InboxReportCode {
         code: Option<reports::InboxReportCode>,
+    },
+    /// None when the person has to choose.
+    ReportTaskProject {
+        project_id: Option<ProjectId>,
     },
     ReportPreview {
         part: Box<reports::ComputerPart>,

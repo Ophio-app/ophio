@@ -38,6 +38,8 @@ fn main() {
             "alerts_state",
             "alerts_configure",
             "alerts_seen",
+            "alerts_handled",
+            "alerts_set_tier",
             "alerts_viewing",
             "alerts_battery",
             "alerts_channel",

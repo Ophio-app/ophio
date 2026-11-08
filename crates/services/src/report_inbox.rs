@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The owner's inbox of problem reports other people send. Each new
 //! problem raises one Needs-you item on the owner's devices and repeats
-//! fold into it. What a reporter wrote is shown as data only: nothing here
-//! starts work or hands it to an agent. The owner's verdict on a problem
+//! fold into it. What a reporter wrote is shown as data only. Work on a
+//! report starts only when the person asks: they may hand it to the
+//! contained fixer (Look into it) or, where none runs, have an ordinary
+//! agent plan a fix in Plan mode (`crate::report_task`), whose plan they
+//! read before it can change anything. The owner's verdict on a problem
 //! reaches everyone who reported it.
 use crate::{CompanionHub, api::Caller, error};
 use intake::maintainer::{
@@ -243,6 +246,11 @@ impl Entry {
     }
 }
 
+/// The reference of a report in the owner's inbox, if it is there.
+pub(crate) fn reference(r: &store::Read<'_>, report_id: ReportId) -> store::Result<Option<String>> {
+    Ok(r.get::<Entry>(INBOX, report_id)?.map(|e| e.reference))
+}
+
 /// Whether `item` is one the inbox raised: a report's, about no task, for
 /// the person to read.
 pub(crate) fn is_inbox(item: &AttentionItem) -> bool {
@@ -268,6 +276,7 @@ impl CompanionHub {
             }
         };
         let source: Arc<dyn Source> = Arc::new(intake);
+        self.inner.reports.set_inbox_source(source.clone());
         let hub = self.clone();
         let mut shutdown = self.inner.shutdown.subscribe();
         self.spawn(async move {
@@ -701,6 +710,9 @@ fn raise(entry: &Entry, group: ReportId, now: Timestamp, quiet: bool) -> Attenti
         topic: Some(AlertTopic::Reports),
         quiet,
         report_id: Some(group),
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
     }
 }
 
@@ -728,11 +740,18 @@ fn detail(bundle: &ReportBundle) -> String {
             ReportPlatform::Ios => "iPhone",
             ReportPlatform::Web => "browser",
         };
-        about.push(format!(
-            "{platform} {}, {}",
-            field(&phone.os),
-            field(&phone.model)
-        ));
+        // Android names itself in its version ("Android 10"), and a phone
+        // may not say its model.
+        let os = field(&phone.os);
+        let mut phone_line = match os.starts_with(platform) {
+            true => os,
+            false => format!("{platform} {os}").trim().to_owned(),
+        };
+        let model = field(&phone.model);
+        if !model.is_empty() {
+            phone_line.push_str(&format!(", {model}"));
+        }
+        about.push(phone_line);
     }
     lines.push(about.join(" · "));
     let mut how = vec![match &bundle.origin {
@@ -844,7 +863,7 @@ fn plain(text: &str) -> String {
 
 /// Bidirectional and zero-width characters, which can make text read other
 /// than it is.
-fn is_format(c: char) -> bool {
+pub(crate) fn is_format(c: char) -> bool {
     matches!(c,
         '\u{00AD}' | '\u{0600}'..='\u{0605}' | '\u{061C}' | '\u{06DD}' | '\u{070F}' |
         '\u{0890}'..='\u{0891}' | '\u{08E2}' | '\u{180E}' | '\u{200B}'..='\u{200F}' |
@@ -1088,6 +1107,26 @@ mod tests {
         items
     }
 
+    #[test]
+    fn the_phone_line_names_its_system_once() {
+        let mut b = bundle("It stopped");
+        let phone = |os: &str, model: &str| {
+            serde_json::from_value(serde_json::json!({
+                "build": "1000", "platform": "android", "os": os, "model": model,
+                "protocol": {"major": 1, "minor": 0},
+            }))
+            .unwrap()
+        };
+        b.versions.phone = Some(phone("Android 10", ""));
+        assert!(
+            detail(&b).contains("build abc123 · Android 10\n"),
+            "{}",
+            detail(&b)
+        );
+        b.versions.phone = Some(phone("15 (API 35)", "Google Pixel 8"));
+        assert!(detail(&b).contains("· Android 15 (API 35), Google Pixel 8\n"));
+    }
+
     #[tokio::test]
     async fn reports_from_before_are_quiet_and_new_ones_alert() {
         let dir = tempfile::tempdir().unwrap();
@@ -1117,7 +1156,7 @@ mod tests {
         assert!(body.starts_with("They wrote: “It stopped”\nScreen /work/:task · build abc123"));
         assert!(body.ends_with("Reported once · status: new"), "{body}");
 
-        let (alerts, _) = hub.alerts_open(&Caller::local_owner()).unwrap();
+        let (alerts, _) = hub.alerts_open(&Caller::local_owner(), true).unwrap();
         let alert = (alerts.iter())
             .find(|a| a.attention_id == item.attention_id)
             .unwrap();
@@ -1935,6 +1974,7 @@ mod tests {
         let linked = chat(&hub);
         let query = Query::Snapshot {
             reads_withheld: None,
+            account_items: false,
         };
         let person = hub.query(&owner, query.clone()).await.unwrap();
         let agent = hub.query_for_agent(&owner, query.clone()).await.unwrap();

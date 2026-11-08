@@ -22,6 +22,7 @@ mod unix {
         /// The companion's control group, when only what it started shares
         /// it, as under a service manager. A program keeps its group however it
         /// detaches from its parent, unless it asks the system to move it.
+        #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
         cgroup: Option<String>,
     }
     impl Started {
@@ -31,6 +32,18 @@ mod unix {
 
         /// What program `companion` will have started, judged before it starts
         /// any.
+        #[cfg(target_os = "macos")]
+        pub fn of(companion: u32) -> io::Result<Self> {
+            // A Mac has no control groups, so only ancestry tells them apart.
+            Ok(Self {
+                companion,
+                cgroup: None,
+            })
+        }
+
+        /// What program `companion` will have started, judged before it starts
+        /// any.
+        #[cfg(target_os = "linux")]
         pub fn of(companion: u32) -> io::Result<Self> {
             let own = cgroup(companion)?;
             // Started from a shell, the companion shares that shell's group, and
@@ -53,6 +66,7 @@ mod unix {
             if pid == self.companion {
                 return false;
             }
+            #[cfg(target_os = "linux")]
             if cgroup(pid).is_ok_and(|peer| self.started_group(&peer)) {
                 return true;
             }
@@ -70,6 +84,7 @@ mod unix {
         /// left behind still bears that companion's process id, so any
         /// companion's group counts: none of the owner's own programs is in
         /// one.
+        #[cfg(target_os = "linux")]
         fn started_group(&self, peer: &str) -> bool {
             self.cgroup.as_ref().is_some_and(|own| within(peer, own))
                 || peer
@@ -93,6 +108,7 @@ mod unix {
         }
     }
 
+    #[cfg(target_os = "linux")]
     fn within(path: &str, group: &str) -> bool {
         group == "/"
             || path == group
@@ -101,6 +117,7 @@ mod unix {
                 .is_some_and(|rest| rest.starts_with('/'))
     }
 
+    #[cfg(target_os = "linux")]
     fn cgroup(pid: u32) -> io::Result<String> {
         let text = std::fs::read_to_string(format!("/proc/{pid}/cgroup"))?;
         // The unified hierarchy, or systemd's own where only legacy ones exist.
@@ -115,6 +132,7 @@ mod unix {
     }
 
     /// Whether any program but `companion` is in `group` or a group below it.
+    #[cfg(target_os = "linux")]
     fn others(group: &str, companion: u32) -> io::Result<bool> {
         let unified = std::path::Path::new("/sys/fs/cgroup");
         let relative = group.trim_start_matches('/');
@@ -141,6 +159,15 @@ mod unix {
         Ok(false)
     }
 
+    #[cfg(target_os = "macos")]
+    fn parent(pid: u32) -> io::Result<u32> {
+        i32::try_from(pid)
+            .ok()
+            .and_then(platform_macos::process::parent)
+            .ok_or_else(|| io::Error::other("unreadable process status"))
+    }
+
+    #[cfg(target_os = "linux")]
     fn parent(pid: u32) -> io::Result<u32> {
         let stat = std::fs::read_to_string(format!("/proc/{pid}/stat"))?;
         stat.rsplit_once(") ")
@@ -207,6 +234,7 @@ mod unix {
             assert!(started.includes(u32::MAX));
         }
 
+        #[cfg(target_os = "linux")]
         #[test]
         fn a_detached_program_keeps_the_companions_own_group() {
             let sleeper = Sleeper::detached();
@@ -232,6 +260,7 @@ mod unix {
             assert!(!started.includes(std::process::id()));
         }
 
+        #[cfg(target_os = "linux")]
         #[test]
         fn a_companions_group_is_started_here_wherever_the_companion_runs() {
             let shell = Started {
@@ -260,6 +289,7 @@ mod unix {
             assert!(service.started_group("/app.slice/ophio.service"));
         }
 
+        #[cfg(target_os = "linux")]
         #[test]
         fn a_group_contains_itself_and_what_is_below_it() {
             assert!(within(

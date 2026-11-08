@@ -406,3 +406,112 @@
     margin-top: 0;
   }
 }
+
+/* Native keyboard accessories reserve only their measured height. The same
+   controllable canvas fills the rest, including when Android resizes the view. */
+.desktop-screen--keyboard .picture-stage { bottom: var(--keyboard-height, 76px); }
+.full-overlay--typing { display: block; }
+.full-typing-header {
+  display: flex;
+  gap: var(--s1);
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  border-radius: var(--r-lg);
+  background: var(--glass-strong);
+}
+.full-typing-header .full-status { box-shadow: none; background: none; }
+.full-typing-header .full-status { display: none; }
+.full-typing-header .full-tool { min-width: 44px; }
+.full-typing-header .safety-actions { flex-shrink: 0; }
+.full-overlay--typing > .full-notices {
+  position: absolute;
+  top: calc(max(var(--pad), var(--safe-top)) + 52px);
+  left: max(var(--pad), var(--safe-left));
+  right: max(var(--pad), var(--safe-right));
+  max-height: calc(100% - var(--keyboard-height, 76px) - 64px);
+  overflow: auto;
+}
+.full-keyboard {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--s1) max(var(--s1), var(--safe-right)) max(var(--s1), var(--safe-bottom)) max(var(--s1), var(--safe-left));
+  max-height: 45%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #19151e;
+  border-top: 1px solid var(--glass-line);
+  color: #fff;
+  color-scheme: dark;
+}
+.live-keyboard { position: relative; }
+.live-keyboard__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0.01;
+  font-size: 16px;
+  resize: none;
+  pointer-events: none;
+}
+.live-keyboard__bar, .live-keyboard__shortcuts {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.live-key {
+  position: relative;
+  flex: none;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: rgb(255 255 255 / 0.07);
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.live-key:disabled { opacity: 0.4; cursor: default; }
+.live-key[aria-pressed="true"] { background: var(--signal); color: #120c0a; }
+.live-key[data-locked] { box-shadow: inset 0 -3px 0 #120c0a; }
+.live-key__lock { font-size: 8px; margin-left: 3px; }
+.live-keyboard__status { margin: var(--s1) 0; color: #fff; }
+.live-keyboard__status button { border: 0; background: transparent; color: var(--signal); font: inherit; min-height: 44px; padding-inline: 12px; }
+.live-keyboard__more { display: grid; gap: var(--s1); margin-top: var(--s1); }
+.live-keyboard__shortcuts { flex-wrap: wrap; }
+.live-keyboard__paste { display: grid; gap: var(--s1); margin-top: var(--s2); }
+.live-keyboard__paste textarea { display: block; width: 100%; resize: vertical; font: inherit; min-height: 64px; }
+.live-keyboard__paste .fine { color: #e2dce8; }
+.live-keyboard__resume { display: block; margin: 2px auto 0; padding: 2px 12px; min-height: 24px; color: #e2dce8; border: 0; background: transparent; font: inherit; font-size: var(--text-xs); cursor: pointer; }
+@media (min-width: 700px) {
+  .full-typing-header .full-status { display: flex; }
+}
+/* On a short, wide viewport, use its spare side rather than cover the desktop
+   with a second horizontal bar above the native keyboard. */
+@media (min-width: 700px) and (orientation: landscape) {
+  .full-typing-header {
+    position: absolute;
+    top: max(var(--pad), var(--safe-top));
+    right: max(var(--pad), var(--safe-right));
+    bottom: calc(var(--keyboard-height, 76px) + var(--pad));
+    flex-direction: column;
+    align-items: stretch;
+    width: 72px;
+    padding: var(--s1);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .full-typing-header .full-status { display: none; }
+  .full-typing-header .full-tool--round { align-self: center; }
+  .desktop-screen--full .full-typing-header .intervention:not(.named-stop__icon) { flex-direction: column; font-size: var(--text-xs); padding: var(--s1); }
+  .full-typing-header .full-count { align-self: center; }
+}

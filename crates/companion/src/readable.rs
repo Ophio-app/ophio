@@ -17,8 +17,9 @@ use protocol::{
 };
 use std::fmt::Write;
 
-/// Colour is for terminals only, and never when `NO_COLOR` is set or the
-/// terminal says it is too basic for it (`TERM=dumb`).
+/// Colour is for terminals only, and never when `NO_COLOR` is set, the
+/// terminal says it is too basic for it (`TERM=dumb`), or, on Windows, the
+/// console can't be made to read colour codes.
 #[derive(Debug, Clone, Copy)]
 pub struct Style {
     colour: bool,
@@ -32,7 +33,7 @@ impl Style {
                 std::io::stdout().is_terminal(),
                 std::env::var_os("NO_COLOR").is_some(),
                 std::env::var("TERM").ok().as_deref(),
-            ),
+            ) && reads_colour_codes(),
         }
     }
     fn paint(self, state: &State) -> String {
@@ -46,6 +47,18 @@ impl Style {
 
 fn wants_colour(terminal: bool, no_color: bool, term: Option<&str>) -> bool {
     terminal && !no_color && term != Some("dumb")
+}
+
+/// Windows' classic console, as Windows PowerShell 5.1 opens, shows colour
+/// codes as text unless they are turned on for it (virtual terminal
+/// processing). This turns them on, and says whether they are.
+#[cfg(windows)]
+fn reads_colour_codes() -> bool {
+    crossterm::ansi_support::supports_ansi()
+}
+#[cfg(not(windows))]
+fn reads_colour_codes() -> bool {
+    true
 }
 
 /// Stored text as printed. A name, path or detail can hold characters that

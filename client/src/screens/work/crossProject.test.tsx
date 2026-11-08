@@ -79,10 +79,12 @@ it("flags a reported model or effort mismatch beside Requested and Actual", asyn
 
 it("makes the shared inline denial primary and records deny, not allow", async () => {
   render(<AppProvider app={app}><ApprovalQuickActions approvalId={ids.aTest} /></AppProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Deny…" }));
-  const deny = screen.getByRole("button", { name: "Deny request" });
+  fireEvent.click(screen.getByRole("button", { name: "Decline…" }));
+  const deny = screen.getByRole("button", { name: /^Decline$/ });
   expect(deny.classList.contains("btn--primary")).toBe(true);
-  expect(screen.getByRole("button", { name: "Allow" }).classList.contains("btn--quiet")).toBe(true);
+  // Allow waits behind Back while the reason is written.
+  expect(screen.queryByRole("button", { name: "Allow" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Back" }).classList.contains("btn--quiet")).toBe(true);
   fireEvent.change(screen.getByLabelText("Reason (optional)"), { target: { value: "Not yet" } });
   fireEvent.click(deny);
   await advance(900);

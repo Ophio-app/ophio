@@ -1,9 +1,12 @@
-# Android native shell
+# Phone native shell
 
-This is a separate Cargo workspace for the Android app. Its only production
-host dependency is the shared protocol/clock contract. The WebView loads
-packaged assets; Rust owns pinned TLS, Ed25519 authentication and bounded
-WebSocket queues. A private Kotlin plugin owns Android device APIs.
+This is a separate Cargo workspace for the Android and iPhone apps. Its only
+production host dependency is the shared protocol/clock contract. The WebView
+loads packaged assets; Rust owns pinned TLS, Ed25519 authentication and bounded
+WebSocket queues. A private device plugin owns the phone's own APIs: Kotlin on
+Android, Swift on iPhone.
+
+## Android
 
 Build with the configured JDK 21, Android SDK/NDK and Rust Android toolchains.
 From client/, use a private target directory and bounded build concurrency:
@@ -24,6 +27,48 @@ only when regenerating the project intentionally; preserve MainActivity’s Back
 handling, the checked-in manifest/capabilities, the wrapper’s
 `distributionSha256Sum` and gradle/verification-metadata.xml. Its templates
 carry neither checksum, and `tools/sync-native.mjs` stops the build without them.
+
+## iPhone
+
+The same workspace builds the iPhone app (iOS 16 or later). The device plugin's
+Swift side in plugins/device/ios/ answers the same commands, with the same
+payloads and messages, as the Kotlin one; what iOS can't do (shared files, app
+updates, the alert service) is refused with "This isn’t available on iPhone."
+and the app leaves it out. Info.ios.plist holds the permission wording, the
+`ophio-object` link schemes and loopback access for private previews; Tauri
+merges it into the generated Xcode project.
+
+It needs a Mac with Xcode. A signed phone build also needs an Apple developer
+team; the simulator doesn't. The Xcode project in gen/apple/ is generated, not
+committed:
+
+```sh
+npm ci --no-audit --no-fund
+npm run tauri ios init
+npm run tauri ios build -- --debug --target aarch64-sim   # simulator
+npm run tauri ios build -- --export-method debugging      # a signed phone build
+```
+
+On iOS the app's files are named `Ophio` (`tauri.ios.conf.json`), because Apple's
+bundle lookup crashes the app as it starts when its file name holds a Ø. The home
+screen still says Øphio, from `CFBundleDisplayName` in Info.ios.plist.
+
+Linux can type-check the Rust side for iOS, not build it. Apple's SDK isn't
+needed: a stand-in TargetConditionals.h and the Android NDK's C headers let
+`ring` compile.
+
+```sh
+mkdir -p "$TMPDIR/ios-sdk/usr/include"
+printf '#pragma once\n#define TARGET_OS_IPHONE 1\n#define TARGET_OS_IOS 1\n#define TARGET_OS_OSX 0\n#define TARGET_OS_SIMULATOR 0\n' \
+  > "$TMPDIR/ios-sdk/usr/include/TargetConditionals.h"
+NDK_INC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include"
+SDKROOT="$TMPDIR/ios-sdk" CC_aarch64_apple_ios=clang AR_aarch64_apple_ios=llvm-ar \
+  CFLAGS_aarch64_apple_ios="-isystem $TMPDIR/ios-sdk/usr/include -isystem $NDK_INC -isystem $NDK_INC/aarch64-linux-android" \
+  IPHONEOS_DEPLOYMENT_TARGET=16.0 \
+  cargo clippy --target aarch64-apple-ios --lib -p phone-shell -p tauri-plugin-device -- -D warnings
+```
+
+## Checks
 
 From src-tauri/:
 

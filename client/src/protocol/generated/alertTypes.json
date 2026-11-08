@@ -1,0 +1,128 @@
+[
+  {
+    "type": "question",
+    "name": "Questions",
+    "description": "An agent asked you something and is waiting for your answer.",
+    "group": "needs_you",
+    "tier": "alert"
+  },
+  {
+    "type": "approval",
+    "name": "Approvals",
+    "description": "An agent wants your OK before it does something.",
+    "group": "needs_you",
+    "tier": "alert"
+  },
+  {
+    "type": "sign_in",
+    "name": "Agent signed out",
+    "description": "An agent can’t work because it isn’t signed in on a computer.",
+    "group": "needs_you",
+    "tier": "alert"
+  },
+  {
+    "type": "decision",
+    "name": "Tasks that need a decision",
+    "description": "A conflict, an end Øphio can’t confirm, or a screen to watch.",
+    "group": "needs_you",
+    "tier": "alert"
+  },
+  {
+    "type": "failed",
+    "name": "Tasks that stopped with a problem",
+    "description": "A task or a review couldn’t finish.",
+    "group": "needs_you",
+    "tier": "alert"
+  },
+  {
+    "type": "pr_needs_you",
+    "name": "Pull requests that need you",
+    "description": "Checks fail, a conflict, or a review asks for changes.",
+    "group": "needs_you",
+    "tier": "alert"
+  },
+  {
+    "type": "report_question",
+    "name": "Questions about your reports",
+    "description": "A problem report you sent has a question for you.",
+    "group": "needs_you",
+    "tier": "alert"
+  },
+  {
+    "type": "go_ahead",
+    "name": "Next up go-aheads",
+    "description": "A task in Next up is waiting for your go-ahead to start.",
+    "group": "worth_a_look",
+    "tier": "silent"
+  },
+  {
+    "type": "reply",
+    "name": "Chat replies",
+    "description": "An agent replied in a chat you’re in.",
+    "group": "worth_a_look",
+    "tier": "silent"
+  },
+  {
+    "type": "pr_ready",
+    "name": "Pull requests ready to merge",
+    "description": "Checks passed and it’s waiting for you to merge it.",
+    "group": "worth_a_look",
+    "tier": "silent"
+  },
+  {
+    "type": "batch",
+    "name": "Run all results",
+    "description": "What a Run all came to, once it’s through.",
+    "group": "worth_a_look",
+    "tier": "silent"
+  },
+  {
+    "type": "issue_call",
+    "name": "Issues that need your call",
+    "description": "An issue couldn’t be reproduced, or looks fixed already.",
+    "group": "worth_a_look",
+    "tier": "silent"
+  },
+  {
+    "type": "reports",
+    "name": "Problem report updates",
+    "description": "A report you sent moved on, or someone sent you one.",
+    "group": "worth_a_look",
+    "tier": "silent"
+  },
+  {
+    "type": "app_update",
+    "name": "Øphio updates",
+    "description": "A computer has a newer Øphio for this phone.",
+    "group": "worth_a_look",
+    "tier": "silent"
+  },
+  {
+    "type": "finished",
+    "name": "Finished tasks",
+    "description": "A task finished. Turn on “Tell me when it’s done” on a task to hear about that one.",
+    "group": "in_the_app",
+    "tier": "off"
+  },
+  {
+    "type": "merged",
+    "name": "Merged pull requests",
+    "description": "A pull request merged.",
+    "group": "in_the_app",
+    "tier": "off"
+  },
+  {
+    "type": "issues",
+    "name": "Issues filed",
+    "description": "Issues were found and filed, or closed as duplicates.",
+    "group": "in_the_app",
+    "tier": "off"
+  },
+  {
+    "type": "slow",
+    "name": "Slow steps",
+    "description": "A step is taking longer than usual.",
+    "group": "in_the_app",
+    "tier": "off"
+  }
+]

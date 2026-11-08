@@ -51,7 +51,7 @@ function schedule(item: ToastItem) {
 }
 
 export function toast(text: string, opts: { code?: string; tone?: ToastItem["tone"]; action?: ToastItem["action"]; expire?: ToastItem["expire"] } = {}): void {
-  recordNotice(opts.code ?? "toast", opts.tone === "stop" ? "error" : "info");
+  recordNotice(opts.code ?? "toast", opts.tone === "stop" ? "error" : "info", text);
   const item: ToastItem = { id: ++seq, text, tone: opts.tone ?? "info", action: opts.action ?? (opts.tone === "stop" ? { label: "Report", run: () => openReport({ type: "error" }, { error: { code: opts.code ?? "app_error", message: text } }) } : undefined), expire: opts.expire };
   for (const old of items.slice(0, -1)) dismiss(old.id);
   items = [...items, item];

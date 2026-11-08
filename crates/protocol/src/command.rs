@@ -252,6 +252,24 @@ pub enum Command {
         #[ts(as = "Option<bool>", optional)]
         read_only: bool,
     },
+    /// Carry a Plan or Ask task on in Work, or turn a conversation into a
+    /// task in Work, in one step, whether or not its turn has ended: a
+    /// running turn is stopped first. The same agent session continues, and
+    /// waits its turn in Next up while another task changes the project.
+    /// With `approval_id`, a pending request of that task that it can only
+    /// allow in Work is allowed by switching (its `actions` say so), and the
+    /// agent is told to carry on with it. Advertised as `switch_to_work_v1`.
+    SwitchToWork {
+        task_id: TaskId,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        approval_id: Option<ApprovalId>,
+        /// The person's own words for the agent; omission says only that it
+        /// may now change files.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        text: Option<String>,
+    },
     RenameTask {
         task_id: TaskId,
         title: String,
@@ -481,6 +499,13 @@ pub enum Command {
         device_id: DeviceId,
         name: String,
     },
+    /// The name every paired phone and tablet shows for this computer. It is
+    /// trimmed, and 1 to 60 characters with no control characters; the
+    /// computer's own hostname puts its usual name back. Advertised as
+    /// `computer_name_v1`.
+    RenameComputer {
+        name: String,
+    },
     RevokeDevice {
         device_id: DeviceId,
     },
@@ -591,12 +616,25 @@ pub enum Command {
     SetLaunchDefaults {
         defaults: Vec<crate::agent_preferences::LaunchDefault>,
     },
+    /// "Tell me when it's done" for one task, on or off: its finish,
+    /// failure or reply alerts on every phone. Advertised as
+    /// `alert_types_v1`.
+    SetTaskNotify {
+        task_id: TaskId,
+        on: bool,
+    },
     /// Which alerts reach the person's phones, replacing every earlier
     /// choice. Advertised as `notification_settings_v1`.
     SetNotificationSettings {
         off: Vec<crate::notifications::AlertTopic>,
         bundle: bool,
         projects: Vec<crate::notifications::ProjectNotifications>,
+        /// The phone sends each project's choices by type in full. An
+        /// older phone sends none and doesn't know of them, so its save
+        /// keeps each project's as they were.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        #[ts(as = "Option<bool>", optional)]
+        types: bool,
     },
     // --- Checklist ------------------------------------------------------
     /// Tick a step of a checklist item off, or the whole item, or untick it.
@@ -671,6 +709,20 @@ pub enum Command {
     /// `report_look_into_v1`.
     LookIntoReport {
         report_id: ReportId,
+    },
+    /// Has an agent look into a report in the owner's inbox: an ordinary
+    /// task in Plan mode, in the project that holds Ophio's source, whose
+    /// prompt the computer writes from the report. The reporter's words go
+    /// to it only as marked data, and it changes nothing until the person
+    /// carries out its plan. While one is open, asking again answers with
+    /// it. Without `project_id`, the computer picks the project (see
+    /// [`crate::Query::ReportTaskProject`]). Answered with
+    /// [`CommandResult::TaskCreated`]. Advertised as `report_task_v1`.
+    StartReportTask {
+        report_id: ReportId,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        project_id: Option<ProjectId>,
     },
     /// Whether the computer sends reports, and how early to hear of fixes.
     SetReportSettings {

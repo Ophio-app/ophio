@@ -3,7 +3,8 @@ import type { ControlTarget, Grants, HarnessInfo, HostCapabilities, Project, Tar
 import { resolveAgent } from "../talk/intent";
 import { availabilityText } from "../../design/Notice";
 import { inputBlocker } from "./readiness";
-export const COMPUTER_TOOLS = ["See the screen", "Move the pointer", "Press keys", "Type", "Scroll", "Ask you"] as const;
+import { signedOutWords } from "../../app/signInFeature";
+export const COMPUTER_TOOLS = ["See the screen", "Move the pointer", "Press keys", "Type", "Scroll", "Open apps", "Ask you"] as const;
 /** The agent computer use falls back to when the one new work goes to can't
  * use a computer: Codex. */
 export const PREFERRED_COMPUTER_AGENT = "codex";
@@ -17,11 +18,13 @@ export function preferredComputerAgent(agents: HarnessInfo[], project?: Project)
   const usual = resolveAgent(project, agents)?.harness;
   return able.find((a) => a.kind === usual) ?? able.find((a) => a.kind === PREFERRED_COMPUTER_AGENT) ?? able[0];
 }
-export function agentUnavailable(agent: HarnessInfo): string | null {
+/** Why `agent` can't do computer use now, or null. `signInOn` names the
+ * computer where this phone can sign a signed-out agent in itself. */
+export function agentUnavailable(agent: HarnessInfo, signInOn?: string | null): string | null {
   for (const availability of [agent.installed, agent.capabilities.start_run, agent.capabilities.computer_use_delegation]) {
     if (availability.state !== "available") return availabilityText(availability).detail ?? "Agent unavailable";
   }
-  if (agent.account.state !== "signed_in") return agent.account.state === "signed_out" ? agent.account.remedy : agent.account.reason;
+  if (agent.account.state !== "signed_in") return agent.account.state === "signed_out" ? signedOutWords(agent, signInOn) : agent.account.reason;
   return null;
 }
 export function targetUnavailable(target: ControlTarget): string | null {
@@ -38,6 +41,17 @@ export function targetBlocker(caps: HostCapabilities | null, target: ControlTarg
 }
 /** Where Start computer use keeps its draft for a project on this device. */
 export const goalKey = (profileId: string, projectId: string) => `computer-goal.${profileId}.${projectId}`;
+/** Put back the draft displaced by a start only while its own request still
+ * occupies this key. A newer goal belongs to the person, not the start. */
+export function restorePreviousGoal(key: string, attemptId: string, before: string | null | undefined): boolean {
+  try {
+    const current = JSON.parse(localStorage.getItem(key) ?? "null") as { attempt?: { id?: string } } | null;
+    if (current?.attempt?.id !== attemptId) return false;
+    if (before == null) localStorage.removeItem(key);
+    else localStorage.setItem(key, before);
+    return true;
+  } catch { return false; }
+}
 /** Fills in the goal an agent suggested, unless the person has a goal of
  * their own there already or one is being started. */
 export function suggestGoal(profileId: string, projectId: string, goal: string) {

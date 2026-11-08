@@ -14,9 +14,11 @@ import { freshness } from "./freshness";
 import { hideKeyboard, useKeyboardOpen, useNarrowLayout } from "./keyboard";
 import { elsewhere, ProjectSheet } from "./ProjectSheet";
 import { StatusSheet } from "./StatusSheet";
+import { ComputerControl } from "./ComputerMenu";
+import { useEveryProject } from "../app/everyProject";
 import { RailCount } from "../screens/control/SafetyStrip";
 import { useRailOpen } from "./focus";
-import { useOnScreen } from "./Screen";
+import { useOnScreen, useRouteTab } from "./Screen";
 
 /** `heading` makes the project's name the screen's heading, for a root whose
  * subject is the project itself, so its body need not name it again.
@@ -25,16 +27,23 @@ import { useOnScreen } from "./Screen";
  * project's name whole. `inert` shows it without taking taps, as while its
  * screen loads. */
 export function ContextHeader({ heading = false, actions, inert = false }: { heading?: boolean; actions?: ReactNode; inert?: boolean }) {
-  const { profile, ui } = useApp();
+  const { profile, ui, all: allComputers } = useApp();
   const rail = useRailOpen();
   // Only the header on screen counts, not one under a pushed screen.
   const active = useOnScreen();
   const nameId = useId();
   const projectId = useUi((s) => s.projectId);
-  const onTodo = useUi((s) => s.tab === "todo");
-  const all = useUi((s) => s.todoAll) && onTodo;
+  // The tab this header belongs to, which a kept tab under another isn't showing.
+  const routeTab = useRouteTab();
+  const shownTab = useUi((s) => s.tab);
+  const onTodo = (routeTab ?? shownTab) === "todo";
+  const onWork = (routeTab ?? shownTab) === "work";
+  // With All computers, Tasks and To-Do show every project on every one.
+  const everywhere = useEveryProject(routeTab);
+  const todoAll = useUi((s) => s.todoAll);
+  const all = everywhere || (!allComputers && todoAll && onTodo);
   const project = useHost((s) => (projectId ? s.projects[projectId] : undefined));
-  const [sheet, setSheet] = useState<"project" | "status" | null>(null);
+  const [sheet, setSheet] = useState<"project" | null>(null);
   const kb = useKeyboardOpen();
   const waiting = useHost((s) => elsewhere(s, projectId));
   const narrow = useNarrowLayout();
@@ -52,17 +61,18 @@ export function ContextHeader({ heading = false, actions, inert = false }: { hea
             </span>
           )}
         </span>
-        <span className="ctx__computer">{profile.name}</span>
+        {/* The pill names the computer, unless it says All: then the
+            project names the computer it is on. */}
+        {allComputers && <span className="ctx__computer ctx__computer--all">{everywhere ? "On every computer" : <>On <bdi>{profile.name}</bdi></>}</span>}
       </button>)}
       <div className="ctx__end">
         {active && <RailCount open={rail} />}
         {actions}
         <IconButton icon={Settings} label="Settings" onClick={() => ui.push({ screen: "settings" })} />
         {kb && <IconButton icon={KeyboardOff} label="Hide keyboard" onClick={hideKeyboard} />}
-        <StatusButton compact={narrow} onOpen={() => setSheet("status")} />
+        <ComputerControl compact={narrow} />
       </div>
-      <ProjectSheet open={sheet === "project"} onClose={() => setSheet(null)} allowAll={onTodo} />
-      <StatusSheet open={sheet === "status"} onClose={() => setSheet(null)} />
+      <ProjectSheet open={sheet === "project"} onClose={() => setSheet(null)} allowAll={onTodo || (!!allComputers && onWork)} />
     </header>
   );
 }
@@ -75,7 +85,9 @@ function wrap(heading: boolean, nameId: string, button: ReactNode) {
 /** `quiet` shows nothing while the link is live, as a chat names its
  * connection only while there is trouble. */
 export function StatusButton({ onOpen, compact, quiet }: { onOpen: () => void; compact?: boolean; quiet?: boolean }) {
-  const { profile, session } = useApp();
+  const { profile, profiles, session } = useApp();
+  // With more than one computer paired, a screen inside one names it.
+  const named = !quiet && profiles.length > 1;
   const link = useLink();
   const caughtUp = useHost((s) => s.caughtUp);
   const unanswered = useStore(session.unanswered, (s) => s);
@@ -87,13 +99,14 @@ export function StatusButton({ onOpen, compact, quiet }: { onOpen: () => void; c
   return (
     <button
       type="button"
-      className={`status status--${f.tone}${compact && f.live ? " status--compact" : ""}`}
+      className={`status status--${f.tone}${compact && f.live && !named ? " status--compact" : ""}${named ? " status--named" : ""}`}
       onClick={onOpen}
       aria-haspopup="dialog"
       aria-label={`${profile.name}: ${f.label}. Connection details`}
     >
       <span className="status__dot" aria-hidden />
-      {(!compact || !f.live) && <span className="status__label">{f.label}</span>}
+      {named && <bdi className="status__name">{profile.name}</bdi>}
+      {(!compact || !f.live) && (!named || !f.live) && <span className="status__label">{f.label}</span>}
     </button>
   );
 }

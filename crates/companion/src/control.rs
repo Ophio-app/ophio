@@ -410,6 +410,7 @@ pub(crate) async fn run(
                                 current,
                                 events,
                                 started,
+                                request.account_items,
                             )
                             .await
                             {
@@ -554,7 +555,14 @@ async fn event_pump(
     generation: u64,
     output: mpsc::Sender<EventFrame>,
     started: bool,
+    account_items: bool,
 ) -> Result<()> {
+    // An app that doesn't show an agent's sign-in notice would count it
+    // without showing it: it isn't sent.
+    let sent = |event: &protocol::EventEnvelope| {
+        account_items
+            || !matches!(&event.event, protocol::Event::AttentionUpserted { item } if item.account_id.is_some())
+    };
     let emit = |frame| {
         output
             .try_send(EventFrame { generation, frame })
@@ -606,7 +614,9 @@ async fn event_pump(
                                 continue;
                             }
                             last = event.seq;
-                            emit(ServerFrame::Event((*event).clone()))?;
+                            if sent(&event) {
+                                emit(ServerFrame::Event((*event).clone()))?;
+                            }
                             // Let command receipt work run even during a large replay.
                             tokio::task::yield_now().await;
                         }
@@ -626,7 +636,9 @@ async fn event_pump(
             match subscription.live.recv().await {
                 Ok(Outbound::Event(event)) if event.seq > after.unwrap_or(0) => {
                     after = Some(event.seq);
-                    emit(ServerFrame::Event((*event).clone()))?;
+                    if sent(&event) {
+                        emit(ServerFrame::Event((*event).clone()))?;
+                    }
                 }
                 Ok(Outbound::Live(event)) => emit(ServerFrame::Live((*event).clone()))?,
                 Ok(_) => {}

@@ -21,6 +21,7 @@ export const clamp = (n: number, min = 0, max = 1) =>
 export function targetPoint(
   point: Point,
   view: ViewTransform,
+  edge = false,
 ): TargetPoint | null {
   if (
     ![
@@ -47,7 +48,11 @@ export function targetPoint(
   const y =
     ((point.y - view.top - view.pan.y) * view.dpr) /
     (view.height * view.dpr * view.zoom);
-  return x < 0 || y < 0 || x > 1 || y > 1 ? null : { x, y };
+  // Clamp in target space, not to the unzoomed picture's rectangle. In full
+  // screen a zoomed ultrawide picture extends into the letterbox; those pixels
+  // must stay reachable by a drag, just as they are by a tap.
+  return edge ? { x: clamp(x), y: clamp(y) }
+    : x < 0 || y < 0 || x > 1 || y > 1 ? null : { x, y };
 }
 
 export const TAP_SLOP = 8;
@@ -186,32 +191,35 @@ const REGION_GRID = 512;
 /**
  * The part of the target the zoomed view shows, with a margin of an eighth
  * of the view on each side so short pans stay sharp, in fractions of the
- * target. `null` when the whole target is shown.
+ * target. `null` when the whole target is shown. `viewport` is the clipping
+ * area relative to the unzoomed picture: full screen can show zoomed pixels
+ * outside that picture's original rectangle, in its former letterboxing.
  */
 export function visibleRegion(
   view: { zoom: number; pan: Point },
   box: { width: number; height: number },
+  viewport = { left: 0, top: 0, width: box.width, height: box.height },
 ): { x: number; y: number; width: number; height: number } | null {
   if (
     !(view.zoom > 1) ||
     !(box.width > 0) ||
     !(box.height > 0) ||
-    ![view.zoom, view.pan.x, view.pan.y, box.width, box.height].every(
+    ![view.zoom, view.pan.x, view.pan.y, box.width, box.height,
+      viewport.left, viewport.top, viewport.width, viewport.height].every(
       Number.isFinite,
-    )
+    ) || viewport.width <= 0 || viewport.height <= 0
   )
     return null;
-  const span = 1 / view.zoom,
-    margin = span / 8;
-  const edges = (pan: number, size: number) => {
-    const start = -pan / (size * view.zoom);
+  const edges = (pan: number, size: number, offset: number, length: number) => {
+    const span = length / (size * view.zoom), margin = span / 8;
+    const start = (offset - pan) / (size * view.zoom);
     return [
       clamp(Math.floor((start - margin) * REGION_GRID) / REGION_GRID),
       clamp(Math.ceil((start + span + margin) * REGION_GRID) / REGION_GRID),
     ] as const;
   };
-  const [x0, x1] = edges(view.pan.x, box.width);
-  const [y0, y1] = edges(view.pan.y, box.height);
+  const [x0, x1] = edges(view.pan.x, box.width, viewport.left, viewport.width);
+  const [y0, y1] = edges(view.pan.y, box.height, viewport.top, viewport.height);
   if (x1 <= x0 || y1 <= y0 || (x0 === 0 && y0 === 0 && x1 === 1 && y1 === 1))
     return null;
   return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };

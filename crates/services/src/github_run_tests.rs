@@ -137,6 +137,7 @@ async fn run_all_fixes_every_issue_the_agent_can_take_and_then_ends() {
             GithubLink::Issue {
                 number: 7,
                 review_with: None,
+                when_green: None,
             },
             "Fix it",
         )
@@ -159,6 +160,7 @@ async fn run_all_fixes_every_issue_the_agent_can_take_and_then_ends() {
         GithubLink::Issue {
             number: 4,
             review_with: Some(claude()),
+            when_green: None,
         }
     );
     assert_eq!(fix.launch_policy, Some(LaunchPolicy::BypassPermissions));
@@ -307,6 +309,7 @@ async fn where_the_person_puts_an_issue_stands_over_the_sort() {
             GithubLink::Issue {
                 number: 4,
                 review_with: None,
+                when_green: None,
             },
             "Fix it",
         )
@@ -542,6 +545,7 @@ async fn a_go_ahead_outlasts_what_ophio_notes_of_github_meanwhile() {
             GithubLink::Issue {
                 number: 7,
                 review_with: None,
+                when_green: None,
             },
             "Fix it",
         )
@@ -625,6 +629,13 @@ async fn run_all_alerts_once_when_every_fix_is_through() {
         .await;
     r.tell_run_all();
     r.tell_run_all();
+    // Told as what the Run all came to, not as a task that finished.
+    let items = r.f.hub.read(|r| r.list::<AttentionItem>("attention"));
+    let told: Vec<_> = (items.unwrap().into_iter())
+        .filter(|a| a.title.starts_with("Run all"))
+        .map(|a| protocol::notifications::AlertType::of(&a, false))
+        .collect();
+    assert_eq!(told, [Some(protocol::notifications::AlertType::Batch)]);
     assert_eq!(
         r.run_all_told(),
         [(

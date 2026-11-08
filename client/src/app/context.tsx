@@ -5,12 +5,14 @@
 
 import { createContext, useCallback, useContext, type ReactNode } from "react";
 import type { HostProfile, LinkState, Platform } from "../host/link";
+import type { Computers } from "./computers";
 import { CommandError, NotConnectedError, OutcomeUnknownError, type HostSession } from "../host/session";
 import type { Command, CommandReceipt, ProtocolError } from "../protocol/types";
 import type { HostState } from "../state/projection";
 import { shallowEqual, useStore } from "../state/store";
 import { openReport } from "../reports/request";
 import { toast } from "../design/Toast";
+import { signInForCommand, startWhenShown } from "./signInFeature";
 import type { Route, UiState, UiStore } from "./ui";
 
 export interface App {
@@ -20,12 +22,31 @@ export interface App {
   profiles: HostProfile[];
   session: HostSession;
   ui: UiStore;
-  /** Stop this computer's session and connect to another paired one,
-   * opening `route` there when given. */
+  /** Every paired computer's session while the app runs. The optional
+   * parts are absent where a screen is shown on its own, as in tests. */
+  computers?: Computers;
+  /** The header shows every computer at once: projects from all of them,
+   * each named with its computer. The rest of the screen is the computer
+   * whose project is chosen. */
+  all?: boolean;
+  /** Show another paired computer alone, opening `route` there when given. */
   switchTo(profileId: string, route?: Route): void;
+  /** Show every computer at once. */
+  showAll?(): void;
+  /** Choose a project on any paired computer, staying on the tab now shown.
+   * `then` runs once it is chosen, never if the person stays where they are. */
+  openProject?(profileId: string, projectId: string, then?: () => void): void;
+  /** Forget a computer other than this one on this device. */
+  forgetOther?(profileId: string): Promise<void>;
+  /** Another computer's interface store, as All's rows read it. */
+  uiOf?(profileId: string): UiStore;
+  /** Switch to a computer, through the leave-control check, and then do
+   * `act` on its interface, as opening one of its items from All. */
+  visit?(profileId: string, act: (ui: UiStore) => void): void;
   /** Pair another computer; cancelling returns here. */
   pairAnother(): void;
-  /** Change the name this phone shows for a paired computer. */
+  /** Rename a paired computer: on the computer, for every device, where it
+   * keeps its own name, else on this device alone. */
   rename(profileId: string, name: string): Promise<void>;
   /** Forget this computer on this phone and return to pairing. */
   forget(): Promise<void>;
@@ -100,7 +121,7 @@ export interface RunOptions {
  * when the command was refused or not sent (already reported).
  */
 export function useCommand(): (body: Command, opts: RunOptions) => Promise<CommandReceipt | null> {
-  const { session, profile, platform } = useApp();
+  const { session, profile, platform, ui } = useApp();
   return useCallback(
     async (body, opts) => {
       platform.haptic?.("tap");
@@ -109,10 +130,16 @@ export function useCommand(): (body: Command, opts: RunOptions) => Promise<Comma
         if (opts.success) toast(opts.success);
         return r;
       } catch (e) {
-        if (opts.toastErrors !== false) toast(describeError(e, profile.name), { tone: "stop", code: e instanceof CommandError ? e.error.code : "command_error", action: { label: "Report", run: () => openReport({ type: "error" }, { command: body.command, error: e instanceof CommandError ? e.error : { code: "command_error", message: describeError(e, profile.name) } }) } });
+        // A report about it is filed through, and describes, this computer,
+        // which may not be the one on screen, as for a row in All.
+        // An agent that isn't signed in can be signed in again from here.
+        const signIn = e instanceof CommandError && e.error.code === "account_not_ready" ? signInForCommand(body, session.state.get()) : null;
+        if (opts.toastErrors !== false) toast(describeError(e, profile.name), { tone: "stop", code: e instanceof CommandError ? e.error.code : "command_error", action: signIn
+          ? { label: "Sign in again", run: () => { startWhenShown(profile.profileId, signIn); ui.push({ screen: "sign_in", accountId: signIn }); } }
+          : { label: "Report", run: () => openReport({ type: "error" }, { command: body.command, profileId: profile.profileId, error: e instanceof CommandError ? e.error : { code: "command_error", message: describeError(e, profile.name) } }) } });
         return null;
       }
     },
-    [session, profile.name, platform],
+    [session, profile.name, profile.profileId, platform, ui],
   );
 }

@@ -663,24 +663,129 @@ async fn a_review_has_three_rounds_then_the_person_decides() {
 }
 
 #[tokio::test]
-async fn nothing_pushed_for_what_was_handed_back_holds_the_pull_request() {
-    let open = kept("Rename isn't fsynced", FindingDisposition::Fixing, 1);
+async fn a_clear_review_says_so_under_the_description() {
+    let corrected = kept("Rename isn't fsynced", FindingDisposition::Corrected, 1);
     let review = PrReview {
-        round: 1,
+        round: 2,
+        reviewed_head: Some("ccc".into()),
+        reviewer: Some(claude()),
+        findings: vec![corrected],
+        ..Default::default()
+    };
+    let (r, task) = reviewed_7(review, "ccc").await;
+    let mut at = pull(7, "octo/app", "me");
+    at["head"]["sha"] = json!("ccc");
+    at["body"] =
+        json!("Fixes #12\r\n\r\n🤖 Øphio: checked by Codex in one round, nothing left to fix");
+    r.gh.answer("GET /repos/octo/app/pulls/7", at);
+    r.gh.answer("PATCH /repos/octo/app/pulls/7", json!({}));
+    tick(&r, 11).await;
+    assert!(checks_of_7(&r).is_empty());
+    let edit = r.gh.called("PATCH /repos/octo/app/pulls/7").unwrap();
+    assert_eq!(
+        edit,
+        json!({ "body": "Fixes #12\n\n🤖 Øphio: checked by Claude Code in 2 rounds, nothing left to fix at ccc" })
+    );
+    assert_eq!(r.get(task).github.unwrap().stage, Some(PrStage::Ready));
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn a_sensitive_change_gets_five_rounds() {
+    // The third round finds the change sensitive with a problem still
+    // open: it has rounds left, so the fixer gets it back.
+    let open = kept("Rename isn't fsynced", FindingDisposition::Fixing, 2);
+    let review = PrReview {
+        round: crate::review_loop::ROUNDS - 1,
         reviewed_head: Some("bbb".into()),
         findings: vec![open],
         ..Default::default()
     };
-    let (r, task) = reviewed_7(review, "bbb").await;
+    let (r, task) = reviewed_7(review, "ccc").await;
     tick(&r, 11).await;
-    assert!(checks_of_7(&r).is_empty());
+    let [last] = &checks_of_7(&r)[..] else {
+        panic!()
+    };
+    let run = run_started(&r.f, last.task_id).await;
+    let said = json!({ "earlier": [{ "index": 1, "corrected": false, "evidence": "It still renames first." }],
+                       "findings": [], "sensitive": ["It changes how sign-in tokens are kept."] });
+    r.ends(
+        last.task_id,
+        run,
+        Some(&format!("```ophio-review\n{said}\n```")),
+    )
+    .await;
     let github = r.get(task).github.unwrap();
-    assert_eq!(github.stage, Some(PrStage::Capped));
+    assert_ne!(github.stage, Some(PrStage::Capped));
+    assert!(github.approval.is_some());
+    let review = github.review.unwrap();
+    assert_eq!(review.round, crate::review_loop::ROUNDS);
+    assert_eq!(review.escalated, None);
+    let handed: String = r.f.hub.read(|x| x.require(REVIEW, task)).unwrap();
     assert!(
-        (github.review.unwrap().escalated.as_deref())
-            .is_some_and(|w| w.contains("pushed nothing for it")),
+        handed.contains("Still not corrected: It still renames first."),
+        "{handed}"
     );
     r.f.close().await;
+}
+
+#[tokio::test]
+async fn a_rebuttal_without_a_push_is_rechecked_within_the_round_limit() {
+    for (round, corrected) in [(1, true), (crate::review_loop::ROUNDS - 1, false)] {
+        let open = kept("Rename isn't fsynced", FindingDisposition::Fixing, 1);
+        let review = PrReview {
+            round,
+            reviewed_head: Some("bbb".into()),
+            findings: vec![open],
+            ..Default::default()
+        };
+        let (r, task) = reviewed_7(review, "bbb").await;
+        let rebuttal =
+            "The caller syncs before the rename; see the save wrapper and its crash test.";
+        r.gh.answer(
+            "GET /repos/octo/app/issues/7/comments?per_page=100&page=1",
+            json!([{ "user": { "login": "me" }, "author_association": "OWNER", "body": rebuttal }]),
+        );
+        tick(&r, 11).await;
+        let checks = checks_of_7(&r);
+        assert_eq!(
+            checks.len(),
+            1,
+            "An answer without a push still needs a recheck"
+        );
+        let check = &checks[0];
+        assert_eq!(check.review.as_ref().unwrap().role, ReviewRole::Recheck);
+        let run = run_started(&r.f, check.task_id).await;
+        let prompt = r.spec(run).prompt.text;
+        assert!(prompt.contains(rebuttal), "{prompt}");
+        assert!(prompt.contains("Rename isn't fsynced"), "{prompt}");
+        let answer = json!({ "earlier": [{ "index": 1, "corrected": corrected,
+            "evidence": if corrected { "The caller syncs first; the finding is mistaken." }
+                else { "The caller does not sync first; the answer does not hold up." } }], "findings": [] });
+        r.ends(
+            check.task_id,
+            run,
+            Some(&format!("```ophio-review\n{answer}\n```")),
+        )
+        .await;
+        let github = r.get(task).github.unwrap();
+        let reviewed = github.review.as_ref().unwrap();
+        assert_eq!(reviewed.round, round + 1);
+        assert_eq!(reviewed.reviewed_head.as_deref(), Some("bbb"));
+        if corrected {
+            assert_eq!(
+                reviewed.findings[0].disposition,
+                FindingDisposition::Corrected
+            );
+            assert!(reviewed.escalated.is_none());
+            tick(&r, 11).await;
+            assert_eq!(r.get(task).github.unwrap().stage, Some(PrStage::Ready));
+        } else {
+            assert_eq!(github.stage, Some(PrStage::Capped));
+            assert!(reviewed.escalated.as_deref().unwrap().contains("3 rounds"));
+        }
+        r.f.close().await;
+    }
 }
 
 /// Pull request #7 as `review` left it at `bbb`, rechecked at `ccc`: the
@@ -1769,4 +1874,21 @@ async fn a_question_asked_of_a_local_review_afterwards_is_none_of_its_review() {
 
 fn next_up(r: &Repo) -> QueueView {
     r.f.hub.read(|x| x.require("queue", r.project_id)).unwrap()
+}
+
+#[tokio::test]
+async fn a_clean_verdict_is_not_posted_for_a_head_that_changed_during_the_read() {
+    let review = PrReview {
+        round: 1,
+        reviewed_head: Some("ccc".into()),
+        reviewer: Some(claude()),
+        ..Default::default()
+    };
+    let (r, _) = reviewed_7(review, "ccc").await;
+    let mut newer = pull(7, "octo/app", "me");
+    newer["head"]["sha"] = json!("ddd");
+    r.gh.answer("GET /repos/octo/app/pulls/7", newer);
+    tick(&r, 11).await;
+    assert!(r.gh.called("PATCH /repos/octo/app/pulls/7").is_none());
+    r.f.close().await;
 }

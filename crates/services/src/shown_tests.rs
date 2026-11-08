@@ -413,6 +413,7 @@ async fn a_stopped_run_or_the_computer_specialist_shows_nothing() {
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     };
     let refused = person(
         &f,

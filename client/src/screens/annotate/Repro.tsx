@@ -416,7 +416,7 @@ function Clip({
             step={0.01}
           />
           <p className="fine">
-            Up to 60 seconds. The exported clip has no audio. Android may move
+            Up to 60 seconds. The exported clip has no audio. The phone may move
             the start to an earlier keyframe; the review shows the actual cut.
           </p>
           {!range && (

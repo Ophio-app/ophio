@@ -10,7 +10,7 @@ import { openAttention } from "../../state/projection";
 import { projectCounts } from "../../shell/ProjectSheet";
 import { RouteProvider } from "../../shell/Screen";
 import { projectAttention } from "./attention";
-import Attention from "./Attention";
+import Attention from "./AttentionScreen";
 import { AttentionList } from "./shared";
 
 let app: App;

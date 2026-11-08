@@ -46,8 +46,9 @@ are constants in `ports::bridge`.
 
 | Run | Tools listed |
 |---|---|
-| Computer specialist (`computer_use`) | `observe_target`, `pointer_action`, `key_action`, `type_text`, `scroll` and `request_human` (`COMPUTER_TOOLS`). Nothing else, not even `permission_prompt`, and the `browser` and `github` flags change nothing. |
-| Any other run | `permission_prompt`; `show_person`, `show_preview`, `invite_person`, `wake_me`, `can_ask`, `checklist_read`, `checklist_add`, `checklist_remove` and `checklist_reply` (`PERSON_TOOLS`); `ophio_agents`, `ask_agent`, `github_new_issue`, `github_start_issue` and `github_start_review` (`WORK_TOOLS`). |
+| Computer specialist (`computer_use`) | `observe_target`, `pointer_action`, `key_action`, `type_text`, `scroll`, `open_app` and `request_human` (`COMPUTER_TOOLS`). Nothing else, not even `permission_prompt`, and the `browser` and `github` flags change nothing. |
+| Read-only run (`read_only`: Plan, Ask) | `request_access` (`ACCESS_TOOL`) alone, to ask the person for more. |
+| Any other run | `permission_prompt`; `request_access` (`ACCESS_TOOL`), to ask the person for more than it has; `show_person`, `show_preview`, `invite_person`, `wake_me`, `can_ask`, `checklist_read`, `checklist_add`, `checklist_remove` and `checklist_reply` (`PERSON_TOOLS`); `ophio_agents`, `ask_agent`, `github_new_issue`, `github_start_issue` and `github_start_review` (`WORK_TOOLS`). |
 | … with `browser` | Adds `browser_open`, `browser_back`, `browser_tabs`, `browser_switch_tab`, `browser_close_tab`, `browser_observe`, `browser_click`, `browser_type`, `browser_press`, `browser_scroll`, `list_logins`, `fill_login`, `fill_code` and `ask_owner_for_code` (`BROWSER_TOOLS`), and `request_human`. |
 | … with `github` | Adds `github_pr`, `github_comment`, `github_issue`, `github_ready`, `github_merge` and `github_cannot_reproduce` (`GITHUB_TOOLS`), and keeps only `ophio_agents` and `ask_agent` (`ASK_TOOLS`) of the work tools. |
 
@@ -57,8 +58,10 @@ are constants in `ports::bridge`.
 `pointer_action` and `scroll` coordinates are image pixels, converted using the
 last observation's dimensions. The geometry revision is forwarded unchanged;
 both local stale-image checks and broker stale-geometry checks can refuse input.
-`key_action` and `type_text` authority remains the broker's responsibility, as
-those bridge requests have no geometry fields. The broker must enforce its
+`key_action`, `type_text` and `open_app` authority remains the broker's
+responsibility, as those bridge requests have no geometry fields. `open_app`'s
+name only chooses among the computer's installed apps; the broker opens the
+match through the same launcher as voice control, under the same agent lease. The broker must enforce its
 lease/target and observation policy for every operation, not just
 coordinate-bearing calls.
 

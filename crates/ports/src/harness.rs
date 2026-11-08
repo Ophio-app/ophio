@@ -59,6 +59,47 @@ macro_rules! asking {
     };
 }
 
+/// How a Work run with the bridge asks for more than it has
+/// (`crate::bridge::ACCESS_TOOL`), and what it does when the person says no.
+macro_rules! more {
+    () => {
+        "When the work needs more than you have (changing this project's files, the internet, the person's own network, or the whole computer), call request_access first, with a short reason, rather than trying what will be refused or telling them which settings to change. If they decline, don't ask again or work around it this turn: finish what you can and say what's left."
+    };
+}
+
+/// How a read-only run (Plan, Ask) with the bridge asks to work instead
+/// (`crate::bridge::ACCESS_TOOL`, its only tool).
+macro_rules! read_more {
+    () => {
+        "This turn can only read. If the person asked you to change something rather than to plan or answer, call request_access at once with what you need and a short reason, rather than explaining which mode to switch to: if they agree, you carry on in this same session, able to make the changes. A plan they asked for is the work itself: don't ask just to carry it out. If they decline, don't ask again this turn: finish what you can and say what's left."
+    };
+}
+
+/// What starts what an agent hears when the person declines its request.
+pub const PERSON_DECLINED: &str = "The person declined this";
+/// What the agent is told, after the person's reason, when they decline.
+pub const DECLINED_TEXT: &str = "Don't ask for this again in this turn, by this request or another way round it. Finish what you can without it, then say plainly what's left and what it needs.";
+
+/// What the agent hears for a request the person declined: their reason,
+/// if any, then not to ask again in this turn.
+pub fn declined_text(reason: Option<&str>) -> String {
+    match reason.map(str::trim).filter(|r| !r.is_empty()) {
+        Some(reason) => format!("{PERSON_DECLINED}: {reason}. {DECLINED_TEXT}"),
+        None => format!("{PERSON_DECLINED}. {DECLINED_TEXT}"),
+    }
+}
+
+/// Whether `decision` is the person's own decline, as Ophio hands it to an
+/// agent, rather than one Ophio made itself (a request nobody answered in
+/// time, one too large to show).
+pub fn declined_by_person(decision: &protocol::command::ApprovalDecision) -> bool {
+    matches!(decision, protocol::command::ApprovalDecision::Deny { reason: Some(r) } if r.starts_with(PERSON_DECLINED))
+}
+
+/// What a Plan turn that can't call `request_access` (Claude Code's plan
+/// mode refuses every MCP tool) does when the person asked for changes.
+pub const PLAN_SWITCH: &str = "If the person asked you to change something rather than to plan it, say so in one short line and stop: they can switch this task to Work with one tap, and you carry on in this same session with what you've learned. Don't explain modes or settings beyond that.";
+
 /// How an Ask or Plan run talks to the person.
 macro_rules! reading {
     () => {
@@ -78,12 +119,19 @@ pub fn person_instruction(spec: &RunSpec) -> Option<&'static str> {
     match &spec.bridge {
         Some(b) if b.computer_use => None,
         Some(b) if b.checklist_answers => Some(reading!()),
+        Some(b) if b.read_only => Some(concat!(reading!(), "\n\n", read_more!())),
         Some(b) if spec.mode == TaskMode::Work && b.github => {
-            Some(concat!(talking!(), "\n\n", asking!()))
+            Some(concat!(talking!(), "\n\n", asking!(), "\n\n", more!()))
         }
-        Some(_) if spec.mode == TaskMode::Work => {
-            Some(concat!(talking!(), "\n\n", planning!(), "\n\n", asking!()))
-        }
+        Some(_) if spec.mode == TaskMode::Work => Some(concat!(
+            talking!(),
+            "\n\n",
+            planning!(),
+            "\n\n",
+            asking!(),
+            "\n\n",
+            more!()
+        )),
         _ => Some(reading!()),
     }
 }
@@ -107,7 +155,17 @@ pub fn computer_instruction(spec: &RunSpec) -> Option<&'static str> {
 /// work unless the agent says.
 macro_rules! blockers {
     () => {
-        "If something blocks you, say plainly which system it comes from: an Ophio setting or permission, GitHub, Claude Code, Codex, the computer or its operating system, the network, or the project's own tools. Then say how the person can fix it, with the pros and cons of each way, pointing them to the place in Ophio that fixes it when there is one rather than to a terminal command: GitHub's permission to change Actions workflows, for one, comes from signing in to GitHub again in Ophio's Settings › Agents and accounts › Accounts."
+        "If something blocks you, say plainly which system it comes from: an Ophio setting or permission, GitHub, Claude Code, Codex, the computer or its operating system, the network, or the project's own tools. Then say how the person can fix it, with the pros and cons of each way and the one you'd pick, pointing them to the place in Ophio that fixes it when there is one rather than to a terminal command: GitHub's permission to change Actions workflows, for one, comes from signing in to GitHub again in Ophio's Settings › Agents and accounts › Accounts."
+    };
+}
+
+/// How a run asks the person anything, by any means: the rule the Sort
+/// writes its notes by (`services::github_after`), since they read it on a
+/// phone without having seen the work, and a question that names the
+/// choices and recommends one is answered with a tap.
+macro_rules! questions {
+    () => {
+        "Write every question for the person, however you ask it, for someone who hasn't seen your work and reads only the question, on a phone: plain words, without file names, internal names, ticket numbers or jargon. Where there are choices, name each in a few words and say which you would pick and why. Three short sentences at most."
     };
 }
 
@@ -162,7 +220,7 @@ macro_rules! checks {
 /// it. Read by the companion's `reported` module.
 macro_rules! outcome {
     () => {
-        "End the last message of every turn, after your summary for the person, with a report for Ophio: a fenced code block tagged ophio-outcome holding one JSON object. Ophio hides it from them and uses it to offer what comes next. Leave out what is empty:\n- status: \"done\" when what was asked is finished; \"needs_you\" when you can't go on without the person's answer, decision or action; \"unfinished\" when you stopped with work left that you could do yourself.\n- questions: what you need them to answer or do, one short line each.\n- remaining: what is left undone, one short line each.\n- new_work: each separate piece of work this turn found or proposed that should be a task of its own, as {\"title\", \"brief\", \"mode\"}, the brief written for an agent that never saw this conversation; mode \"work\" to change things, \"plan\" to plan first, \"ask\" to find something out; \"issue\" with its number if it is a GitHub issue you filed. Not a plan you were asked to write: Ophio offers to carry that out. Nothing here starts by itself, so ask them in your summary to start what should come next.\nFor example:\n```ophio-outcome\n{\"status\":\"needs_you\",\"questions\":[\"Should the old export stay?\"]}\n```"
+        "End the last message of every turn, after your summary for the person, with a report for Ophio: a fenced code block tagged ophio-outcome holding one JSON object. Ophio hides it from them and uses it to offer what comes next. Leave out what is empty:\n- status: \"done\" when what was asked is finished; \"needs_you\" when you can't go on without the person's answer, decision or action; \"unfinished\" when you stopped with work left that you could do yourself.\n- questions: what you need them to answer or do, each asked as above.\n- remaining: what is left undone, one short line each.\n- new_work: each separate piece of work this turn found or proposed that should be a task of its own, as {\"title\", \"brief\", \"mode\"}, the brief written for an agent that never saw this conversation; mode \"work\" to change things, \"plan\" to plan first, \"ask\" to find something out; \"issue\" with its number if it is a GitHub issue you filed. Not a plan you were asked to write: Ophio offers to carry that out. Nothing here starts by itself, so ask them in your summary to start what should come next.\nFor example:\n```ophio-outcome\n{\"status\":\"needs_you\",\"questions\":[\"Keep the old export beside the new one, or remove it? I'd remove it: nothing has used it since March.\"]}\n```"
     };
 }
 
@@ -170,25 +228,43 @@ macro_rules! outcome {
 /// answer, and `can_ask` says then.
 pub const HOLD_QUESTIONS: &str = no_questions!();
 
-/// How a run answers to the person: what it says when something blocks it;
-/// with the bridge, never to wait in its turn and to check before it asks
-/// whether questions are on; when they have turned questions off in
-/// Ophio's settings, to hold its questions for the end of its turn; and to
-/// end each turn with its outcome for Ophio. A computer-use run has none of
-/// the bridge's tools for waiting or asking, and asks through its own
-/// `request_human`, so it is told only what to say when blocked and how to
-/// report: Codex's run is the specialist itself, and Claude's is the
-/// supervisor that reports the specialist's result.
+/// How a run answers to the person: what it says when something blocks it
+/// and how it words a question; with the bridge, never to wait in its turn
+/// and to check before it asks whether questions are on; when they have
+/// turned questions off in Ophio's settings, to hold its questions for the
+/// end of its turn; and to end each turn with its outcome for Ophio. A
+/// computer-use run has none of the bridge's tools for waiting or asking,
+/// and asks through its own `request_human`, so it is told only what to say
+/// when blocked, how to ask and how to report: Codex's run is the
+/// specialist itself, and Claude's is the supervisor that reports the
+/// specialist's result.
 pub fn conduct_instruction(spec: &RunSpec) -> Option<&'static str> {
     if spec.bridge.as_ref().is_some_and(|b| b.computer_use) {
-        return Some(concat!(blockers!(), "\n\n", outcome!()));
+        return Some(concat!(
+            blockers!(),
+            "\n\n",
+            questions!(),
+            "\n\n",
+            outcome!()
+        ));
     }
-    // Only answering on the checklist, it has no tool to wait or ask with.
-    let tools = spec.bridge.as_ref().is_some_and(|b| !b.checklist_answers);
+    // Only answering on the checklist, or only reading with request_access,
+    // it has no tool to wait or ask with.
+    let tools = (spec.bridge.as_ref()).is_some_and(|b| !b.checklist_answers && !b.read_only);
     Some(match (tools, spec.questions) {
-        (false, true) => concat!(blockers!(), "\n\n", checks!(), "\n\n", outcome!()),
+        (false, true) => concat!(
+            blockers!(),
+            "\n\n",
+            questions!(),
+            "\n\n",
+            checks!(),
+            "\n\n",
+            outcome!()
+        ),
         (false, false) => concat!(
             blockers!(),
+            "\n\n",
+            questions!(),
             "\n\n",
             no_questions!(),
             "\n\n",
@@ -198,6 +274,8 @@ pub fn conduct_instruction(spec: &RunSpec) -> Option<&'static str> {
         ),
         (true, true) => concat!(
             blockers!(),
+            "\n\n",
+            questions!(),
             "\n\n",
             waiting!(),
             "\n\n",
@@ -209,6 +287,8 @@ pub fn conduct_instruction(spec: &RunSpec) -> Option<&'static str> {
         ),
         (true, false) => concat!(
             blockers!(),
+            "\n\n",
+            questions!(),
             "\n\n",
             waiting!(),
             "\n\n",
@@ -566,6 +646,10 @@ pub struct ToolBridge {
     /// (`crate::bridge::ANSWER_TOOLS`), whatever the mode: a read-only turn
     /// answering the person's question about the checklist.
     pub checklist_answers: bool,
+    /// Only `request_access` (`crate::bridge::ACCESS_TOOL`) is exposed: a
+    /// read-only run (Plan, Ask) asks for more with it, and has no other
+    /// tool of Ophio's.
+    pub read_only: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -625,6 +709,10 @@ pub trait RunControl: Send + Sync + 'static {
     /// `terminate`, reported as MessageDelivery::Cancelled before the run's
     /// exit. A message already written is never reported withdrawn. Never waits.
     fn close_admission(&self);
+
+    /// The next message is the person's own: what they declined in this
+    /// turn may be asked for again. Ophio's own messages never call this.
+    fn person_spoke(&self) {}
 
     /// Answer a native approval request raised by this run (Codex JSON-RPC
     /// requests). Approvals that arrive through the MCP bridge are answered by
@@ -693,6 +781,11 @@ pub trait RunControl: Send + Sync + 'static {
         ))
     }
 }
+
+/// What an adapter calls a running step that starts or waits on helper agents,
+/// when the agent has no tool name for it. The watchdog counts such a step as
+/// helpers at work, not as one step that has run long.
+pub const HELPER_STEP: &str = "Helper agents";
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum HarnessEvent {
@@ -775,6 +868,14 @@ pub enum HarnessEvent {
     UsageLimited {
         resets_at: Option<protocol::time::Timestamp>,
     },
+    /// The agent refused the run because its sign-in is gone or expired:
+    /// Claude Code's "Please run /login", Codex's refused refresh token.
+    /// The computer tells the person, once for the lapse, with a way to
+    /// sign in again; a model reply on a later run or a new sign-in clears
+    /// it. `reason` is the adapter's own words, never the agent's output.
+    SignedOut {
+        reason: String,
+    },
 }
 
 impl HarnessEvent {
@@ -819,6 +920,7 @@ impl HarnessEvent {
             | Self::TurnCompleted { .. }
             | Self::CleanupPending
             | Self::UsageLimited { .. } => {}
+            Self::SignedOut { reason } => f(reason),
         }
     }
 }
@@ -907,6 +1009,10 @@ pub struct NativeApproval {
     pub native_request_id: String,
     pub kind: ApprovalKind,
     pub title: String,
+    /// The agent's own one-line account of the request, when it gives one.
+    pub headline: Option<String>,
+    /// The exact effect, for the computer to say what it would do.
+    pub subject: crate::request_facts::Subject,
     pub detail: Option<String>,
     pub detail_lines: Vec<ApprovalDetailLine>,
     /// Multiple-choice questions the agent asked, answered by choice.

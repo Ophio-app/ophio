@@ -360,9 +360,9 @@ it("explains the stopped queue in Chat and starts one reviewed task without resu
 
 it("retains a denial reason in the decision line and the selected run receipt", async () => {
   view(<ApprovalQuickActions approvalId={ids.aTest} />);
-  fireEvent.click(screen.getByRole("button", { name: "Deny…" }));
+  fireEvent.click(screen.getByRole("button", { name: "Decline…" }));
   fireEvent.change(screen.getByLabelText("Reason (optional)"), { target: { value: "Please wait for the maintainer." } });
-  fireEvent.click(screen.getByRole("button", { name: "Deny request" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Decline$/ }));
   await tick(500);
   expect(screen.getByText("Reason: Please wait for the maintainer.")).toBeTruthy();
   const approval = app.session.state.get().approvals[ids.aTest]!;

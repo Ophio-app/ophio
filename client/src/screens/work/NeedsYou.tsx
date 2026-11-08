@@ -6,6 +6,7 @@
 
 import { useEffect } from "react";
 import { useApp, useHost } from "../../app/context";
+import { storeOf } from "../../app/onComputer";
 import { Empty } from "../../design/ListRow";
 import { Screen } from "../../shell/Screen";
 import type { RouteProps } from "../types";
@@ -17,7 +18,8 @@ export default function NeedsYou({ route }: RouteProps<"needs_you">) {
   const project = useHost((s) => s.projects[route.projectId]);
   const known = !!project;
   // Back from here is the same project's Work.
-  useEffect(() => { if (known) ui.selectProject(route.projectId); }, [ui, route.projectId, known]);
+  // Kept up to date, not tapped: in place, never a switch of computers.
+  useEffect(() => { if (known) storeOf(ui).selectProject(route.projectId); }, [ui, route.projectId, known]);
   return (
     <Screen title="Needs you" subtitle={project?.name}>
       <div className="work-part">

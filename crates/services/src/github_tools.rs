@@ -11,7 +11,7 @@
 use crate::agent_browser::harness_name;
 use crate::github::{
     REPO, SETTINGS, cut, github_error, login, merge_allowed, project_tasks, read_repo, repo_key,
-    same_repo, segment, span, text, through_merge_allowed, warning_answered,
+    same_repo, segment, span, text,
 };
 use crate::github_dupes::{Alike, MAX_SHOWN, alike, known_issues};
 use crate::github_watch::{HANDOVER, Handover, MERGE_CHECK, REVIEW, WATCH, deciding, speaking};
@@ -339,21 +339,31 @@ fn instructions(
     let slug = format!("{}/{}", repo.owner, repo.name);
     let default = &repo.default_branch;
     let base = github.base.as_deref().unwrap_or(default);
+    let merges = crate::github_watch::merges_when_green(settings, github, repo).is_ok();
     let mut lines = vec![format!(
-        "This task is linked to GitHub, on {slug} ({}). The project's GitHub workflow is {}.",
+        "This task is linked to GitHub, on {slug} ({}). The project's GitHub workflow is {}.{}",
         repo.url,
         match settings.mode {
             GithubMode::ThroughMerge => "Through merge: you take pull requests through to merging",
             GithubMode::Drafts => "Drafts: you take pull requests to green, and the person merges",
             GithubMode::Off => "off",
+        },
+        match github.when_green {
+            Some(WhenGreen::Merge) if merges => {
+                " For this task the person chose that its pull request merges once it is green."
+            }
+            Some(WhenGreen::Leave) => {
+                " For this task the person chose to merge its pull request themselves."
+            }
+            _ => "",
         }
     )];
     let mut rule = |s: String| lines.push(format!("- {s}"));
     rule(format!(
         "Everything you write on GitHub goes through Øphio's tools, which post it as the person's account and say an agent wrote it: github_pr, github_comment, github_issue and github_cannot_reproduce{}. `gh` is here for reading (gh pr view, gh pr checks, gh issue view, gh api for GET requests); its writes are refused. Never approve a pull request or request changes, and never close an issue or a pull request: those are the person's.",
-        match settings.mode {
-            GithubMode::ThroughMerge => ", plus github_ready and github_merge",
-            _ => "",
+        match merges {
+            true => ", plus github_ready and github_merge",
+            false => "",
         }
     ));
     if !repo.owned && !repo.admin {
@@ -401,9 +411,11 @@ fn instructions(
         _ => {}
     }
     rule("Babysit the pull request: read the checks and the review comments newer than your last push. Check each bot finding against the source; fix the real ones, and answer a false positive in its thread with github_comment, giving the reason. Once a bot's thread is fixed or answered, resolve it with github_comment's resolve; a person's thread is theirs to resolve. Say nothing when nothing is new.".into());
-    rule(match settings.mode {
-        GithubMode::ThroughMerge if crate::github_watch::needs_check(settings, github) => "When every check passes on the latest commit and no review thread is open, stop and say so: Øphio has the change reviewed, and corrections rechecked, then merges it.".into(),
-        GithubMode::ThroughMerge => "When every check passes on the latest commit and no review thread is open, call github_ready, then github_merge with the full SHA of the commit you checked. If either refuses, fix what it names first. Øphio merges it later, with the others waiting, once nothing in the project is running.".into(),
+    rule("Answer a review, Øphio's or anyone's, with the smallest change that fixes each problem it found, and add nothing else because of it: no tidying, renaming or extra features. If you think a finding is wrong, leave the code as it is and answer the finding with github_comment, giving the reason, so the next check can weigh it.".into());
+    rule("Prove each fix. Run the check or test that showed the problem and see it pass now. Add one test that fails without the fix, or say under Verification why it can't be tested that way. If the fix changes what a screen shows, run the app, take a picture of the screen (a headless browser will do for a web page), show it with show_person and say under Verification what it shows.".into());
+    rule(match merges {
+        true if crate::github_watch::needs_check(settings, github) => "When every check passes on the latest commit and no review thread is open, stop and say so: Øphio has the change reviewed, and corrections rechecked, then merges it.".into(),
+        true => "When every check passes on the latest commit and no review thread is open, call github_ready, then github_merge with the full SHA of the commit you checked. If either refuses, fix what it names first. Øphio merges it later, with the others waiting, once nothing in the project is running.".into(),
         _ => "When every check passes on the latest commit and no review thread is open, stop and say so: the person marks it ready and merges it.".into(),
     });
     rule(format!(
@@ -552,6 +564,8 @@ impl CompanionHub {
                 run_id,
                 task,
                 ToolApproval {
+                    headline: None,
+                    subject: Default::default(),
                     kind: ApprovalKind::GithubPost,
                     title: format!("Post on {} as @{}?", p.slug(), p.login),
                     detail: Some(format!("{what} {why}\n\n{}", cut(preview, MAX_PREVIEW))),
@@ -1484,25 +1498,13 @@ impl CompanionHub {
                 helpers,
             ))
         })?;
-        if settings.mode != GithubMode::ThroughMerge {
-            return Err(error(
-                ErrorCode::PermissionDenied,
-                "In Drafts the person marks the pull request ready and merges it. Stop once it's green, and say so.",
-            ));
-        }
-        if !warning_answered(&settings, &p.repo) {
-            return Err(error(
-                ErrorCode::PermissionDenied,
-                "The person hasn't answered Through merge's warning yet. Stop once it's green, and say so.",
-            ));
-        }
-        through_merge_allowed(settings.mode, &p.repo)?;
         let github = github.ok_or_else(|| {
             error(
                 ErrorCode::PermissionDenied,
                 "This task is not linked to GitHub",
             )
         })?;
+        crate::github_watch::merges_when_green(&settings, &github, &p.repo)?;
         let checking = deciding || github.stage == Some(PrStage::Checking);
         let held = match github.stage {
             _ if newer => Some(

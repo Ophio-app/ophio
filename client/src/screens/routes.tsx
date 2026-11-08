@@ -32,9 +32,9 @@ const screens: Screens = {
   agents: lazy(() => import("./work/Agents")),
   receipt: lazy(() => import("./work/Receipt")),
   next_up: lazy(() => import("./work/NextUp")),
-  attention: lazy(() => import("./work/Attention")),
+  attention: lazy(() => import("./work/AttentionScreen")),
   needs_you: lazy(() => import("./work/NeedsYou")),
-  inbox: lazy(() => import("./work/Inbox")),
+  inbox: lazy(() => import("./work/InboxScreen")),
   library: lazy(() => import("./library/Library")),
   folder: lazy(() => import("./library/Folder")),
   agent_files: lazy(() => import("./library/AgentFiles")),
@@ -45,14 +45,15 @@ const screens: Screens = {
   recently_deleted: lazy(() => import("./library/RecentlyDeleted")),
   instructions: lazy(() => import("./library/Instructions")),
   reusable: lazy(() => import("./library/Reusable")),
-  computer_use_review: lazy(() => import("./control/ComputerReview")),
+  computer_use_review: lazy(() => import("./control/ComputerReviewScreen")),
   settings: lazy(() => import("./settings/Settings")),
   accounts: lazy(() => import("./settings/Accounts")),
   agent_logins: lazy(() => import("./settings/AgentLogins")),
+  sign_in: lazy(() => import("./settings/SignInScreen")),
   voice: lazy(() => import("./control/Voice")),
   windows: lazy(() => import("./control/Windows")),
-  library_recovery: lazy(() => import("./library/Recovery")),
-  stages: lazy(() => import("./work/Stages")),
+  library_recovery: lazy(() => import("./library/RecoveryView")),
+  stages: lazy(() => import("./work/StagesView")),
   github: lazy(() => import("./github/Github")),
   github_list: lazy(() => import("./github/GithubList")),
   github_new: lazy(() => import("./github/GithubNew")),
@@ -82,7 +83,9 @@ export function RouteView({ route }: { route: Route }) {
 // enough to notice, so a quick load shows no flash.
 function Loading() {
   return (
-    <Screen title="" header={<ContextHeader inert />}>
+    // The header names the screen while it loads, so it is never without a
+    // heading for a screen reader, even when a computer answers first.
+    <Screen title="" header={<ContextHeader inert heading />}>
       <div className="screen__loading" aria-busy="true">
         <p className="visually-hidden">Loading…</p>
         <div className="skeleton" aria-hidden>

@@ -9,7 +9,7 @@ import { emptyHostState, type HostState } from "../../state/projection";
 import { annotationStore, blobs } from "../../state/annotations";
 import { RouteProvider } from "../../shell/Screen";
 import Annotate from "../annotate/Annotate";
-import Inbox from "./Inbox";
+import Inbox from "./InboxScreen";
 import { inboxStore } from "./inbox";
 
 vi.mock("./pictures", async (original) => ({

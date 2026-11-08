@@ -120,6 +120,11 @@ async fn native(
         let _ = environment;
         platform_windows::protection::connect().await
     }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = environment;
+        platform_macos::protection::connect().await
+    }
 }
 
 impl Drop for ProtectionTask {

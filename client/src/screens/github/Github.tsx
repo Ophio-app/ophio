@@ -56,6 +56,7 @@ import { EXPLAIN, GithubSheet, SettingsSheet } from "./GithubSettings";
 import { NeedCard, useCloseIssue } from "./IssueNeed";
 import { RunAll } from "./RunAll";
 import { ReviewerPick, useReviewer } from "./Reviewer";
+import { TaskWhenGreen, WHEN_GREEN_UPDATE, WhenGreenPick, useWhenGreen } from "./WhenGreen";
 import "../settings/settings.css";
 
 
@@ -288,12 +289,16 @@ function IssueSheet({ item, project, view, off, onClose }: { item: GithubItem; p
   const { sending, start } = useStartTask();
   const agent = chosen ?? remembered;
   const reviewer = useReviewer(project, agent);
+  const whenGreen = useWhenGreen(view);
   const stranger = !item.author_writes;
   const mode: TaskMode = stranger ? "plan" : "work";
   const waits = writer !== null && mode === "work";
   const blocker = off ? "Turn GitHub on for this project first."
+    : whenGreen.blocked ? WHEN_GREEN_UPDATE
     : agentBlocker(harnesses, agent, mode) ?? (reviewer.sent ? agentBlocker(harnesses, reviewer.agent, "plan") : null);
-  const link: GithubLink = { type: "issue", number: item.number, ...(reviewer.sent ? { review_with: reviewer.sent } : {}) };
+  // A stranger's issue waits for the person whatever is chosen, so it has no choice.
+  const link: GithubLink = { type: "issue", number: item.number, ...(reviewer.sent ? { review_with: reviewer.sent } : {}),
+    ...(whenGreen.sent && !stranger ? { when_green: whenGreen.sent } : {}) };
   // The Sort sent it back with a question, so the agent starts from the
   // person's answer, and is told what was asked: it doesn't see the Sort's note.
   const answering = need?.kind === "sorted";
@@ -373,6 +378,7 @@ function IssueSheet({ item, project, view, off, onClose }: { item: GithubItem; p
         )}
         {!need && item.triage_note && <p>{item.triage_note}</p>}
         {on && <Waiting task={on} project={project} onClose={onClose} />}
+        {on && <TaskWhenGreen task={on} />}
         {!on && !folded && <div className="group">
           <ListRow icon={Bot} title="Worked by" subtitle={agent ? agentLabel(harnesses, agent) : "No agent can start work yet"} chevron
             onClick={() => setChoosing(true)} disabled={!agent} />
@@ -386,6 +392,7 @@ function IssueSheet({ item, project, view, off, onClose }: { item: GithubItem; p
             : <TextArea label="More direction" value={direction} onChange={setDirection} rows={2} maxRows={6}
               hint={`Optional. The agent is asked “${linkText(link, item.title)}” and reads the issue on GitHub; add anything else it should know.`} />}
           <ReviewerPick project={project} reviewer={reviewer} />
+          {!stranger && <WhenGreenPick choice={whenGreen} disabled={off} />}
           {blocker ? <p className="settings-meta" role="status">{blocker}</p>
             : unanswered ? <p className="settings-meta" role="status">Start and Add to Next up wait for your answer above.</p> : <>
             <p className="settings-meta">

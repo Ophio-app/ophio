@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { Canvas } from "./Canvas";
+import { Canvas } from "./CanvasView";
 import { FIT } from "./canvas";
 import type { SourceDraft } from "../../state/annotations";
 vi.mock("./useSourceUrl", () => ({ useSourceUrl: () => ({ url: "blob:picture", error: null }) }));

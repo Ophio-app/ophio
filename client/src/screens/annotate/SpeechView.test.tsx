@@ -6,7 +6,7 @@ import type { HostState } from "../../state/projection";
 import { emptyHostState } from "../../state/projection";
 import type { Availability, ReadinessCheck } from "../../protocol/types";
 import type { AnnotationDraft, AnnotationStore } from "../../state/annotations";
-import { Speech } from "./Speech";
+import { Speech } from "./SpeechView";
 let online = true;
 let speech: Availability | undefined;
 let checks: ReadinessCheck[] = [];

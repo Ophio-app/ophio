@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-alerts-set-tier"
+description = "Enables the alerts_set_tier command without any pre-configured scope."
+commands.allow = ["alerts_set_tier"]
+
+[[permission]]
+identifier = "deny-alerts-set-tier"
+description = "Denies the alerts_set_tier command without any pre-configured scope."
+commands.deny = ["alerts_set_tier"]

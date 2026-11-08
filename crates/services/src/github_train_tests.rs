@@ -827,3 +827,31 @@ async fn a_helper_reply_arriving_during_the_merge_check_is_rechecked() {
     assert!(r.calls_to("PUT ").is_empty());
     r.f.close().await;
 }
+
+#[tokio::test]
+async fn a_pull_request_left_for_the_person_leaves_the_line_and_the_rest_go_on() {
+    let (r, seven, eight) = waiting_7_and_8().await;
+    r.advance_train().await;
+    assert_eq!(numbers(&r.train().unwrap().batch.unwrap().cars), [7, 8]);
+    let leave = GithubAction::SetWhenGreen {
+        task_id: seven,
+        when_green: Some(WhenGreen::Leave),
+    };
+    r.act(&Caller::local_owner(), leave).await.unwrap();
+    // The batch it was in is given up, and it is the person's to merge.
+    r.advance_train().await;
+    assert_eq!(r.get(seven).github.unwrap().stage, Some(PrStage::Ready));
+    assert!(
+        r.attention(seven)
+            .iter()
+            .any(|a| a.title == "PR #7 is ready")
+    );
+    assert_eq!(r.get(eight).github.unwrap().stage, Some(PrStage::Merging));
+    assert!(r.gh.called("PATCH /repos/octo/app/pulls/50").is_some());
+    // What is left is tested without it.
+    r.gh.answer("POST /repos/octo/app/pulls", json!({ "number": 51 }));
+    r.advance_train().await;
+    assert_eq!(numbers(&r.train().unwrap().batch.unwrap().cars), [8]);
+    assert!(r.calls_to("PUT ").is_empty());
+    r.f.close().await;
+}

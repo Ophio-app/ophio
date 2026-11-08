@@ -76,34 +76,7 @@ pub(crate) fn locate(explicit: &Option<PathBuf>, name: &str) -> Option<PathBuf> 
     #[cfg(not(windows))]
     return ports::agent_program::on_this_computer(name);
     #[cfg(windows)]
-    {
-        let executable = format!("{name}.exe");
-        if let Some(path) = std::env::var_os("PATH") {
-            for dir in std::env::split_paths(&path) {
-                let path = dir.join(&executable);
-                if path.is_file() {
-                    return Some(path);
-                }
-            }
-        }
-        for root in [std::env::var_os("HOME"), std::env::var_os("USERPROFILE")]
-            .into_iter()
-            .flatten()
-        {
-            for suffix in [
-                ".local/bin",
-                ".cargo/bin",
-                "AppData/Local/Programs",
-                "AppData/Roaming/npm",
-            ] {
-                let path = PathBuf::from(&root).join(suffix).join(&executable);
-                if path.is_file() {
-                    return Some(path);
-                }
-            }
-        }
-        None
-    }
+    return ports::agent_program::on_this_windows(name);
 }
 pub(crate) fn command(binary: &Path) -> Command {
     let mut cmd = Command::new(binary);
@@ -181,15 +154,23 @@ fn leader_id(child: &tokio::process::Child) -> Option<rustix::process::Pid> {
 pub(crate) struct Leader {
     /// Readable once the leader exits. Unlike SIGCHLD, no other process's exit
     /// wakes it.
-    #[cfg(unix)]
+    #[cfg(target_os = "linux")]
     exit: tokio::io::unix::AsyncFd<std::os::fd::OwnedFd>,
+    /// Without pidfds any child's exit wakes this, and the leader is checked.
+    #[cfg(all(unix, not(target_os = "linux")))]
+    exit: (rustix::process::Pid, tokio::signal::unix::Signal),
 }
 impl Leader {
     #[allow(unsafe_code)]
     pub(crate) fn new(child: &tokio::process::Child) -> Result<Self, HarnessError> {
         let _ = child;
         Ok(Self {
-            #[cfg(unix)]
+            #[cfg(all(unix, not(target_os = "linux")))]
+            exit: (
+                leader_id(child).ok_or(HarnessError::NotActive)?,
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::child())?,
+            ),
+            #[cfg(target_os = "linux")]
             exit: {
                 use rustix::process::{PidfdFlags, pidfd_open};
                 let pid = leader_id(child).ok_or(HarnessError::NotActive)?;
@@ -214,13 +195,17 @@ impl Leader {
         #[cfg(unix)]
         {
             use rustix::process::{WaitId, WaitIdOptions, waitid};
-            use std::os::{fd::AsFd, unix::process::ExitStatusExt};
+            #[cfg(target_os = "linux")]
+            use std::os::fd::AsFd;
+            use std::os::unix::process::ExitStatusExt;
             let _ = child;
             let options = WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT;
             loop {
-                if let Some(status) = waitid(WaitId::PidFd(self.exit.get_ref().as_fd()), options)
-                    .map_err(std::io::Error::from)?
-                {
+                #[cfg(target_os = "linux")]
+                let id = WaitId::PidFd(self.exit.get_ref().as_fd());
+                #[cfg(not(target_os = "linux"))]
+                let id = WaitId::Pid(self.exit.0);
+                if let Some(status) = waitid(id, options).map_err(std::io::Error::from)? {
                     let raw = match (status.exit_status(), status.terminating_signal()) {
                         (Some(code), _) => (code & 0xff) << 8,
                         (None, Some(signal)) => signal & 0x7f,
@@ -232,7 +217,12 @@ impl Leader {
                     };
                     return Ok(std::process::ExitStatus::from_raw(raw));
                 }
+                #[cfg(target_os = "linux")]
                 self.exit.readable().await?.clear_ready();
+                // A signal can be folded into another, so look again anyway.
+                #[cfg(not(target_os = "linux"))]
+                let _ = tokio::time::timeout(std::time::Duration::from_secs(1), self.exit.1.recv())
+                    .await;
             }
         }
         #[cfg(windows)]
@@ -252,6 +242,9 @@ pub(crate) async fn kill_owned(
         let pid = leader_id(child).ok_or(HarnessError::NotActive)?;
         match rustix::process::kill_process_group(pid, rustix::process::Signal::KILL) {
             Ok(()) | Err(rustix::io::Errno::SRCH) => {}
+            // A Mac refuses to signal a group of nothing but zombies.
+            #[cfg(target_os = "macos")]
+            Err(rustix::io::Errno::PERM) => {}
             Err(error) => return Err(std::io::Error::from(error).into()),
         }
         child.start_kill()?;

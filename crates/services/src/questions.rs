@@ -24,7 +24,7 @@ impl CompanionHub {
             return Ok(HOLD_QUESTIONS.into());
         }
         Ok(format!(
-            "Questions are on: ask the person when you need to. If nobody answers in {} minutes, the question comes back to you; then finish what doesn't depend on it and end your turn.",
+            "Questions are on: ask the person when you need to, in plain words, naming any choices and the one you would pick. If nobody answers in {} minutes, the question comes back to you; then finish what doesn't depend on it and end your turn.",
             CARRY_ON_AFTER.as_secs() / 60
         ))
     }

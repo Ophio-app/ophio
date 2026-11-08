@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Tauri merges this into the iPhone app's Info.plist. -->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Øphio</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Øphio listens only while you record a message, and sends it to your own computer.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Øphio uses the camera to scan the pairing code your computer shows.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Øphio uses Face ID when you unlock the app or confirm an action.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Øphio connects straight to your own computer on this network.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Private previews open on the phone's own loopback address. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.ophio.object</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ophio-object</string>
+				<string>companion-object</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.ophio.contribution</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ophio-contribution</string>
+			</array>
+		</dict>
+	</array>
+	<!-- Downloads land in Øphio's folder in the Files app. -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+</dict>
+</plist>

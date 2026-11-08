@@ -95,10 +95,10 @@ it("shows one kind of thing at a time, counting the chosen project's, and stops 
   expect(screen.queryByRole("region", { name: "garden-planner" })).toBeNull();
 });
 
-it("heads Control with the project picker every root has, the computer under it, and Voice", async () => {
+it("heads Control with the project picker every root has, the computer in its pill, and Voice", async () => {
   const { container } = await view();
   expect(screen.getByRole("heading", { level: 1, name: "tidewater-api" })).toBeTruthy();
-  expect(container.querySelector(".ctx__computer")?.textContent).toBe(app.profile.name);
+  expect(container.querySelector(".computer-pill__name")?.textContent).toBe(app.profile.name);
   expect(screen.getByRole("button", { name: "Control by voice" })).toBeTruthy();
   fireEvent.click(container.querySelector<HTMLElement>(".ctx__context")!); await tick();
   expect(screen.getByRole("dialog", { name: /project/i })).toBeTruthy();
@@ -112,7 +112,7 @@ it("keeps sessions opened outside any project with Home", async () => {
   await tick();
   fireEvent.click(within(screen.getByRole("radiogroup", { name: "Show" })).getByRole("radio", { name: /^Terminals/ })); await tick();
   expect(screen.getByRole("button", { name: `Attach ${garden.title}` })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /in other projects$/ })); await tick();
+  fireEvent.click(screen.getByRole("button", { name: /^Show \d+ in other projects$/ })); await tick();
   expect(screen.getByRole("region", { name: "tidewater-api" })).toBeTruthy();
 });
 
@@ -123,7 +123,7 @@ it("shows the chosen project's previews, the rest on request, and adds to it", a
   fireEvent.click(within(show).getByRole("radio", { name: "Previews" })); await tick();
   expect(screen.getByText(/in garden-planner\./)).toBeTruthy();
   expect(screen.queryByRole("region", { name: "tidewater-api" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: /in other projects$/ })); await tick();
+  fireEvent.click(screen.getByRole("button", { name: /^Show \d+ in other projects$/ })); await tick();
   expect(screen.getByRole("region", { name: "tidewater-api" })).toBeTruthy();
 
   fireEvent.click(screen.getByRole("button", { name: "Add a preview" })); await tick();

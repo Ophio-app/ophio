@@ -6,12 +6,7 @@ use crate::{
 };
 use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use serde::{Deserialize, Serialize};
-use std::{
-    fs::{self, OpenOptions},
-    io::{Read, Write},
-    path::Path,
-};
-use zeroize::Zeroizing;
+use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
@@ -257,16 +252,14 @@ impl std::fmt::Debug for PipelineKey {
 }
 impl PipelineKey {
     pub fn load_or_create(directory: &Path) -> Result<Self> {
-        #[cfg(not(unix))]
-        {
-            let _ = directory;
-            return Err(Error::Invalid(
-                "key files require Unix permission enforcement",
-            ));
-        }
         #[cfg(unix)]
         {
             use std::os::unix::fs::{MetadataExt, OpenOptionsExt, PermissionsExt};
+            use std::{
+                fs::{self, OpenOptions},
+                io::{Read, Write},
+            };
+            use zeroize::Zeroizing;
             let directory = directory.canonicalize()?;
             let path = directory.join("report-pipeline.ed25519");
             let mut options = OpenOptions::new();
@@ -300,6 +293,13 @@ impl PipelineKey {
             let mut bytes = Zeroizing::new([0u8; 32]);
             file.read_exact(bytes.as_mut())?;
             Ok(Self(SigningKey::from_bytes(&bytes)))
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = directory;
+            Err(Error::Invalid(
+                "key files require Unix permission enforcement",
+            ))
         }
     }
     pub fn public_key(&self) -> [u8; 32] {

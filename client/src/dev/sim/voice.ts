@@ -6,7 +6,8 @@ import { ids } from "./scenario";
 const available: Availability = { state: "available" };
 export class VoiceSim {
   settings: VoiceSettings = { revision: 0, browser: true, desktop: true };
-  desktopAvailable = false;
+  /** Desktop voice needs only the desktop's input, as on the computer. */
+  desktopAvailable = true;
   fail = false;
   sessions = new Map<string, VoiceSessionView>();
   link(host: SimHost, connected = true) { host.jev = { connection: connected ? "connected" : "not_connected", checked_at: Date.now() }; }
@@ -14,7 +15,7 @@ export class VoiceSim {
     if (this.fail) throw { code: "temporarily_unavailable", message: "The computer could not check voice control." };
     const connection = host.jev.connection;
     const gate = (enabled: boolean, native: Availability): Availability => connection !== "connected" ? { state: "temporarily_unavailable", reason: connection === "last_check_failed" ? "The last Jev check failed. Check Jev access on the computer before using voice control" : "Link Jev on the computer to use voice control: ophio jev connect" } : !enabled ? { state: "temporarily_unavailable", reason: "Voice control is turned off in Settings" } : native;
-    return structuredClone({ settings: this.settings, voice_browser: gate(this.settings.browser, available), voice_desktop: gate(this.settings.desktop, this.desktopAvailable ? available : { state: "temporarily_unavailable", reason: "No app on the computer that exposes its controls has focus. Bring one to the front; many terminals don't expose theirs." }), speech: host.host.capabilities.speech, session: id ? this.sessions.get(id) ?? null : null });
+    return structuredClone({ settings: this.settings, voice_browser: gate(this.settings.browser, available), voice_desktop: gate(this.settings.desktop, this.desktopAvailable ? available : { state: "temporarily_unavailable", reason: "Desktop input is unavailable" }), speech: host.host.capabilities.speech, session: id ? this.sessions.get(id) ?? null : null });
   }
   set(browser: boolean, desktop: boolean, revision: number | null) {
     if (revision !== this.settings.revision) throw { code: "stale_revision", message: "Voice settings changed. Check again." };
@@ -48,12 +49,13 @@ export class VoiceSim {
     else if (op.operation === "transcript") {
       s.transcript = op.text;
       if (!op.final_segment) { s.phase = "assessing"; s.understood = "Listening to the command…"; return { kind: "voice_session", session: structuredClone(s) }; }
-      s.choices = []; const words = op.text.toLowerCase();
+      s.choices = []; s.offer = undefined; const words = op.text.toLowerCase();
       if (words === "confirm" && s.phase === "confirm") this.applied(s, s.understood);
+      else if (words.includes(" and then ")) { s.phase = "refused"; s.understood = "This needs several steps. Say one step at a time, such as “open the browser”"; s.offer = { instruction: op.text }; }
       else if (words.includes("password")) { s.phase = "refused"; s.understood = "Voice typing is unavailable for password or sensitive fields. Use the remote keyboard"; }
       else if (words.includes("delete") || words.includes("buy") || words.includes("send")) { s.phase = "confirm"; s.prompt_id++; s.understood = "Click “Delete draft”"; }
       else if (words.includes("link") || words.includes("which")) { s.phase = "disambiguation"; s.prompt_id++; s.understood = "Say or tap 1–3"; s.choices = ["Documentation", "Project notes", "Release notes"].map((name, i): VoiceElement => ({ id: `e${i}`, role: "link", name, bounds: { x: 10, y: 20 + i * 50, width: 100, height: 40 }, enabled: true, focused: false, visible: true, sensitive: false, destructive: false })); }
-      else this.applied(s, words.startsWith("go to ") ? `Open ${op.text.slice(6)}` : words.startsWith("type ") ? "Type into “Search”" : "Click “Sign in”");
+      else this.applied(s, words.startsWith("go to ") ? `Open ${op.text.slice(6)}` : words.startsWith("open ") ? (words.includes("terminal") ? "Open Alacritty" : "Open Chromium") : words.startsWith("press ") ? `Press ${op.text.slice(6)}` : words.startsWith("type ") ? (s.target === "desktop" ? "Type into the focused app" : "Type into “Search”") : "Click “Sign in”");
     }
     return { kind: "voice_session", session: structuredClone(s) };
   }

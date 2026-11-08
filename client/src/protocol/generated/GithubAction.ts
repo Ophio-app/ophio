@@ -5,7 +5,9 @@ import type { MergeMethod } from "./MergeMethod";
 import type { ProjectId } from "./ProjectId";
 import type { RunStep } from "./RunStep";
 import type { SensitiveArea } from "./SensitiveArea";
+import type { TaskId } from "./TaskId";
 import type { TriageGroup } from "./TriageGroup";
+import type { WhenGreen } from "./WhenGreen";
 
 /**
  * The person's GitHub actions.
@@ -25,4 +27,4 @@ approval_shown?: Array<SensitiveArea>, } | { "action": "run_issues", project_id:
 /**
  * Closed as done, not as not planned.
  */
-done: boolean, } | { "action": "set_group", project_id: ProjectId, number: number, pr: boolean, group?: TriageGroup, } | { "action": "merge_together", project_id: ProjectId, repo: string, prs: Array<ChosenPr>, } | { "action": "stop_together", project_id: ProjectId, };
+done: boolean, } | { "action": "set_group", project_id: ProjectId, number: number, pr: boolean, group?: TriageGroup, } | { "action": "merge_together", project_id: ProjectId, repo: string, prs: Array<ChosenPr>, } | { "action": "stop_together", project_id: ProjectId, } | { "action": "set_when_green", task_id: TaskId, when_green?: WhenGreen, };

@@ -7,7 +7,7 @@ use protocol::control::TargetGeometry;
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::{Seek, SeekFrom, Write},
+    io::{Seek, Write},
     os::{
         fd::AsFd,
         unix::{fs::FileExt, net::UnixStream},
@@ -179,15 +179,91 @@ impl NativeInput for WaylandInput {
         })
         .await
     }
+    async fn validate_text(&mut self, text: &str) -> Result<(), PlatformError> {
+        // The virtual keyboard's keymap can carry any character. Give the
+        // ones the desktop layout lacks their keys now, in one keymap change.
+        let keysyms = text
+            .chars()
+            .map(crate::input::character_keysym)
+            .collect::<Result<Vec<_>, _>>()?;
+        let client = self.client.clone();
+        blocking(move || client.lock().map_err(failure)?.prepare_text(&keysyms)).await
+    }
+    async fn idle(&mut self) -> Result<(), PlatformError> {
+        let client = self.client.clone();
+        blocking(move || client.lock().map_err(failure)?.close_devices()).await
+    }
+}
+
+/// Milliseconds on the monotonic clock, the base compositors use for input
+/// event times. Clients compare them, for double clicks among other things.
+fn now_ms() -> u32 {
+    let now = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
+    // Some compositors treat a zero time as no event.
+    ((now.tv_sec as u64 * 1000 + now.tv_nsec as u64 / 1_000_000) as u32).max(1)
+}
+
+/// Each keymap in `wire`, written NUL-terminated to a file the compositor
+/// can map, with its size.
+fn keymap_files(wire: &[crate::keymap::Wire]) -> std::io::Result<Vec<(File, u32)>> {
+    let mut files = Vec::new();
+    for request in wire {
+        if let crate::keymap::Wire::Keymap(text) = request {
+            let mut file = tempfile::tempfile()?;
+            file.write_all(text.as_bytes())?;
+            file.write_all(&[0])?;
+            // Compositors map the file, but some read from its offset.
+            file.rewind()?;
+            files.push((file, text.len() as u32 + 1));
+        }
+    }
+    Ok(files)
+}
+/// Send `wire`, its keymaps from `files` in order.
+fn transmit(device: &mut KeyboardDevice, wire: Vec<crate::keymap::Wire>, files: Vec<(File, u32)>) {
+    use crate::keymap::Wire;
+    let mut files = files.into_iter();
+    for request in wire {
+        match request {
+            Wire::Keymap(_) => {
+                if let Some((file, size)) = files.next() {
+                    device.proxy.keymap(
+                        wl_keyboard::KeymapFormat::XkbV1 as u32,
+                        file.as_fd(),
+                        size,
+                    );
+                    device._keymap = Some(file);
+                }
+            }
+            Wire::Key { code, pressed } => {
+                device
+                    .proxy
+                    .key(now_ms(), code.saturating_sub(8), u32::from(pressed))
+            }
+            Wire::Modifiers {
+                depressed,
+                latched,
+                locked,
+                group,
+            } => device.proxy.modifiers(depressed, latched, locked, group),
+        }
+    }
+}
+
+struct KeyboardDevice {
+    proxy: ZwpVirtualKeyboardV1,
+    model: crate::keymap::Keyboard,
+    /// The compositor maps the current keymap from this file.
+    _keymap: Option<File>,
 }
 
 struct Client {
     connection: Connection,
     queue: EventQueue<State>,
     state: State,
-    keys: BTreeMap<u32, u32>,
-    held: BTreeMap<u32, u32>,
-    keymap: Option<File>,
+    /// Virtual devices exist only while control is under way.
+    keyboard: Option<KeyboardDevice>,
+    pointer: Option<ZwlrVirtualPointerV1>,
     previous_capture: Option<Output>,
     buttons: std::collections::BTreeSet<u32>,
 }
@@ -200,8 +276,6 @@ struct State {
     capture: Option<ZwlrScreencopyManagerV1>,
     pointer_manager: Option<ZwlrVirtualPointerManagerV1>,
     keyboard_manager: Option<ZwpVirtualKeyboardManagerV1>,
-    pointer: Option<ZwlrVirtualPointerV1>,
-    keyboard: Option<ZwpVirtualKeyboardV1>,
     buffer: Option<(wl_shm::Format, u32, u32, u32)>,
     ready: bool,
     failed: bool,
@@ -217,6 +291,11 @@ struct State {
     ext_transform: Option<wl_output::Transform>,
     xdg_manager: Option<ZxdgOutputManagerV1>,
     logical: BTreeMap<u32, (i32, i32)>,
+    /// Outputs given an xdg_output, which supplies their logical layout.
+    described: std::collections::BTreeSet<u32>,
+    /// An output was announced, or asked for its layout, since the last
+    /// synchronization; its description arrives only in the next one.
+    fresh: bool,
     observed_keymap: Option<String>,
     has_keyboard: bool,
 }
@@ -234,18 +313,13 @@ impl Client {
             connection,
             queue,
             state: State::default(),
-            keys: BTreeMap::new(),
-            held: BTreeMap::new(),
-            keymap: None,
+            keyboard: None,
+            pointer: None,
             previous_capture: None,
             buttons: Default::default(),
         };
         client.roundtrip()?;
-        if let Some(manager) = &client.state.xdg_manager {
-            for (id, (output, _)) in &client.state.outputs {
-                manager.get_xdg_output(output, &client.queue.handle(), *id);
-            }
-        }
+        client.state.describe_outputs(&client.queue.handle());
         client.roundtrip()?;
         Ok(client)
     }
@@ -299,6 +373,15 @@ impl Client {
     }
     fn outputs(&mut self) -> Result<Vec<Output>, PlatformError> {
         self.roundtrip()?;
+        // A monitor plugged in since the last call was only bound in that
+        // synchronization. Its size and layout arrive in the next ones; until
+        // then pointer motion would be scaled to the old layout.
+        for _ in 0..2 {
+            if !std::mem::take(&mut self.state.fresh) {
+                break;
+            }
+            self.roundtrip()?;
+        }
         for (id, (_, output)) in &mut self.state.outputs {
             if let Some((width, _)) = self.state.logical.get(id)
                 && *width > 0
@@ -485,12 +568,62 @@ impl Client {
         }
         Ok(captured)
     }
+    /// Check that virtual input is possible. The devices themselves are
+    /// added on first use and removed when control ends.
     fn create_input(&mut self) -> Result<(), PlatformError> {
-        let pointer =
+        if self.state.pointer_manager.is_none() {
+            return Err(PlatformError::Unsupported(
+                "virtual pointer is unavailable".into(),
+            ));
+        }
+        if self.state.keyboard_manager.is_none() {
+            return Err(PlatformError::Unsupported(
+                "virtual keyboard is unavailable".into(),
+            ));
+        }
+        if self.state.seat.is_none() {
+            return Err(PlatformError::Unsupported(
+                "Wayland seat is unavailable".into(),
+            ));
+        }
+        Ok(())
+    }
+    fn pointer(&mut self) -> Result<ZwlrVirtualPointerV1, PlatformError> {
+        if let Some(pointer) = &self.pointer {
+            return Ok(pointer.clone());
+        }
+        let manager =
             self.state.pointer_manager.as_ref().ok_or_else(|| {
                 PlatformError::Unsupported("virtual pointer is unavailable".into())
             })?;
-        let keyboard =
+        let pointer =
+            manager.create_virtual_pointer(self.state.seat.as_ref(), &self.queue.handle(), ());
+        self.pointer = Some(pointer.clone());
+        Ok(pointer)
+    }
+    /// The keymap the seat's keyboard has now, if the seat has a keyboard.
+    fn seat_keymap(&mut self) -> Result<Option<String>, PlatformError> {
+        // A headless seat may expose no keyboard at all. Asking for one
+        // cannot establish a reachable keymap and breaks some compositors.
+        let Some(seat) = self.state.seat.clone().filter(|_| self.state.has_keyboard) else {
+            return Ok(None);
+        };
+        self.state.observed_keymap = None;
+        let keyboard = seat.get_keyboard(&self.queue.handle(), ());
+        self.roundtrip()?;
+        if keyboard.version() >= 3 {
+            keyboard.release();
+        }
+        Ok(self.state.observed_keymap.take())
+    }
+    fn keyboard(&mut self) -> Result<(), PlatformError> {
+        if self.keyboard.is_some() {
+            return Ok(());
+        }
+        let seat = self.seat_keymap()?;
+        let (model, wire) =
+            crate::keymap::Keyboard::new(crate::keymap::desktop_layout(seat).as_deref())?;
+        let manager =
             self.state.keyboard_manager.as_ref().ok_or_else(|| {
                 PlatformError::Unsupported("virtual keyboard is unavailable".into())
             })?;
@@ -499,31 +632,86 @@ impl Client {
             .seat
             .as_ref()
             .ok_or_else(|| PlatformError::Unsupported("Wayland seat is unavailable".into()))?;
-        self.state.pointer =
-            Some(pointer.create_virtual_pointer(Some(seat), &self.queue.handle(), ()));
-        self.state.keyboard =
-            Some(keyboard.create_virtual_keyboard(seat, &self.queue.handle(), ()));
+        // The keymap is written before the device exists: a virtual keyboard
+        // without one turns any key or modifiers into a protocol error that
+        // ends the whole input connection.
+        let files = keymap_files(&wire)?;
+        let proxy = manager.create_virtual_keyboard(seat, &self.queue.handle(), ());
+        let mut device = KeyboardDevice {
+            proxy,
+            model,
+            _keymap: None,
+        };
+        transmit(&mut device, wire, files);
+        self.keyboard = Some(device);
+        Ok(())
+    }
+    fn send_keyboard(&mut self, wire: Vec<crate::keymap::Wire>) -> Result<(), PlatformError> {
+        let files = match keymap_files(&wire) {
+            Ok(files) => files,
+            Err(error) => {
+                // The model already counts on the new keymap, which never
+                // left. Retire this keyboard; the next key makes a fresh one.
+                self.retire_keyboard();
+                return Err(error.into());
+            }
+        };
+        let device = self
+            .keyboard
+            .as_mut()
+            .ok_or_else(|| PlatformError::Unsupported("keyboard unavailable".into()))?;
+        transmit(device, wire, files);
+        Ok(())
+    }
+    /// Release what the keyboard holds and remove it. Releases carry no
+    /// keymap, so they cannot fail to be written.
+    fn retire_keyboard(&mut self) {
+        if let Some(mut device) = self.keyboard.take() {
+            let wire = device.model.release_all();
+            transmit(&mut device, wire, Vec::new());
+            device.proxy.modifiers(0, 0, 0, 0);
+            device.proxy.destroy();
+        }
+    }
+    fn prepare_text(&mut self, keysyms: &[u32]) -> Result<(), PlatformError> {
+        self.keyboard()?;
+        let wire = self
+            .keyboard
+            .as_mut()
+            .ok_or_else(|| PlatformError::Unsupported("keyboard unavailable".into()))?
+            .model
+            .prepare_text(keysyms)?;
+        self.send_keyboard(wire)?;
         self.roundtrip()
+    }
+    /// Release everything and remove both virtual devices.
+    fn close_devices(&mut self) -> Result<(), PlatformError> {
+        self.release_devices();
+        self.roundtrip()
+    }
+    fn release_devices(&mut self) {
+        self.retire_keyboard();
+        if let Some(pointer) = self.pointer.take() {
+            for code in std::mem::take(&mut self.buttons) {
+                pointer.button(
+                    now_ms(),
+                    code,
+                    wayland_client::protocol::wl_pointer::ButtonState::Released,
+                );
+            }
+            pointer.frame();
+            pointer.destroy();
+        }
     }
     fn input(
         &mut self,
         event: Event,
         fence: &crate::native::InputFence,
     ) -> Result<(), PlatformError> {
-        let _ = self.outputs()?;
-        fence.check(event.is_release())?;
-        let pointer =
-            self.state.pointer.as_ref().ok_or_else(|| {
-                PlatformError::Unsupported("virtual input not initialized".into())
-            })?;
         match event {
             Event::Motion { x, y } => {
-                let outputs: Vec<_> = self
-                    .state
-                    .outputs
-                    .values()
-                    .map(|(_, o)| o.clone())
-                    .collect();
+                let outputs = self.outputs()?;
+                fence.check(false)?;
                 let desktop = crate::combined(&outputs)?;
                 let width = (desktop.logical_width() * 256.0).ceil() as u32;
                 let height = (desktop.logical_height() * 256.0).ceil() as u32;
@@ -534,23 +722,33 @@ impl Client {
                 {
                     return Err(PlatformError::GeometryChanged);
                 }
+                let pointer = self.pointer()?;
+                // Compositors scale x / extent back to the layout in floating
+                // point, so an exact pixel boundary can land a hair short, on
+                // the pixel before: the left edge of a second monitor became
+                // the first monitor's last column. Aim 1/256 px inside.
+                let unit = |at: f64, extent: u32| ((at * 256.0).floor() as u32 + 1).min(extent - 1);
                 pointer.motion_absolute(
-                    0,
-                    ((x - desktop.x) * 256.0).round() as u32,
-                    ((y - desktop.y) * 256.0).round() as u32,
+                    now_ms(),
+                    unit(x - desktop.x, width),
+                    unit(y - desktop.y, height),
                     width,
                     height,
                 );
                 pointer.frame();
             }
             Event::Button { code, pressed } => {
+                if !pressed && !self.buttons.contains(&code) {
+                    return Ok(());
+                }
+                let pointer = self.pointer()?;
                 if pressed {
                     self.buttons.insert(code);
                 } else {
                     self.buttons.remove(&code);
                 }
                 pointer.button(
-                    0,
+                    now_ms(),
                     code,
                     if pressed {
                         wayland_client::protocol::wl_pointer::ButtonState::Pressed
@@ -562,123 +760,65 @@ impl Client {
             }
             Event::Axis { dx, dy } => {
                 use wayland_client::protocol::wl_pointer::{Axis, AxisSource};
-                pointer.axis_source(AxisSource::Continuous);
-                pointer.axis(0, Axis::HorizontalScroll, dx);
-                pointer.axis(0, Axis::VerticalScroll, dy);
+                let pointer = self.pointer()?;
+                let time = now_ms();
+                // An axis left at zero is not sent: Hyprland turned it into a
+                // notch the other way. The source follows its axis, since
+                // wlroots and Hyprland apply it to the latest axis and
+                // Hyprland resets the source with each axis.
+                for (axis, value) in [(Axis::HorizontalScroll, dx), (Axis::VerticalScroll, dy)] {
+                    if value != 0.0 {
+                        pointer.axis(time, axis, value);
+                        pointer.axis_source(AxisSource::Continuous);
+                    }
+                }
                 pointer.frame();
             }
-            Event::Key { keysym, pressed } => {
-                if !self.keys.contains_key(&keysym) {
-                    if self.keys.len() >= 240 {
-                        if !self.held.is_empty() {
-                            return Err(PlatformError::Unsupported(
-                                "virtual keymap is full while keys are held".into(),
-                            ));
-                        }
-                        self.keys.clear();
+            Event::Key {
+                keysym,
+                pressed,
+                text,
+            } => {
+                if self.keyboard.is_none() {
+                    if !pressed {
+                        return Ok(());
                     }
-                    let code = self.keys.len() as u32 + 8;
-                    self.keys.insert(keysym, code);
-                    self.update_keymap()?;
+                    self.keyboard()?;
                 }
-                // Keymap synchronization may have blocked while revoke arrived.
+                // Reading the layout may have blocked while revoke arrived.
                 fence.check(!pressed)?;
-                let code = self.keys[&keysym];
-                let keyboard = self
-                    .state
+                let wire = self
                     .keyboard
-                    .as_ref()
-                    .ok_or_else(|| PlatformError::Unsupported("keyboard unavailable".into()))?;
-                keyboard.key(0, code - 8, u32::from(pressed));
-                if pressed {
-                    self.held.insert(keysym, code);
-                } else {
-                    self.held.remove(&keysym);
-                }
-                let mask = self.held.keys().fold(0, |mask, key| {
-                    mask | match key {
-                        0xffe1 => 1,
-                        0xffe3 => 4,
-                        0xffe9 => 8,
-                        0xffeb => 64,
-                        _ => 0,
-                    }
-                });
-                keyboard.modifiers(mask, 0, 0, 0);
+                    .as_mut()
+                    .ok_or_else(|| PlatformError::Unsupported("keyboard unavailable".into()))?
+                    .model
+                    .key(keysym, pressed, text)?;
+                self.send_keyboard(wire)?;
             }
         }
         self.roundtrip().map_err(crate::native::uncertain)
     }
-    fn update_keymap(&mut self) -> Result<(), PlatformError> {
-        let mut map =
-            String::from("xkb_keymap { xkb_keycodes \"remote\" { minimum = 8; maximum = 255;");
-        for code in self.keys.values() {
-            map.push_str(&format!("<K{code}> = {code};"));
-        }
-        map.push_str("}; xkb_types \"remote\" { type \"ONE_LEVEL\" { modifiers = none; level_name[Level1] = \"Any\"; }; }; xkb_compatibility \"remote\" {}; xkb_symbols \"remote\" {");
-        for (symbol, code) in &self.keys {
-            map.push_str(&format!(
-                "key <K{code}> {{ type=\"ONE_LEVEL\", [ 0x{symbol:x} ] }};"
-            ));
-        }
-        for (symbol, modifier) in [
-            (0xffe1, "Shift"),
-            (0xffe3, "Control"),
-            (0xffe9, "Mod1"),
-            (0xffeb, "Mod4"),
-        ] {
-            if let Some(code) = self.keys.get(&symbol) {
-                map.push_str(&format!("modifier_map {modifier} {{ <K{code}> }};"));
-            }
-        }
-        map.push_str("}; };\0");
-        let mut file = tempfile::tempfile()?;
-        file.write_all(map.as_bytes())?;
-        file.seek(SeekFrom::Start(0))?;
-        self.state
-            .keyboard
-            .as_ref()
-            .ok_or_else(|| PlatformError::Unsupported("keyboard unavailable".into()))?
-            .keymap(1, file.as_fd(), map.len() as u32);
-        self.keymap = Some(file);
-        // A replacement keymap can reset the compositor's XKB state. Restore
-        // depressed modifiers before dispatching the next chord key.
-        let mask = self.held.keys().fold(0, |mask, key| {
-            mask | match key {
-                0xffe1 => 1,
-                0xffe3 => 4,
-                0xffe9 => 8,
-                0xffeb => 64,
-                _ => 0,
-            }
-        });
-        if let Some(keyboard) = &self.state.keyboard {
-            keyboard.modifiers(mask, 0, 0, 0);
-        }
-        Ok(())
-    }
 }
 impl Drop for Client {
     fn drop(&mut self) {
-        if let Some(keyboard) = &self.state.keyboard {
-            for code in self.held.values() {
-                keyboard.key(0, *code - 8, 0);
-            }
-            keyboard.modifiers(0, 0, 0, 0);
-            keyboard.destroy();
-        }
-        if let Some(pointer) = &self.state.pointer {
-            for code in &self.buttons {
-                pointer.button(
-                    0,
-                    *code,
-                    wayland_client::protocol::wl_pointer::ButtonState::Released,
-                );
-            }
-            pointer.frame();
-            pointer.destroy();
-        }
+        self.release_devices();
         let _ = self.connection.flush();
+    }
+}
+impl State {
+    /// Ask for the logical layout of every output that has none yet,
+    /// including outputs added after connecting: the input connection lives
+    /// for the whole session, and without it a hotplugged output keeps its
+    /// physical position and integer scale.
+    fn describe_outputs(&mut self, qh: &QueueHandle<Self>) {
+        if let Some(manager) = &self.xdg_manager {
+            for (id, (output, _)) in &self.outputs {
+                if self.described.insert(*id) {
+                    manager.get_xdg_output(output, qh, *id);
+                    self.fresh = true;
+                }
+            }
+        }
     }
 }
 impl Dispatch<wl_registry::WlRegistry, ()> for State {
@@ -720,6 +860,8 @@ impl Dispatch<wl_registry::WlRegistry, ()> for State {
                                 },
                             ),
                         );
+                        state.fresh = true;
+                        state.describe_outputs(qh);
                     }
                     "ext_image_copy_capture_manager_v1" => {
                         state.ext_manager = Some(registry.bind(name, 1, qh, ()))
@@ -746,6 +888,8 @@ impl Dispatch<wl_registry::WlRegistry, ()> for State {
             }
             wl_registry::Event::GlobalRemove { name } => {
                 state.outputs.remove(&name);
+                state.logical.remove(&name);
+                state.described.remove(&name);
             }
             _ => {}
         }

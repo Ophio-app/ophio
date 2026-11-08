@@ -27,6 +27,7 @@ import type { CheckState, GithubItem, PrCheck, PrStage, Task } from "../../proto
 import { useMay } from "../../shell/NotAllowed";
 import { WithCode, draftedWords, unlockFor, useGithubRun } from "./common";
 import { ApproveSheet, ReviewResultCard, taskReviewOf } from "./ReviewResult";
+import { TaskWhenGreen } from "./WhenGreen";
 import { shortCommit } from "../../app/review";
 import "./github.css";
 
@@ -152,6 +153,7 @@ export function PrSheet({ open, onClose, projectId, number, task, item, children
         {pr && isOpen && owner?.github?.stage === "merging" && (
           <Notice tone="info" title="Waiting to merge">Øphio tests it with {pr.base_branch} and the other pull requests waiting, and merges them once nothing in this project is running or waiting in Next up.</Notice>
         )}
+        {pr && isOpen && owner && <TaskWhenGreen task={owner} />}
         {pr && isOpen && !pr.summary.draft && !pr.mergeable && (
           <Notice tone="warn" title="It can’t merge yet">
             <WithCode text={pr.blocked ?? "GitHub’s rules for this branch don’t pass yet."} />

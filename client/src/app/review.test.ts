@@ -195,6 +195,26 @@ describe("the other facts", () => {
       .toEqual({ word: "Under way", tone: "accent", text: "Reviewing commit 1234567, after one round so far." });
     expect(reviewResult(input({ review: { round: 0 } })).review).toEqual({ word: "Not yet", tone: "neutral", text: "No review of it has been recorded." });
   });
+  it("gives a change that needs approval five rounds once the computer does", () => {
+    const sensitive = input({ approval: signingApproval, review: { round: 4, reviewed_head: HEAD } });
+    expect(reviewResult(sensitive).review.text).toBe("Reviewed up to commit abcdef0. That took four rounds of at most three.");
+    expect(reviewResult({ ...sensitive, sensitiveRounds: true }).review.text).toBe("Reviewed up to commit abcdef0. That took four rounds of at most five.");
+    expect(reviewResult({ ...sensitive, sensitiveRounds: true }).maxRounds).toBe(5);
+    expect(reviewResult(input({ sensitiveRounds: true })).maxRounds).toBe(3);
+  });
+  it("is clear only when the newest commit was reviewed and nothing is left to fix", () => {
+    expect(reviewResult(input()).clear).toBe(true);
+    expect(reviewResult(input({ review: reviewed(found(2, {}, { state: "corrected" })) }))).toMatchObject({ clear: true, rounds: 2 });
+    expect(reviewResult(input({ review: reviewed(found(1, {}, { state: "filed", number: 40 })) })).clear).toBe(true);
+    expect(reviewResult(input({ review: reviewed(found(1, {}, { state: "fixing" })) })).clear).toBe(false);
+    expect(reviewResult(input({ review: reviewed(found(1, {}, { state: "open" })) })).clear).toBe(false);
+    expect(reviewResult(input({ review: reviewed(found(1, { verdict: undefined })) })).clear).toBe(false);
+    expect(reviewResult(input({ head: "999999999" })).clear).toBe(false);
+    expect(reviewResult(input({ review: { round: 1, reviewed_head: HEAD, reviewing_head: "1234567aaaa" } })).clear).toBe(false);
+    expect(reviewResult(input({ review: { ...prReviews.escalated, reviewed_head: HEAD } })).clear).toBe(false);
+    expect(reviewResult(input({ review: { round: 0 } })).clear).toBe(false);
+    expect(reviewResult(input({ state: "closed" })).clear).toBe(false);
+  });
   it("says how the checks went on their own", () => {
     const checks = (c: ChecksCount | null) => reviewResult(input({ checks: c })).checks;
     expect(checks({ passed: 1, failed: 0, pending: 0 })).toEqual({ word: "Passed", tone: "ok", text: "Its one check on GitHub passed." });

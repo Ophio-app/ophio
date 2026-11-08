@@ -13,7 +13,9 @@ import {
   MessagesSquare,
   ShieldAlert,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { useHandledWhenSeen } from "../../platform/handled";
+import { useOnScreen } from "../../shell/Screen";
 import {
   describeError,
   shallowEqual,
@@ -21,14 +23,17 @@ import {
   useHost,
   useLink,
 } from "../../app/context";
+import { useLastHeard } from "../../app/lastHeard";
 import { Age } from "../../design/Age";
 import { Button } from "../../design/Button";
 import { ApprovalQuickActions } from "../talk/ApprovalQuickActions";
+import { listedEverywhere } from "../../app/fleet";
+import { useApprovalWayButtons } from "../talk/ApprovalWayButtons";
 import { uuidv7 } from "../../protocol/ids";
 import type { HostSession, PendingCommand } from "../../host/session";
 import { commandResult } from "../../host/commandResult";
 import { confirmHere } from "../settings/useAccounts";
-import { ApprovalCard, ApprovalDetailText } from "../../design/ApprovalCard";
+import { ApprovalCard, ApprovalDetailText, FactsLine } from "../../design/ApprovalCard";
 import { ListRow } from "../../design/ListRow";
 import { Notice } from "../../design/Notice";
 import { NotAllowed } from "../../shell/NotAllowed";
@@ -50,6 +55,9 @@ import { useLocalText } from "./local";
 import { harnessLabel, latestRun, modelLabel } from "./logic";
 import { startedLabel } from "../../app/launchers";
 import { taskRowBadge } from "../talk/TaskBar";
+import { useMayDo } from "../talk/MayDoLine";
+import { mayDo } from "../talk/mayDo";
+import { accessHeld } from "../talk/access";
 
 /** Tasks the computer has from before those this device holds, read a page
  * at a time when the person reaches the end of a list. */
@@ -82,7 +90,8 @@ export function EarlierTasks({ projectId }: { projectId: string }) {
 }
 export function ConnectionNote() {
   const link = useLink();
-  const heard = useHost((s) => (link.state === "online" ? null : s.lastHeardAt));
+  const lastHeard = useLastHeard(link.state !== "online");
+  const heard = link.state === "online" ? null : lastHeard;
   if (link.state === "online") return null;
   return (
     <Notice
@@ -91,13 +100,15 @@ export function ConnectionNote() {
         link.state === "failed"
           ? "Access unavailable"
           : link.state === "offline"
-            ? "Offline"
+            ? link.noTailscale ? "Tailscale off" : "Offline"
             : "Connecting…"
       }
     >
       {link.state === "failed"
         ? link.detail
-        : "The computer hasn’t confirmed any newer changes."}
+        : link.state === "offline" && link.noTailscale
+          ? link.reason
+          : "The computer hasn’t confirmed any newer changes."}
       {heard !== null && (
         <>
           {" "}
@@ -146,8 +157,16 @@ export function taskIcon(task: Task, reason: string | null) {
           ? MessageCircleQuestion
           : Clock;
 }
-/** A task in a list. */
-export function TaskRow({ task }: { task: Task }) {
+/** Where an item is, in All's lists: its computer, isolated so no name can
+ * turn the text beside it around, and its project. */
+export function WhereLine({ projectId }: { projectId: string | undefined }) {
+  const { profile } = useApp();
+  const project = useHost((s) => (projectId ? s.projects[projectId]?.name : undefined));
+  return <span className="work-row-line work-row-where"><bdi className="all-projects__computer">{profile.name}</bdi>{project ? <> · {project}</> : null}</span>;
+}
+
+/** A task in a list. `where` names its computer and project, as All does. */
+export function TaskRow({ task, where = false }: { task: Task; where?: boolean }) {
   const stop = useStopIntent(task);
   const attentionCount = useHost(s => openAttention(s).filter(a => a.task_id === task.task_id).length);
   const run = useHost((s) => latestRun(task, s.runs));
@@ -162,6 +181,8 @@ export function TaskRow({ task }: { task: Task }) {
   const open = useOpenTask();
   const badge = stop?.phase === "not_running" ? "Not running · result being checked" : taskRowBadge(task, run, queue, reason).label;
   const line = besideBadge(reason ?? activity?.text ?? status, badge);
+  // Whether it is a chat or a task, and what it may do; the row opens it.
+  const may = useMayDo(task);
   return (
     <ListRow
       icon={taskIcon(task, reason)}
@@ -174,6 +195,8 @@ export function TaskRow({ task }: { task: Task }) {
             {badge} · {modelLabel(run, harnesses, task)}{task.start ? ` · ${startedLabel(task.start)}` : ""} ·{" "}
             <Age at={activity?.at ?? task.updated_at} suffix=" ago" />
           </span>
+          {where && <WhereLine projectId={task.project_id} />}
+          <span className="work-row-may">{may}</span>
           <StopStatus task={task} />
           {line && <span className="work-row-line">{line}</span>}
           {input?.input_state === "agent" && (
@@ -273,20 +296,31 @@ export function StopTask({ task, describedBy }: { task: Task; label?: string; de
 }
 /** A project's open items, or its results not yet looked at, approvals
  * first, as the attention list shows them. */
-export function listedAttention(s: HostState, projectId: string, review = false): AttentionItem[] {
-  return (review ? reviewAttention(s) : openAttention(s))
-    .filter((a) => !!a.task_id && s.tasks[a.task_id]?.project_id === projectId)
+/** What a project, or with `null` every project, lists under Needs you, or
+ * with `review` under To look at. */
+export function listedAttention(s: HostState, projectId: string | null, review = false): AttentionItem[] {
+  return (projectId === null ? listedEverywhere(s, review) : (review ? reviewAttention(s) : openAttention(s))
+    .filter((a) => !!a.task_id && s.tasks[a.task_id]?.project_id === projectId))
     .sort((a, b) => Number(!!b.approval_id) - Number(!!a.approval_id) || b.priority - a.priority);
 }
 
 /** `lead` sets the first of the list's groups apart, outlined, as the one to
  * answer first; `quiet` says nothing when the list is empty, for a list that
  * says it once elsewhere. */
-export function AttentionList({ projectId, review = false, lead = false, quiet = false }: { projectId: string; review?: boolean; lead?: boolean; quiet?: boolean }) {
+export function AttentionList({ projectId, review = false, lead = false, quiet = false, where = false }: { projectId: string | null; review?: boolean; lead?: boolean; quiet?: boolean; where?: boolean }) {
   const { session, ui } = useApp();
   const attention = useHost((s) => listedAttention(s, projectId, review), shallowEqual);
   const approvalDetails = useHost(s => s.approvals);
   const results = useHost(s => Object.fromEntries(attention.filter(a => a.kind === "completed" || a.kind === "failure").map(a => [a.attention_id, resultLabel(s, a)])), shallowEqual);
+  // Whether each is a chat or a task, and what it may do: a chat waiting
+  // here is still a chat.
+  const mayLines = useHost(s => {
+    const held = accessHeld(s.capabilities);
+    return Object.fromEntries(attention.flatMap(a => {
+      const t = a.task_id ? s.tasks[a.task_id] : undefined;
+      return t ? [[a.attention_id, mayDo(t, held, s.projects)]] : [];
+    }));
+  }, shallowEqual);
   const [chosen, setChosen] = useState<string | null>(null);
   const [handBackId, setHandBackId] = useState<string | null>(null);
   const handBackTask = useHost(s => handBackId ? s.tasks[handBackId] : undefined);
@@ -305,10 +339,17 @@ export function AttentionList({ projectId, review = false, lead = false, quiet =
     const queueGoAhead = a.kind === "waiting_for_you" && waitingTask?.state === "accepted" && !a.run_id;
     const waitingTarget = waitingTask && a.kind === "waiting_for_you" ? handBackTarget(state, waitingTask) : undefined;
     if (group.length > 1) return <details className="work-attention-group" key={a.attention_id}>
-      <summary>{group.length} {a.kind === "approval" ? "approvals" : "requests"} · {a.task_id ? session.state.get().tasks[a.task_id]?.title : a.title}</summary>
-      {group.map(item => <ListRow key={item.attention_id} title={item.title} subtitle={item.approval_id ? approvalDetails[item.approval_id] && <ApprovalDetailText approval={approvalDetails[item.approval_id]!} brief /> : item.body} chevron onClick={() => item.approval_id ? setChosen(item.approval_id) : ui.push({ screen: "attention", attentionId: item.attention_id })} />)}
+      <summary>{group.length} {a.kind === "approval" ? "approvals" : "requests"} · {a.task_id ? session.state.get().tasks[a.task_id]?.title : a.title}
+        {where && <WhereLine projectId={waitingTask?.project_id} />}
+        {mayLines[a.attention_id] && <span className="work-row-may">{mayLines[a.attention_id]}</span>}</summary>
+      {group.map(item => {
+        const asked = item.approval_id ? approvalDetails[item.approval_id] : undefined;
+        return <SeenRow key={item.attention_id} ids={[item.attention_id]}><ListRow title={asked?.headline || item.title}
+          subtitle={asked ? (asked.facts?.length ? <FactsLine facts={asked.facts} /> : <ApprovalDetailText approval={asked} brief />) : item.body}
+          chevron onClick={() => item.approval_id ? setChosen(item.approval_id) : ui.push({ screen: "attention", attentionId: item.attention_id })} /></SeenRow>;
+      })}
     </details>;
-    return <div key={a.attention_id} className="work-attention-item">
+    return <SeenRow key={a.attention_id} ids={[a.attention_id]} className="work-attention-item">
     <ListRow
       icon={
         a.approval_id
@@ -326,6 +367,7 @@ export function AttentionList({ projectId, review = false, lead = false, quiet =
               ? "Approval needed"
               : a.kind.replaceAll("_", " "))}{" "}
           · <Age at={a.created_at} suffix=" ago" />
+          {where && <WhereLine projectId={waitingTask?.project_id} />}
           {a.approval_id && approvalDetails[a.approval_id]?.kind === "question" && <span className="work-row-line">{approvalDetails[a.approval_id]?.detail}</span>}
           {/* Answers to a preview's questions, left here to send later. */}
           {a.task_id && unsentAnswers(a.task_id) && <span className="work-row-line">Your answers about its preview aren’t sent yet</span>}
@@ -343,8 +385,11 @@ export function AttentionList({ projectId, review = false, lead = false, quiet =
         }
       }}
     />
+    {/* What the task may do, on its card but under its button, so at large
+        text the first request still fits on the first screen. */}
+    {mayLines[a.attention_id] && <p className="work-attention-may">{mayLines[a.attention_id]}</p>}
     {a.approval_id && <ApprovalQuickActions approvalId={a.approval_id} />}
-    </div>;
+    </SeenRow>;
   };
   return (
     <>
@@ -384,6 +429,17 @@ export function AttentionList({ projectId, review = false, lead = false, quiet =
     </>
   );
 }
+/**
+ * A list's row of `ids`, which count as seen, their notifications done with,
+ * once the person has looked at it for a moment while using the app
+ * (`useHandledWhenSeen`). Folded away in a closed group, it isn't seen.
+ */
+export function SeenRow({ ids, className, as: Tag = "div", children }: { ids: readonly string[]; className?: string; as?: "div" | "li"; children: ReactNode }) {
+  const { platform, profile } = useApp();
+  const ref = useHandledWhenSeen(platform, profile.profileId, ids, useOnScreen());
+  return <Tag ref={ref} className={className}>{children}</Tag>;
+}
+
 /** The computer sends a device without the approvals grant no approval records. */
 export const APPROVALS_NOT_GRANTED = "This device was not granted approvals, so it can’t show or answer this request. Answer it on the computer or from a device that can.";
 
@@ -452,9 +508,13 @@ export function useApprovalDecision(approval: Approval) {
     await send({ command: "agent_login", action: { action: "answer_code", approval_id: approval.approval_id, code } }, "Code");
     announce("Code sent.");
   };
+  // The ways forward the computer says it takes, in place of Decline and
+  // Allow where they differ (Switch to Work, Turn into a task, Not now).
+  const actions = useApprovalWayButtons(approval);
   return {
     /** Spread onto ApprovalCard. */
     card: {
+      ...(actions ? { actions } : {}),
       draft: { text, onChange: setText },
       disabled: !current || uncertain,
       disabledReason: uncertain
@@ -470,12 +530,12 @@ export function useApprovalDecision(approval: Approval) {
 /** Said once a decision is sent: what it means for the work. */
 const DECIDED: Record<ApprovalDecision["decision"], string> = {
   allow: "Allowed.",
-  deny: "Denied. The agent carries on without it.",
+  deny: "Declined. The agent carries on without it.",
   answer: "Answer sent.",
 };
 const DECISION_LABEL: Record<ApprovalDecision["decision"], string> = {
   allow: "Allow",
-  deny: "Deny",
+  deny: "Decline",
   answer: "Answer",
 };
 

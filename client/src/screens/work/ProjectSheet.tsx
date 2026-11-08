@@ -30,6 +30,7 @@ import { DeleteOneOff, useDeleteOneOff } from "./DeleteOneOff";
 import { useWarning } from "../../app/warnings";
 import { useGithubLinkable } from "../github/GithubDoors";
 import { GithubSettingsRow } from "../github/GithubSettings";
+import { SignedOut } from "../settings/SignInAgain";
 import "./work.css";
 
 function selectable(h: HarnessInfo) {
@@ -103,7 +104,7 @@ export default function ProjectSheet({
           <ListRow title="Project stages" subtitle="Review stage decisions and history" chevron onClick={() => {
             onClose(); ui.push({ screen: "stages", projectId: project.project_id });
           }} />
-          <ListRow title="Notifications" subtitle="What alerts you from this project" chevron onClick={() => {
+          <ListRow title="Notifications" subtitle="Mute it, or choose how each kind notifies you" chevron onClick={() => {
             onClose(); ui.push({ screen: "settings", section: "settings-notifications", projectId: project.project_id });
           }} />
           <GithubRow project={project} />
@@ -111,6 +112,7 @@ export default function ProjectSheet({
             key={project.project_id}
             project={project}
             footer={footer}
+            onClose={onClose}
           />
           <Section title="Projects">
             <div className="group">
@@ -200,9 +202,11 @@ function PrimaryAction({
 function Defaults({
   project,
   footer,
+  onClose,
 }: {
   project: Project;
   footer: HTMLDivElement | null;
+  onClose: () => void;
 }) {
   const { profile } = useApp();
   const send = useCommand();
@@ -271,7 +275,9 @@ function Defaults({
             <summary>
               Why {unavailable.length === 1 ? `${unavailable[0]!.display_name} is` : `${unavailable.length} agents are`} unavailable
             </summary>
-            {unavailable.map((h) => (
+            {unavailable.map((h) => h.installed.state === "available" && h.account.state === "signed_out" ? (
+              <SignedOut key={h.kind} harness={h.kind} tone="unknown" leave={onClose} fallback={<Notice title={h.display_name}>{h.account.remedy}</Notice>} />
+            ) : (
               <Notice key={h.kind} title={h.display_name}>
                 {h.installed.state !== "available"
                   ? availabilityText(h.installed).detail

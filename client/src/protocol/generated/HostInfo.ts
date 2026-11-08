@@ -8,4 +8,13 @@ export type HostInfo = {
 /**
  * Current destination for files sent to the computer's inbox.
  */
-inbox_path?: string, host_id: HostId, name: string, os_label: string, companion_version: string, boot_epoch: BootEpoch, started_at: Timestamp, capabilities: HostCapabilities, };
+inbox_path?: string, host_id: HostId, 
+/**
+ * The name phones show: the one the owner chose, or the hostname.
+ */
+name: string, 
+/**
+ * The owner chose `name` (`Command::RenameComputer`); otherwise it is
+ * the computer's hostname.
+ */
+renamed?: boolean, os_label: string, companion_version: string, boot_epoch: BootEpoch, started_at: Timestamp, capabilities: HostCapabilities, };

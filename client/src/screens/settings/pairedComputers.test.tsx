@@ -74,3 +74,48 @@ it("keeps the sheet open and says why when the name isn't saved", async () => {
   expect(screen.getByText("Give the computer a name of up to 64 characters.")).toBeTruthy();
   expect(screen.getByLabelText("Computer name")).toBeTruthy();
 });
+
+it("renames a computer that keeps its own name there, for every device, and closes at once", async () => {
+  app.session.start();
+  await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+  render(<PairedComputers />, { wrapper });
+  fireEvent.click(within(cards()[0]!).getByRole("button", { name: "Rename studio" }));
+  expect(screen.getByText("The new name is kept on studio, so every phone and tablet paired with it shows it.")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("Computer name"), { target: { value: "Workshop" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save name" }));
+  expect(app.rename).toHaveBeenCalledWith(current.profileId, "Workshop");
+  expect(screen.queryByLabelText("Computer name")).toBeNull();
+  app.session.stop();
+});
+
+it("waits for a computer that keeps its own name to connect before renaming it", async () => {
+  app.session.start();
+  await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+  act(() => window.__sim!.offline());
+  await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+  render(<PairedComputers />, { wrapper });
+  fireEvent.click(within(cards()[0]!).getByRole("button", { name: "Rename studio" }));
+  expect(screen.getByText(/^Connect to studio to rename it\./)).toBeTruthy();
+  expect((screen.getByLabelText("Computer name") as HTMLInputElement).disabled).toBe(true);
+  expect((screen.getByRole("button", { name: "Save name" }) as HTMLButtonElement).disabled).toBe(true);
+  app.session.stop();
+});
+
+it("the simulated computer goes back to a name nobody chose when given its own", async () => {
+  app.session.start();
+  await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+  const rename = async (name: string) => {
+    const done = app.session.command({ command: "rename_computer", name }, { label: "Rename" });
+    await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+    await act(async () => { await done; });
+  };
+  await rename("Workshop");
+  expect(app.session.state.get().host).toEqual(expect.objectContaining({ name: "Workshop", renamed: true }));
+  await rename("studio");
+  expect(app.session.state.get().host).toEqual(expect.objectContaining({ name: "studio", renamed: false }));
+  // Nothing that turns text around gets in.
+  const refused = app.session.command({ command: "rename_computer", name: "stu\u202Eoid" }, { label: "Rename" }).catch((e: Error) => e);
+  await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+  expect(String(await refused)).toMatch(/direction of text/);
+  app.session.stop();
+});

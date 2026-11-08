@@ -6,6 +6,7 @@
 // their message; every activity is reachable by expanding its group.
 
 import { applyDeliveries, withdrawnByRevocation, withdrawnByStop } from "../../state/timeline";
+import { toolLabel } from "./toolInput";
 import type { AnnotationBundle, DeliveryState, NotRun, ReceiptFact, Run, HumanCheck, HumanResolution, RunState, Shown, TaskMode, TimelineItem } from "../../protocol/types";
 
 export type ActivityItem = TimelineItem & { item: Extract<TimelineItem["item"], { kind: "activity" }> };
@@ -234,7 +235,7 @@ export function bundleSummary(b: AnnotationBundle): string {
 /** Older journals embedded live state in the title. Keep their tool name readable. */
 export function stepSummary(step: ActivityItem, ended: boolean): string {
   if (step.item.tool === "ExitPlanMode") return "Plan proposed";
-  if (step.item.not_run) return `${step.item.tool}: ${NOT_RUN[step.item.not_run].label}`;
+  if (step.item.not_run) return `${toolLabel(step.item.tool)}: ${NOT_RUN[step.item.not_run].label}`;
   return ended || step.item.status !== "running"
     ? step.item.summary.replace(/^Running /i, "").replace(/ is running$/i, "")
     : step.item.summary;

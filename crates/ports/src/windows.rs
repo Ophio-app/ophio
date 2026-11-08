@@ -15,9 +15,29 @@ pub trait WindowActions: Send + Sync + std::fmt::Debug + 'static {
         action: &WindowAction,
         authority: std::sync::Arc<dyn WindowAuthority>,
     ) -> Result<(WindowOutcome, String), PlatformError>;
+    /// The focused window, when the desktop says which it is.
+    async fn focused(&self) -> Option<FocusedWindow> {
+        None
+    }
 }
 
 /// Rechecked by the adapter after discovery, immediately before native dispatch.
 pub trait WindowAuthority: Send + Sync {
     fn check(&self) -> Result<(), PlatformError>;
+    /// Told of an app launch that couldn't be confirmed stopped, just before
+    /// the action answers so, with how it can be checked again.
+    fn unstopped(&self, _launch: std::sync::Arc<dyn crate::LaunchCheck>) {}
+}
+
+/// The window that has keyboard focus, and where it is in the desktop's
+/// logical coordinates (those accessibility points use).
+#[derive(Debug, Clone, PartialEq)]
+pub struct FocusedWindow {
+    /// The compositor's own identity for it.
+    pub id: String,
+    pub app: String,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
 }

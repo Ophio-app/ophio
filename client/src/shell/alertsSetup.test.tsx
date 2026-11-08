@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ReactNode } from "react";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AppProvider, type App } from "../app/context";
 import { UiStore } from "../app/ui";
@@ -32,6 +32,9 @@ beforeEach(async () => {
   visibility("visible");
   notificationDetail.set("minimal");
   const platform = createSimPlatform();
+  // A finished task stays quiet by default; these tests raise one to see how an alert is handled.
+  const sim = window.__sim!.device;
+  sim.setAlerts({ tiers: { ...sim.alerts.tiers, finished: "alert" } });
   const profile = (await platform.profiles())[0];
   if (!profile) throw new Error("Missing fixture profile");
   const session = new HostSession(profile.profileId, platform.control(profile.profileId));
@@ -154,7 +157,7 @@ it("asks once, then walks only the Android steps still needed", async () => {
   device().notificationPermission("promptable");
   render(<AlertsSetup />, { wrapper });
   await advance();
-  expect(screen.getByText("Get alerts when an agent asks something or finishes?")).toBeTruthy();
+  expect(screen.getByText("Notify me when Øphio is closed?")).toBeTruthy();
   expect((screen.getByRole("radio", { name: "Turn on" }) as HTMLInputElement).checked).toBe(true);
 
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -194,7 +197,7 @@ it("saves Not now, and asks again next launch when closed without a choice", asy
   await advance();
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
   await advance();
-  expect(screen.queryByText("Get alerts when an agent asks something or finishes?")).toBeNull();
+  expect(screen.queryByText("Notify me when Øphio is closed?")).toBeNull();
   expect(device().alerts.settings).toBeNull();
   first.unmount();
 
@@ -204,8 +207,9 @@ it("saves Not now, and asks again next launch when closed without a choice", asy
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
   await advance();
   expect(device().alerts.settings).toEqual({ enabled: false, detail: "minimal" });
-  expect(device().alerts.android.running).toBe(false);
-  expect(screen.queryByText("Get alerts when an agent asks something or finishes?")).toBeNull();
+  // The watcher runs while the app does; the choice is only about after it closes.
+  expect(device().alerts.android.running).toBe(true);
+  expect(screen.queryByText("Notify me when Øphio is closed?")).toBeNull();
 });
 
 it("starts on the answer setup carried, and forgets it once saved", async () => {
@@ -223,33 +227,38 @@ it("starts on the answer setup carried, and forgets it once saved", async () => 
 it("shows the watcher's state in Settings and opens Android's own controls", async () => {
   render(<Notifications />, { wrapper });
   await advance();
-  const toggle = screen.getByRole("checkbox", { name: "Alerts when the app is closed" }) as HTMLInputElement;
+  const toggle = screen.getByRole("checkbox", { name: "Notify me when Øphio is closed" }) as HTMLInputElement;
   expect(toggle.checked).toBe(true);
-  // The app's own connection is live, so the watcher's is said as its own:
-  // the screen never reads as disagreeing with the header.
-  expect(screen.getByText(`Alerts for when the app is closed are still starting. Until then, alerts from ${app.profile.name} arrive while the app is open.`)).toBeTruthy();
-  expect(screen.queryByText(`Connecting to ${app.profile.name}…`)).toBeNull();
+  // Each computer's own connection, in a few words.
+  const computer = () => within(screen.getByRole("list", { name: "Computers" })).getByText(app.profile.name).closest("li")!;
+  expect(computer().textContent).toContain("Connecting…");
   device().setAlerts({ statuses: { [app.profile.profileId]: "unreachable" } });
   await advance(2000);
-  expect(screen.getByText(`Alerts for when the app is closed can’t reach ${app.profile.name} yet and keep trying. Until then they arrive while the app is open.`)).toBeTruthy();
+  expect(computer().textContent).toContain("Out of reach, trying again");
 
   // Followed while shown, as Android starts the watcher after it is turned on.
   device().setAlerts({ statuses: { [app.profile.profileId]: "update_needed" } });
   await advance(2000);
-  expect(screen.getByText(`Update Øphio on ${app.profile.name} to get alerts while the app is closed.`)).toBeTruthy();
+  expect(computer().textContent).toContain("Needs an Øphio update to notify you");
+  device().setAlerts({ statuses: { [app.profile.profileId]: "not_allowed" } });
+  await advance(2000);
+  expect(computer().textContent).toContain("No longer accepts this phone. Pair it again.");
+  device().setAlerts({ statuses: { [app.profile.profileId]: "watching" } });
+  await advance(2000);
+  expect(computer().textContent).toContain("Connected");
 
   // Without Unrestricted battery use, Android stops the watcher once the app closes.
-  expect(screen.getByText("Alerts stop when the app closes")).toBeTruthy();
-  expect(screen.getByText(/^Keeps a light connection to each paired computer while the app is open\./)).toBeTruthy();
+  expect(screen.getByText("Notifications stop when Øphio closes")).toBeTruthy();
+  expect(screen.getByText(/^Keeps a light connection to each paired computer while Øphio runs\./)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Allow" }));
-  fireEvent.click(screen.getAllByRole("button", { name: "Change" })[1]!);
+  fireEvent.click(screen.getByRole("button", { name: "Open Android settings" }));
   await advance();
   expect(device().batteryRequests).toBe(1);
-  expect(device().channels).toEqual(["finished"]);
+  expect(device().notificationSettingsOpened).toBe(1);
   device().setAlerts({ android: { unrestricted: true } });
   await advance(2000);
-  expect(screen.queryByText("Alerts stop when the app closes")).toBeNull();
-  expect(screen.getByText(/^Keeps a light connection to each paired computer, so alerts arrive after you swipe the app away/)).toBeTruthy();
+  expect(screen.queryByText("Notifications stop when Øphio closes")).toBeNull();
+  expect(screen.getByText(/^Keeps a light connection to each paired computer, so notifications still come after you swipe Øphio away/)).toBeTruthy();
 
   fireEvent.change(screen.getByLabelText("Notification detail"), { target: { value: "task_title" } });
   await advance();
@@ -258,14 +267,14 @@ it("shows the watcher's state in Settings and opens Android's own controls", asy
   fireEvent.click(toggle);
   await advance();
   expect(device().alerts.settings?.enabled).toBe(false);
-  expect(screen.getByText("Off: alerts arrive only while the app is open.")).toBeTruthy();
+  expect(screen.getByText("Off: notifications come only while Øphio is open or in the background.")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Allow" })).toBeNull();
 
   fireEvent.click(toggle);
   await advance();
   device().setAlerts({ android: { running: false } });
   await act(() => watcher().refresh());
-  expect(screen.getByText("Android stopped alerts")).toBeTruthy();
+  expect(screen.getByText("Android stopped notifications")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Start again" }));
   await advance();
   expect(device().alerts.android.running).toBe(true);

@@ -139,6 +139,11 @@ pub struct FakeHub {
     /// Published just before the next open list is read, so their live
     /// copies are still on the way when it is sent.
     pub before_open: Mutex<Vec<Event>>,
+    /// Each `types` the open list was read with, in order.
+    pub open_types: Mutex<Vec<bool>>,
+    /// Every alert a phone said it handled, in order. Those open are
+    /// published as handled, as the hub does for those the phone may see.
+    pub handled: Mutex<Vec<AttentionId>>,
     pub slow_request: Mutex<Option<Arc<RequestGate>>>,
     pub commands: Mutex<Vec<CommandEnvelope>>,
 }
@@ -204,6 +209,8 @@ impl FakeHub {
             preview_opens: AtomicUsize::new(0),
             alerts: Mutex::new(vec![]),
             before_open: Mutex::new(vec![]),
+            open_types: Mutex::new(vec![]),
+            handled: Mutex::new(vec![]),
             slow_request: Mutex::new(None),
             commands: Mutex::new(vec![]),
         }
@@ -458,7 +465,9 @@ impl Hub for FakeHub {
     async fn open_alerts(
         &self,
         _: &Caller,
+        types: bool,
     ) -> Result<(Vec<protocol::alerts::Alert>, u64), ProtocolError> {
+        self.open_types.lock().unwrap().push(types);
         for event in std::mem::take(&mut *self.before_open.lock().unwrap()) {
             self.publish(event);
         }
@@ -473,10 +482,49 @@ impl Hub for FakeHub {
         &self,
         _: &Caller,
         attention_id: AttentionId,
+        _: bool,
     ) -> Result<Option<protocol::alerts::Alert>, ProtocolError> {
         let alerts = self.alerts.lock().unwrap();
         let found = alerts.iter().find(|(a, _)| a.attention_id == attention_id);
         Ok(found.filter(|(_, open)| *open).map(|(a, _)| a.clone()))
+    }
+    async fn alerts_handled(
+        &self,
+        _: &Caller,
+        attention_ids: &[AttentionId],
+    ) -> Result<(), ProtocolError> {
+        self.handled.lock().unwrap().extend(attention_ids);
+        let mut handled = Vec::new();
+        for (alert, open) in self.alerts.lock().unwrap().iter_mut() {
+            if *open && !alert.quiet && attention_ids.contains(&alert.attention_id) {
+                alert.quiet = true;
+                handled.push(alert.clone());
+            }
+        }
+        for alert in handled {
+            self.publish(Event::AttentionUpserted {
+                item: protocol::model::AttentionItem {
+                    child_id: None,
+                    attention_id: alert.attention_id,
+                    kind: alert.kind,
+                    title: "Handled".into(),
+                    body: None,
+                    task_id: Some(alert.task_id),
+                    run_id: None,
+                    approval_id: None,
+                    created_at: alert.created_at,
+                    resolved_at: None,
+                    priority: 1,
+                    topic: None,
+                    quiet: false,
+                    report_id: None,
+                    account_id: None,
+                    alert: None,
+                    alert_handled_at: Some(self.clock.now()),
+                },
+            });
+        }
+        Ok(())
     }
     async fn backlog(
         &self,

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { AlertChannel, AlertSettings, AlertsState, BackgroundAlerts, Platform } from "../host/link";
+import type { AlertType, Tier } from "../protocol/types";
 import { Store } from "../state/store";
 
-interface AlertsView {
+export interface AlertsView {
   state: AlertsState | null;
   pending: boolean;
   error: string | null;
@@ -14,6 +15,8 @@ export class Alerts extends Store<AlertsView> {
   #read = 0;
   #users = 0;
   #stop: (() => void) | null = null;
+  #followers = 0;
+  #timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(readonly platform: Platform, readonly native: BackgroundAlerts) {
     super({ state: null, pending: false, error: null });
@@ -33,11 +36,15 @@ export class Alerts extends Store<AlertsView> {
   }
 
   /** Also reads every two seconds while a screen shows each computer's
-   * connection: Android starts the watcher a moment after it is turned on. */
+   * connection: Android starts the watcher a moment after it is turned on.
+   * Screens following at once share the one timer. */
   follow(): () => void {
     const stop = this.start();
-    const timer = setInterval(() => { if (document.visibilityState === "visible") void this.refresh(); }, 2000);
-    return () => { clearInterval(timer); stop(); };
+    if (this.#followers++ === 0) this.#timer = setInterval(() => { if (document.visibilityState === "visible") void this.refresh(); }, 2000);
+    return () => {
+      if (--this.#followers === 0) { clearInterval(this.#timer ?? undefined); this.#timer = null; }
+      stop();
+    };
   }
 
   async refresh(): Promise<AlertsState | null> {
@@ -67,6 +74,29 @@ export class Alerts extends Store<AlertsView> {
     } finally {
       this.set((s) => ({ ...s, pending: false }));
     }
+  }
+
+  /** Sets how one type shows on this phone. Rejects, in the person's
+   * words, when Android doesn't take it. */
+  async setTier(alertType: AlertType, tier: Tier): Promise<AlertsState | null> {
+    if (!this.native.setTier) throw new Error("This version of the app can’t change that yet.");
+    let state: AlertsState;
+    try {
+      state = await this.native.setTier(alertType, tier);
+    } catch (e) {
+      void this.refresh();
+      throw new Error(e instanceof Error && e.message ? e.message : "Android didn’t take the change.");
+    }
+    this.#read++;
+    this.set((s) => ({ ...s, state }));
+    return state;
+  }
+
+  /** The person saw these items on screen: their notifications go, here
+   * and on the person's other devices. */
+  handled(profileId: string, attentionIds: string[]): void {
+    for (let i = 0; i < attentionIds.length; i += 200)
+      void this.native.handled?.(profileId, attentionIds.slice(i, i + 200)).catch(() => {});
   }
 
   /** Android's battery dialog. The answer is read when the app returns. */
@@ -101,11 +131,12 @@ export class Alerts extends Store<AlertsView> {
     void this.native.viewing?.(profileId, on).catch(() => {});
   }
 
-  /** Whether the watcher raises this computer's alerts itself. It uses the
-   * same tag, so an alert both raise shows once. */
+  /** Whether the watcher raises this computer's alerts itself. While the
+   * app runs it does, whether or not it keeps going once the app closes. It
+   * uses the same tag, so an alert both raise shows once. */
   covers(profileId: string): boolean {
     const state = this.get().state;
-    return !!state?.settings?.enabled && state.android.running && state.statuses[profileId] === "watching";
+    return !!state?.android.running && state.statuses[profileId] === "watching";
   }
 }
 

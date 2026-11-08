@@ -119,6 +119,24 @@ pub(crate) fn run_mode(run: &Run, task: &Task) -> TaskMode {
     run.mode.unwrap_or(task.mode)
 }
 
+/// The mode each run's agent was really started in, kept when it starts.
+pub(crate) const LAUNCHED: &str = "run_launched_mode";
+
+/// The mode `run`'s agent was really started in. A run held to its task's
+/// access (a conversation, a task carried on from one, a GitHub task held
+/// to its project) starts as Work inside the sandbox that holds it,
+/// whatever [`run_mode`] says, so what it asks to do runs inside that
+/// sandbox. A run not started yet, or started before this was kept, is
+/// taken at its own mode.
+pub(crate) fn launched_mode(
+    r: &store::Read<'_>,
+    run: &Run,
+    task: &Task,
+) -> store::Result<TaskMode> {
+    Ok(r.get::<TaskMode>(LAUNCHED, run.run_id)?
+        .unwrap_or_else(|| run_mode(run, task)))
+}
+
 /// Whether `harness` asks for permission through the computer bridge's
 /// permission tool once that bridge is bound. Only Claude Code does; Codex
 /// sends its approvals and questions over its own app-server.
@@ -990,6 +1008,16 @@ impl CompanionHub {
                         input.text.push_str(&rules);
                     }
                 }
+                // So does the brief of a task looking into a problem report:
+                // the chat shows only its short first message.
+                if task.report.is_some() && intent.resume.is_none() {
+                    let brief: Option<String> =
+                        self.read(|r| r.get(crate::report_task::BRIEF, task_id))?;
+                    if let Some(brief) = brief {
+                        input.text.push_str("\n\n");
+                        input.text.push_str(&brief);
+                    }
+                }
                 let mode = run_mode(&run, &task);
                 let side = self.side_turn(run.run_id)?;
                 // A side turn of a task held to its access only reads it.
@@ -1008,7 +1036,17 @@ impl CompanionHub {
                 let answers = !side
                     && mode == TaskMode::Ask
                     && self.read(|r| crate::checklist::answers(r, task_id))?;
-                let bridge = if self.inner.bridge.is_some() && (acts || answers) && !github_held {
+                // Any other turn of a Plan or Ask task that could carry on
+                // in Work has request_access alone, to ask to. Not one
+                // another agent asked for help, or a reviewer: those answer
+                // an agent, not the person.
+                let asks = !side
+                    && !acts
+                    && !answers
+                    && task.asked_by.is_none()
+                    && task.review.is_none()
+                    && crate::approval_rule::switchable(&task, mode);
+                let bridge = if self.inner.bridge.is_some() && (acts || answers || asks) && !github_held {
                     Some(self.spawn_config(run.run_id).await?)
                 } else {
                     None
@@ -1077,7 +1115,11 @@ impl CompanionHub {
                 // that sandbox's reach, read-only, and still runs as Ask:
                 // its agent has only the reading tools and those two.
                 let controlled = task.access.is_some() && !answers;
-                self.write(|tx| tx.put("run_access", run.run_id, &task.access))?;
+                let launched = if controlled { TaskMode::Work } else { mode };
+                self.write(|tx| {
+                    tx.put("run_access", run.run_id, &task.access)?;
+                    tx.put(LAUNCHED, run.run_id, &launched)
+                })?;
                 let reach = match task.access.as_ref() {
                     Some(access) => Some(self.read(|r| self.access_reach(r, access))?),
                     None => None,
@@ -1093,7 +1135,7 @@ impl CompanionHub {
                 let spec = ports::RunSpec {
                     run_id: run.run_id,
                     task_id,
-                    mode: if controlled { TaskMode::Work } else { mode },
+                    mode: launched,
                     cwd: PathBuf::from(&project.host_path),
                     prompt: input,
                     model: task.model.clone(),
@@ -1347,6 +1389,11 @@ impl CompanionHub {
             let run: Run = self.read(|r| r.require("run", id))?;
             return self.usage_limited(run.harness, resets_at);
         }
+        if let HarnessEvent::SignedOut { reason } = &event {
+            let run: Run = self.read(|r| r.require("run", id))?;
+            tracing::info!(harness = ?run.harness, %reason, "an agent refused a run for want of a sign-in");
+            return self.run_signed_out(run.harness, run.dispatched_at.unwrap_or(run.admitted_at));
+        }
         if matches!(event, HarnessEvent::CleanupPending) {
             // The run stays as it is, holding what it holds and stoppable,
             // until the adapter confirms its processes ended.
@@ -1551,6 +1598,25 @@ impl CompanionHub {
         } else {
             None
         };
+        // The same request a switch to Work allowed, asked again by the
+        // turn in Work: allowed once more, without asking.
+        let mut preapproved = None;
+        // What a request would do is worked out before the store is held,
+        // so nothing in it can hold up or take down the store.
+        let mut request_facts = match &event {
+            HarnessEvent::ApprovalRequested(native) => {
+                let project: Option<Project> = self.read(|r| {
+                    let run: Run = r.require("run", id)?;
+                    let task: Task = r.require("task", run.task_id)?;
+                    r.get("project", task.project_id)
+                })?;
+                Some(crate::glance::approval_facts(
+                    &native.subject,
+                    project.as_ref(),
+                ))
+            }
+            _ => None,
+        };
         self.write(|tx| {
             let mut run: Run = tx.read().require("run", id)?;
             let mut task: Task = tx.read().require("task", run.task_id)?;
@@ -1606,6 +1672,7 @@ impl CompanionHub {
                 }
                 HarnessEvent::AgentMessage { text, .. } => {
                     crate::usage_limits::usage_returned(tx, run.harness)?;
+                    crate::sign_in_watch::proven(tx, run.harness, now)?;
                     timeline = Some(TimelineBody::AgentMessage {
                         text,
                         partial: false,
@@ -1645,6 +1712,7 @@ impl CompanionHub {
                     {
                         return Ok(());
                     }
+                    let facts = request_facts.take().unwrap_or_default();
                     let approval = Approval {
                         approval_id: ApprovalId::new(),
                         run_id: id,
@@ -1653,6 +1721,8 @@ impl CompanionHub {
                         native_request_id: native.native_request_id,
                         kind: native.kind,
                         title: native.title,
+                        headline: native.headline,
+                        facts,
                         detail: native.detail,
                         detail_lines: native.detail_lines,
                         questions: native.questions,
@@ -1661,6 +1731,8 @@ impl CompanionHub {
                         shortened: native.shortened,
                         revision: 1,
                         state: ApprovalState::Pending,
+                        access_request: None,
+                        actions: None,
                         delivery: None,
                         outcome: None,
                         requested_at: now,
@@ -1669,6 +1741,8 @@ impl CompanionHub {
                         resolved_at: None,
                     };
                     self.put_approval(tx, &approval)?;
+                    preapproved = crate::switch_work::take_preapproved(tx, &approval, now)?
+                        .map(|by| (approval.approval_id, by));
                     if let Some(call) = native.tool_call {
                         tx.put(APPROVAL_TOOL_CALL, approval.approval_id, &call)?;
                     }
@@ -1776,7 +1850,8 @@ impl CompanionHub {
                 | HarnessEvent::MessageDelivery { .. }
                 | HarnessEvent::ParentEnded { .. }
                 | HarnessEvent::CleanupPending
-                | HarnessEvent::UsageLimited { .. } => unreachable!(),
+                | HarnessEvent::UsageLimited { .. }
+                | HarnessEvent::SignedOut { .. } => unreachable!(),
             }
             if run.state == RunState::AwaitingApproval
                 && !crate::carry_on::run_blocked(&tx.read(), id)?
@@ -1823,7 +1898,18 @@ impl CompanionHub {
                 Provenance::Native,
             )?;
             Ok(())
-        })
+        })?;
+        if let Some((approval, by)) = preapproved {
+            let caller = crate::api::Caller {
+                principal: by,
+                grants: protocol::auth::Grants::owner(),
+            };
+            // A failure leaves it for the person, as any other request.
+            let _ = self
+                .resolve_approval(&caller, approval, &ApprovalDecision::Allow)
+                .await;
+        }
+        Ok(())
     }
     pub(crate) fn progress_queues(&self) {
         let hub = self.clone();
@@ -2101,6 +2187,9 @@ impl CompanionHub {
                     topic: None,
                     quiet: false,
                     report_id: None,
+                    account_id: None,
+                    alert: None,
+                    alert_handled_at: None,
                 };
                 // Done, with nothing for the person, as part of something
                 // that alerts as a whole: a Run all, or a pull request Ophio
@@ -2250,6 +2339,22 @@ impl CompanionHub {
             .or(task.current_run)
             .ok_or_else(|| error(ErrorCode::Conflict, "No active run"))?;
         let before: Run = self.read(|r| r.require("run", id))?;
+        // What the stopped turn still waited on was withdrawn as Stop was
+        // admitted; whatever waits on it now (Ophio's own gate as the turn
+        // starts, say) is let go at once rather than at its deadline.
+        let withdrawn: Vec<ApprovalId> = self.read(|r| {
+            Ok(r.list::<Approval>("approval")?
+                .into_iter()
+                .filter(|a| a.run_id == id && a.state == ApprovalState::Cancelled)
+                .map(|a| a.approval_id)
+                .collect())
+        })?;
+        {
+            let mut waits = self.inner.waits.lock().await;
+            for approval in withdrawn {
+                waits.remove(&approval);
+            }
+        }
         // The turn already ended; Stop reaches only what it left running.
         let helpers_only = still_finishing(&before);
         let control = {
@@ -2295,6 +2400,7 @@ impl CompanionHub {
             self.finish_run(id, RunState::Interrupted, None)?;
         }
         let revoked = self.revoke_run(id).await;
+        let launch_unresolved = self.run_launch_unresolved(id).await;
         let stopped = async {
             let interrupt = if !force && let Some(control) = &control {
                 tokio::time::timeout(Duration::from_secs(5), control.interrupt())
@@ -2431,12 +2537,14 @@ impl CompanionHub {
                     facts.extend(children);
                     facts.push(ReceiptFact {
                         label: "Desktop access withdrawn from the agent".into(),
-                        status: if revoked.is_ok() {
+                        status: if revoked.is_ok() && !launch_unresolved {
                             FactStatus::Done
                         } else {
                             FactStatus::Unknown
                         },
-                        detail: None,
+                        detail: launch_unresolved.then(|| {
+                            "An app the agent opened may still open on its display: the computer couldn’t stop its launch. Check the computer. Øphio allows control there again once it confirms the launch stopped, or after a restart. If the app did open, closing it can let Øphio confirm that.".into()
+                        }),
                     });
                     facts.push(ReceiptFact {
                         label: "Next up paused".into(),
@@ -2613,6 +2721,9 @@ impl CompanionHub {
             message.undispatched = false;
             tx.put("message_delivery", id, &messages)
         })?;
+        if followup.is_none() {
+            control.person_spoke();
+        }
         let result = tokio::time::timeout(
             Duration::from_secs(5),
             control.send_message(message_ref, input, delivery),
@@ -2698,6 +2809,18 @@ impl CompanionHub {
         tx: &mut store::Write<'_>,
         approval: &Approval,
     ) -> store::Result<()> {
+        // The ways forward it has, by the rule its decision is admitted by.
+        let mut with_actions;
+        let approval = match approval.state == ApprovalState::Pending && approval.actions.is_none()
+        {
+            true => {
+                with_actions = approval.clone();
+                with_actions.actions =
+                    Some(crate::approval_rule::Asked::of(&tx.read(), approval)?.actions());
+                &with_actions
+            }
+            false => approval,
+        };
         tx.put("approval", approval.approval_id, approval)?;
         tx.emit(Event::ApprovalUpserted {
             approval: approval.clone(),
@@ -2728,6 +2851,9 @@ impl CompanionHub {
             topic: None,
             quiet: false,
             report_id: None,
+            account_id: None,
+            alert: None,
+            alert_handled_at: None,
         };
         tx.put("attention", item.attention_id, &item)?;
         tx.emit(Event::AttentionUpserted { item })?;
@@ -2772,13 +2898,30 @@ impl CompanionHub {
         let wait = self.inner.waits.lock().await.remove(&id);
         let bridge = wait.is_some()
             || self.read(|r| Ok(r.get::<bool>("bridge_approval", id)?.unwrap_or(false)))?;
+        // A declined request tells its agent not to ask again in this turn
+        // and to finish without it. An access request words its own answer,
+        // and a question or a code is only declined.
+        let handed_over = match decision {
+            ApprovalDecision::Deny { reason }
+                if approval.access_request.is_none()
+                    && !matches!(
+                        approval.kind,
+                        ApprovalKind::Question | ApprovalKind::LoginCode
+                    ) =>
+            {
+                ApprovalDecision::Deny {
+                    reason: Some(crate::more_access::declined_text(reason.as_deref())),
+                }
+            }
+            _ => decision.clone(),
+        };
         // Once the decision is in the agent's hands, a run that ends before it
         // is recorded may have acted on it.
         let mut handed = false;
         let delivery = async {
             if let Some(wait) = wait {
                 self.login_decided(caller, &approval, decision);
-                wait.send(decision.clone()).map_err(|_| {
+                wait.send(handed_over.clone()).map_err(|_| {
                     error(
                         ErrorCode::NativeFailure,
                         "The agent did not receive this. It may still be waiting.",
@@ -2809,7 +2952,7 @@ impl CompanionHub {
             handed = true;
             tokio::time::timeout(
                 Duration::from_secs(5),
-                control.resolve_approval(&approval.native_request_id, decision),
+                control.resolve_approval(&approval.native_request_id, &handed_over),
             )
             .await
             .map_err(|_| {
@@ -2885,8 +3028,12 @@ impl CompanionHub {
                         attention_id: AttentionId::new(),
                         created_at: self.inner.clock.now(),
                         resolved_at: None,
+                        // A new notification, though the old one was handled.
+                        alert_handled_at: None,
                         ..last
                     };
+                    // Said on the notification, so asking again makes sense.
+                    tx.put(crate::alerts::HEADLINE, item.attention_id, &ANSWER_LOST)?;
                     tx.put("attention", item.attention_id, &item)?;
                     tx.emit(Event::AttentionUpserted { item })?;
                 }
@@ -2894,6 +3041,8 @@ impl CompanionHub {
                 return Ok(None);
             }
             a.state = if matches!(decision, ApprovalDecision::Deny { .. }) {
+                // An identical request in the same turn is declined at once.
+                crate::more_access::note_declined(tx, &a)?;
                 ApprovalState::Denied
             } else {
                 ApprovalState::Allowed
@@ -3217,6 +3366,9 @@ pub(crate) fn cleanup_unconfirmed(
         topic: None,
         quiet: false,
         report_id: None,
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
     };
     tx.put("attention", attention.attention_id, &attention)?;
     tx.emit(Event::AttentionUpserted { item: attention })?;
@@ -3342,6 +3494,10 @@ pub(crate) fn sync_queue_attention(
 
 /// What asks a person, at `now`, for the go-ahead `task` waits on at the
 /// front of Next up.
+/// The heading of a question or approval asked again because the answer
+/// given couldn't be handed to the agent.
+pub(crate) const ANSWER_LOST: &str = "Your answer didn't reach the agent";
+
 pub(crate) fn go_ahead(task: &Task, now: protocol::time::Timestamp) -> AttentionItem {
     AttentionItem {
         attention_id: AttentionId::new(),
@@ -3358,6 +3514,10 @@ pub(crate) fn go_ahead(task: &Task, now: protocol::time::Timestamp) -> Attention
         topic: None,
         quiet: false,
         report_id: None,
+        account_id: None,
+        // Waiting for you, but it moves on by itself once let start.
+        alert: Some(protocol::notifications::AlertType::GoAhead),
+        alert_handled_at: None,
     }
 }
 
@@ -4844,6 +5004,9 @@ mod continuation_tests {
                             topic: None,
                             quiet: false,
                             report_id: None,
+                            account_id: None,
+                            alert: None,
+                            alert_handled_at: None,
                         };
                         tx.put("attention", id, &item)?;
                     }
@@ -4870,6 +5033,8 @@ mod continuation_tests {
                 .harness_event(
                     run,
                     HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                        headline: None,
+                        subject: Default::default(),
                         native_request_id: "review".into(),
                         kind: ApprovalKind::Command,
                         title: "Review command".into(),
@@ -5287,6 +5452,9 @@ mod continuation_tests {
                     resolved_at: None,
                     quiet: false,
                     report_id: None,
+                    account_id: None,
+                    alert: None,
+                    alert_handled_at: None,
                 };
                 tx.put("attention", attention.attention_id, &attention)?;
                 recount_attention(tx, task.task_id)
@@ -6895,6 +7063,8 @@ mod continuation_tests {
             .harness_event(
                 run,
                 HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                    headline: None,
+                    subject: Default::default(),
                     native_request_id: "review".into(),
                     kind: ApprovalKind::Command,
                     title: "Review command".into(),
@@ -9973,7 +10143,8 @@ mod continuation_tests {
         let spec = f.dispatched(second_run).await;
         assert_eq!(spec.mode, TaskMode::Plan);
         assert_eq!(spec.resume_session.as_deref(), Some("native-session"));
-        assert!(spec.bridge.is_none());
+        // Read-only, it may only ask for more.
+        assert!(spec.bridge.as_ref().is_some_and(|b| b.read_only));
         assert!(spec.prompt.text.starts_with("Continue here"));
         assert!(spec.prompt.text.contains(&bundle.bundle_id.to_string()));
         assert_eq!(spec.prompt.images.len(), 1);
@@ -10282,6 +10453,8 @@ mod continuation_tests {
             .harness_event(
                 run,
                 HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                    headline: None,
+                    subject: Default::default(),
                     native_request_id: "write".into(),
                     kind: ApprovalKind::FileEdit,
                     title: "Write file".into(),
@@ -10341,6 +10514,8 @@ mod continuation_tests {
                 .harness_event(
                     run,
                     HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                        headline: None,
+                        subject: Default::default(),
                         native_request_id: native_request_id.clone(),
                         kind: ApprovalKind::Command,
                         title: "Review command".into(),

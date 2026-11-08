@@ -10,7 +10,7 @@ import { blobs } from "../../state/annotations";
 import { chooseComposerFile, composerFileKey, transferComposer } from "../transfers/composer";
 import { uuidv7 } from "../../protocol/ids";
 import { transferBytes } from "../transfers/storage";
-import Inbox from "./Inbox";
+import Inbox from "./InboxScreen";
 import { inboxStore } from "./inbox";
 
 vi.mock("../transfers/storage", () => {

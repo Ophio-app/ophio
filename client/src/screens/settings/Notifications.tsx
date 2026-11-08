@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
-import { useEffect, useId, useRef, useState } from "react";
+//
+// Settings › Notifications. Two levels, each where it belongs: how each type
+// shows (Alert, Silent or Off) is this device's, one choice for every
+// computer it is paired with; a project's own choices are kept on the
+// computer that owns the project, for every device paired with it. Every
+// change shows on the tap and takes effect at once.
+
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useCommandControl } from "../../app/commandControl";
 import { describeError, useApp, useHost, useLink } from "../../app/context";
+import { useComputerEntries, type ComputerEntry } from "../../app/fleet";
+import { OnComputer } from "../../app/onComputer";
 import { Button } from "../../design/Button";
-import { Segmented } from "../../design/Chip";
+import { Segmented, type SegmentOption } from "../../design/Chip";
+import { onIPhone } from "../../design/formFactor";
 import { ListRow, Section } from "../../design/ListRow";
 import { Notice } from "../../design/Notice";
 import { shallowEqual, useStore } from "../../state/store";
 import type { AlertStatus } from "../../host/link";
-import type { AlertTopic, NotificationSettings, ProjectNotifications } from "../../protocol/types";
+import type { AlertTopic, AlertType, ProjectNotifications, Tier } from "../../protocol/types";
 import { Screen } from "../../shell/Screen";
 import {
   NOTIFICATION_SETTINGS_FEATURE,
@@ -21,70 +31,205 @@ import {
   withProject,
 } from "../../platform/notificationSettings";
 import {
+  ALERT_TYPES,
+  ALERT_TYPES_FEATURE,
+  GROUPS,
+  TIER_HINTS,
+  TIER_LABELS,
+  ownTier,
+  projectSummary,
+  recommendedTiers,
+  withOwnTier,
+  type AlertTypeInfo,
+} from "../../platform/alertTypes";
+import { deviceTiers, type Tiers } from "../../platform/deviceTiers";
+import {
   notificationDetail,
   setNotificationDetail,
   type NotificationDetail,
 } from "../../platform/notifications";
 import { backgroundAlerts, type Alerts } from "../../platform/alerts";
 import { AlertPermissionAction, useNotificationAccess } from "../../shell/AlertsOffer";
+import "./notifications.css";
+
+const TIERS: readonly Tier[] = ["alert", "silent", "off"];
 
 export function Notifications() {
+  return (<>
+    <PhoneStatus />
+    <WhatNotifies />
+    <Projects />
+    <HowTheyLook />
+    <Elsewhere />
+  </>);
+}
+
+/** Whether this phone may show notifications, whether they keep coming once
+ * Øphio is closed, and how the watcher's connection to each computer is. */
+function PhoneStatus() {
   const { platform } = useApp();
-  const detail = useStore(notificationDetail, (s) => s);
   const { access, permission, error: permissionError } = useNotificationAccess();
   const watcher = backgroundAlerts(platform);
-  const id = useId();
-  const changeDetail = (value: NotificationDetail) => {
-    setNotificationDetail(value);
-    // The watcher writes its own alerts, so it keeps the same choice.
-    const settings = watcher?.get().state?.settings;
-    if (watcher && settings) void watcher.configure({ ...settings, detail: value });
-  };
-  return (<>
-    <Section title="On this phone" id="settings-notifications">
-      <div className="settings-card settings-stack">
-        {platform.notificationPermission && <Notice
-          tone={permission === "blocked" ? "warn" : permissionError ? "unknown" : "info"}
-          title={permission === "granted" ? "Alerts are on" : permission === "promptable" ? "Alerts are off" : permission === "blocked" ? "Alerts are blocked in Android settings" : permissionError ? "Task alert permission is unknown" : "Checking task alerts…"}
-          action={!permission && permissionError ? <Button onClick={() => void access.refresh()}>Check alerts again</Button> : <AlertPermissionAction />}>
-          {permissionError}
-        </Notice>}
-        <p>
-          Øphio alerts you when an agent asks something, a task needs your
-          approval or an answer, or a task finishes.
+  return <Section title="This phone" id="settings-notifications">
+    <div className="settings-card settings-stack">
+      {platform.notificationPermission && <Notice
+        tone={permission === "blocked" ? "warn" : permissionError ? "unknown" : "info"}
+        title={permission === "granted" ? "Alerts are on" : permission === "promptable" ? "Alerts are off" : permission === "blocked" ? "Alerts are blocked in the phone’s settings" : permissionError ? "Task alert permission is unknown" : "Checking task alerts…"}
+        action={!permission && permissionError ? <Button onClick={() => void access.refresh()}>Check alerts again</Button> : <AlertPermissionAction />}>
+        {permissionError}
+      </Notice>}
+      {!platform.notify ? (
+        <Notice>
+          System notifications aren’t available in this build. Needs you stays
+          available inside the app.
+        </Notice>
+      ) : watcher ? <ClosedAlerts watcher={watcher} /> : (
+        <p className="settings-meta">
+          {onIPhone()
+            ? "On iPhone, Øphio can notify you only while it’s open. Your choices below apply then."
+            : "In this build, notifications arrive only while the app is open. Your choices below apply then."}
         </p>
-        {platform.notify ? (
-          <div className="field">
-            <label htmlFor={`${id}-detail`} className="field__label">Notification detail</label>
-            <select
-              id={`${id}-detail`}
-              className="field__input"
-              aria-describedby={`${id}-detail-h`}
-              value={detail}
-              onChange={(e) => changeDetail(e.target.value === "task_title" ? "task_title" : "minimal")}
-            >
-              <option value="minimal">Minimal</option>
-              <option value="task_title">Include task title</option>
-            </select>
-            <p className="field__hint" id={`${id}-detail-h`}>
-              {detail === "task_title"
-                ? "Adds the task title. Titles can contain private details, and they appear on your lock screen."
-                : "Shows the computer and project, not the task’s title."}
-            </p>
-          </div>
-        ) : (
-          <Notice>
-            System notifications aren’t available in this build. Needs you stays
-            available inside the app.
-          </Notice>
-        )}
-        {watcher ? <ClosedAlerts watcher={watcher} detail={detail} /> : (
-          <p className="settings-meta">In this build, alerts arrive only while the app is open.</p>
-        )}
-      </div>
-    </Section>
-    <AlertChoices />
-  </>);
+      )}
+    </div>
+  </Section>;
+}
+
+/** How the watcher's own connection to one computer stands, in a few words. */
+function statusLine(status: AlertStatus | undefined): { text: string; tone: "ok" | "wait" | "warn" } {
+  switch (status) {
+    case "watching": return { text: "Connected", tone: "ok" };
+    case "update_needed": return { text: "Needs an Øphio update to notify you", tone: "warn" };
+    case "unreachable": return { text: "Out of reach, trying again", tone: "wait" };
+    case "not_allowed": return { text: "No longer accepts this phone. Pair it again.", tone: "warn" };
+    default: return { text: "Connecting…", tone: "wait" };
+  }
+}
+
+/** "Notify me when Øphio is closed", the battery step, and each computer. */
+function ClosedAlerts({ watcher }: { watcher: Alerts }) {
+  const { profiles, profile } = useApp();
+  const detail = useStore(notificationDetail, (s) => s);
+  const { state, pending, error } = useStore(watcher, (s) => s, shallowEqual);
+  useEffect(() => watcher.follow(), [watcher]);
+  // The switch shows the choice on the tap; Android's answer follows.
+  const [asked, setAsked] = useState<boolean | null>(null);
+  const on = asked ?? !!state?.settings?.enabled;
+  const android = state?.android;
+  const turn = (enabled: boolean) => {
+    setAsked(enabled);
+    void watcher.configure({ enabled, detail }).finally(() => setAsked((a) => (a === enabled ? null : a)));
+  };
+  const computers = profiles.some((p) => p.profileId === profile.profileId) ? profiles : [profile, ...profiles];
+  return <>
+    <label className="settings-check">
+      <input type="checkbox" checked={on} disabled={!state}
+        onChange={(e) => turn(e.target.checked)} />
+      Notify me when Øphio is closed
+    </label>
+    <p className="settings-meta">
+      {!on
+        ? "Off: notifications come only while Øphio is open or in the background."
+        : android && !android.unrestricted
+          ? "Keeps a light connection to each paired computer while Øphio runs. It receives notifications and the questions agents ask you, never other task text or the screen."
+          : "Keeps a light connection to each paired computer, so notifications still come after you swipe Øphio away or restart the phone, with nothing kept in the status bar. It receives notifications and the questions agents ask you, never other task text or the screen."}
+    </p>
+    {on && android && !android.running && (
+      <Notice tone="warn" title="Android stopped notifications"
+        action={<Button size="sm" disabled={pending} onClick={() => void watcher.configure({ enabled: true, detail })}>Start again</Button>}>
+        Notifications for when Øphio is closed aren’t running.
+      </Notice>
+    )}
+    {on && android && !android.unrestricted && (
+      <Notice tone="warn" title="Notifications stop when Øphio closes"
+        action={<Button size="sm" onClick={() => void watcher.battery()}>Allow</Button>}>
+        Android lets Øphio wait for notifications in the background only when its battery use is Unrestricted.
+      </Notice>
+    )}
+    {android?.running && computers.length > 0 && (
+      <ul className="notif-computers" aria-label="Computers">
+        {computers.map((p) => {
+          const line = statusLine(state?.statuses[p.profileId]);
+          return <li key={p.profileId} className={`notif-computers__row notif-computers__row--${line.tone}`}>
+            <span className="notif-computers__dot" aria-hidden />
+            <bdi className="notif-computers__name">{p.name}</bdi>
+            <span className="notif-computers__state">{line.text}</span>
+          </li>;
+        })}
+      </ul>
+    )}
+    {error && <p className="error-text" role="status">{error}</p>}
+  </>;
+}
+
+/** This device's choice for each type: every type, under its heading, with
+ * Alert, Silent or Off; the recommended one is marked. */
+function WhatNotifies() {
+  const { platform } = useApp();
+  const store = deviceTiers(platform);
+  useEffect(() => store.start(), [store]);
+  const view = useStore(store, (s) => s, shallowEqual);
+  const control = useCommandControl<Tiers>({
+    kind: "instant",
+    value: view.tiers,
+    equal: shallowEqual,
+    describe: (e) => (e instanceof Error && e.message ? e.message : "This phone didn’t take the change."),
+    send: async (next) => {
+      for (const t of ALERT_TYPES)
+        if (next[t.type] !== store.get().tiers[t.type]) await store.setTier(t.type, next[t.type]);
+    },
+  });
+  const tiers = control.value;
+  const recommended = recommendedTiers();
+  const changed = ALERT_TYPES.filter((t) => tiers[t.type] !== t.tier).length;
+  const set = (t: AlertTypeInfo, tier: Tier) => void control.set({ ...tiers, [t.type]: tier }, {
+    label: `${t.name}: ${TIER_LABELS[tier]}`, what: `how ${t.name.toLowerCase()} notify you`, said: `${t.name}: ${TIER_LABELS[tier]}.`,
+  });
+  const openAndroid = view.native && platform.openNotificationSettings;
+  return <Section title="What notifies you" id="settings-alert-types">
+    <div className="notif-intro">
+      <p className="settings-meta">
+        {view.native
+          ? "For this phone, from every computer it’s paired with."
+          : "For this device, from every computer it’s paired with, while Øphio is open."}
+        {" "}A dot marks the recommended choice.
+      </p>
+      <dl className="notif-legend">
+        {TIERS.map((t) => <div key={t}><dt>{TIER_LABELS[t]}</dt><dd>{TIER_HINTS[t]}</dd></div>)}
+      </dl>
+    </div>
+    {GROUPS.map((g) => (
+      <section key={g.group} className="settings-card notif-group" aria-labelledby={`notif-group-${g.group}`}>
+        <h3 id={`notif-group-${g.group}`} className="notif-group__title">{g.title}</h3>
+        <p className="settings-meta notif-group__hint">{g.hint}</p>
+        {ALERT_TYPES.filter((t) => t.group === g.group).map((t) => (
+          <TypeRow key={t.type} info={t}>
+            <Segmented<Tier> label={t.name} value={tiers[t.type]} onChange={(v) => set(t, v)}
+              options={TIERS.map((v) => ({ value: v, label: TIER_LABELS[v], ...(recommended[t.type] === v ? { mark: "recommended" } : {}) }))} />
+          </TypeRow>
+        ))}
+      </section>
+    ))}
+    <div className="notif-actions">
+      <Button variant="secondary" disabled={!changed}
+        onClick={() => void control.set(recommended, { label: "Use the recommended choices", what: "your notification choices", said: "Using the recommended choices.", done: "Using the recommended choices." })}>
+        Use the recommended choices
+      </Button>
+      <p className="settings-meta" role="status">{!changed ? "These are the recommended choices." : `${changed === 1 ? "1 choice differs" : `${changed} choices differ`} from the recommended ones.`}</p>
+    </div>
+    {openAndroid && <div className="notif-android">
+      <p className="settings-meta">Android keeps these as Øphio’s notification categories, so you can also change them, and their sounds, in Android’s settings.</p>
+      <Button size="sm" variant="quiet" onClick={() => void platform.openNotificationSettings?.()}>Open Android settings</Button>
+    </div>}
+  </Section>;
+}
+
+function TypeRow({ info, note, children }: { info: AlertTypeInfo; note?: string; children: ReactNode }) {
+  const id = useId();
+  return <div className="notif-type" role="group" aria-labelledby={`${id}-n`} aria-describedby={`${id}-d`}>
+    <p className="notif-type__name" id={`${id}-n`}>{info.name}</p>
+    <p className="settings-meta notif-type__desc" id={`${id}-d`}>{info.description}{note && <> {note}</>}</p>
+    {children}
+  </div>;
 }
 
 /**
@@ -99,6 +244,7 @@ function useChoices() {
   useEffect(() => store.follow(), [store]);
   const { view, error } = useStore(store, (s) => s, shallowEqual);
   const supported = useHost((s) => s.capabilities?.features.includes(NOTIFICATION_SETTINGS_FEATURE) ?? false);
+  const typed = useHost((s) => s.capabilities?.features.includes(ALERT_TYPES_FEATURE) ?? false);
   const allowed = useHost((s) => !!(s.grants?.tasks || s.grants?.admin));
   const online = link.state === "online";
   // The revision this phone's last save made, until a read shows it.
@@ -111,14 +257,14 @@ function useChoices() {
     send: async (next, note) => {
       const revision = Math.max(store.get().view?.revision ?? 0, saved.current);
       try {
-        await session.command({ command: "set_notification_settings", off: next.off, bundle: next.bundle, projects: next.projects }, { label: note.label, expectedRevision: revision });
+        await session.command({ command: "set_notification_settings", off: next.off, bundle: next.bundle, projects: next.projects, types: true }, { label: note.label, expectedRevision: revision });
         saved.current = revision + 1;
       } finally { store.refresh(); }
     },
   });
   const save = (next: NotificationChoices, label: string, said: string, what: string) => control.set(next, { label, said, what });
   return {
-    view, supported, allowed, online, save, computer: profile.name,
+    view, supported, typed, allowed, online, save, computer: profile.name,
     /** What to show: the person's latest choices over the computer's. */
     settings: { ...control.value, revision: view?.revision ?? 0 },
     ready: !!view && allowed && online,
@@ -138,36 +284,81 @@ function ChoicesNotes({ choices, what }: { choices: Choices; what: string }) {
   </>;
 }
 
-/** What alerts in every project, folding them per project, and each project's own. */
-function AlertChoices() {
-  const reportsSupported = useHost(s => s.capabilities?.features.includes("reports_v1") ?? false);
+/** Each project's own choices, under the computer it belongs to. */
+function Projects() {
+  const entries = useComputerEntries();
+  const several = entries.length > 1;
+  const shown = entries.filter((e) => e.session);
+  const away = entries.filter((e) => !e.session);
+  return <Section title="Projects" id="settings-notification-projects">
+    <p className="settings-meta notif-section-hint">
+      A project can be muted, or choose its own for any kind. Its choices are kept on its computer, for every device paired with it.
+    </p>
+    {shown.map((e) => e.current
+      ? <ComputerProjects key={e.profile.profileId} heading={several} />
+      : <OnComputer key={e.profile.profileId} entry={e}><ComputerProjects heading /></OnComputer>)}
+    {away.length > 0 && <p className="settings-meta">{away.map((e: ComputerEntry) => e.profile.name).join(", ")}: open {away.length === 1 ? "it" : "them"} from the computer menu to see {away.length === 1 ? "its" : "their"} projects here.</p>}
+  </Section>;
+}
+
+function ComputerProjects({ heading }: { heading: boolean }) {
   const { ui } = useApp();
   const choices = useChoices();
-  const { settings, supported, ready, save, computer } = choices;
+  const { settings, supported, typed, computer, view } = choices;
   const projects = useHost((s) => s.projects);
-  const id = useId();
-  if (!supported) return <Section title="What alerts you" id="settings-alert-topics">
-    <Notice>Update Øphio on {computer} to choose what alerts you, for every project and each one.</Notice>
-  </Section>;
-  const turn = (topic: AlertTopic, on: boolean, label: string) =>
-    save({ ...settings, off: on ? settings.off.filter((t) => t !== topic) : [...settings.off, topic] },
-      `${on ? "Turn on" : "Turn off"} ${label.toLowerCase()} alerts`, `${label}: ${on ? "on" : "off"} for every project.`, `${label.toLowerCase()} alerts`);
   const listed = Object.values(projects).filter((p) => !p.one_off).sort((a, b) => a.name.localeCompare(b.name));
-  return <>
-    <Section title="What alerts you" id="settings-alert-topics">
-      <div className="settings-card settings-stack">
-        <p className="settings-meta">The default for every project on {computer}, on every phone paired with it. Each project can choose its own below.</p>
-        <ChoicesNotes choices={choices} what="these" />
-        {TOPICS.filter(t => t.topic !== "reports" || reportsSupported).map((t) => <div key={t.topic} className="settings-topic">
-          <label className="settings-check">
-            <input type="checkbox" checked={!settings.off.includes(t.topic)} disabled={!ready} aria-describedby={`${id}-${t.topic}`}
-              onChange={(e) => turn(t.topic, e.target.checked, t.label)} />
-            {t.label}
-          </label>
-          <p className="settings-meta" id={`${id}-${t.topic}`}>{t.hint}</p>
-        </div>)}
-      </div>
-      <div className="settings-card settings-stack">
+  const id = useId();
+  return <div className="notif-computer" role="group" aria-labelledby={heading ? `${id}-h` : undefined}>
+    {heading && <h3 className="notif-computer__name" id={`${id}-h`}>On <bdi>{computer}</bdi></h3>}
+    {!supported ? <Notice>Update Øphio on {computer} to choose what notifies you from each of its projects.</Notice>
+      : !listed.length ? <p className="settings-meta">{computer} has no projects yet.</p>
+      : <>
+        {!view && <ChoicesNotes choices={choices} what="these" />}
+        <div className="group">
+          {listed.map((p) => <ListRow key={p.project_id} title={p.name} subtitle={projectSummary(settings, p.project_id, typed)} chevron
+            onClick={() => ui.push({ screen: "settings", section: "settings-notifications", projectId: p.project_id })} />)}
+        </div>
+      </>}
+  </div>;
+}
+
+/** Notification detail, on this phone, and one notification per project,
+ * on the computer. */
+function HowTheyLook() {
+  const { platform } = useApp();
+  const detail = useStore(notificationDetail, (s) => s);
+  const watcher = backgroundAlerts(platform);
+  const choices = useChoices();
+  const { settings, supported, ready, save, computer } = choices;
+  const id = useId();
+  const changeDetail = (value: NotificationDetail) => {
+    setNotificationDetail(value);
+    // The watcher writes its own notifications, so it keeps the same choice.
+    const kept = watcher?.get().state?.settings;
+    if (watcher && kept) void watcher.configure({ ...kept, detail: value });
+  };
+  if (!platform.notify && !supported) return null;
+  return <Section title="How they look" id="settings-alert-look">
+    <div className="settings-card settings-stack">
+      {platform.notify && <div className="field">
+        <label htmlFor={`${id}-detail`} className="field__label">Notification detail</label>
+        <select
+          id={`${id}-detail`}
+          className="field__input"
+          aria-describedby={`${id}-detail-h`}
+          value={detail}
+          onChange={(e) => changeDetail(e.target.value === "task_title" ? "task_title" : "minimal")}
+        >
+          <option value="minimal">Minimal</option>
+          <option value="task_title">Include task title</option>
+        </select>
+        <p className="field__hint" id={`${id}-detail-h`}>
+          {detail === "task_title"
+            ? "Adds the task title. Titles can contain private details, and they appear on your lock screen."
+            : "Shows the computer and project, not the task’s title."}
+        </p>
+      </div>}
+      {supported && <div className="settings-topic">
         <label className="settings-check">
           <input type="checkbox" checked={settings.bundle} disabled={!ready} aria-describedby={`${id}-bundle`}
             onChange={(e) => save({ ...settings, bundle: e.target.checked },
@@ -176,36 +367,137 @@ function AlertChoices() {
           One notification per project
         </label>
         <p className="settings-meta" id={`${id}-bundle`}>
-          Once a project has a second alert, they become one that counts them, such as “Website has 3 notifications”. Tapping it opens the project’s Needs you. It alerts again only for something that needs you.
+          On {computer}: once a project has a second notification, they become one that counts them, such as “Website has 3 notifications”. Tapping it opens the project’s Needs you.
         </p>
-      </div>
-    </Section>
-    {listed.length > 0 && <Section title="Projects" id="settings-notification-projects">
-      <div className="group">
-        {listed.map((p) => <ListRow key={p.project_id} title={p.name} subtitle={summary(settings, p.project_id)} chevron
-          onClick={() => ui.push({ screen: "settings", section: "settings-notifications", projectId: p.project_id })} />)}
-      </div>
-    </Section>}
-  </>;
+        <OldDefaults choices={choices} />
+      </div>}
+    </div>
+  </Section>;
 }
 
-/** One project's choices, said briefly. */
-function summary(settings: NotificationSettings, projectId: string): string {
-  const p = projectChoices(settings, projectId);
-  if (!p) return "Default";
-  if (p.mute) return "Muted";
-  const parts = [
-    ...(p.on.length ? [`${p.on.length} on`] : []),
-    ...(p.off.length ? [`${p.off.length} off`] : []),
-    ...(p.bundle === true ? ["one notification"] : p.bundle === false ? ["separate notifications"] : []),
+/** An older computer's "every project" switches, which hold notifications
+ * back on every phone: said, with a way to turn them back on. */
+function OldDefaults({ choices }: { choices: Choices }) {
+  const { settings, typed, ready, save, computer } = choices;
+  if (typed || !settings.off.length) return null;
+  const names = TOPICS.filter((t) => settings.off.includes(t.topic)).map((t) => t.label.toLowerCase());
+  return <Notice title={`${computer} holds some back`}
+    action={<Button size="sm" disabled={!ready} onClick={() => void save({ ...settings, off: [] as AlertTopic[] }, "Turn every kind back on", "Every kind notifies again.", "which notifications it holds back")}>Turn them back on</Button>}>
+    It doesn’t send {names.join(", ")} to any phone. Update Øphio on {computer} to choose these per phone instead.
+  </Notice>;
+}
+
+function Elsewhere() {
+  const { ui } = useApp();
+  return <Section title="Elsewhere" id="settings-alert-elsewhere">
+    <p className="settings-meta notif-section-hint">
+      Messages from Øphio in Telegram or Discord aren’t covered here. Those apps notify you by their own settings.
+    </p>
+    <div className="group">
+      <ListRow title="Chat links" subtitle="Which Telegram and Discord chats Øphio talks to, in Connections" chevron
+        onClick={() => ui.up({ screen: "connections" })} />
+    </div>
+  </Section>;
+}
+
+/** One project's notifications over each device's own. */
+export function ProjectNotificationsPage({ projectId }: { projectId: string }) {
+  const typed = useHost((s) => s.capabilities?.features.includes(ALERT_TYPES_FEATURE) ?? false);
+  return typed ? <ProjectTypesPage projectId={projectId} /> : <ProjectTopicsPage projectId={projectId} />;
+}
+
+type Own = Tier | "default";
+
+/** A computer that keeps a choice per type: muted, each type's own, and
+ * one notification or each. */
+function ProjectTypesPage({ projectId }: { projectId: string }) {
+  const { platform } = useApp();
+  const choices = useChoices();
+  const { settings, supported, ready, save, computer } = choices;
+  const project = useHost((s) => s.projects[projectId]);
+  const store = deviceTiers(platform);
+  useEffect(() => store.start(), [store]);
+  const device = useStore(store, (s) => s.tiers, shallowEqual);
+  const id = useId();
+  const kept = projectChoices(settings, projectId);
+  const mine: ProjectNotifications = kept ?? { project_id: projectId, mute: false, on: [], off: [] };
+  const name = project?.name ?? "This project";
+  const change = (next: ProjectNotifications, label: string, said: string, what: string) =>
+    save({ ...settings, projects: withProject(settings, next) }, label, said, what);
+  const setType = (t: AlertTypeInfo, value: Own) => change(withOwnTier(mine, t.type, value === "default" ? null : value),
+    `${t.name} in ${name}`, `${t.name}: ${value === "default" ? "default" : TIER_LABELS[value]} in ${name}.`, `how ${t.name.toLowerCase()} notify you from ${name}`);
+  const off = !ready || mine.mute;
+  const options = (type: AlertType): SegmentOption<Own>[] => [
+    // The computer's own choice for every project, brought over from an
+    // older switch, comes before this phone's.
+    { value: "default", label: `Default (${TIER_LABELS[settings.tiers?.find((t) => t.type === type)?.tier ?? device[type]]})`, disabled: off },
+    ...TIERS.map((v) => ({ value: v, label: TIER_LABELS[v], disabled: off })),
   ];
-  return parts.join(", ").replace(/^./, (c) => c.toUpperCase());
+  const bundle: "default" | "on" | "off" = mine.bundle === undefined ? "default" : mine.bundle ? "on" : "off";
+  const setBundle = (value: "default" | "on" | "off") => {
+    const { bundle: _, ...rest } = mine;
+    change(value === "default" ? rest : { ...rest, bundle: value === "on" }, `Notifications for ${name}`,
+      value === "default" ? `${name} uses the default.` : value === "on" ? `One notification for ${name}.` : `A notification for each in ${name}.`,
+      `how ${name}’s notifications show`);
+  };
+  const changes = (mine.tiers?.length ?? 0) + (mine.bundle !== undefined ? 1 : 0);
+  return <Screen title="Notifications" subtitle={name} className="settings-screen"><div className="settings-stack">
+    {!supported ? <Notice>Update Øphio on {computer} to choose what notifies you from each project.</Notice> : <>
+      <ChoicesNotes choices={choices} what="these" />
+      <Section title="This project" id="settings-project-notifications">
+        <div className="settings-card settings-stack">
+          <label className="settings-check">
+            <input type="checkbox" checked={mine.mute} disabled={!ready} aria-describedby={`${id}-mute`}
+              onChange={(e) => change({ ...mine, mute: e.target.checked }, e.target.checked ? `Mute ${name}` : `Unmute ${name}`,
+                e.target.checked ? `${name} is muted.` : `${name} notifies you again.`, `whether ${name} is muted`)} />
+            Mute this project
+          </label>
+          <p className="settings-meta" id={`${id}-mute`}>
+            {mine.mute
+              ? "Nothing from it notifies you, on any device. What needs you still waits in its Needs you, and a task you asked to hear about still tells you when it’s done."
+              : `Its choices below are kept on ${computer} and apply on every device paired with it. Default follows each device’s own choice; on this phone that’s the one in brackets.`}
+          </p>
+        </div>
+      </Section>
+      <Section title="What notifies you" id="settings-project-types">
+      {GROUPS.map((g) => {
+        const types = ALERT_TYPES.filter((t) => t.group === g.group && t.type !== "app_update");
+        return <section key={g.group} className={`settings-card notif-group${mine.mute ? " notif-group--muted" : ""}`} aria-labelledby={`${id}-${g.group}`}>
+          <h3 id={`${id}-${g.group}`} className="notif-group__title">{g.title}</h3>
+          {types.map((t) => {
+            const own = ownTier(mine, t.type);
+            return <TypeRow key={t.type} info={t}>
+              <Segmented<Own> label={t.name} value={own ?? "default"} onChange={(v) => setType(t, v)} options={options(t.type)} />
+            </TypeRow>;
+          })}
+        </section>;
+      })}
+      </Section>
+      <Section title="How they look" id="settings-project-look">
+        <div className="settings-card settings-stack">
+          <p className="settings-meta">One notification for this project</p>
+          <Segmented<"default" | "on" | "off"> label={`One notification for ${name}`} value={bundle} onChange={setBundle} options={[
+            { value: "default", label: `Default (${settings.bundle ? "one" : "separate"})`, disabled: !ready },
+            { value: "on", label: "One", disabled: !ready },
+            { value: "off", label: "Separate", disabled: !ready },
+          ]} />
+        </div>
+      </Section>
+      {kept && <div className="notif-actions">
+        <Button variant="secondary" disabled={!ready}
+          onClick={() => change({ project_id: projectId, mute: false, on: [], off: [] }, `Reset notifications for ${name}`, `${name} uses the defaults.`, `${name}’s notifications`)}>
+          Reset to the defaults
+        </Button>
+        {!mine.mute && changes > 0 && <p className="settings-meta" role="status">{changes === 1 ? "1 change" : `${changes} changes`} from the defaults.</p>}
+      </div>}
+    </>}
+  </div></Screen>;
 }
 
 type Tri = "default" | "on" | "off";
 
-/** One project's alerts over every project's: muted, each topic, and folding. */
-export function ProjectNotificationsPage({ projectId }: { projectId: string }) {
+/** An older computer's choices, per topic: muted, each topic, and folding. */
+function ProjectTopicsPage({ projectId }: { projectId: string }) {
   const choices = useChoices();
   const { settings, supported, ready, save, computer } = choices;
   const project = useHost((s) => s.projects[projectId]);
@@ -253,6 +545,7 @@ export function ProjectNotificationsPage({ projectId }: { projectId: string }) {
       </Section>
       <Section title="What alerts you" id="settings-project-topics">
         <div className="settings-card settings-stack">
+          <p className="settings-meta">Update Øphio on {computer} to choose Alert, Silent or Off for each kind in this project.</p>
           {TOPICS.filter(t => t.topic !== "reports").map((t) => <div key={t.topic} className="settings-topic">
             <p>{t.label}</p>
             <Segmented<Tri> label={t.label} value={topicChoice(t.topic)} onChange={(v) => setTopic(t.topic, t.label, v)}
@@ -268,69 +561,3 @@ export function ProjectNotificationsPage({ projectId }: { projectId: string }) {
   </div></Screen>;
 }
 
-/** How the watcher's own connection to the computer stands. The app's
- * connection, in the header, is a separate one: while it is live, a watcher
- * still connecting or out of reach is said as the watcher's, so the two
- * never seem to disagree. */
-function statusText(status: AlertStatus | undefined, name: string, live: boolean): string {
-  switch (status) {
-    case "watching": return `Ready for alerts from ${name}.`;
-    case "update_needed": return `Update Øphio on ${name} to get alerts while the app is closed.`;
-    case "unreachable": return live
-      ? `Alerts for when the app is closed can’t reach ${name} yet and keep trying. Until then they arrive while the app is open.`
-      : `Can’t reach ${name} right now. Alerts that came up meanwhile arrive once it’s back.`;
-    case "not_allowed": return `${name} no longer accepts this phone. Pair again to get its alerts.`;
-    default: return live
-      ? `Alerts for when the app is closed are still starting. Until then, alerts from ${name} arrive while the app is open.`
-      : `Connecting to ${name}…`;
-  }
-}
-
-/** One switch for every paired computer: a watcher that runs without the app's screen. */
-function ClosedAlerts({ watcher, detail }: { watcher: Alerts; detail: NotificationDetail }) {
-  const { profile } = useApp();
-  const { state, pending, error } = useStore(watcher, (s) => s, shallowEqual);
-  const live = useLink().state === "online";
-  useEffect(() => watcher.follow(), [watcher]);
-  // The switch shows the choice on the tap; Android's answer follows.
-  const [asked, setAsked] = useState<boolean | null>(null);
-  const on = asked ?? !!state?.settings?.enabled;
-  const android = state?.android;
-  const turn = (enabled: boolean) => {
-    setAsked(enabled);
-    void watcher.configure({ enabled, detail }).finally(() => setAsked((a) => (a === enabled ? null : a)));
-  };
-  return <>
-    <label className="settings-check">
-      <input type="checkbox" checked={on} disabled={!state}
-        onChange={(e) => turn(e.target.checked)} />
-      Alerts when the app is closed
-    </label>
-    <p className="settings-meta">
-      {!on
-        ? "Off: alerts arrive only while the app is open."
-        : android && !android.unrestricted
-          ? "Keeps a light connection to each paired computer while the app is open. It receives alerts and the questions agents ask you, never other task text or the screen."
-          : "Keeps a light connection to each paired computer, so alerts arrive after you swipe the app away or restart the phone, with nothing kept in the status bar. It receives alerts and the questions agents ask you, so you can answer from the notification, never other task text or the screen."}
-    </p>
-    {on && android && (android.running
-      ? <p className="settings-meta" role="status">{statusText(state.statuses[profile.profileId], profile.name, live)}</p>
-      : <Notice tone="warn" title="Android stopped alerts"
-          action={<Button size="sm" disabled={pending} onClick={() => void watcher.configure({ enabled: true, detail })}>Start again</Button>}>
-          Alerts for when the app is closed aren’t running.
-        </Notice>)}
-    {on && android && !android.unrestricted && (
-      <Notice tone="warn" title="Alerts stop when the app closes"
-        action={<Button size="sm" onClick={() => void watcher.battery()}>Allow</Button>}>
-        Android lets Øphio wait for alerts in the background only when its battery use is Unrestricted.
-      </Notice>
-    )}
-    {android && (
-      <dl className="settings-facts">
-        <div><dt>Needs you: questions, approvals and blocked tasks</dt><dd>{android.needsYou ? "On" : "Off"} <Button size="sm" variant="quiet" onClick={() => void watcher.channel("needs-you")}>Change</Button></dd></div>
-        <div><dt>Finished tasks, and tasks that stopped with a problem</dt><dd>{android.finished ? "On" : "Off"} <Button size="sm" variant="quiet" onClick={() => void watcher.channel("finished")}>Change</Button></dd></div>
-      </dl>
-    )}
-    {error && <p className="error-text" role="status">{error}</p>}
-  </>;
-}

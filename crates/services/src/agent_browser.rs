@@ -437,6 +437,8 @@ impl CompanionHub {
                         run_id,
                         task,
                         ToolApproval {
+                            headline: None,
+                            subject: Default::default(),
                             kind: ApprovalKind::LoginUse,
                             title: format!(
                                 "Let “{}” sign in to {} on {site}?",
@@ -597,6 +599,8 @@ impl CompanionHub {
                 run_id,
                 task,
                 ToolApproval {
+                    headline: None,
+                    subject: Default::default(),
                     kind: ApprovalKind::LoginCode,
                     title: format!("{}: {why}", login.name),
                     detail: Some(format!(

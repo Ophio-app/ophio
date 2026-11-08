@@ -8,6 +8,11 @@
 use crate::time::Timestamp;
 use serde::{Deserialize, Serialize};
 
+/// The computer's word that Claude Code and Codex can sign in from the
+/// phone's own browser (`SignIn { on_phone }`, `SubmitSignInCode`), and that
+/// it raises a Needs-you item when one isn't signed in.
+pub const SIGN_IN_ON_PHONE_FEATURE: &str = "sign_in_on_phone_v1";
+
 /// A value that must not be shown, logged or stored outside the computer's
 /// keyring. It is plain text on the wire, inside the paired connection, and
 /// wiped from memory when dropped.
@@ -103,6 +108,12 @@ pub struct Account {
     pub needs: Option<AccountNeed>,
     /// Sign in runs an interactive sign-in on the computer's browser.
     pub browser_sign_in: bool,
+    /// Sign in can instead be finished in the phone's own browser, with
+    /// `SignIn { on_phone: true }`: Claude Code and Codex. Older computers
+    /// send none.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub phone_sign_in: bool,
     /// Signed in, but short of something Ophio asks for, and what to do:
     /// GitHub without permission to change Actions workflows, for one.
     /// Older computers send none.
@@ -127,6 +138,26 @@ pub enum SignInStage {
         code: String,
         url_host: String,
     },
+    /// A sign-in started with `SignIn { on_phone: true }`: the provider's
+    /// page, to open in the phone's own browser. This is the one place the
+    /// whole sign-in link leaves the computer; it is never logged, kept or
+    /// put in an error. Where `code` is set (Codex) the page asks for it;
+    /// where `paste_code` is (Claude Code) the page shows a code to send
+    /// back with `SubmitSignInCode`.
+    OnPhone {
+        link: Secret,
+        url_host: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        code: Option<String>,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        #[ts(as = "Option<bool>", optional)]
+        paste_code: bool,
+        /// The code sent last was refused: paste the whole code again.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        #[ts(as = "Option<bool>", optional)]
+        code_refused: bool,
+    },
     /// The tool finished; its own status check is confirming who signed in.
     Checking,
     Done {
@@ -134,6 +165,11 @@ pub enum SignInStage {
     },
     Failed {
         reason: String,
+        /// A provider page that fixes the cause, such as the setting that
+        /// lets Codex sign in with a code. Older computers send none.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        help_url: Option<String>,
     },
     Cancelled,
     TimedOut,
@@ -276,8 +312,29 @@ impl PasswordManager {
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 #[ts(export)]
 pub enum AccountAction {
-    /// Start the service's own sign-in in the computer's browser.
+    /// Start the service's own sign-in in the computer's browser, or, with
+    /// `on_phone`, one to finish in the phone's own browser (only where the
+    /// account says `phone_sign_in`, on a computer that advertises
+    /// `sign_in_on_phone_v1`; older ones refuse the field).
     SignIn {
+        account_id: String,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        #[ts(as = "Option<bool>", optional)]
+        on_phone: bool,
+    },
+    /// The code the provider's page showed, for the sign-in running now
+    /// (`OnPhone { paste_code }`), named by its account and `started_at` as
+    /// the view showed them; a code for another sign-in is refused. Written
+    /// once to the sign-in and never shown, logged, stored with the command
+    /// or journaled.
+    SubmitSignInCode {
+        account_id: String,
+        started_at: Timestamp,
+        code: Secret,
+    },
+    /// Put away the notice that an agent isn't signed in, for this lapse
+    /// only: the next lapse raises a new one.
+    DismissSignInNotice {
         account_id: String,
     },
     CancelSignIn,
@@ -322,6 +379,15 @@ impl AccountAction {
                 account_id: account_id.clone(),
                 key: Secret::withheld(),
             },
+            Self::SubmitSignInCode {
+                account_id,
+                started_at,
+                ..
+            } => Self::SubmitSignInCode {
+                account_id: account_id.clone(),
+                started_at: *started_at,
+                code: Secret::withheld(),
+            },
             other => other.clone(),
         }
     }
@@ -353,5 +419,49 @@ mod tests {
         let kept = serde_json::to_string(&action.without_secrets()).unwrap();
         assert!(!kept.contains("abcdef"));
         assert!(serde_json::to_string(&action).unwrap().contains("abcdef"));
+    }
+
+    #[test]
+    fn a_pasted_sign_in_code_is_sent_but_never_kept_or_printed() {
+        let action = AccountAction::SubmitSignInCode {
+            account_id: "claude".into(),
+            started_at: Timestamp(1),
+            code: Secret::new("pasted-code#state"),
+        };
+        assert!(!format!("{action:?}").contains("pasted-code"));
+        let kept = serde_json::to_string(&action.without_secrets()).unwrap();
+        assert!(!kept.contains("pasted-code"));
+        assert!(
+            serde_json::to_string(&action)
+                .unwrap()
+                .contains("pasted-code")
+        );
+        // The link a phone sign-in opens doesn't print either.
+        let stage = SignInStage::OnPhone {
+            link: Secret::new("https://claude.com/cai/oauth/authorize?state=abc"),
+            url_host: "claude.com".into(),
+            code: None,
+            paste_code: true,
+            code_refused: false,
+        };
+        assert!(!format!("{stage:?}").contains("state=abc"));
+    }
+
+    #[test]
+    fn a_sign_in_without_on_phone_reads_as_before() {
+        let old: AccountAction =
+            serde_json::from_str(r#"{"action":"sign_in","account_id":"claude"}"#).unwrap();
+        assert_eq!(
+            old,
+            AccountAction::SignIn {
+                account_id: "claude".into(),
+                on_phone: false
+            }
+        );
+        // And is sent as before, so an older computer takes it.
+        assert_eq!(
+            serde_json::to_string(&old).unwrap(),
+            r#"{"action":"sign_in","account_id":"claude"}"#
+        );
     }
 }

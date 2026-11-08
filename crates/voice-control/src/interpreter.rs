@@ -38,7 +38,14 @@ impl Interpreter {
             _ = cancelled.changed() => Err(Error::Superseded),
             result = tokio::time::timeout(ASSESS_TIMEOUT, async {
                 let _permit = self.limit.acquire().await.map_err(|_| Error::Stopped)?;
-                self.assessor.assess_voice(&request).await.map_err(|e| if e == jev::Error::Timeout { Error::Timeout } else { Error::Assessment })
+                self.assessor.assess_voice(&request).await.map_err(|e| match e {
+                    jev::Error::Timeout => Error::Timeout,
+                    jev::Error::Refused | jev::Error::NotConnected => Error::KeyRefused,
+                    jev::Error::Unavailable => Error::Unavailable(
+                        "Jev could not be reached. Nothing was acted on. Check the computer’s internet connection and try again".into(),
+                    ),
+                    jev::Error::Malformed => Error::Assessment,
+                })
             }) => result.map_err(|_| Error::Timeout)?,
         }
     }

@@ -5,6 +5,7 @@ pub mod background;
 pub mod constants;
 pub mod desktop;
 pub mod dpapi;
+pub mod environment;
 pub mod fs;
 pub mod open_url;
 pub mod pipe;

@@ -418,6 +418,8 @@ impl Driver for PortalDriver {
             uncertain: false,
             description: self.description.clone(),
             pointer_space: self.pointer_space,
+            scrolling: false,
+            accessibility: connect_accessibility(self.connection.clone()),
         }))
     }
 }
@@ -426,6 +428,100 @@ struct PortalInput {
     uncertain: bool,
     description: Option<crate::wayland::WaylandDriver>,
     pointer_space: PointerSpace,
+    /// A scroll is under way and not yet marked finished. Mutter treats
+    /// portal scrolls as a finger on a touchpad, which apps expect to lift.
+    scrolling: bool,
+    /// Accessibility, connected in the background so a paste never waits
+    /// for it.
+    accessibility: Arc<Accessibility>,
+}
+/// How long a paste may spend telling a terminal from another app. The hub
+/// gives the whole paste 500 ms; past this, Ctrl+V is sent.
+const PASTE_DECISION: std::time::Duration = std::time::Duration::from_millis(150);
+/// The accessibility bus for one input session, kept connected in the
+/// background: tried when the session starts, again while it is missing,
+/// and again after a check fails, as when at-spi restarts. A paste only
+/// reads what is there.
+#[derive(Default)]
+struct Accessibility {
+    current: std::sync::Mutex<Option<Arc<crate::a11y::AtSpi>>>,
+}
+/// How long one connection attempt may take.
+const ACCESSIBILITY_CONNECT: std::time::Duration = std::time::Duration::from_secs(2);
+/// Between attempts while accessibility is missing, doubling to the most.
+const ACCESSIBILITY_RETRY: (std::time::Duration, std::time::Duration) = (
+    std::time::Duration::from_millis(500),
+    std::time::Duration::from_secs(30),
+);
+impl Accessibility {
+    fn get(&self) -> Option<Arc<crate::a11y::AtSpi>> {
+        self.current
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+    fn set(&self, accessibility: Option<Arc<crate::a11y::AtSpi>>) {
+        *self.current.lock().unwrap_or_else(|e| e.into_inner()) = accessibility;
+    }
+}
+fn connect_accessibility(session: zbus::Connection) -> Arc<Accessibility> {
+    let link = Arc::new(Accessibility::default());
+    let weak = Arc::downgrade(&link);
+    tokio::spawn(async move {
+        let mut wait = ACCESSIBILITY_RETRY.0;
+        // Ends with the input session, when nothing holds the link.
+        while let Some(link) = weak.upgrade() {
+            if link.get().is_none() {
+                match tokio::time::timeout(
+                    ACCESSIBILITY_CONNECT,
+                    crate::a11y::AtSpi::on_session(&session),
+                )
+                .await
+                {
+                    Ok(Ok(accessibility)) => {
+                        link.set(Some(Arc::new(accessibility)));
+                        wait = ACCESSIBILITY_RETRY.0;
+                    }
+                    _ => wait = (wait * 2).min(ACCESSIBILITY_RETRY.1),
+                }
+            }
+            drop(link);
+            tokio::time::sleep(wait).await;
+        }
+    });
+    link
+}
+#[cfg(test)]
+fn known_accessibility(accessibility: Option<crate::a11y::AtSpi>) -> Arc<Accessibility> {
+    let link = Arc::new(Accessibility::default());
+    link.set(accessibility.map(Arc::new));
+    link
+}
+impl PortalInput {
+    /// End the scroll under way, as fingers leaving a touchpad do, with no
+    /// further movement. Sent before the next other input and at a barrier,
+    /// never later, so nothing follows a barrier.
+    async fn finish_scroll(&mut self) -> Result<(), PlatformError> {
+        if !std::mem::take(&mut self.scrolling) {
+            return Ok(());
+        }
+        let result = self
+            .session
+            .remote
+            .notify_pointer_axis(
+                &self.session.session,
+                0.0,
+                0.0,
+                ashpd::desktop::remote_desktop::NotifyPointerAxisOptions::default()
+                    .set_finish(true),
+            )
+            .await
+            .map_err(portal_input_error);
+        if matches!(result, Err(PlatformError::OutcomeUnknown(_))) {
+            self.uncertain = true;
+        }
+        result
+    }
 }
 #[async_trait]
 impl NativeInput for PortalInput {
@@ -436,6 +532,32 @@ impl NativeInput for PortalInput {
             Default::default()
         };
         crate::text::validate(text, &symbols, self.session.clipboard.is_some())
+    }
+    async fn paste_keys(&mut self) -> Vec<u32> {
+        // A terminal takes Ctrl+V as a control character and pastes with
+        // Ctrl+Shift+V, which other apps ignore or use otherwise. Accessibility
+        // tells them apart where it runs; elsewhere Ctrl+V is kept.
+        let terminal = match self.accessibility.get() {
+            Some(accessibility) => {
+                match tokio::time::timeout(PASTE_DECISION, accessibility.front_is_terminal()).await
+                {
+                    Ok(Ok(answer)) => answer,
+                    Ok(Err(_)) => {
+                        // The bus failed: reconnect in the background, never in a paste.
+                        self.accessibility.set(None);
+                        None
+                    }
+                    // An unresponsive window walk does not prove the bus is gone.
+                    Err(_) => None,
+                }
+            }
+            None => None,
+        };
+        if terminal == Some(true) {
+            vec![0xffe3, 0xffe1, u32::from('v')]
+        } else {
+            vec![0xffe3, u32::from('v')]
+        }
     }
     async fn set_clipboard(
         &mut self,
@@ -458,8 +580,19 @@ impl NativeInput for PortalInput {
             .load(std::sync::atomic::Ordering::SeqCst)
         {
             self.uncertain = false;
+            self.scrolling = false;
             return Ok(());
         }
+        if !self
+            .session
+            .closed
+            .load(std::sync::atomic::Ordering::SeqCst)
+            && !self.uncertain
+        {
+            // A lost reply here falls through to the close below.
+            let _ = self.finish_scroll().await;
+        }
+        self.scrolling = false;
         if self.uncertain
             || self
                 .session
@@ -511,6 +644,11 @@ impl NativeInput for PortalInput {
                 ))
             };
         }
+        let axis = matches!(event, Event::Axis { .. });
+        if !axis {
+            self.finish_scroll().await?;
+        }
+        let state = &self.session;
         let result = match event {
             Event::Motion { x, y } => {
                 let (node, lx, ly) = {
@@ -539,7 +677,9 @@ impl NativeInput for PortalInput {
                     )
                     .await
             }
-            Event::Key { keysym, pressed } => {
+            Event::Key {
+                keysym, pressed, ..
+            } => {
                 state
                     .remote
                     .notify_keyboard_keysym(
@@ -560,6 +700,9 @@ impl NativeInput for PortalInput {
         .map_err(portal_input_error);
         if matches!(result, Err(PlatformError::OutcomeUnknown(_))) {
             self.uncertain = true;
+        }
+        if result.is_ok() && axis {
+            self.scrolling = true;
         }
         result
     }
@@ -1203,6 +1346,308 @@ mod tests {
             .await
             .expect("a consent given up mid-dialog closes its session");
         assert!(matches!(closed, Some(Seen::Closed(_))), "{closed:?}");
+    }
+    async fn test_input(bus: &crate::fake_portal::Bus) -> PortalInput {
+        let connection = bus.connect().await;
+        let remote = RemoteDesktop::with_connection(connection.clone())
+            .await
+            .unwrap();
+        let session = Arc::new(remote.create_session(Default::default()).await.unwrap());
+        PortalInput {
+            session: Arc::new(PortalSession {
+                cast: Screencast::with_connection(connection.clone())
+                    .await
+                    .unwrap(),
+                remote,
+                session,
+                closed: Default::default(),
+                close_acknowledged: Default::default(),
+                closed_watcher: tokio::spawn(async {}),
+                outputs: Mutex::new(Vec::new()),
+                native_geometry: Default::default(),
+                clipboard: None,
+                source_removed: Default::default(),
+            }),
+            uncertain: false,
+            description: None,
+            pointer_space: PointerSpace::default(),
+            scrolling: false,
+            accessibility: connect_accessibility(connection),
+        }
+    }
+    #[derive(Debug)]
+    struct KittyInFront;
+    #[async_trait]
+    impl crate::a11y::Bus for KittyInFront {
+        async fn children(
+            &self,
+            o: &crate::a11y::Object,
+        ) -> Result<Vec<crate::a11y::Object>, voice_control::Error> {
+            let child = |path: &str| crate::a11y::Object {
+                bus: ":1.9".into(),
+                path: zbus::zvariant::OwnedObjectPath::try_from(path).unwrap(),
+            };
+            Ok(match o.path.as_str() {
+                "/org/a11y/atspi/accessible/root" => vec![child("/app")],
+                "/app" => vec![child("/window")],
+                _ => vec![],
+            })
+        }
+        async fn metadata(
+            &self,
+            o: &crate::a11y::Object,
+        ) -> Result<crate::a11y::Metadata, voice_control::Error> {
+            Ok(crate::a11y::Metadata {
+                role: "frame".into(),
+                name: if o.path.as_str() == "/app" {
+                    "kitty"
+                } else {
+                    ""
+                }
+                .into(),
+                state: vec![1 << 1],
+                bounds: protocol::voice::VoiceBounds {
+                    x: 0.,
+                    y: 0.,
+                    width: 1.,
+                    height: 1.,
+                },
+                actions: vec![],
+            })
+        }
+        async fn activate(
+            &self,
+            _: &crate::a11y::Object,
+            _: bool,
+        ) -> Result<bool, voice_control::Error> {
+            Ok(false)
+        }
+    }
+    #[tokio::test]
+    async fn paste_uses_ctrl_shift_v_only_in_a_terminal() {
+        let bus = crate::fake_portal::Bus::start();
+        let (seen, _saw) = tokio::sync::mpsc::unbounded_channel();
+        let _portal = crate::fake_portal::serve(&bus, seen).await;
+        // No accessibility bus on this session: Ctrl+V, as before.
+        let mut input = test_input(&bus).await;
+        assert_eq!(input.paste_keys().await, [0xffe3, u32::from('v')]);
+        input.accessibility =
+            known_accessibility(Some(crate::a11y::AtSpi::with_bus(Arc::new(KittyInFront))));
+        assert_eq!(input.paste_keys().await, [0xffe3, 0xffe1, u32::from('v')]);
+    }
+    #[derive(Debug)]
+    struct NoFocusedWindow;
+    #[async_trait]
+    impl crate::a11y::Bus for NoFocusedWindow {
+        async fn children(
+            &self,
+            _: &crate::a11y::Object,
+        ) -> Result<Vec<crate::a11y::Object>, voice_control::Error> {
+            Ok(vec![])
+        }
+        async fn metadata(
+            &self,
+            o: &crate::a11y::Object,
+        ) -> Result<crate::a11y::Metadata, voice_control::Error> {
+            KittyInFront.metadata(o).await
+        }
+        async fn activate(
+            &self,
+            _: &crate::a11y::Object,
+            _: bool,
+        ) -> Result<bool, voice_control::Error> {
+            Ok(false)
+        }
+    }
+    #[tokio::test]
+    async fn a_paste_without_a_focused_accessible_window_keeps_the_connection() {
+        let bus = crate::fake_portal::Bus::start();
+        let (seen, _saw) = tokio::sync::mpsc::unbounded_channel();
+        let _portal = crate::fake_portal::serve(&bus, seen).await;
+        let mut input = test_input(&bus).await;
+        input.accessibility = known_accessibility(Some(crate::a11y::AtSpi::with_bus(Arc::new(
+            NoFocusedWindow,
+        ))));
+        assert_eq!(input.paste_keys().await, [0xffe3, u32::from('v')]);
+        assert!(input.accessibility.get().is_some());
+    }
+    #[derive(Debug)]
+    struct BrokenAccessibility;
+    #[async_trait]
+    impl crate::a11y::Bus for BrokenAccessibility {
+        async fn children(
+            &self,
+            _: &crate::a11y::Object,
+        ) -> Result<Vec<crate::a11y::Object>, voice_control::Error> {
+            Err(voice_control::Error::Unavailable("bus disconnected".into()))
+        }
+        async fn metadata(
+            &self,
+            o: &crate::a11y::Object,
+        ) -> Result<crate::a11y::Metadata, voice_control::Error> {
+            KittyInFront.metadata(o).await
+        }
+        async fn activate(
+            &self,
+            _: &crate::a11y::Object,
+            _: bool,
+        ) -> Result<bool, voice_control::Error> {
+            Ok(false)
+        }
+    }
+    #[tokio::test]
+    async fn a_failed_accessibility_bus_is_dropped_for_background_reconnection() {
+        let bus = crate::fake_portal::Bus::start();
+        let (seen, _saw) = tokio::sync::mpsc::unbounded_channel();
+        let _portal = crate::fake_portal::serve(&bus, seen).await;
+        let mut input = test_input(&bus).await;
+        input.accessibility = known_accessibility(Some(crate::a11y::AtSpi::with_bus(Arc::new(
+            BrokenAccessibility,
+        ))));
+        assert_eq!(input.paste_keys().await, [0xffe3, u32::from('v')]);
+        assert!(input.accessibility.get().is_none());
+    }
+    /// Accessibility that answers, but only after the hub's whole action
+    /// limit of 500 ms has gone.
+    #[derive(Debug)]
+    struct SlowFront;
+    #[async_trait]
+    impl crate::a11y::Bus for SlowFront {
+        async fn children(
+            &self,
+            o: &crate::a11y::Object,
+        ) -> Result<Vec<crate::a11y::Object>, voice_control::Error> {
+            tokio::time::sleep(std::time::Duration::from_millis(600)).await;
+            KittyInFront.children(o).await
+        }
+        async fn metadata(
+            &self,
+            o: &crate::a11y::Object,
+        ) -> Result<crate::a11y::Metadata, voice_control::Error> {
+            KittyInFront.metadata(o).await
+        }
+        async fn activate(
+            &self,
+            _: &crate::a11y::Object,
+            _: bool,
+        ) -> Result<bool, voice_control::Error> {
+            Ok(false)
+        }
+    }
+    #[tokio::test]
+    async fn a_slow_accessibility_bus_falls_back_to_ctrl_v_in_time() {
+        let bus = crate::fake_portal::Bus::start();
+        let (seen, _saw) = tokio::sync::mpsc::unbounded_channel();
+        let _portal = crate::fake_portal::serve(&bus, seen).await;
+        let mut input = test_input(&bus).await;
+        input.accessibility =
+            known_accessibility(Some(crate::a11y::AtSpi::with_bus(Arc::new(SlowFront))));
+        let started = std::time::Instant::now();
+        assert_eq!(input.paste_keys().await, [0xffe3, u32::from('v')]);
+        // Well inside the 500 ms the hub allows the whole paste.
+        assert!(
+            started.elapsed() < std::time::Duration::from_millis(250),
+            "{:?}",
+            started.elapsed()
+        );
+        // A timed-out window walk is not evidence that the bus is gone.
+        assert!(input.accessibility.get().is_some());
+        // No accessibility connected yet.
+        input.accessibility = known_accessibility(None);
+        let started = std::time::Instant::now();
+        assert_eq!(input.paste_keys().await, [0xffe3, u32::from('v')]);
+        assert!(started.elapsed() < std::time::Duration::from_millis(250));
+    }
+    /// Announces an accessibility bus on the session bus, as at-spi does.
+    struct Announcer(String);
+    #[zbus::interface(name = "org.a11y.Bus")]
+    impl Announcer {
+        fn get_address(&self) -> String {
+            self.0.clone()
+        }
+    }
+    fn accessible(input: &PortalInput) -> bool {
+        input.accessibility.get().is_some()
+    }
+    #[tokio::test]
+    async fn an_accessibility_bus_that_starts_late_is_still_found() {
+        let bus = crate::fake_portal::Bus::start();
+        let (seen, _saw) = tokio::sync::mpsc::unbounded_channel();
+        let _portal = crate::fake_portal::serve(&bus, seen).await;
+        let input = test_input(&bus).await;
+        // Nothing announces accessibility yet: the first try fails.
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        assert!(!accessible(&input));
+        // Accessibility comes up after the session started.
+        let a11y = crate::fake_portal::Bus::start();
+        let _announcer = zbus::connection::Builder::address(bus.address.as_str())
+            .unwrap()
+            .name("org.a11y.Bus")
+            .unwrap()
+            .serve_at("/org/a11y/bus", Announcer(a11y.address.clone()))
+            .unwrap()
+            .build()
+            .await
+            .unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while !accessible(&input) && std::time::Instant::now() < deadline {
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+        assert!(
+            accessible(&input),
+            "accessibility that started late was never connected"
+        );
+    }
+    #[tokio::test]
+    async fn a_scroll_is_finished_before_other_input_and_at_a_barrier() {
+        use crate::fake_portal::Seen;
+        let bus = crate::fake_portal::Bus::start();
+        let (seen, mut saw) = tokio::sync::mpsc::unbounded_channel();
+        let _portal = crate::fake_portal::serve(&bus, seen).await;
+        let mut input = test_input(&bus).await;
+        let mut next = async || {
+            tokio::time::timeout(std::time::Duration::from_secs(5), saw.recv())
+                .await
+                .unwrap()
+                .unwrap()
+        };
+        input
+            .event(Event::Axis {
+                dx: 0.0,
+                dy: -160.0,
+            })
+            .await
+            .unwrap();
+        input.event(Event::Axis { dx: 4.0, dy: 0.0 }).await.unwrap();
+        input
+            .event(Event::Button {
+                code: 0x110,
+                pressed: true,
+            })
+            .await
+            .unwrap();
+        assert_eq!(next().await, Seen::Axis(0.0, -160.0, false));
+        assert_eq!(next().await, Seen::Axis(4.0, 0.0, false));
+        // The scroll ends, with no movement, before the click.
+        assert_eq!(next().await, Seen::Axis(0.0, 0.0, true));
+        assert_eq!(next().await, Seen::Button(0x110, 1));
+        input
+            .event(Event::Axis { dx: 0.0, dy: 30.0 })
+            .await
+            .unwrap();
+        input.barrier().await.unwrap();
+        assert_eq!(next().await, Seen::Axis(0.0, 30.0, false));
+        assert_eq!(next().await, Seen::Axis(0.0, 0.0, true));
+        // Nothing more: a barrier with no scroll under way sends nothing.
+        input.barrier().await.unwrap();
+        input
+            .event(Event::Button {
+                code: 0x110,
+                pressed: false,
+            })
+            .await
+            .unwrap();
+        assert_eq!(next().await, Seen::Button(0x110, 0));
     }
     #[test]
     fn stream_coordinates_use_logical_pixels() {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AppProvider, type App } from "../../app/context";
@@ -339,7 +339,9 @@ it("keeps focus on the picture's line when the whole Control screen returns afte
   await frames();
   // Its title is the chosen project's name, the computer's under it (D-066).
   const project = app.session.state.get().projects[app.ui.get().projectId ?? ""]?.name ?? "Choose a project";
-  expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: project }));
+  // Control's own: another kept tab still loading has its own heading.
+  const shown = document.querySelector<HTMLElement>("section.tab:not(.is-hidden)")!;
+  expect(document.activeElement).toBe(within(shown).getByRole("heading", { level: 1, name: project }));
 });
 
 it("keeps the pending-message warning only while that message is pending", async () => {

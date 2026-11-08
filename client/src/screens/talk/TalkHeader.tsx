@@ -5,7 +5,8 @@
 // around it. An open task is the whole screen, as a chat is: the tabs step
 // aside, and the back arrow goes to the project's conversations, or from a
 // task to Work's tasks, with the tabs up, as a chat's goes back to its chats,
-// counting what needs the person. A conversation's line names its model. The ⋯
+// counting what needs the person. Under the name, whether it is a chat or a
+// task and what it may do, which opens what changes that. The ⋯
 // holds the task's pictures, instructions and record (D-059). This task's
 // Stop ends the row; every other running task's is one row and one tap away
 // (D-054).
@@ -24,6 +25,7 @@ import { StatusButton } from "../../shell/ContextHeader";
 import { useChatShown, useRailOpen } from "../../shell/focus";
 import { hideKeyboard, useKeyboardOpen } from "../../shell/keyboard";
 import { useMay } from "../../shell/NotAllowed";
+import { TaskBell } from "./TaskBell";
 import { StatusSheet } from "../../shell/StatusSheet";
 import { StopTask } from "../control/StopTask";
 import { inputState, useRail } from "../control/SafetyStrip";
@@ -32,8 +34,9 @@ import { PrChip } from "../github/PrSheet";
 import { RenameSheet } from "../work/RenameTask";
 import { taskAttentionReason } from "../work/taskActivity";
 import { AccessBar } from "./AccessBar";
-import { MODES } from "./ModePicker";
+import { ReportPin } from "../work/ReportTask";
 import { conversationBadge } from "./conversation";
+import { MayDoLine, MayDoSheet } from "./MayDoLine";
 import { MediaSheet, useMediaPermitted } from "./RecentMedia";
 import { TaskMoreSheet, taskHeadingFocus, taskRowBadge } from "./TaskBar";
 import "./talkHeader.css";
@@ -41,7 +44,9 @@ import "./talkHeader.css";
 type HeaderSheet = "more" | "media" | "status" | "rename";
 
 export function TalkHeader({ project, task, run }: { project: Project; task: Task | undefined; run: Run | undefined }) {
-  const { ui } = useApp();
+  const { ui, profile, profiles } = useApp();
+  // With more than one computer paired, a chat names the one it is on.
+  const computer = profiles.length > 1 ? profile.name : null;
   const [sheet, setSheet] = useState<HeaderSheet | null>(null);
   const close = () => setSheet(null);
   const kb = useKeyboardOpen();
@@ -61,7 +66,6 @@ export function TalkHeader({ project, task, run }: { project: Project; task: Tas
   const reason = useHost((s) => task ? taskAttentionReason(s, task) : null);
   // A conversation between replies shows no state, as in Talk's list.
   const st = !task ? null : task.conversation ? conversationBadge(task, run, queue, reason) : taskRowBadge(task, run, queue, reason);
-  const readOnly = task?.mode && task.mode !== "work" && !task.conversation ? MODES.find((m) => m.mode === task.mode)! : null;
   const running = useHost((s) => !!task && isTaskRunning(s, task));
   // The rail leaves this task to Talk, so Talk says which display it uses.
   const where = useHost((s) => {
@@ -98,20 +102,25 @@ export function TalkHeader({ project, task, run }: { project: Project; task: Tas
                 {!online && <><CircleHelp aria-hidden /><span className="chat-head__since">Last reported · </span></>}{st.label}
               </span>
             )}
-            {readOnly && <span>{readOnly.label} · read-only</span>}
             {where && <span className="chat-head__where">on {where}</span>}
             {task ? !running && online && <Age className="chat-head__age" at={task.updated_at} suffix=" ago" /> : <span>in {project.name}</span>}
+            {computer && <span className="chat-head__computer">on <bdi>{computer}</bdi></span>}
           </span>
+          {/* A line of its own, so a chat says it is a chat in full even
+              beside a state, a display and Stop. */}
+          {task && <span className="chat-head__sub chat-head__sub--may"><MayDoLine task={task} className="chat-head__may" /></span>}
         </div>
       </Heading>
       <div className="chat-head__end">
         {kb && <IconButton icon={KeyboardOff} label="Hide keyboard" onClick={hideKeyboard} />}
         <StatusButton compact quiet onOpen={() => setSheet("status")} />
+        {task && <TaskBell task={task} />}
         {task && <IconButton icon={MoreHorizontal} label={`More about this ${conversation ? "conversation" : "task"}`} onClick={() => setSheet("more")} />}
       </div>
       {task && <StopTask task={task} iconOnly className="chat-head__stop" />}
       {task && <TaskMoreSheet open={sheet === "more"} onClose={close} task={task} onMedia={media ? () => setSheet("media") : undefined} onRename={() => setSheet("rename")} />}
       {task && sheet === "rename" && <RenameSheet task={task} onClose={close} />}
+      {task && <MayDoSheet task={task} />}
       {task && <MediaSheet open={sheet === "media"} onClose={close} taskId={task.task_id} projectId={task.project_id} />}
       <StatusSheet open={sheet === "status"} onClose={close} />
     </header>
@@ -128,6 +137,7 @@ export function TalkPins({ task, project }: { task: Task | undefined; project?: 
       {project && <AccessBar project={project} task={task} />}
       {task && <WatchPin task={task} />}
       {task && <AskedPin task={task} />}
+      {task?.report && <ReportPin task={task} />}
       {task && <PrChip task={task} />}
       <TalkActivity task={task} />
     </div>

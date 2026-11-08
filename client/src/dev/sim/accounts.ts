@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { Account, AccountAction, AccountEvent, AccountsView, ProtocolError, ServiceProfile, SignInStage } from "../../protocol/types";
+import type { AttentionItem, Account, AccountAction, AccountEvent, AccountsView, ProtocolError, ServiceProfile, SignInStage } from "../../protocol/types";
 import type { SimHost } from "./host";
 
 const fail = (code: ProtocolError["code"], message: string): ProtocolError => ({ code, message } as ProtocolError);
 
 const BUILTINS: Account[] = [
-  { account_id: "claude", service: "Claude Code", kind: "agent", builtin: true, identity: "sam@example.com", state: { state: "active" }, checked_at: null, variables: [], manage_url: "https://claude.ai/settings/account", needs: null, browser_sign_in: true, used_by: [] },
-  { account_id: "codex", service: "Codex", kind: "agent", builtin: true, identity: "sam@example.org", state: { state: "active" }, checked_at: null, variables: [], manage_url: "https://chatgpt.com/#settings/Security", needs: null, browser_sign_in: true, used_by: [] },
+  { account_id: "claude", service: "Claude Code", kind: "agent", builtin: true, identity: "sam@example.com", state: { state: "active" }, checked_at: null, variables: [], manage_url: "https://claude.ai/settings/account", needs: null, browser_sign_in: true, phone_sign_in: true, used_by: [] },
+  { account_id: "codex", service: "Codex", kind: "agent", builtin: true, identity: "sam@example.org", state: { state: "active" }, checked_at: null, variables: [], manage_url: "https://chatgpt.com/#settings/Security", needs: null, browser_sign_in: true, phone_sign_in: true, used_by: [] },
   { account_id: "github", service: "GitHub", kind: "cli", builtin: true, identity: "sam-builds", state: { state: "active" }, checked_at: null, variables: ["GH_CONFIG_DIR"], manage_url: "https://github.com/settings/applications", needs: null, browser_sign_in: true, used_by: [] },
   { account_id: "openrouter", service: "OpenRouter", kind: "api_key", builtin: true, identity: null, state: { state: "signed_out" }, checked_at: null, variables: ["OPENROUTER_API_KEY"], manage_url: "https://openrouter.ai/settings/keys", needs: "key", browser_sign_in: false, used_by: [] },
   { account_id: "google", service: "Google (Gmail)", kind: "oauth", builtin: true, identity: null, state: { state: "signed_out" }, checked_at: null, variables: ["GOOGLE_OAUTH_ACCESS_TOKEN"], manage_url: "https://myaccount.google.com/permissions", needs: "client", browser_sign_in: true, used_by: [] },
 ];
+
+type PhoneRun = { id: string; by: string; timers: ReturnType<typeof setTimeout>[]; waitingForCode: boolean };
 
 const HOSTS: Record<string, string> = { claude: "claude.ai", codex: "auth.openai.com", github: "github.com", google: "accounts.google.com" };
 
@@ -19,7 +21,13 @@ export class AccountsSim {
   view: AccountsView;
   /** The next sign-in fails with this reason, as a refused or closed browser would. */
   failSignIn: string | null = null;
+  /** How long a Codex sign-in on the phone takes to finish by itself; 0 or null means never. */
+  autoFinishMs: number | null = 8_000;
+  /** Where a failed sign-in on the phone points to, as the provider's help page. Used once. */
+  failHelpUrl: string | null = null;
   #timers: ReturnType<typeof setTimeout>[] = [];
+  #phone: PhoneRun | null = null;
+  #lapses = 0;
   constructor(private readonly host: SimHost) {
     const now = Date.now();
     this.view = {
@@ -35,14 +43,29 @@ export class AccountsSim {
       password_manager_done: false,
     };
   }
-  query(): { kind: "accounts"; view: AccountsView } {
-    return { kind: "accounts", view: structuredClone(this.view) };
+  /** As the computer: a sign-in's link and code only to a phone that finishes it itself. */
+  query(onPhone = false): { kind: "accounts"; view: AccountsView } {
+    const view = structuredClone(this.view);
+    const stage = view.sign_in?.stage;
+    if (!onPhone && view.sign_in && stage?.stage === "on_phone") view.sign_in = { ...view.sign_in, stage: { stage: "browser", url_host: stage.url_host } };
+    return { kind: "accounts", view };
   }
   act(action: AccountAction, by = "Pixel 9"): null {
     switch (action.action) {
-      case "sign_in": return this.#signIn(action.account_id, by);
+      case "sign_in": return action.on_phone ? this.#signInOnPhone(action.account_id, by) : this.#signIn(action.account_id, by);
+      case "submit_sign_in_code": {
+        const s = this.view.sign_in;
+        if (s && (s.account_id !== action.account_id || s.started_at !== action.started_at)) throw fail("conflict", "That code was for an earlier sign-in. Start the sign-in again.");
+        return this.#submitCode(action.code, by);
+      }
+      case "dismiss_sign_in_notice":
+        this.#resolveNotice(action.account_id);
+        return null;
       case "cancel_sign_in":
-        if (this.view.sign_in && !finished(this.view.sign_in.stage)) this.#stage({ stage: "cancelled" });
+        if (this.view.sign_in && !finished(this.view.sign_in.stage)) {
+          this.#clearPhone();
+          this.#stage({ stage: "cancelled" });
+        }
         return null;
       case "pause":
       case "resume": {
@@ -108,6 +131,122 @@ export class AccountsSim {
   }
   dispose(): void {
     for (const t of this.#timers) clearTimeout(t);
+    this.#clearPhone();
+  }
+  /** Completes the running sign-in on the phone now: checking, then done (or failed as `failSignIn` says). */
+  finishSignIn(): void {
+    const run = this.#phone;
+    if (!run || !this.view.sign_in || finished(this.view.sign_in.stage)) return;
+    for (const t of run.timers) clearTimeout(t);
+    run.timers = [];
+    this.#stage({ stage: "checking" });
+    this.#conclude(run);
+  }
+  /** The computer reports the agent signed out, and tells this phone once per lapse. */
+  signedOut(id: "claude" | "codex", mayManage: boolean): void {
+    const a = this.#account(id);
+    const name = id === "claude" ? "Claude" : "Codex";
+    a.state = { state: "signed_out" };
+    a.identity = null;
+    a.checked_at = Date.now();
+    this.#changed();
+    const harness = this.host.harnesses.find(h => h.kind === (id === "claude" ? "claude_code" : "codex"));
+    if (harness) {
+      harness.account = { state: "signed_out", remedy: `Run ${id} ${id === "claude" ? "auth login" : "login"} on the computer.` };
+      this.host.emit({ type: "harnesses_changed", harnesses: this.host.harnesses });
+    }
+    if (!mayManage || this.host.attention.some(x => x.account_id === id && x.resolved_at === null)) return;
+    const item: AttentionItem = {
+      attention_id: `sign-in-${id}-${++this.#lapses}`, kind: "waiting_for_you", topic: "needs_you", account_id: id,
+      title: `${name} isn’t signed in on ${this.host.host.name}`,
+      body: `New ${name} tasks can’t start until it’s signed in again. You can sign in from this phone.`,
+      task_id: null, run_id: null, approval_id: null, created_at: Date.now(), resolved_at: null, priority: 5,
+    };
+    this.host.attention.push(item);
+    this.host.emit({ type: "attention_upserted", item });
+  }
+  #recovered(id: string): void {
+    const kind = id === "claude" ? "claude_code" : id === "codex" ? "codex" : null;
+    const harness = kind && this.host.harnesses.find(h => h.kind === kind);
+    if (harness && harness.account.state === "signed_out") {
+      harness.account = { state: "signed_in", account_label: "Personal", plan: id === "claude" ? "Max" : "Pro" };
+      this.host.emit({ type: "harnesses_changed", harnesses: this.host.harnesses });
+    }
+    this.#resolveNotice(id);
+  }
+  /** Puts away this lapse's notice. New objects: the phone's copy is its own. */
+  #resolveNotice(id: string): void {
+    const open = this.host.attention.filter(x => x.account_id === id && x.resolved_at === null).map(x => x.attention_id);
+    if (!open.length) return;
+    const now = Date.now();
+    this.host.attention = this.host.attention.map(x => open.includes(x.attention_id) ? { ...x, resolved_at: now } : x);
+    for (const attention_id of open) this.host.emit({ type: "attention_resolved", attention_id });
+  }
+  #clearPhone(): void {
+    if (this.#phone) for (const t of this.#phone.timers) clearTimeout(t);
+    this.#phone = null;
+  }
+  #after(run: { timers: ReturnType<typeof setTimeout>[] }, ms: number, fn: () => void): void {
+    run.timers.push(setTimeout(() => {
+      if (this.#phone === run && this.view.sign_in && !finished(this.view.sign_in.stage)) fn();
+    }, ms));
+  }
+  #signInOnPhone(id: string, by: string): null {
+    const a = this.#account(id);
+    if (!a.phone_sign_in) throw fail("invalid_request", `${a.service} can't be signed in on the phone.`);
+    if (this.view.sign_in && !finished(this.view.sign_in.stage)) throw fail("conflict", "Another sign-in is running. Finish or cancel it first.");
+    this.#clearPhone();
+    const run: PhoneRun = { id, by, timers: [], waitingForCode: false };
+    this.#phone = run;
+    this.view.sign_in = { account_id: id, service: a.service, started_at: Date.now(), stage: { stage: "starting" } };
+    this.#changed();
+    this.#after(run, 400, () => {
+      if (id === "claude") {
+        run.waitingForCode = true;
+        this.#stage({ stage: "on_phone", link: "https://claude.com/cai/oauth/authorize?code=true&state=sim", url_host: "claude.com", paste_code: true });
+        return;
+      }
+      this.#stage({ stage: "on_phone", link: "https://auth.openai.com/codex/device", url_host: "auth.openai.com", code: "AB12-CDE34" });
+      const wait = this.autoFinishMs;
+      if (wait) {
+        this.#after(run, wait, () => this.#stage({ stage: "checking" }));
+        this.#after(run, wait + 600, () => this.#conclude(run));
+      }
+    });
+    return null;
+  }
+  #submitCode(code: string, _by: string): null {
+    const run = this.#phone;
+    const stage = this.view.sign_in?.stage;
+    if (!run || !run.waitingForCode || stage?.stage !== "on_phone" || !stage.paste_code) throw fail("invalid_request", "No sign-in is waiting for a code.");
+    if (code.trim() === "bad") {
+      this.#stage({ ...stage, code_refused: true });
+      return null;
+    }
+    run.waitingForCode = false;
+    this.#stage({ stage: "checking" });
+    this.#after(run, 800, () => this.#conclude(run));
+    return null;
+  }
+  /** Ends the sign-in on the phone as done, or as failed when a failure was asked for. */
+  #conclude(run: PhoneRun): void {
+    const a = this.#account(run.id);
+    const failure = this.failSignIn;
+    const helpUrl = this.failHelpUrl;
+    this.failSignIn = null;
+    this.failHelpUrl = null;
+    this.#phone = null;
+    if (failure) {
+      this.#stage(helpUrl ? { stage: "failed", reason: failure, help_url: helpUrl } : { stage: "failed", reason: failure });
+      this.#record(a, "sign_in_failed", run.by, failure);
+      return;
+    }
+    a.state = { state: "active" };
+    a.identity = "sam@example.com";
+    a.checked_at = Date.now();
+    this.#stage({ stage: "done", identity: a.identity });
+    this.#record(a, "signed_in", run.by, a.identity);
+    this.#recovered(run.id);
   }
   #signIn(id: string, by: string): null {
     const a = this.#account(id);
@@ -135,6 +274,7 @@ export class AccountsSim {
       a.checked_at = Date.now();
       this.#stage({ stage: "done", identity: a.identity });
       this.#record(a, "signed_in", by, a.identity);
+      this.#recovered(id);
     });
     return null;
   }

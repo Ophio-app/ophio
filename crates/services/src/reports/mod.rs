@@ -42,12 +42,24 @@ pub(crate) struct Runtime {
     /// Whether the report fixer runs here, taking only what the owner
     /// chooses from the inbox.
     pub fixer: std::sync::atomic::AtomicBool,
+    /// The intake the owner's inbox reads, once it runs.
+    pub inbox: std::sync::RwLock<Option<std::sync::Arc<dyn crate::report_inbox::Source>>>,
+    /// Held while a report's task is found or made, so two taps make one.
+    pub report_tasks: tokio::sync::Mutex<()>,
     pub events: tokio::sync::broadcast::Sender<std::sync::Arc<EventEnvelope>>,
     pub client: reqwest::Client,
     pub key: Mutex<Option<ed25519_dalek::SigningKey>>,
     pub sending: tokio::sync::Mutex<()>,
 }
 impl Runtime {
+    pub(crate) fn inbox_source(&self) -> Option<std::sync::Arc<dyn crate::report_inbox::Source>> {
+        self.inbox.read().ok().and_then(|s| s.clone())
+    }
+    pub(crate) fn set_inbox_source(&self, source: std::sync::Arc<dyn crate::report_inbox::Source>) {
+        if let Ok(mut inbox) = self.inbox.write() {
+            *inbox = Some(source);
+        }
+    }
     pub fn new(config: ReportsConfig, data: &Path, now: Timestamp) -> Result<Self, ProtocolError> {
         if let Some(url) = &config.intake_url {
             sender::base_url(url)?;
@@ -66,6 +78,8 @@ impl Runtime {
             wake: tokio::sync::Notify::new(),
             inbox_wake: tokio::sync::Notify::new(),
             fixer: std::sync::atomic::AtomicBool::new(false),
+            inbox: std::sync::RwLock::new(None),
+            report_tasks: tokio::sync::Mutex::new(()),
             events: tokio::sync::broadcast::channel(1024).0,
             client,
             key: Mutex::new(None),
@@ -105,20 +119,19 @@ impl CompanionHub {
     pub(crate) fn observe_report_event(&self, envelope: &EventEnvelope) {
         let mut envelope = envelope.clone();
         if let Event::AttentionUpserted { item } = &mut envelope.event {
+            // Held back as the phones are told (see `crate::alerts`).
             let quiet = self
                 .read(|r| {
                     let settings = Self::notification_settings(r)?;
-                    let project = item
-                        .task_id
-                        .map(|id| r.get::<Task>("task", id))
+                    let task = (item.task_id.map(|id| r.get::<Task>("task", id)))
                         .transpose()?
-                        .flatten()
-                        .map(|t| t.project_id);
-                    Ok(item.topic().is_some_and(|topic| {
-                        project.map_or_else(
-                            || settings.off.contains(&topic),
-                            |id| !settings.alerts(id, topic),
-                        )
+                        .flatten();
+                    Ok(task.is_some_and(|task| {
+                        let alert_type =
+                            protocol::notifications::AlertType::of(item, task.conversation);
+                        let follow =
+                            task.notify_done && alert_type.is_some_and(|t| t.follows_task());
+                        crate::alerts::held_back(&settings, task.project_id, alert_type, follow)
                     }))
                 })
                 .unwrap_or(true);
@@ -499,6 +512,9 @@ fn sync_attention(
         topic: Some(AlertTopic::Reports),
         quiet: !alert,
         report_id: Some(summary.report_id),
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
     };
     let report = ReportAlert {
         report_id: summary.report_id,

@@ -50,8 +50,13 @@ impl PendingCrashes {
         std::panic::set_hook(Box::new(move |info| {
             let location = info.location();
             let file = location.and_then(|location| repository_file(location.file()));
+            // A panic in Rust's own library still names its file, which
+            // says what failed: `print!` on a closed pipe, say.
+            let named = file.clone().or_else(|| {
+                location.and_then(|location| protocol::reports::toolchain_file(location.file()))
+            });
             let line = location
-                .filter(|_| file.is_some())
+                .filter(|_| named.is_some())
                 .map_or(0, |location| location.line());
             let message = info
                 .payload()
@@ -73,7 +78,7 @@ impl PendingCrashes {
                 at: Timestamp::now(),
                 side: ReportSide::Phone,
                 kind: CrashKind::Panic,
-                code: format!("panic:{}:{line}", file.as_deref().unwrap_or("unknown")),
+                code: format!("panic:{}:{line}", named.as_deref().unwrap_or("unknown")),
                 build: build.clone(),
                 message: message.and_then(scrub),
                 frames,

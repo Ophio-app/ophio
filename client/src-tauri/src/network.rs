@@ -19,6 +19,7 @@ use rustls::{
 };
 use std::{
     io,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, UdpSocket},
     pin::Pin,
     sync::{
         Arc,
@@ -303,7 +304,7 @@ pub async fn dial(
     config.resumption = rustls::client::Resumption::disabled();
     config.alpn_protocols = vec![b"http/1.1".to_vec()];
     let connector = tokio_rustls::TlsConnector::from(Arc::new(config));
-    for addr in parsed {
+    for addr in &parsed {
         let result = tokio::time::timeout(Duration::from_secs(4), async {
             let tcp = TcpStream::connect((addr.host.as_str(), addr.port))
                 .await
@@ -318,7 +319,7 @@ pub async fn dial(
         })
         .await;
         if let Ok(Ok(tls)) = result {
-            return Ok((tls, addr));
+            return Ok((tls, addr.clone()));
         }
     }
     // Whoever answers at one address with another certificate must not stop
@@ -326,9 +327,63 @@ pub async fn dial(
     // only when no address reaches it.
     Err(if verifier.mismatch.load(Ordering::Relaxed) {
         Error::CertificateMismatch
+    } else if off_tailscale(&parsed, local_route) {
+        Error::NoTailscale
     } else {
         Error::Unreachable
     })
+}
+
+/// Whether `ip` is one Tailscale hands out: 100.64.0.0/10 or
+/// fd7a:115c:a1e0::/48.
+fn tailscale_address(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(ip) => {
+            let [a, b, ..] = ip.octets();
+            a == 100 && b & 0xc0 == 64
+        }
+        IpAddr::V6(ip) => ip.segments()[..3] == [0xfd7a, 0x115c, 0xa1e0],
+    }
+}
+
+/// The phone's own address for reaching `remote`, as its routing table
+/// chooses it. Connecting a UDP socket sends nothing.
+fn local_route(remote: IpAddr, port: u16) -> Option<IpAddr> {
+    let any: IpAddr = if remote.is_ipv4() {
+        Ipv4Addr::UNSPECIFIED.into()
+    } else {
+        Ipv6Addr::UNSPECIFIED.into()
+    };
+    let socket = UdpSocket::bind((any, 0)).ok()?;
+    socket.connect((remote, port)).ok()?;
+    Some(socket.local_addr().ok()?.ip())
+}
+
+/// Whether the computer's Tailscale addresses would be reached from outside
+/// Tailscale, so Tailscale is off on this phone. Host names, other addresses
+/// and routes the phone cannot work out say nothing either way, and any route
+/// from a Tailscale address of the phone's own means it is on. A carrier that
+/// gives the phone a shared address from Tailscale's range reads as on too,
+/// which only costs the clearer message.
+fn off_tailscale(
+    addresses: &[Address],
+    local_route: impl Fn(IpAddr, u16) -> Option<IpAddr>,
+) -> bool {
+    let mut off = false;
+    for addr in addresses {
+        let Ok(remote) = addr.host.parse::<IpAddr>() else {
+            continue;
+        };
+        if !tailscale_address(remote) {
+            continue;
+        }
+        match local_route(remote, addr.port) {
+            Some(local) if tailscale_address(local) => return false,
+            Some(_) => off = true,
+            None => {}
+        }
+    }
+    off
 }
 
 pub fn validate_offer(offer: &PairingOffer, device_name: &str, now: i64) -> Result<()> {
@@ -614,6 +669,92 @@ mod tests {
             }
         });
         address
+    }
+    #[test]
+    fn tailscale_addresses_are_its_two_ranges() {
+        for ip in [
+            "100.64.0.1",
+            "100.101.7.7",
+            "100.127.255.254",
+            "fd7a:115c:a1e0::1",
+        ] {
+            assert!(tailscale_address(ip.parse().unwrap()), "{ip}");
+        }
+        for ip in [
+            "100.63.255.255",
+            "100.128.0.1",
+            "192.168.1.20",
+            "10.0.2.2",
+            "fd7a:115c:a1e1::1",
+            "2001:db8::1",
+        ] {
+            assert!(!tailscale_address(ip.parse().unwrap()), "{ip}");
+        }
+    }
+    #[test]
+    fn the_phone_is_off_tailscale_only_when_its_route_to_a_tailscale_address_says_so() {
+        let addresses = |list: &[&str]| -> Vec<Address> {
+            list.iter().map(|a| Address::parse(a).unwrap()).collect()
+        };
+        let wifi = |_: IpAddr, _: u16| Some("192.168.1.20".parse().unwrap());
+        let on = |remote: IpAddr, _: u16| {
+            Some(
+                if remote.is_ipv4() {
+                    "100.101.1.2"
+                } else {
+                    "fd7a:115c:a1e0::2"
+                }
+                .parse()
+                .unwrap(),
+            )
+        };
+        let unknown = |_: IpAddr, _: u16| None;
+        let home = addresses(&[
+            "192.168.1.10:7443",
+            "100.100.7.7:7443",
+            "[fd7a:115c:a1e0::7]:7443",
+        ]);
+        // Away from home with Tailscale off: its addresses would leave by Wi-Fi
+        // or mobile data.
+        assert!(off_tailscale(&home, wifi));
+        // Tailscale on and the computer still silent: asleep or switched off.
+        assert!(!off_tailscale(&home, on));
+        assert!(!off_tailscale(&home, unknown));
+        // One route through Tailscale is enough to know it is on.
+        let mixed = |remote: IpAddr, port: u16| {
+            if remote.is_ipv4() {
+                wifi(remote, port)
+            } else {
+                on(remote, port)
+            }
+        };
+        assert!(!off_tailscale(&home, mixed));
+        // An IPv6 route the phone has no network for says nothing.
+        let v4 = |remote: IpAddr, port: u16| {
+            if remote.is_ipv4() {
+                wifi(remote, port)
+            } else {
+                None
+            }
+        };
+        assert!(off_tailscale(&home, v4));
+        // Without a Tailscale address, Tailscale is not how it is reached.
+        assert!(!off_tailscale(
+            &addresses(&["192.168.1.10:7443", "desk.example:7443"]),
+            wifi
+        ));
+    }
+    #[test]
+    fn the_route_to_an_address_is_found_without_sending() {
+        let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
+        socket.set_nonblocking(true).unwrap();
+        let port = socket.local_addr().unwrap().port();
+        assert_eq!(
+            local_route("127.0.0.1".parse().unwrap(), port),
+            Some("127.0.0.1".parse().unwrap())
+        );
+        let mut buffer = [0; 16];
+        assert!(socket.recv(&mut buffer).is_err());
     }
     #[tokio::test]
     async fn a_wrong_certificate_at_one_address_does_not_hide_the_computer_at_another() {

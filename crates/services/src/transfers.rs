@@ -1859,7 +1859,7 @@ pub(crate) fn links(file: &std::fs::File, _metadata: &std::fs::Metadata) -> std:
     Ok(info.nNumberOfLinks.into())
 }
 /// Renames within `dir`, failing if `to` already exists.
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn rename_new(dir: &Dir, from: &str, to: &str) -> std::io::Result<()> {
     use rustix::fs::{RenameFlags, renameat_with};
     renameat_with(dir, from, dir, to, RenameFlags::NOREPLACE).map_err(Into::into)
@@ -1918,7 +1918,7 @@ fn rename_new(dir: &Dir, from: &str, to: &str) -> std::io::Result<()> {
     Ok(())
 }
 /// Other systems have no rename here that refuses an existing name.
-#[cfg(not(any(target_os = "linux", windows)))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 fn rename_new(_dir: &Dir, _from: &str, _to: &str) -> std::io::Result<()> {
     Err(std::io::ErrorKind::Unsupported.into())
 }

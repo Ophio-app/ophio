@@ -6,7 +6,7 @@
 // who has it at the top, the hands at one side, the view and Stop at the other.
 // Hidden, a handle keeps Show controls and the running tasks' Stops in reach.
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   ArrowLeft,
   EyeOff,
@@ -64,7 +64,7 @@ export function RailButton({ except }: { except?: string }) {
   </button>;
 }
 
-export function FullControl({ tools, title, owner, task, safety, canInput, onKeyboard, onJev, voice, tilt, onTilt, notices }: {
+export function FullControl({ tools, title, owner, task, safety, canInput, onKeyboard, keyboard, onJev, voice, tilt, onTilt, notices }: {
   tools: PictureTools;
   title: string;
   owner: OwnershipInfo;
@@ -74,6 +74,8 @@ export function FullControl({ tools, title, owner, task, safety, canInput, onKey
   safety: ReactNode;
   canInput: boolean;
   onKeyboard?: () => void;
+  /** Native-keyboard extras; the same desktop canvas stays mounted behind them. */
+  keyboard?: ReactNode;
   /** Hands the display to Jev, when the computer offers voice control. */
   onJev?: () => void;
   /** Talk to voice control while it holds the display. */
@@ -84,6 +86,18 @@ export function FullControl({ tools, title, owner, task, safety, canInput, onKey
 }) {
   const { ui } = useApp();
   const [hidden, setHidden] = useState(false);
+  const keyboardPanel = useRef<HTMLDivElement>(null);
+  const typing = !!keyboard;
+  useLayoutEffect(() => {
+    const panel = keyboardPanel.current;
+    const picture = panel?.closest<HTMLElement>(".live-picture--full");
+    if (!panel || !picture) return;
+    const measure = () => picture.style.setProperty("--keyboard-height", `${panel.getBoundingClientRect().height}px`);
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(panel);
+    return () => { observer?.disconnect(); picture.style.removeProperty("--keyboard-height"); };
+  }, [typing]);
   const OwnerIcon = owner.icon;
   const status = <div className={`full-status full-status--${owner.tone}`}>
     <OwnerIcon aria-hidden className="full-status__icon" />
@@ -116,6 +130,19 @@ export function FullControl({ tools, title, owner, task, safety, canInput, onKey
   </>;
   const hide = <Tool icon={EyeOff} label="Hide controls" short="Hide" onClick={() => setHidden(true)} />;
   const notes = <div className="full-notices">{notices}{tools.notice}</div>;
+
+  if (typing) return <div className="full-overlay full-overlay--typing">
+    <div className="full-typing-header" role="group" aria-label="Desktop controls" onPointerDown={event => { if ((event.target as Element).closest("button")) event.preventDefault(); }}>
+      <button type="button" className="full-tool full-tool--round" aria-label="Back" onClick={onKeyboard}><ArrowLeft aria-hidden /></button>
+      {status}
+      {stop}{safety}<RailButton except={task?.task_id} />
+      <Tool icon={tools.mode === "touchpad" ? Touchpad : Pointer} label={`Pointer: ${tools.mode}. Switch`} short={tools.mode === "touchpad" ? "Touchpad" : "Touch"} onClick={() => tools.setMode(tools.mode === "touchpad" ? "touch" : "touchpad")} />
+      <Tool icon={ZoomIn} label="Zoom in" short="In" disabled={tools.zoom >= 4} onClick={tools.zoomIn} />
+      <Tool icon={Scan} label="Fit picture" short="Fit" disabled={tools.zoom <= 1} onClick={tools.fit} />
+    </div>
+    {notes}
+    <div ref={keyboardPanel} className="full-keyboard">{keyboard}</div>
+  </div>;
 
   if (hidden)
     return <div className="full-overlay full-overlay--hidden">

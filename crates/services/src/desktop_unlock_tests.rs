@@ -796,3 +796,172 @@ async fn a_computer_locked_before_ophio_starts_shows_its_screens_locked() {
     }
     finish(hub, path).await;
 }
+
+/// Counts the events logged with one message on this thread.
+struct Counting {
+    message: &'static str,
+    seen: Arc<AtomicUsize>,
+}
+impl tracing::Subscriber for Counting {
+    fn enabled(&self, _: &tracing::Metadata<'_>) -> bool {
+        true
+    }
+    fn new_span(&self, _: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+        tracing::span::Id::from_u64(1)
+    }
+    fn record(&self, _: &tracing::span::Id, _: &tracing::span::Record<'_>) {}
+    fn record_follows_from(&self, _: &tracing::span::Id, _: &tracing::span::Id) {}
+    fn event(&self, event: &tracing::Event<'_>) {
+        struct Message<'a>(&'a str, bool);
+        impl tracing::field::Visit for Message<'_> {
+            fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+                if field.name() == "message" && format!("{value:?}") == self.0 {
+                    self.1 = true;
+                }
+            }
+        }
+        let mut found = Message(self.message, false);
+        event.record(&mut found);
+        if found.1 {
+            self.seen.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+    fn enter(&self, _: &tracing::span::Id) {}
+    fn exit(&self, _: &tracing::span::Id) {}
+}
+
+/// A desktop whose screens can't be listed, as a Mac's while its display
+/// sleeps, until `listed` is set. `asleep` says it is the screen sleeping.
+#[derive(Debug)]
+struct Unlisted {
+    native: FakeDesktop,
+    listed: AtomicBool,
+    asleep: AtomicBool,
+}
+#[async_trait::async_trait]
+impl DesktopBackend for Unlisted {
+    async fn capabilities(&self) -> DesktopCapabilities {
+        self.native.capabilities().await
+    }
+    async fn targets(&self) -> Result<Vec<ControlTarget>, PlatformError> {
+        if self.listed.load(Ordering::SeqCst) {
+            self.native.targets().await
+        } else if self.asleep.load(Ordering::SeqCst) {
+            Err(PlatformError::ScreenAsleep(ASLEEP.into()))
+        } else {
+            Err(PlatformError::TemporarilyUnavailable(
+                "This Mac has no active screen".into(),
+            ))
+        }
+    }
+    async fn capture_still(&self, id: TargetId) -> Result<CapturedFrame, PlatformError> {
+        self.native.capture_still(id).await
+    }
+    async fn open_stream(
+        &self,
+        id: TargetId,
+        fps: u8,
+    ) -> Result<Box<dyn FrameStream>, PlatformError> {
+        self.native.open_stream(id, fps).await
+    }
+    async fn input_sink(&self, id: TargetId) -> Result<Box<dyn InputSink>, PlatformError> {
+        self.native.input_sink(id).await
+    }
+    async fn lock_session(&self) -> Result<(), PlatformError> {
+        self.native.lock_session().await
+    }
+    async fn desktop_lock(&self) -> DesktopLockState {
+        DesktopLockState::Unlocked
+    }
+}
+
+/// A desktop that can't be watched for hours is logged when that starts, once
+/// an hour after, and when it ends, not each time the watch looks.
+#[tokio::test(start_paused = true)]
+async fn a_desktop_that_stays_unobservable_is_logged_once_not_four_times_a_second() {
+    let seen = Arc::new(AtomicUsize::new(0));
+    let recovered = Arc::new(AtomicUsize::new(0));
+    let _quiet = tracing::subscriber::set_default(Counting {
+        message: "Desktop observation unavailable",
+        seen: seen.clone(),
+    });
+    let desktop = Arc::new(Unlisted {
+        native: FakeDesktop::default(),
+        listed: AtomicBool::new(false),
+        asleep: AtomicBool::new(false),
+    });
+    let path = std::env::temp_dir().join(format!("observe-test-{}", CommandId::new()));
+    let hub = CompanionHub::builder()
+        .data_dir(&path)
+        .clock(Arc::new(FakeClock::default()))
+        .desktop(desktop.clone())
+        .build()
+        .await
+        .unwrap();
+    hub.watch_desktop();
+    // Ten minutes of looking four times a second.
+    tokio::time::sleep(Duration::from_secs(10 * 60)).await;
+    assert_eq!(seen.load(Ordering::SeqCst), 1);
+    // Still the same after an hour: said once more.
+    tokio::time::sleep(Duration::from_secs(55 * 60)).await;
+    assert_eq!(seen.load(Ordering::SeqCst), 2);
+    drop(_quiet);
+    let _quiet = tracing::subscriber::set_default(Counting {
+        message: "Desktop observation available again",
+        seen: recovered.clone(),
+    });
+    desktop.listed.store(true, Ordering::SeqCst);
+    tokio::time::sleep(Duration::from_secs(60)).await;
+    assert_eq!(recovered.load(Ordering::SeqCst), 1);
+    finish(hub, path).await;
+}
+
+const ASLEEP: &str = "The Mac’s screen is asleep. Wake it to see it.";
+
+/// The phone is told why the screen can't be seen: a sleeping screen in the
+/// platform's own words, anything else with what likely happened, never that
+/// a backend operation failed.
+#[tokio::test]
+async fn the_phone_hears_why_the_screen_cant_be_seen_in_plain_words() {
+    let desktop = Arc::new(Unlisted {
+        native: FakeDesktop::default(),
+        listed: AtomicBool::new(false),
+        asleep: AtomicBool::new(true),
+    });
+    let path = std::env::temp_dir().join(format!("asleep-test-{}", CommandId::new()));
+    let hub = CompanionHub::builder()
+        .data_dir(&path)
+        .clock(Arc::new(FakeClock::default()))
+        .desktop(desktop.clone())
+        .build()
+        .await
+        .unwrap();
+    let owner = Caller::local_owner();
+    let screens = || hub.query(&owner, Query::ControlTargets);
+    let asleep = screens().await.unwrap_err();
+    assert_eq!(asleep.code, ErrorCode::TemporarilyUnavailable);
+    assert_eq!(asleep.message, ASLEEP);
+    desktop.asleep.store(false, Ordering::SeqCst);
+    let unlisted = screens().await.unwrap_err();
+    assert_eq!(
+        unlisted.message,
+        "Ophio couldn’t reach the computer’s screen. It may be asleep or locked, or sharing may have stopped there."
+    );
+    // The other kinds of failure say what happened, and the one the app
+    // offers to reopen sharing for still says the display changed.
+    use ports::PlatformError as P;
+    for (error, said) in [
+        (P::Locked, "locked"),
+        (P::GeometryChanged, "Display changed"),
+        (P::TargetNotFound, "disconnected"),
+        (
+            P::Native("desktop protocol operation failed".into()),
+            "asleep or locked",
+        ),
+    ] {
+        let message = crate::control::platform(error).message;
+        assert!(message.contains(said), "{message}");
+        assert!(!message.contains("operation failed"), "{message}");
+    }
+    finish(hub, path).await;
+}

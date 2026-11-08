@@ -1,4 +1,6 @@
-# Linux conversation sandbox
+# Conversation sandbox
+
+A Mac's version is `macos.rs` and described at the end. On Linux:
 
 The companion composes `Bubblewrap`, probes real namespace creation and the
 installed shim, and advertises `conversation_access_v1` plus an availability
@@ -105,7 +107,60 @@ not default tests.
 
 Clients must show the availability reason and wait for command observation to
 confirm enforcement. The shared phone controls and Allow action are a separate
-client change. Windows and macOS currently report unsupported.
+client change. Windows currently reports unsupported.
+
+## On a Mac
+
+`Seatbelt` runs the agent under `/usr/bin/sandbox-exec` with a profile that
+denies everything and then gives back what programs need to run, the conversation's
+folders, and this run's own files. Later rules win, so private data is taken back
+after folders are given, even from a whole-computer read. A Mac has no mount or
+network namespaces, which makes five things different from Linux:
+
+- A profile can't change after the program starts. A folder change returns
+  `NeedsRestart`. The proxy's policy changes at once, as on Linux, because direct
+  network access is denied either way. Taking loopback back also needs a restart.
+- The proxy listens on a loopback TCP port, the one network address the profile
+  allows, rather than on a socket file bound inside. There is no shim. Model-only
+  relay runs and disk budgets aren't supported and are refused.
+- There's one loopback per computer, so an agent can listen but can't connect to
+  anything on this Mac unless the conversation has its own-network permission, and
+  then it can reach the person's other local servers too. The computer reaches what
+  an agent serves directly.
+- Nothing can be mounted over the agent's own folder. It runs with `CLAUDE_CONFIG_DIR`
+  or `CODEX_HOME` set to the conversation's `native` folder, with links to its
+  history and its sign-in file. A sign-in file an agent replaces, rather than writes
+  into, is carried back when the run ends. Claude Code keeps its sign-in in the
+  login keychain, which a sandboxed program can't reach, so it is copied into that
+  folder, owner-only, for the run, and a renewed one goes back to the keychain.
+  Claude Code's own temporary files, otherwise in the shared `/tmp/claude-<uid>`,
+  go in the run's temporary folder through `CLAUDE_CODE_TMPDIR`.
+- The keychain's service is held, since it would hand out the person's keychain,
+  and programs that check certificates through the system ask it. Runs get
+  `SSL_CERT_FILE` set to the system's own certificates, `/private/etc/ssl/cert.pem`,
+  which Codex reads instead. Certificates the person added to the keychain aren't
+  trusted inside.
+
+Path rules leave gaps a mount would not, so the profile also: protects private
+folders where they really are, whether or not they exist yet, including Øphio's data
+under names not seen yet; refuses renaming any folder above private data, since
+moving it would take the data out from under its rule, and refuses making one that
+doesn't exist yet, since a link there could lead the data elsewhere; opens only
+terminals the run itself made; gives no named shared memory, and named semaphores
+only under `/mp-`, the name Python's multiprocessing can't start without. That leaves
+one known reach outside: another program's semaphore under that name, if its name is
+known. A semaphore carries no data, and Python's own are random and unlinked as soon
+as they are made. It also opens the proxy's port by TCP alone, holding it on IPv6 too, because a profile can name only `localhost`. Homebrew
+is given as its programs and libraries, not its whole prefix, whose `var` holds
+services' data. A write grant over a folder that runs things later, such as a home
+folder with `Library/LaunchAgents` or a shell's startup file, is a grant to run
+outside the sandbox at the next login, as it is on Linux: only the person can give it.
+
+`file-read-metadata` is allowed everywhere, since programs look up each folder on
+the way to a file: a file's existence and size can be learned by anyone who knows
+its exact path. Its contents, and folder listings, can't. `cargo test -p sandbox`
+runs real programs in real profiles on a Mac. The Claude Code keychain path has
+been tested only with a stand-in entry, not a real sign-in.
 
 ## Model relay
 

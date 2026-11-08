@@ -43,6 +43,8 @@ async fn only_computer_use_holders_steer_or_answer_a_computer_use_run() {
             f.hub.put_approval(
                 tx,
                 &Approval {
+                    headline: None,
+                    facts: Vec::new(),
                     approval_id,
                     task_id,
                     run_id,
@@ -58,6 +60,8 @@ async fn only_computer_use_holders_steer_or_answer_a_computer_use_run() {
                     shortened: false,
                     revision: 1,
                     state: ApprovalState::Pending,
+                    access_request: None,
+                    actions: None,
                     delivery: None,
                     outcome: None,
                     requested_at: Timestamp(1_700_000_000_000),

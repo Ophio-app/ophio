@@ -187,7 +187,7 @@ for line in sys.stdin:
             assert parent["tools"] == ["Agent(computer-specialist)"]
             assert "mcpServers" not in parent
             assert json.loads(Path("mcp.json").read_text())["mcpServers"] == {}
-            expected = ["observe_target", "pointer_action", "key_action", "type_text", "scroll", "request_human"]
+            expected = ["observe_target", "pointer_action", "key_action", "type_text", "scroll", "open_app", "request_human"]
             assert specialist["tools"] == ["mcp__computer__" + name for name in expected]
             assert "mcp__computer__observe_target" not in parent["tools"]
             send({"type": "assistant", "message": {"id": "parent-message", "content": [{"type": "tool_use", "id": "delegate-1", "name": "Agent", "input": {"description": "Computer specialist", "subagent_type": "computer-specialist"}}]}})
@@ -202,7 +202,7 @@ for line in sys.stdin:
                 bridge.stdin.flush()
                 assert [tool["name"] for tool in rpc("tools/list", {})["result"]["tools"]] == expected
                 send({"type":"system", "subtype":"init", "session_id":"child-session", "parent_tool_use_id":"delegate-1"})
-                arguments = [{}, {"action":{"kind":"move"},"x":5,"y":5,"observation_revision":4}, {"keys":["ESC"]}, {"text":"fixture"}, {"x":5,"y":5,"dx":0,"dy":1,"observation_revision":4}, {"reason":"Review fixture"}]
+                arguments = [{}, {"action":{"kind":"move"},"x":5,"y":5,"observation_revision":4}, {"keys":["ESC"]}, {"text":"fixture"}, {"x":5,"y":5,"dx":0,"dy":1,"observation_revision":4}, {"name":"a terminal"}, {"reason":"Review fixture"}]
                 for name, args in zip(expected, arguments):
                     assert not rpc("tools/call", {"name":name,"arguments":args})["result"]["isError"]
                     send({"type":"assistant", "parent_tool_use_id":"delegate-1", "message":{"id":"child-"+name,"content":[{"type":"text","text":"Used "+name}]}})

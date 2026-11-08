@@ -89,6 +89,7 @@ async fn recorded_linux_output_sequences_reach_the_phone_without_an_input_comman
                 &Caller::local_owner(),
                 Query::Snapshot {
                     reads_withheld: None,
+                    account_items: false,
                 },
             )
             .await
@@ -109,6 +110,7 @@ async fn recorded_linux_output_sequences_reach_the_phone_without_an_input_comman
                     &Caller::local_owner(),
                     Query::Snapshot {
                         reads_withheld: None,
+                        account_items: false,
                     },
                 )
                 .await

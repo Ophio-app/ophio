@@ -160,6 +160,9 @@ impl CompanionHub {
                     topic: None,
                     quiet: false,
                     report_id: None,
+                    account_id: None,
+                    alert: None,
+                    alert_handled_at: None,
                 };
                 tx.put("attention", item.attention_id, &item)?;
                 tx.emit(Event::AttentionUpserted { item })?;

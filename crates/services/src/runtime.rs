@@ -87,6 +87,9 @@ impl CompanionHub {
             discord: self.channel_availability(protocol::auth::ChannelKind::Discord),
             features: vec![
                 "reports_v1".into(),
+                // The owner can rename the computer for every phone paired
+                // to it (Command::RenameComputer, HostInfo::renamed).
+                "computer_name_v1".into(),
                 "durable_admission".into(),
                 "journal_resume".into(),
                 "channel_link_review".into(),
@@ -117,6 +120,10 @@ impl CompanionHub {
                 // Alerts can be turned off by topic, everywhere or in one
                 // project, and folded into one per project.
                 "notification_settings_v1".into(),
+                // Each alert says its type and its project's choice for it;
+                // a phone says which notifications it handled, and a task
+                // can be followed with "Tell me when it's done".
+                protocol::notifications::ALERT_TYPES_FEATURE.into(),
                 // Agents keep a checklist of what the person has to do in a
                 // project; ticking an item off starts the agent waiting on it.
                 "checklist_v1".into(),
@@ -135,6 +142,10 @@ impl CompanionHub {
                 // between turns and can be carried into Work as a task.
                 "conversations_v1".into(),
                 "conversation_access_v1".into(),
+                // A Plan or Ask task, or a chat, carries on in Work in one
+                // tap (SwitchToWork), and each pending approval says which
+                // ways forward it has (Approval::actions).
+                "switch_to_work_v1".into(),
                 // An archived task can be brought back, as Undo.
                 "unarchive_task_v1".into(),
                 // A problem report in the owner's inbox takes their verdict
@@ -154,9 +165,22 @@ impl CompanionHub {
                 // A task can be made a review: it is given the project's
                 // REVIEW.md from the trusted base, and says which it read.
                 "review_rules_v1".into(),
+                // A change that needs the person's approval gets five rounds
+                // of review, not three.
+                "review_rounds_v2".into(),
+                // A task's pull request can be set to merge once it is
+                // green, or be left for the person, whatever the project's
+                // setting.
+                "github_when_green_v1".into(),
             ]
             .into_iter()
             .chain(self.inner.accounts.is_some().then(|| "accounts_v1".into()))
+            .chain(
+                self.inner
+                    .accounts
+                    .is_some()
+                    .then(|| protocol::accounts::SIGN_IN_ON_PHONE_FEATURE.into()),
+            )
             .chain(
                 self.inner
                     .agent_logins
@@ -177,6 +201,17 @@ impl CompanionHub {
                     .fixer
                     .load(std::sync::atomic::Ordering::Relaxed)
                     .then(|| "report_look_into_v1".into()),
+            )
+            // Without a fixer, an ordinary agent can plan a fix for a report
+            // in the owner's inbox.
+            .chain(
+                (self.inner.reports.inbox_source().is_some()
+                    && !self
+                        .inner
+                        .reports
+                        .fixer
+                        .load(std::sync::atomic::Ordering::Relaxed))
+                .then(|| "report_task_v1".into()),
             )
             // Review profiles, file-only reviews and a review's own limit.
             .chain(
@@ -297,6 +332,8 @@ impl CompanionHub {
         for stream in streams.into_iter().filter_map(|s| s.upgrade()) {
             stream.close().await;
         }
+        let targets: Vec<_> = self.inner.controls.lock().await.values().cloned().collect();
+        self.settle_launches(targets).await;
         let mut controls = self.inner.controls.lock().await;
         let mut unreleased = None;
         let mut failure = None;
@@ -315,7 +352,22 @@ impl CompanionHub {
                 released,
             );
             if !released {
-                unreleased.get_or_insert_with(crate::control::release_unconfirmed);
+                // What this display couldn't let go of; the worst of them is
+                // reported, whatever the order of the displays.
+                let said = if target.unresolved_launch {
+                    result
+                        .as_ref()
+                        .err()
+                        .cloned()
+                        .unwrap_or_else(crate::control::launch_unresolved)
+                } else {
+                    crate::control::release_unconfirmed()
+                };
+                if unreleased.as_ref().is_none_or(|kept| {
+                    crate::control::release_rank(&said) > crate::control::release_rank(kept)
+                }) {
+                    unreleased = Some(said);
+                }
             }
             failure = failure.or(result.err()).or(recorded.err());
         }
@@ -861,6 +913,8 @@ mod tests {
 /// What the owner must fix on the computer before control can open.
 pub(crate) const INDICATOR_UNAVAILABLE: &str = if cfg!(windows) {
     "Computer control needs the on-computer Stop, and the Windows notification area is not available. Sign in to the computer’s desktop."
+} else if cfg!(target_os = "macos") {
+    "Computer control needs the on-computer Stop, which is in the Mac’s menu bar. Log in to this Mac’s desktop."
 } else {
     "Computer control needs the on-computer Stop. Run a desktop notification service that supports actions, such as mako or dunst."
 };
@@ -969,12 +1023,19 @@ impl CompanionHub {
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let _stopping = LocalStopGuard(&self.inner.local_stops);
         let targets: Vec<_> = self.inner.controls.lock().await.values().cloned().collect();
-        let mut failure = None;
-        for target in targets {
-            let mut target = target.lock().await;
+        // Every display is fenced at once, before any release waits for a
+        // launch on its display: nothing more is sent to any of them, as an
+        // agent finds once its display is let go.
+        crate::control::fence_where(&targets, |target| {
             if let Some(observation) = &mut target.view.model_observation {
                 observation.state = ObservationState::Withdrawn;
             }
+            true
+        })
+        .await;
+        let mut failure = None;
+        for target in targets {
+            let mut target = target.lock().await;
             let released = self.revoke_locked(&mut target, false).await;
             crate::control::keep_worse(&mut failure, released);
         }

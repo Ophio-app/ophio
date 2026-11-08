@@ -26,7 +26,7 @@ beforeAll(async () => {
     import("../screens/control/Control"),
     import("../screens/work/Work"),
     import("../screens/work/Agents"),
-    import("../screens/work/Inbox"),
+    import("../screens/work/InboxScreen"),
     import("../screens/work/NextUp"),
     import("../screens/transfers/Transfers"),
     import("../screens/settings/Settings"),

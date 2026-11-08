@@ -46,13 +46,14 @@ const streaming = async () => {
 
 it("keeps the header's status and its closed sheets still while words stream and the clock ticks", async () => {
   render(<AppProvider app={app}><ContextHeader /></AppProvider>);
-  expect(screen.getByRole("button", { name: /Connection details/ })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /Choose a computer/ })).toBeTruthy();
   vi.mocked(freshness).mockClear();
   vi.mocked(openAttention).mockClear();
   await streaming();
   expect(freshness).not.toHaveBeenCalled();
   expect(openAttention).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: /Connection details/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Choose a computer/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Connection details for studio" }));
   expect(screen.getByText("Private address")).toBeTruthy();
 });
 

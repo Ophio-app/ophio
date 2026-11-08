@@ -249,14 +249,17 @@ it("names both runs when a task with a ready result was continued and stopped", 
   const project = app.session.state.get().tasks[ids.tHeaders]!.project_id;
   view(<AttentionList projectId={project} review />, { screen: "work" }, "work");
   const row = () => screen.getByRole("button", { name: /^Add rate-limit headers to \/v1\/orders/ });
-  expect(row().textContent).toMatch(/orders\s*Finished · 5\d min ago$/);
+  expect(row().textContent).toMatch(/orders\s*Finished · 5\d min ago/);
+  // Whether it is a chat or a task, and what it may do, is on its card,
+  // under the row's button.
+  expect(row().closest(".work-attention-item")?.querySelector(".work-attention-may")?.textContent).toMatch(/^Task in \w+ mode, /);
   void app.session.command({ command: "resume_task", task_id: ids.tHeaders, text: "Also cover Retry-After" }, { label: "Continue", expectedRevision: app.session.state.get().tasks[ids.tHeaders]!.revision });
   await tick(900);
-  expect(row().textContent).toMatch(/orders\s*Run 1 finished · run 2 working · 5\d min ago$/);
+  expect(row().textContent).toMatch(/orders\s*Run 1 finished · run 2 working · 5\d min ago/);
   void app.session.command({ command: "stop_task", task_id: ids.tHeaders }, { label: "Stop" });
   await tick(3000);
   expect(app.session.state.get().tasks[ids.tHeaders]?.state).toBe("interrupted");
-  expect(row().textContent).toMatch(/orders\s*Run 1 finished · run 2 stopped · 5\d min ago$/);
+  expect(row().textContent).toMatch(/orders\s*Run 1 finished · run 2 stopped · 5\d min ago/);
 });
 
 it("asks for Next up's go-ahead once the task can start, and its header says so instead of Running", async () => {
@@ -278,7 +281,7 @@ it("asks for Next up's go-ahead once the task can start, and its header says so 
   void app.session.command({ command: "resolve_approval", approval_id: approval.approval_id, decision: { decision: "allow" } }, { label: "Allow", expectedRevision: approval.revision });
   await tick(15_000);
   expect(host.queue.writer).toBeNull();
-  expect(goAhead()?.textContent).toMatch(/Review and start · \d+ s ago$/);
+  expect(goAhead()?.textContent).toMatch(/Review and start · \d+ s ago/);
   expect(state()).toBe("Needs your go-ahead");
 });
 

@@ -9,8 +9,9 @@
 //!
 //! `alerts.json` keeps the person's choice and which alerts each computer has
 //! already raised here, so a restart neither repeats an alert nor loses one
-//! raised while the phone was away. Restarting the phone or updating the app
-//! clears Android's shade, so the alerts still open are raised again.
+//! raised while the phone was away. An alert raised once is never raised
+//! again for the same item: not after a swipe, a reconnect, a restart of the
+//! phone or an update of the app, though the last two clear Android's shade.
 //!
 //! Alerts the person turned off, everywhere or in one project, are counted
 //! as raised and never shown. Where the person chose one alert per project,
@@ -35,7 +36,7 @@ use protocol::{
     capability::{AppOffer, HarnessKind},
     command::{ApprovalDecision, QuestionAnswer},
     model::AttentionKind,
-    notifications::AlertTopic,
+    notifications::{AlertTopic, AlertType, Tier},
     time::Timestamp,
 };
 use serde::{Deserialize, Serialize};
@@ -73,20 +74,35 @@ const IDLE: Duration = Duration::from_secs(60 * 60);
 /// How often the watcher looks whether the app has left the screen, while
 /// alerts that arrived as it showed them wait.
 const LOOK: Duration = Duration::from_secs(2);
-/// How often the watcher looks for room in the shade while alerts wait for
-/// it, as the person clears alerts.
-const ROOM: Duration = Duration::from_secs(15);
 const FILE: &str = "alerts.json";
+/// The book as this version writes it. Version 1 raised again, after an
+/// update or a restart of the phone, every alert still open; reading one
+/// counts every alert open then as raised (see [`Book::migrate`]).
+const VERSION: u32 = 2;
+/// How far apart the saved times a computer was heard from are, at least.
+const HEARD_STEP_MS: i64 = 60_000;
 /// The most alerts the watcher keeps in Android's shade. Android silently
 /// drops an app's notifications beyond about 50, its summaries among them,
 /// so the rest wait for room. The device plugin's `Notifications.MAX_SHOWN`
 /// refuses the app's own beyond it.
 const MAX_SHOWN: usize = 24;
-/// The tag of the note that says how many alerts wait for room. It names no
+/// The tag of the note that says how many alerts had no room. It names no
 /// computer, so no computer's list clears it.
 const MORE: &str = "more";
+/// The tag of the note, posted once after the update to version 2, that
+/// says alerts no longer come back. It names no computer either.
+const CALM: &str = "calm";
 /// How long an answer from a notification may take, signing in included.
 const ANSWERING: Duration = Duration::from_secs(20);
+/// After one notification from a computer makes a sound, the others from it
+/// this soon after show silently: a burst makes one sound, not one each.
+const BURST_MS: i64 = 60_000;
+/// How long a raised alert may be missing from the shade, unexplained, before
+/// it is put back silently. A swipe tells the watcher through Android's
+/// delete intent, which arrives well within this; Android removes
+/// notifications for reasons that aren't the person, such as a force stop or
+/// a category replaced, and those must not count as handled.
+const MISSING_MS: i64 = 10_000;
 
 /// How much of a task an alert shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -121,6 +137,8 @@ pub enum Status {
 pub enum Category {
     NeedsYou,
     Finished,
+    /// Øphio's own word about its notifications, which never sounds.
+    Notice,
 }
 
 /// One notification as Android shows it.
@@ -140,6 +158,22 @@ pub struct Note {
     /// A question the person can answer from the notification itself.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub question: Option<Asking>,
+    /// Shown without sound, vibration or a pop-up.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub silent: bool,
+    /// What it is about: Android shows it under this type's category, as
+    /// the person chose for the type on this phone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alert_type: Option<AlertType>,
+    /// A choice over the phone's own for the type: the project's, or
+    /// `Alert` for a task the person asked to hear about.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub want: Option<Tier>,
+    /// The tags a swipe of this note handles, as it shows them: a
+    /// project's note names the alerts it counts as it is posted, so one
+    /// counted after the person swiped isn't handled with them.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub handles: Vec<String>,
 }
 
 /// A question as its notification asks it.
@@ -173,10 +207,15 @@ pub struct Reply {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Posted {
     Shown,
+    /// Shown with a sound or a pop-up.
+    Sounded,
     /// The shade filled meanwhile, as with alerts the app raised itself.
     NoRoom,
     /// The app cleared it, as answered, since its alert was learned of.
     Cleared,
+    /// Not shown: the person turned its type off on this phone, or its
+    /// project or task did. It counts as handled.
+    Off,
 }
 
 /// Where alerts are shown: Android's notification shade.
@@ -191,6 +230,11 @@ pub trait Shade: Send + Sync {
     fn shown(&self) -> Vec<String>;
     /// Whether the app's screen is in front and unlocked.
     fn on_screen(&self) -> bool;
+    /// How `note` would show now, by this phone's choice for its type and
+    /// any choice over it, without posting it.
+    fn effective(&self, _note: &Note) -> Tier {
+        Tier::Alert
+    }
     /// The computer `name` offers these phone apps: the shade says once that
     /// an update is ready if one is for this app.
     fn app_updates(&self, _profile_id: &str, _name: &str, _offers: &[AppOffer]) {}
@@ -207,9 +251,28 @@ struct Book {
     shade: Option<String>,
     #[serde(default)]
     computers: BTreeMap<String, Seen>,
-    /// How many alerts the note of those waiting counts.
+    /// When this phone last heard from each computer, in milliseconds by its
+    /// own clock. The app's screen shows it while its own connection is
+    /// closed, as it is whenever the app is not on screen.
+    #[serde(default)]
+    heard: BTreeMap<String, i64>,
+    /// The note that alerts no longer come back, still to be told or
+    /// finished telling.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    calm: Option<Calm>,
+    /// How many alerts the note of those without room counts.
     #[serde(skip)]
     more: usize,
+    /// How many of them need the person, as last told.
+    #[serde(skip)]
+    more_needs_you: usize,
+    /// When a notification from each computer last made a sound, in ms.
+    #[serde(skip)]
+    sounded: BTreeMap<String, i64>,
+    /// The tags of the alerts showing silently, oldest first: when the shade
+    /// is full, a new one that alerts takes the oldest one's place.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    quiet: Vec<String>,
     /// The shade's count of clears as the update under way began: what the
     /// computer says is open is learned of at it.
     #[serde(skip)]
@@ -218,16 +281,30 @@ struct Book {
 impl Default for Book {
     fn default() -> Self {
         Self {
-            version: 1,
+            version: VERSION,
             settings: None,
             shade: None,
             computers: BTreeMap::new(),
+            heard: BTreeMap::new(),
+            calm: None,
             more: 0,
+            more_needs_you: 0,
+            sounded: BTreeMap::new(),
+            quiet: Vec::new(),
             clears: 0,
         }
     }
 }
 impl Book {
+    /// Notes that the computer was heard from at `at`. The computer pings
+    /// every few minutes, so a minute's steps keep the file from being
+    /// written at each; a clock set back is believed at once.
+    fn heard_from(&mut self, profile_id: &str, at: Timestamp) {
+        let last = self.heard.get(profile_id).copied();
+        if last.is_none_or(|last| at.millis() < last || at.millis() - last >= HEARD_STEP_MS) {
+            self.heard.insert(profile_id.to_owned(), at.millis());
+        }
+    }
     fn off(&self) -> bool {
         self.settings.is_some_and(|s| !s.enabled)
     }
@@ -235,18 +312,164 @@ impl Book {
         self.settings.map_or(Detail::Minimal, |s| s.detail)
     }
     /// The watcher starts with Android's shade as `shade`. When that changed,
-    /// which cleared every alert it had raised, the next open list raises
-    /// again those still open.
+    /// as after a restart of the phone or an update of the app, Android
+    /// cleared every alert raised here. What was still showing then, never
+    /// swiped away, opened or seen, is put back silently once its computer
+    /// says it is still open; nothing else is raised again.
     fn started(&mut self, shade: &str) {
         if self.shade.as_ref().is_some_and(|s| s != shade) {
             for seen in self.computers.values_mut() {
-                for id in std::mem::take(&mut seen.raised) {
-                    seen.notified.remove(&id);
-                }
+                // What no longer showed by then isn't put back, nor is it
+                // counted as handled: nobody said it was.
+                let raised = std::mem::take(&mut seen.raised);
+                let showed = std::mem::take(&mut seen.shown_last);
+                seen.restore.extend(raised.intersection(&showed).copied());
+                seen.missing.clear();
                 seen.folds.clear();
             }
+            self.quiet.clear();
         }
         self.shade = Some(shade.to_owned());
+    }
+    /// The person handled these alerts from `profile_id`: swiped them away,
+    /// opened them or saw them in the app, here or, when `told`, on another
+    /// of their devices. They are never raised again; the tags to clear are
+    /// returned. Those handled here are kept to tell the computer.
+    fn handle(&mut self, profile_id: &str, ids: &[AttentionId], told: bool) -> Vec<String> {
+        let Some(seen) = self.computers.get_mut(profile_id) else {
+            return Vec::new();
+        };
+        let mut tags = Vec::new();
+        for id in ids {
+            seen.notified.insert(*id);
+            seen.raised.remove(id);
+            seen.restore.remove(id);
+            seen.missing.remove(id);
+            seen.shown_last.remove(id);
+            seen.waiting.remove(id);
+            seen.held.retain(|r| r.alert.attention_id != *id);
+            if !told {
+                seen.unsent.insert(*id);
+            }
+            tags.push(tag(profile_id, id));
+        }
+        tags
+    }
+    /// Those raised here, not handled, that have been missing from the shade
+    /// for [`MISSING_MS`] by `now`: put back silently. Android removed them
+    /// for a reason that wasn't the person, or the person's swipe would have
+    /// handled them. A project's alerts that its note counts in their place
+    /// still show, through it.
+    fn missing(&mut self, shown: &[String], now: i64, since: i64) -> Vec<Raise> {
+        // Each put back is stamped with the shade's count of clears when it
+        // was last shown, so one the app cleared since, as answered or seen,
+        // is refused by the shade and stays gone.
+        let showing = |t: &str| shown.iter().any(|s| s == t);
+        let mut back = Vec::new();
+        for (profile_id, seen) in &mut self.computers {
+            let counted: BTreeSet<AttentionId> = (seen.folds.iter())
+                .filter(|(project_id, f)| f.folded && showing(&folded_tag(profile_id, project_id)))
+                .flat_map(|(_, f)| f.members.keys().copied())
+                .collect();
+            let raised: Vec<AttentionId> = seen.raised.iter().copied().collect();
+            for id in raised {
+                if counted.contains(&id) || showing(&tag(profile_id, &id)) {
+                    seen.missing.remove(&id);
+                    continue;
+                }
+                let Some(alert) = seen.alerts.get(&id) else {
+                    continue;
+                };
+                let from = *seen.missing.entry(id).or_insert(now);
+                if now - from >= MISSING_MS {
+                    seen.missing.remove(&id);
+                    back.push(Raise {
+                        computer: Computer {
+                            profile_id: profile_id.clone(),
+                            name: seen.name.clone(),
+                        },
+                        alert: alert.clone(),
+                        since: seen.posted.get(&id).copied().unwrap_or(since),
+                        silent: true,
+                    });
+                }
+            }
+        }
+        back
+    }
+    /// How long until the soonest missing alert is due to go back, if any.
+    fn next_missing(&self, now: i64) -> Option<Duration> {
+        (self.computers.values())
+            .flat_map(|s| s.missing.values())
+            .map(|from| from + MISSING_MS - now)
+            .min()
+            .map(|ms| Duration::from_millis(ms.clamp(500, MISSING_MS) as u64 + 100))
+    }
+    /// The app cleared these, tagged `<profile>/<attention>`: answered, or
+    /// seen on its screen. None is put back; whether it is open is the
+    /// computer's to say.
+    fn cleared_by_app(&mut self, tags: &[String]) {
+        for t in tags {
+            self.quiet.retain(|q| q != t);
+            let Some((profile_id, id)) = t.split_once('/') else {
+                continue;
+            };
+            let (Some(seen), Ok(id)) = (
+                self.computers.get_mut(profile_id),
+                id.parse::<AttentionId>(),
+            ) else {
+                continue;
+            };
+            seen.raised.remove(&id);
+            seen.missing.remove(&id);
+            seen.shown_last.remove(&id);
+            seen.posted.remove(&id);
+        }
+    }
+    /// A book written by version 1, which raised again everything still
+    /// open after an update. Every alert open now counts as raised, as the
+    /// next list from each computer says which: nothing from before this
+    /// update shows again. One silent note says so, and how many things
+    /// wait for the person.
+    fn migrate(&mut self) {
+        if self.version >= VERSION {
+            return;
+        }
+        self.version = VERSION;
+        for seen in self.computers.values_mut() {
+            seen.rebase = true;
+            // Version 1 never learned of swipes, so what it raised can't be
+            // told from what was swiped: none of it is put back.
+            seen.raised.clear();
+            seen.restore.clear();
+            seen.shown_last.clear();
+        }
+        if !self.off() && !self.computers.is_empty() {
+            self.calm = Some(Calm {
+                pending: self.computers.keys().cloned().collect(),
+                needs_you: 0,
+                told: None,
+            });
+        }
+    }
+    /// The note that alerts no longer come back, when it is to be posted
+    /// or posted again with a new count; it is posted again only while it
+    /// shows, so one swiped away stays gone. Done once every computer said
+    /// what was open.
+    fn calm_note(&mut self, shown: &[String]) -> Option<Note> {
+        let calm = self.calm.as_mut()?;
+        let note = match calm.told {
+            Some(told) if told == calm.needs_you => None,
+            Some(_) if !shown.iter().any(|t| t == CALM) => None,
+            _ => {
+                calm.told = Some(calm.needs_you);
+                Some(calm.note())
+            }
+        };
+        if calm.pending.is_empty() && calm.told.is_some() {
+            self.calm = None;
+        }
+        note
     }
     /// A watcher starts anew, as in a new process: what waited, for room or
     /// for the app, rises again from each computer's next open list, once
@@ -258,15 +481,14 @@ impl Book {
             seen.live = false;
         }
         self.more = 0;
+        self.more_needs_you = 0;
     }
     /// The watcher began watching a computer at `at`, by this phone's clock:
     /// what it asks from then on is new, even before it is first reached.
     fn begin(&mut self, profile_id: &str, at: Timestamp) {
-        if !self.off() {
-            self.computers
-                .entry(profile_id.to_owned())
-                .or_insert_with(|| Seen::began(at));
-        }
+        self.computers
+            .entry(profile_id.to_owned())
+            .or_insert_with(|| Seen::began(at));
     }
     /// The app showed these alerts on its screen, so they are not raised.
     fn seen_in_app(&mut self, profile_id: &str, ids: &[AttentionId]) {
@@ -338,58 +560,31 @@ impl Book {
             .is_some_and(|s| !s.waiting.is_empty())
     }
     /// See [`configure`].
-    fn configure(&mut self, settings: Settings) -> Vec<String> {
-        let mut raised = Vec::new();
-        if !settings.enabled {
-            // The note may be left from before a restart, which counts none.
-            self.more = 0;
-            raised.push(MORE.to_owned());
-            for (profile_id, seen) in std::mem::take(&mut self.computers) {
-                raised.extend(seen.raised.iter().map(|id| tag(&profile_id, id)));
-                raised.extend(
-                    (seen.folds.iter())
-                        .filter(|(_, f)| f.folded)
-                        .map(|(project_id, _)| folded_tag(&profile_id, project_id)),
-                );
-            }
-        }
+    fn configure(&mut self, settings: Settings) {
         self.settings = Some(settings);
-        raised
     }
-    /// Whether alerts wait for room that may rise once there is some.
+    /// Whether alerts had no room, as the note of them counts.
+    #[cfg(test)]
     fn holding(&self) -> bool {
         self.computers
             .values()
             .any(|s| s.live && !s.held.is_empty())
     }
-    /// Of `raises`, those with room in the shade, which shows `shown`: what
-    /// waited for room first, then the rest in order. Those without room
-    /// wait, unrecorded, so a restart raises them again from the open list.
-    /// What waits rises only from a computer connected and caught up, as
-    /// one answered meanwhile would otherwise rise before the computer says
-    /// so, and not while the app's screen shows that computer, `in_app`: the
-    /// app shows it.
+    /// Of `raises`, those with room in the shade, which shows `shown`, in
+    /// order. Those without room are counted as raised and never shown: a
+    /// note counts them, and they wait in the app. They never rise later as
+    /// the person clears the shade, which would bring older ones back as
+    /// fast as they are swiped away.
     fn fit(
         &mut self,
         raises: Vec<Raise>,
         shown: &[String],
-        in_app: &BTreeSet<String>,
-    ) -> Vec<Raise> {
+        _in_app: &BTreeSet<String>,
+    ) -> (Vec<Raise>, Vec<Raise>) {
         let showing = |tag: &str| shown.iter().any(|t| t == tag);
-        let mut room = MAX_SHOWN.saturating_sub(shown.iter().filter(|t| *t != MORE).count());
+        let mut room =
+            MAX_SHOWN.saturating_sub(shown.iter().filter(|t| *t != MORE && *t != CALM).count());
         let mut post = Vec::new();
-        for (profile_id, seen) in &mut self.computers {
-            if !seen.live || in_app.contains(profile_id) {
-                continue;
-            }
-            let ready = room.min(seen.held.len());
-            for raise in seen.held.drain(..ready) {
-                seen.notified.insert(raise.alert.attention_id);
-                seen.raised.insert(raise.alert.attention_id);
-                post.push(raise);
-            }
-            room -= ready;
-        }
         let mut refused = Vec::new();
         for raise in raises {
             if showing(&raise.tag()) {
@@ -401,63 +596,93 @@ impl Book {
                 refused.push(raise);
             }
         }
-        self.hold(refused, false);
-        post
+        (post, refused)
     }
-    /// Keeps `raises`, unrecorded, until there is room: those Android had
-    /// no room for after all `first`, as they waited longest.
-    fn hold(&mut self, raises: Vec<Raise>, first: bool) {
-        let mut at = 0;
+    /// The oldest alert showing silently, to make room for one that alerts.
+    fn oldest_quiet(&self, shown: &[String]) -> Option<String> {
+        (self.quiet.iter()).find(|t| shown.contains(t)).cloned()
+    }
+    /// Clears `tag` to make room: not handled, and not put back.
+    fn make_room(&mut self, tag: &str) {
+        self.quiet.retain(|t| t != tag);
+        let Some((profile_id, id)) = tag.split_once('/') else {
+            return;
+        };
+        let (Some(seen), Ok(id)) = (
+            self.computers.get_mut(profile_id),
+            id.parse::<AttentionId>(),
+        ) else {
+            return;
+        };
+        seen.raised.remove(&id);
+        seen.missing.remove(&id);
+        seen.shown_last.remove(&id);
+    }
+    /// Counts `raises` as raised without showing them, for the note of
+    /// those without room.
+    fn hold(&mut self, raises: Vec<Raise>) {
         for raise in raises {
             let Some(seen) = self.computers.get_mut(&raise.computer.profile_id) else {
                 continue;
             };
             let id = raise.alert.attention_id;
-            seen.notified.remove(&id);
+            seen.notified.insert(id);
             seen.raised.remove(&id);
-            if seen.held.iter().any(|r| r.alert.attention_id == id) {
-                continue;
-            }
-            if first {
-                seen.held.insert(at.min(seen.held.len()), raise);
-                at += 1;
-            } else {
+            if !seen.held.iter().any(|r| r.alert.attention_id == id) {
                 seen.held.push(raise);
             }
         }
     }
-    /// The note of the alerts waiting for room, when their count changed;
-    /// `Err` with the tag when none wait.
-    fn more(&mut self) -> Option<std::result::Result<Note, &'static str>> {
+    /// The note of the alerts that had no room, when their count changed;
+    /// `Err` with the tag when none is left open. It changes silently,
+    /// alerting only when one more needs the person.
+    /// It is posted again only as it grows, or while it shows: one swiped
+    /// away stays gone until there is one more.
+    fn more(&mut self, shown: &[String]) -> Option<std::result::Result<Note, &'static str>> {
         let held: Vec<&Raise> = (self.computers.values())
             .flat_map(|s| s.held.iter())
             .collect();
         if held.len() == self.more {
             return None;
         }
+        let grew = held.len() > self.more;
         self.more = held.len();
+        let needs_you = (held.iter())
+            .filter(|r| category(&r.alert) == Some(Category::NeedsYou))
+            .count();
+        let more_need_you = needs_you > self.more_needs_you;
+        self.more_needs_you = needs_you;
         if held.is_empty() {
             return Some(Err(MORE));
         }
-        let needs_you = (held.iter())
-            .any(|r| heading(r.alert.kind).is_some_and(|(c, _)| c == Category::NeedsYou));
+        if !grew && !shown.iter().any(|t| t == MORE) {
+            return None;
+        }
         let count = match held.len() {
             1 => "1 more alert".to_owned(),
             n => format!("{n} more alerts"),
         };
+        // Øphio's own note, silent; it alerts as the one more that needs
+        // the person would, under that one's type.
+        let loud = (held.iter().rev())
+            .find(|r| more_need_you && category(&r.alert) == Some(Category::NeedsYou));
         Some(Ok(Note {
             tag: MORE.into(),
-            category: if needs_you {
+            category: if loud.is_some() {
                 Category::NeedsYou
             } else {
-                Category::Finished
+                Category::Notice
             },
             title: count,
-            body: "They show here as you clear these. Open Øphio to see them all.".into(),
+            body: "Open Øphio to see them.".into(),
             group: None,
             group_title: None,
             route: serde_json::Value::Null,
             question: None,
+            silent: loud.is_none(),
+            alert_type: loud.map(|r| alert_type(&r.alert)),
+            want: loud.and_then(|r| want(&r.alert, alert_type(&r.alert))),
+            handles: Vec::new(),
         }))
     }
 }
@@ -494,6 +719,38 @@ struct Seen {
     /// Projects whose alerts show as one, by project.
     #[serde(default)]
     folds: BTreeMap<ProjectId, Fold>,
+    /// The next open list counts all it lists as raised, and the
+    /// computer's time it was sent as when new alerts begin: set once, as
+    /// the book written by version 1 is read.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    rebase: bool,
+    /// Handled here, and not yet told to the computer, which tells the
+    /// person's other devices.
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    unsent: BTreeSet<AttentionId>,
+    /// Showing when Android cleared the shade, after an update or a restart
+    /// of the phone: put back silently if still open.
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    restore: BTreeSet<AttentionId>,
+    /// The computer takes the phone's word that an alert was handled.
+    #[serde(skip)]
+    takes_handled: bool,
+    /// The raised alerts as last heard, to put back one Android removed.
+    #[serde(skip)]
+    alerts: BTreeMap<AttentionId, Alert>,
+    /// The computer's name, as its alerts show it.
+    #[serde(skip)]
+    name: String,
+    /// When each raised alert was first seen missing from the shade, in ms.
+    #[serde(skip)]
+    missing: BTreeMap<AttentionId, i64>,
+    /// The shade's count of clears when each raised alert was last shown.
+    #[serde(skip)]
+    posted: BTreeMap<AttentionId, i64>,
+    /// The raised alerts showing at the last look: after Android clears the
+    /// shade, only these are put back.
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    shown_last: BTreeSet<AttentionId>,
 }
 impl Seen {
     fn began(at: Timestamp) -> Self {
@@ -506,6 +763,15 @@ impl Seen {
             held: Vec::new(),
             live: false,
             folds: BTreeMap::new(),
+            rebase: false,
+            unsent: BTreeSet::new(),
+            restore: BTreeSet::new(),
+            takes_handled: false,
+            alerts: BTreeMap::new(),
+            name: String::new(),
+            missing: BTreeMap::new(),
+            posted: BTreeMap::new(),
+            shown_last: BTreeSet::new(),
         }
     }
     fn knows(&self, id: &AttentionId) -> bool {
@@ -517,6 +783,10 @@ impl Seen {
     fn forget(&mut self, id: &AttentionId) {
         self.notified.remove(id);
         self.raised.remove(id);
+        self.restore.remove(id);
+        self.alerts.remove(id);
+        self.missing.remove(id);
+        self.shown_last.remove(id);
         self.waiting.remove(id);
         self.held.retain(|r| r.alert.attention_id != *id);
     }
@@ -535,6 +805,7 @@ impl Seen {
             let open: BTreeSet<_> = alerts.iter().map(|a| a.attention_id).collect();
             self.notified.retain(|id| open.contains(id));
             self.raised.retain(|id| open.contains(id));
+            self.restore.retain(|id| open.contains(id));
             self.waiting.retain(|id, _| open.contains(id));
             self.held.retain(|r| open.contains(&r.alert.attention_id));
         }
@@ -552,6 +823,8 @@ impl Seen {
         self.waiting.remove(&id);
         self.held.retain(|r| r.alert.attention_id != id);
         self.notified.insert(id);
+        self.missing.remove(&id);
+        self.shown_last.remove(&id);
         self.raised.remove(&id)
     }
     /// The computer says `alerts` are open, as of the count of clears
@@ -591,12 +864,66 @@ impl Seen {
         }
         heading(alert.kind)?;
         self.raised.insert(alert.attention_id);
+        self.alerts.insert(alert.attention_id, alert.clone());
         Some(Raise {
             computer: computer.clone(),
             alert: alert.clone(),
             since,
+            silent: false,
         })
     }
+}
+
+/// The one note, after the update that stopped alerts coming back, that
+/// says so and how many things wait for the person.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct Calm {
+    /// Computers whose first open list since the update is still to come.
+    pending: BTreeSet<String>,
+    /// What those lists said waits for the person.
+    needs_you: usize,
+    /// The count the note showed, once posted.
+    told: Option<usize>,
+}
+impl Calm {
+    fn note(&self) -> Note {
+        let mut body = "Notifications you swipe away stay away, even after an update.".to_owned();
+        match self.needs_you {
+            0 => {}
+            1 => body.push_str(" 1 thing waits for you in Needs you."),
+            n => body.push_str(&format!(" {n} things wait for you in Needs you.")),
+        }
+        Note {
+            tag: CALM.into(),
+            category: Category::Notice,
+            title: "Notifications are calmer now".into(),
+            body,
+            group: None,
+            group_title: None,
+            route: serde_json::Value::Null,
+            question: None,
+            silent: true,
+            alert_type: None,
+            want: None,
+            handles: Vec::new(),
+        }
+    }
+}
+
+/// Whether an alert's notification needs the person or is to look at;
+/// none for one that raises no notification.
+fn category(alert: &Alert) -> Option<Category> {
+    if alert.sign_in.is_some() {
+        return Some(Category::NeedsYou);
+    }
+    if let Some(report) = &alert.report {
+        return Some(if report.question.is_some() {
+            Category::NeedsYou
+        } else {
+            Category::Finished
+        });
+    }
+    heading(alert.kind).map(|(c, _)| c)
 }
 
 /// A paired computer as its alerts name it.
@@ -618,9 +945,17 @@ struct Fold {
     folded: bool,
     /// How many the note shows.
     counted: usize,
+    /// Each member's type and any choice over the phone's, for the
+    /// category the note shows in.
+    #[serde(default)]
+    types: BTreeMap<AttentionId, (AlertType, Option<Tier>)>,
 }
 impl Fold {
     fn note(&self, profile_id: &str, project_id: &ProjectId) -> Note {
+        // It shows as its loudest member would.
+        let lead = (self.members.keys())
+            .filter_map(|m| self.types.get(m).copied())
+            .max_by_key(|(t, w)| (w.unwrap_or(t.default_tier()), std::cmp::Reverse(*t)));
         let needs_you = self.members.values().filter(|n| **n).count();
         let other = self.members.len() - needs_you;
         let mut body = self.computer.clone();
@@ -655,6 +990,11 @@ impl Fold {
                 "projectId": project_id,
             }),
             question: None,
+            silent: false,
+            alert_type: lead.map(|(t, _)| t),
+            want: lead.and_then(|(_, w)| w),
+            // A swipe handles what the note counted as the person saw it.
+            handles: (self.members.keys()).map(|m| tag(profile_id, m)).collect(),
         }
     }
 }
@@ -668,13 +1008,17 @@ struct Raise {
     /// The shade's count of clears when the computer last said it was open:
     /// if the app clears it after, as answered, it does not rise.
     since: i64,
+    /// Put back after Android cleared the shade, so without a sound.
+    silent: bool,
 }
 impl Raise {
     fn tag(&self) -> String {
         tag(&self.computer.profile_id, &self.alert.attention_id)
     }
     fn note(&self, detail: Detail) -> Option<Note> {
-        note(&self.computer, &self.alert, detail)
+        let mut note = note(&self.computer, &self.alert, detail)?;
+        note.silent |= self.silent;
+        Some(note)
     }
 }
 
@@ -682,6 +1026,46 @@ impl Raise {
 struct Changes {
     post: Vec<Raise>,
     cancel: Vec<String>,
+}
+
+/// A computer that labels each alert's type sent one without a type this
+/// phone knows: a newer type, shown silently whatever this phone chose for
+/// the type its kind suggests. Notes, from the open list, that the
+/// computer takes this phone's word on what was handled, as only such a
+/// computer labels types.
+fn future_types(book: &mut Book, computer: &Computer, frame: AlertServerFrame) -> AlertServerFrame {
+    let typed =
+        |book: &Book| (book.computers.get(&computer.profile_id)).is_some_and(|s| s.takes_handled);
+    let future = |alert: &mut Alert| {
+        if alert.alert_type.is_none() && alert.sign_in.is_none() && alert.report.is_none() {
+            alert.project_tier = alert.project_tier.or(Some(Tier::Silent));
+        }
+    };
+    match frame {
+        AlertServerFrame::Open {
+            mut alerts,
+            now,
+            gone,
+            handled,
+        } => {
+            if handled {
+                alerts.iter_mut().for_each(future);
+            }
+            AlertServerFrame::Open {
+                alerts,
+                now,
+                gone,
+                handled,
+            }
+        }
+        AlertServerFrame::Raised { mut alert } => {
+            if typed(book) {
+                future(&mut alert);
+            }
+            AlertServerFrame::Raised { alert }
+        }
+        other => other,
+    }
 }
 
 /// What a frame from `computer`, received at `at` by this phone's clock,
@@ -695,16 +1079,34 @@ fn receive(
     shown: &[String],
     at: Timestamp,
 ) -> Changes {
-    // Turned off while a frame was on its way.
-    if book.off() {
-        return Changes::default();
-    }
     let id = &computer.profile_id;
     let clears = book.clears;
     let mut changes = Changes::default();
+    let frame = future_types(book, computer, frame);
     match frame {
-        AlertServerFrame::Open { alerts, now, gone } => {
+        AlertServerFrame::Open {
+            alerts,
+            now,
+            gone,
+            handled,
+        } => {
             let seen = (book.computers.entry(id.clone())).or_insert_with(|| Seen::began(at));
+            // The first list since the update to version 2: what is open
+            // now was raised before it, or was the app's to show.
+            if std::mem::take(&mut seen.rebase) {
+                seen.since = Some(now);
+                seen.notified.extend(alerts.iter().map(|a| a.attention_id));
+                if let Some(calm) = &mut book.calm
+                    && calm.pending.remove(id)
+                {
+                    calm.needs_you += (alerts.iter())
+                        .filter(|a| !a.quiet && category(a) == Some(Category::NeedsYou))
+                        .count();
+                }
+            }
+            let seen = book.computers.get_mut(id).expect("just entered");
+            seen.name.clone_from(&computer.name);
+            seen.takes_handled = handled;
             // Those answered while away go first, so none kept rises.
             for attention_id in gone.iter().take(MAX_SHOWING) {
                 seen.forget(attention_id);
@@ -717,10 +1119,45 @@ fn receive(
                     changes.cancel.push(tag(id, &alert.attention_id));
                 }
             }
+            // A project muted, or its type turned off there, since it was
+            // raised: it goes from this phone, and isn't counted as handled.
+            for alert in &alerts {
+                let off = want(alert, alert_type(alert)) == Some(Tier::Off);
+                if off && seen.raised.remove(&alert.attention_id) {
+                    seen.missing.remove(&alert.attention_id);
+                    seen.shown_last.remove(&alert.attention_id);
+                    changes.cancel.push(tag(id, &alert.attention_id));
+                }
+            }
+            // The latest word on what is raised, to put it back if Android
+            // removes it.
+            for alert in &alerts {
+                if seen.raised.contains(&alert.attention_id) {
+                    seen.alerts.insert(alert.attention_id, alert.clone());
+                }
+            }
             for alert in seen.reopen(&alerts, now, at) {
                 changes
                     .post
                     .extend(seen.raise(computer, alert, in_app, clears));
+            }
+            // What showed before Android cleared the shade goes back,
+            // silently, unless it was answered, turned off or handled since.
+            for id in std::mem::take(&mut seen.restore) {
+                if let Some(alert) = alerts.iter().find(|a| a.attention_id == id && !a.quiet) {
+                    seen.raised.insert(id);
+                    seen.alerts.insert(id, alert.clone());
+                    changes.post.push(Raise {
+                        computer: computer.clone(),
+                        alert: alert.clone(),
+                        since: clears,
+                        silent: true,
+                    });
+                }
+            }
+            // An older computer can't be told; nor can it tell the others.
+            if !handled {
+                seen.unsent.clear();
             }
             seen.live = true;
             // A full list says nothing of the alerts it leaves out.
@@ -759,6 +1196,13 @@ fn receive(
             }
             changes.cancel.push(tag(id, &attention_id));
         }
+        // Handled on another of the person's devices, or this one's word
+        // coming back.
+        AlertServerFrame::Handled { attention_id } => {
+            changes
+                .cancel
+                .extend(book.handle(id, &[attention_id], true));
+        }
     }
     changes
 }
@@ -767,9 +1211,6 @@ fn receive(
 /// and the app has not reported seen, is raised.
 fn unwatched(book: &mut Book, computer: &Computer) -> Changes {
     let mut changes = Changes::default();
-    if book.off() {
-        return changes;
-    }
     // One answered while not connected rises only once the computer says.
     if let Some(seen) = book.computers.get_mut(&computer.profile_id)
         && seen.live
@@ -815,6 +1256,24 @@ fn heading(kind: AttentionKind) -> Option<(Category, &'static str)> {
 }
 
 fn note(computer: &Computer, alert: &Alert, detail: Detail) -> Option<Note> {
+    // An agent that isn't signed in: tapping it starts signing in again, on
+    // this computer, in the phone's own browser.
+    if let Some(sign_in) = &alert.sign_in {
+        return Some(Note {
+            tag: tag(&computer.profile_id, &alert.attention_id),
+            category: Category::NeedsYou,
+            title: format!("{} isn't signed in on {}", sign_in.service, computer.name),
+            body: "Tap to sign in again.".into(),
+            group: None,
+            group_title: None,
+            question: None,
+            silent: false,
+            alert_type: Some(AlertType::SignIn),
+            want: want(alert, AlertType::SignIn),
+            handles: Vec::new(),
+            route: serde_json::json!({ "kind": "sign_in", "profileId": computer.profile_id, "accountId": sign_in.account_id }),
+        });
+    }
     if let Some(report) = &alert.report {
         return Some(Note {
             tag: tag(&computer.profile_id, &alert.attention_id),
@@ -828,6 +1287,10 @@ fn note(computer: &Computer, alert: &Alert, detail: Detail) -> Option<Note> {
             group: None,
             group_title: None,
             question: None,
+            silent: false,
+            alert_type: Some(alert_type(alert)),
+            want: want(alert, alert_type(alert)),
+            handles: Vec::new(),
             route: serde_json::json!({ "kind": "report", "profileId": computer.profile_id, "reportId": report.report_id }),
         });
     }
@@ -835,6 +1298,8 @@ fn note(computer: &Computer, alert: &Alert, detail: Detail) -> Option<Note> {
     let title = match (alert.kind, &alert.headline) {
         (_, Some(headline)) => headline.clone(),
         (AttentionKind::Question, None) => format!("{title} {}", agent(alert.harness)),
+        // An agent's answer in a chat, as the app names it.
+        _ if alert_type(alert) == AlertType::Reply => "New reply".to_owned(),
         _ => title.to_owned(),
     };
     let mut body = format!("{} · {}", computer.name, alert.project);
@@ -842,14 +1307,21 @@ fn note(computer: &Computer, alert: &Alert, detail: Detail) -> Option<Note> {
         body.push_str(" · ");
         body.push_str(&alert.task);
     }
-    let group =
-        (category == Category::Finished).then(|| format!("{}:finished", computer.profile_id));
+    // A project's notifications from one computer stack together, so a
+    // burst from one project takes one place in the shade.
+    let group = Some(format!(
+        "{}/{}",
+        computer.profile_id,
+        alert.project_id.as_uuid()
+    ));
+    let group_title = Some(format!("{} · {}", alert.project, computer.name));
+    let alert_type = alert_type(alert);
     Some(Note {
         tag: tag(&computer.profile_id, &alert.attention_id),
         category,
         title,
         body,
-        group_title: group.as_ref().map(|_| computer.name.clone()),
+        group_title,
         group,
         route: serde_json::json!({
             "kind": "attention",
@@ -868,7 +1340,58 @@ fn note(computer: &Computer, alert: &Alert, detail: Detail) -> Option<Note> {
                     asked: q.asked.clone(),
                 },
             }),
+        silent: false,
+        alert_type: Some(alert_type),
+        want: want(alert, alert_type),
+        handles: Vec::new(),
     })
+}
+
+/// What an alert is about: as the computer labels it, or, from an older
+/// computer, as its kind and topic say.
+fn alert_type(alert: &Alert) -> AlertType {
+    if let Some(t) = alert.alert_type {
+        return t;
+    }
+    if alert.sign_in.is_some() {
+        return AlertType::SignIn;
+    }
+    if let Some(report) = &alert.report {
+        return if report.question.is_some() {
+            AlertType::ReportQuestion
+        } else {
+            AlertType::Reports
+        };
+    }
+    let item = protocol::model::AttentionItem {
+        child_id: None,
+        attention_id: alert.attention_id,
+        kind: alert.kind,
+        title: String::new(),
+        body: None,
+        task_id: None,
+        run_id: None,
+        approval_id: None,
+        created_at: alert.created_at,
+        resolved_at: None,
+        priority: 0,
+        topic: alert.topic,
+        quiet: alert.quiet,
+        report_id: None,
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
+    };
+    AlertType::of(&item, false).unwrap_or(AlertType::Decision)
+}
+
+/// A choice over the phone's own for this alert's type: the task the
+/// person asked to hear about alerts; otherwise the project's own choice.
+fn want(alert: &Alert, alert_type: AlertType) -> Option<Tier> {
+    if alert.follow && alert_type.follows_task() {
+        return Some(Tier::Alert);
+    }
+    alert.project_tier
 }
 
 fn agent(harness: HarnessKind) -> &'static str {
@@ -1009,7 +1532,11 @@ pub fn init(data: &Path) {
     };
     let book = serde_json::from_slice::<Book>(&saved)
         .ok()
-        .filter(|b| b.version == 1)
+        .filter(|b| (1..=VERSION).contains(&b.version))
+        .map(|mut b| {
+            b.migrate();
+            b
+        })
         .unwrap_or_default();
     *ledger = Some(Ledger { path, book, saved });
 }
@@ -1048,11 +1575,10 @@ pub fn settings() -> Result<Option<Settings>> {
     with_book(|book| book.settings)
 }
 
-/// Saves the person's choice. Turning alerts off forgets what each computer
-/// raised, so turning them on again starts afresh rather than raising
-/// everything that happened meanwhile. Returns the tags of the alerts the
-/// watcher raised, which nothing clears once it stops.
-pub fn configure(settings: Settings) -> Result<Vec<String>> {
+/// Saves the person's choice: whether alerts keep coming once the app is
+/// closed, and how much they show. While the app runs, the watcher runs
+/// either way, so nothing it raised needs clearing.
+pub fn configure(settings: Settings) -> Result<()> {
     with_book(|book| book.configure(settings))
 }
 
@@ -1078,6 +1604,119 @@ pub fn raised_by_app(tag: &str) -> Result<()> {
 /// Each paired computer's connection, while the watcher runs.
 pub fn statuses() -> BTreeMap<String, Status> {
     lock(&STATUS).clone()
+}
+
+/// When the watcher last heard from each paired computer, in milliseconds.
+pub fn heard() -> BTreeMap<String, i64> {
+    lock(&LEDGER)
+        .as_ref()
+        .map(|ledger| ledger.book.heard.clone())
+        .unwrap_or_default()
+}
+
+/// Notes the computer was heard from now. A failed save is retried at the
+/// next, so it does not end the connection.
+fn note_heard(profile_id: &str, watcher: u64) {
+    if let Err(error) = with_watched_book(watcher, |book| {
+        book.heard_from(profile_id, Timestamp::now())
+    }) {
+        tracing::warn!(%error, "alerts: could not save when a computer was heard from");
+    }
+}
+
+/// This phone's choices from before notifications had types, as Android's
+/// three old categories kept them, by id and importance: the types that
+/// used to show under each take the old choice, where it is quieter than
+/// the type's recommended one. Never louder.
+pub fn imported_tiers(old: &BTreeMap<String, i32>) -> BTreeMap<AlertType, Tier> {
+    use AlertType::*;
+    let under = |category: &str| -> &'static [AlertType] {
+        match category {
+            // Everything that waited on the person, and the slow steps and
+            // issue calls that showed with them.
+            "needs-you" => &[
+                Question,
+                Approval,
+                SignIn,
+                Decision,
+                PrNeedsYou,
+                ReportQuestion,
+                GoAhead,
+                IssueCall,
+                Slow,
+            ],
+            "finished" => &[
+                Finished, Failed, Reply, Merged, Issues, PrReady, Batch, Reports,
+            ],
+            "updates" => &[AppUpdate],
+            _ => &[],
+        }
+    };
+    let mut tiers = BTreeMap::new();
+    for (category, importance) in old {
+        // Android's importance: none, min, low, default, high.
+        let tier = match importance {
+            0 => Tier::Off,
+            1 | 2 => Tier::Silent,
+            _ => continue,
+        };
+        for t in under(category) {
+            if tier < t.default_tier() {
+                tiers.insert(*t, tier);
+            }
+        }
+    }
+    tiers
+}
+
+/// Rings each computer's connection when alerts were handled here, so it
+/// tells its computer, which tells the person's other devices.
+static TOLD: OnceLock<watch::Sender<u64>> = OnceLock::new();
+fn told() -> &'static watch::Sender<u64> {
+    TOLD.get_or_init(|| watch::channel(0).0)
+}
+fn tell() {
+    told().send_modify(|n| *n = n.wrapping_add(1));
+}
+
+/// The person handled these alerts in the app: opened them, or saw their
+/// items on screen. Their notifications go, here and on every other device
+/// of theirs, and none is raised again. Returns the tags to clear.
+pub fn handled(profile_id: &str, ids: &[AttentionId]) -> Result<Vec<String>> {
+    let tags = with_book(|book| book.handle(profile_id, ids, false))?;
+    if !tags.is_empty() {
+        tell();
+    }
+    Ok(tags)
+}
+
+/// The person swiped away, or opened, a notification: `tags` are the alerts
+/// it stood for, one per line, as it named them when posted (a project's
+/// note names each it counted). Each is handled; any copy put back since
+/// goes too.
+pub fn dismissed(data: &Path, tags: &str, shade: &dyn Shade) -> Result<()> {
+    init(data);
+    let mut by_computer: BTreeMap<&str, Vec<AttentionId>> = BTreeMap::new();
+    for t in tags.lines() {
+        let Some((profile_id, id)) = t.split_once('/') else {
+            continue;
+        };
+        if let Ok(id) = id.parse::<AttentionId>() {
+            by_computer.entry(profile_id).or_default().push(id);
+        }
+    }
+    for (profile_id, ids) in by_computer {
+        for t in handled(profile_id, &ids)? {
+            shade.cancel(&t);
+        }
+    }
+    Ok(())
+}
+
+/// The app cleared these notifications, by tag: answered, or seen on its
+/// screen. None is put back.
+pub fn cleared_by_app(tags: &[String]) -> Result<()> {
+    with_book(|book| book.cleared_by_app(tags))
 }
 
 /// Lets the watcher see which computers the app's screen is connected to.
@@ -1243,6 +1882,14 @@ async fn supervise(
 fn forget_others(ids: &BTreeSet<String>, shade: &dyn Shade, watcher: u64) {
     let forgot = with_watched_book(watcher, |book| {
         book.computers.retain(|id, _| ids.contains(id));
+        book.heard.retain(|id, _| ids.contains(id));
+        // A computer unpaired before it said what was open says nothing.
+        if let Some(calm) = &mut book.calm {
+            calm.pending.retain(|id| ids.contains(id));
+            if calm.pending.is_empty() && calm.told.is_some() {
+                book.calm = None;
+            }
+        }
         for tag in shade.shown() {
             if let Some((profile, _)) = tag.split_once('/')
                 && !ids.contains(profile)
@@ -1261,6 +1908,9 @@ fn forget_others(ids: &BTreeSet<String>, shade: &dyn Shade, watcher: u64) {
 fn refused(profile_id: &str, shade: &dyn Shade, watcher: u64) {
     let forgot = with_watched_book(watcher, |book| {
         book.computers.remove(profile_id);
+        if let Some(calm) = &mut book.calm {
+            calm.pending.remove(profile_id);
+        }
         let prefix = format!("{profile_id}/");
         for tag in shade.shown() {
             if tag.starts_with(&prefix) {
@@ -1383,6 +2033,7 @@ async fn session(
         _ = wake.nudge.changed() => return Ok(Ended::Moved),
         signed_in = network::authenticate(record, ConnectionKind::Alerts, vault, || {}) => signed_in?,
     };
+    note_heard(&computer.profile_id, wake.watcher);
     if let Some(offers) = &signed_in.capabilities.app_updates {
         shade.app_updates(&computer.profile_id, &computer.name, offers);
     }
@@ -1399,11 +2050,30 @@ async fn session(
         .features
         .iter()
         .any(|f| f == "reports_v1");
-    let reports_on = reports_supported && report_alerts_on(record, vault).await;
+    // A computer that labels each alert's type leaves every choice of
+    // which reach the person to the phone.
+    let types = (signed_in.capabilities.features.iter())
+        .any(|f| f == protocol::notifications::ALERT_TYPES_FEATURE);
+    let reports_on = reports_supported && (types || report_alerts_on(record, vault).await);
+    // Only a computer that can sign its agents in from the phone says when
+    // one isn't signed in; an older one would refuse the field anyway.
+    let sign_in = signed_in
+        .capabilities
+        .features
+        .iter()
+        .any(|f| f == protocol::accounts::SIGN_IN_ON_PHONE_FEATURE);
+    // Rung from here on, so nothing handled meanwhile is missed.
+    let mut rung = told().subscribe();
+    // What was handled here while the computer couldn't be told.
+    let backlog = with_watched_book(wake.watcher, |book| untold(book, &computer.profile_id))?
+        .unwrap_or_default();
     let watch = AlertClientFrame::Watch {
         reports: reports_on,
         showing,
         quiet: true,
+        sign_in,
+        types: true,
+        handled: backlog.clone(),
     };
     network::send_json(&mut ws, &watch).await?;
     let heard = network::heard(&ws);
@@ -1422,6 +2092,10 @@ async fn session(
                 return Ok(Ended::Closed);
             }
             _ = wake.nudge.changed() => return Ok(Ended::Moved),
+            _ = rung.changed() => {
+                tell_computer(&mut ws, &computer.profile_id, wake.watcher).await?;
+                continue;
+            }
             () = tokio::time::sleep(again.unwrap_or_default()), if again.is_some() => {
                 again = look(computer, shade, wake.watcher).await;
                 continue;
@@ -1432,6 +2106,7 @@ async fn session(
                 Ok(Some(message)) => message.map_err(|_| Error::Closed)?,
             },
         };
+        note_heard(&computer.profile_id, wake.watcher);
         // Pings are answered by the socket itself on its next read.
         let text = match message {
             Message::Text(text) => text,
@@ -1440,8 +2115,10 @@ async fn session(
         };
         let Some(frame) = parse(&text)? else { continue };
         let opened = matches!(frame, AlertServerFrame::Open { .. });
+        let first = opened && !std::mem::replace(&mut listed, true);
         if opened
-            && std::mem::replace(&mut listed, true)
+            && !first
+            && !types
             && reports_supported
             && report_alerts_on(record, vault).await != reports_on
         {
@@ -1452,6 +2129,57 @@ async fn session(
             *failures = 0;
             set_status(&wake.stop, &computer.profile_id, Status::Watching);
         }
+        // The Watch told the first list's computer what was handled while
+        // away; what was handled since is told now.
+        if first {
+            with_watched_book(wake.watcher, |book| {
+                if let Some(seen) = book.computers.get_mut(&computer.profile_id) {
+                    for id in &backlog {
+                        seen.unsent.remove(id);
+                    }
+                }
+            })?;
+            tell_computer(&mut ws, &computer.profile_id, wake.watcher).await?;
+        }
+    }
+}
+
+/// What was handled here and not yet told to the computer, at most as many
+/// as one frame names.
+fn untold(book: &Book, profile_id: &str) -> Vec<AttentionId> {
+    (book.computers.get(profile_id))
+        .map(|s| s.unsent.iter().take(MAX_SHOWING).copied().collect())
+        .unwrap_or_default()
+}
+
+/// Tells the computer which alerts were handled here, if it takes them,
+/// and forgets them once sent.
+async fn tell_computer(ws: &mut network::Socket, profile_id: &str, watcher: u64) -> Result<()> {
+    loop {
+        let Some((ids, takes)) = with_watched_book(watcher, |book| {
+            let takes = book
+                .computers
+                .get(profile_id)
+                .is_some_and(|s| s.takes_handled);
+            (untold(book, profile_id), takes)
+        })?
+        else {
+            return Ok(());
+        };
+        if ids.is_empty() || !takes {
+            return Ok(());
+        }
+        let frame = AlertClientFrame::Handled {
+            attention_ids: ids.clone(),
+        };
+        network::send_json(ws, &frame).await?;
+        with_watched_book(watcher, |book| {
+            if let Some(seen) = book.computers.get_mut(profile_id) {
+                for id in &ids {
+                    seen.unsent.remove(id);
+                }
+            }
+        })?;
     }
 }
 
@@ -1575,10 +2303,10 @@ async fn look(computer: &Computer, shade: &dyn Shade, watcher: u64) -> Option<Du
 }
 
 fn look_again(book: &Book, computer: &Computer) -> Option<Duration> {
-    if book.waiting(&computer.profile_id) {
-        Some(LOOK)
-    } else {
-        book.holding().then_some(ROOM)
+    let missing = book.next_missing(Timestamp::now().millis());
+    match (book.waiting(&computer.profile_id).then_some(LOOK), missing) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (a, b) => a.or(b),
     }
 }
 
@@ -1609,17 +2337,43 @@ fn update<T>(
     // the computer last said it was open is not raised.
     ledger.book.clears = shade.clears();
     let mut shown = shade.shown();
-    let changes = f(&mut ledger.book, &shown);
+    let now = Timestamp::now().millis();
+    // Only the person's own word handles an alert: one missing for another
+    // reason goes back, silently.
+    let book_clears = ledger.book.clears;
+    let back = ledger.book.missing(&shown, now, book_clears);
+    let mut changes = f(&mut ledger.book, &shown);
+    changes.post.extend(back);
     for tag in &changes.cancel {
         shade.cancel(tag);
     }
     shown.retain(|t| !changes.cancel.contains(t));
-    let post = ledger.book.fit(changes.post, &shown, in_app);
+    let (mut post, refused) = ledger.book.fit(changes.post, &shown, in_app);
     let detail = ledger.book.detail();
     let mut unshown = Vec::new();
     let mut no_room = Vec::new();
+    let mut off = Vec::new();
+    // With the shade full, one that alerts takes the place of the oldest
+    // showing silently, which the app clears: it isn't handled.
+    for raise in refused {
+        let alerts = raise
+            .note(detail)
+            .is_some_and(|n| !n.silent && shade.effective(&n) == Tier::Alert);
+        match ledger.book.oldest_quiet(&shown).filter(|_| alerts) {
+            Some(victim) => {
+                shade.cancel(&victim);
+                shown.retain(|t| *t != victim);
+                ledger.book.make_room(&victim);
+                post.push(raise);
+            }
+            None => no_room.push(raise),
+        }
+    }
     for raise in post {
-        let raise = match fold(&mut ledger.book, shade, raise, &mut shown) {
+        // One sound for a burst from a computer: the rest show silently.
+        let hush = (ledger.book.sounded.get(&raise.computer.profile_id))
+            .is_some_and(|at| (0..BURST_MS).contains(&(now - at)));
+        let raise = match fold(&mut ledger.book, shade, raise, &mut shown, hush) {
             Folding::Alone(raise) => raise,
             Folding::Shown => continue,
             Folding::NoRoom(raise) => {
@@ -1630,24 +2384,65 @@ fn update<T>(
                 unshown.push(raise.tag());
                 continue;
             }
+            Folding::Off(raise) => {
+                off.push(raise);
+                continue;
+            }
         };
-        let Some(note) = raise.note(detail) else {
+        let Some(mut note) = raise.note(detail) else {
             continue;
         };
+        let profile_id = &raise.computer.profile_id;
+        note.silent |= hush;
+        let stamp = |book: &mut Book| {
+            if let Some(seen) = book.computers.get_mut(profile_id) {
+                seen.posted.insert(raise.alert.attention_id, book_clears);
+            }
+        };
         match shade.post(&note, Some(raise.since)) {
-            Ok(Posted::Shown) => shown.push(note.tag),
+            Ok(Posted::Shown) => {
+                stamp(&mut ledger.book);
+                if !ledger.book.quiet.contains(&note.tag) {
+                    ledger.book.quiet.push(note.tag.clone());
+                }
+                shown.push(note.tag);
+            }
+            Ok(Posted::Sounded) => {
+                stamp(&mut ledger.book);
+                ledger.book.sounded.insert(profile_id.clone(), now);
+                ledger.book.quiet.retain(|t| *t != note.tag);
+                shown.push(note.tag);
+            }
+            // Put back, but cleared by the app since it last showed: it
+            // stays gone, and whether it is open is the computer's to say.
+            Ok(Posted::Cleared) if raise.silent => {
+                ledger.book.cleared_by_app(std::slice::from_ref(&note.tag));
+            }
             Ok(Posted::NoRoom) => no_room.push(raise),
             Ok(Posted::Cleared) => unshown.push(note.tag),
+            Ok(Posted::Off) => off.push(raise),
             Err(error) => {
                 tracing::warn!(%error, "alerts: Android did not show an alert");
                 unshown.push(note.tag);
             }
         }
     }
+    // Turned off here: counted as raised, never shown, and not told.
+    for raise in &off {
+        if let Some(seen) = ledger.book.computers.get_mut(&raise.computer.profile_id) {
+            seen.raised.remove(&raise.alert.attention_id);
+            seen.missing.remove(&raise.alert.attention_id);
+        }
+    }
     ledger.book.unraise(&unshown);
-    ledger.book.hold(no_room, true);
+    ledger.book.hold(no_room);
     recount(&mut ledger.book, shade, &shown);
-    match ledger.book.more() {
+    if let Some(note) = ledger.book.calm_note(&shown)
+        && let Err(error) = shade.post(&note, None)
+    {
+        tracing::warn!(%error, "alerts: Android did not show that alerts are calmer");
+    }
+    match ledger.book.more(&shown) {
         // The note is the watcher's own; the app never clears it.
         Some(Ok(note)) => {
             if let Err(error) = shade.post(&note, None) {
@@ -1657,6 +2452,19 @@ fn update<T>(
         Some(Err(tag)) => shade.cancel(tag),
         None => {}
     }
+    // What shows now, for what a cleared shade puts back.
+    for (profile_id, seen) in &mut ledger.book.computers {
+        let counted: BTreeSet<AttentionId> = (seen.folds.values())
+            .filter(|f| f.folded)
+            .flat_map(|f| f.members.keys().copied())
+            .collect();
+        let showed: BTreeSet<AttentionId> = (seen.raised.iter())
+            .filter(|id| counted.contains(id) || shown.contains(&tag(profile_id, id)))
+            .copied()
+            .collect();
+        seen.shown_last = showed;
+    }
+    ledger.book.quiet.retain(|t| shown.contains(t));
     if let Err(error) = ledger.save() {
         tracing::warn!(%error, "alerts: could not save which alerts were shown");
     }
@@ -1670,6 +2478,8 @@ enum Folding {
     Shown,
     NoRoom(Raise),
     Failed(Raise),
+    /// Its type is off here.
+    Off(Raise),
 }
 
 /// Where its project's alerts show as one, `raise` shows on its own if it
@@ -1677,7 +2487,13 @@ enum Folding {
 /// The note alerts again for one that needs the person, and otherwise
 /// changes its count quietly. One the person swiped away counts no longer.
 /// `shown` is the tags showing, kept as they change.
-fn fold(book: &mut Book, shade: &dyn Shade, raise: Raise, shown: &mut Vec<String>) -> Folding {
+fn fold(
+    book: &mut Book,
+    shade: &dyn Shade,
+    raise: Raise,
+    shown: &mut Vec<String>,
+    hush: bool,
+) -> Folding {
     if !raise.alert.bundle {
         return Folding::Alone(raise);
     }
@@ -1694,7 +2510,10 @@ fn fold(book: &mut Book, shade: &dyn Shade, raise: Raise, shown: &mut Vec<String
         members: BTreeMap::new(),
         folded: false,
         counted: 0,
+        types: BTreeMap::new(),
     });
+    let kind = alert_type(&raise.alert);
+    fold.types.insert(id, (kind, want(&raise.alert, kind)));
     fold.project.clone_from(&raise.alert.project);
     fold.computer.clone_from(&raise.computer.name);
     if fold.folded && !shown.contains(&note_tag) {
@@ -1719,8 +2538,26 @@ fn fold(book: &mut Book, shade: &dyn Shade, raise: Raise, shown: &mut Vec<String
         shade.cancel(&note_tag);
         shown.retain(|t| *t != note_tag);
     }
-    match shade.post(&note, None) {
-        Ok(Posted::Shown) => {
+    let mut note = note;
+    // As the alert itself would: silent when put back, or in a burst.
+    note.silent |= raise.silent || hush;
+    let posted = shade.post(&note, None);
+    if matches!(posted, Ok(Posted::Sounded)) {
+        book.sounded
+            .insert(profile_id.clone(), Timestamp::now().millis());
+    }
+    let Some(seen) = book.computers.get_mut(&profile_id) else {
+        return Folding::Failed(raise);
+    };
+    let Some(fold) = seen.folds.get_mut(&project_id) else {
+        return Folding::Failed(raise);
+    };
+    match posted {
+        Ok(Posted::Off) => {
+            fold.members.remove(&id);
+            Folding::Off(raise)
+        }
+        Ok(Posted::Shown | Posted::Sounded) => {
             if !folded {
                 for m in fold.members.keys().filter(|m| **m != id) {
                     let alone = tag(&profile_id, m);
@@ -1770,7 +2607,10 @@ fn recount(book: &mut Book, shade: &dyn Shade, shown: &[String]) {
             }
             if fold.counted != fold.members.len() {
                 fold.counted = fold.members.len();
-                if let Err(error) = shade.post(&fold.note(profile_id, project_id), None) {
+                let mut note = fold.note(profile_id, project_id);
+                // A count that changes is no news.
+                note.silent = true;
+                if let Err(error) = shade.post(&note, None) {
                     tracing::warn!(%error, "alerts: Android did not show a project's new count");
                 }
             }
@@ -1779,33 +2619,37 @@ fn recount(book: &mut Book, shade: &dyn Shade, shown: &[String]) {
     }
 }
 
-/// The computer whose alerts the app's screen shows, while it shows them.
-static VIEWING: Mutex<Option<String>> = Mutex::new(None);
+/// The computers whose alerts the app's screen shows, while it shows them:
+/// the one on screen, or, while the app shows All, every one it is
+/// connected to.
+static VIEWING: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
 
 /// The app's screen began, `on`, or stopped showing the alerts of a
 /// computer. A connection the app keeps to another computer, as for an
-/// unfinished hand-off, shows none of that one's alerts.
+/// unfinished hand-off, shows none of that one's alerts unless the app
+/// says so. The app and the watcher raise an alert under one tag, so a
+/// change on the way never shows one twice.
 pub fn viewing(profile_id: &str, on: bool) {
     let mut viewing = lock(&VIEWING);
     if on {
-        *viewing = Some(profile_id.to_owned());
-    } else if viewing.as_deref() == Some(profile_id) {
-        *viewing = None;
+        viewing.insert(profile_id.to_owned());
+    } else {
+        viewing.remove(profile_id);
     }
 }
 
-/// The computer the app's screen is in front, unlocked, showing and
+/// The computers the app's screen is in front, unlocked, showing and
 /// connected to, and so shows the alerts of itself.
 async fn in_app(shade: &dyn Shade) -> BTreeSet<String> {
     let mut showing = BTreeSet::new();
     if !shade.on_screen() {
         return showing;
     }
-    let Some(id) = lock(&VIEWING).clone() else {
-        return showing;
-    };
-    if app_connected(&id).await {
-        showing.insert(id);
+    let ids = lock(&VIEWING).clone();
+    for id in ids {
+        if app_connected(&id).await {
+            showing.insert(id);
+        }
     }
     showing
 }
@@ -1844,7 +2688,34 @@ mod tests {
             topic: None,
             quiet: false,
             bundle: false,
+            sign_in: None,
+            alert_type: typed(kind),
+            project_tier: None,
+            follow: false,
         }
+    }
+    /// The type a computer labels an alert of `kind` with.
+    fn typed(kind: AttentionKind) -> Option<AlertType> {
+        Some(match kind {
+            AttentionKind::Question => AlertType::Question,
+            AttentionKind::Approval => AlertType::Approval,
+            AttentionKind::Completed => AlertType::Finished,
+            AttentionKind::Failure => AlertType::Failed,
+            AttentionKind::ConnectionIssue => return None,
+            _ => AlertType::Decision,
+        })
+    }
+    /// Fits `raises` in the shade, counting those without room as the
+    /// watcher does.
+    fn fit_hold(
+        book: &mut Book,
+        raises: Vec<Raise>,
+        shown: &[String],
+        in_app: &BTreeSet<String>,
+    ) -> Vec<Raise> {
+        let (post, refused) = book.fit(raises, shown, in_app);
+        book.hold(refused);
+        post
     }
     fn open(alerts: &[Alert], now: i64) -> AlertServerFrame {
         open_gone(alerts, now, Vec::new())
@@ -1855,6 +2726,7 @@ mod tests {
             alerts: alerts.to_vec(),
             now: Timestamp(now),
             gone,
+            handled: true,
         }
     }
     fn tags(changes: &Changes) -> Vec<String> {
@@ -1894,6 +2766,49 @@ mod tests {
         cleared: Mutex<Vec<String>>,
         /// A tag the app clears as the watcher posts it.
         racing: Mutex<Option<String>>,
+        /// This phone's choice per type; every type alerts unless set.
+        tiers: Mutex<BTreeMap<AlertType, Tier>>,
+        /// How many posts made a sound.
+        sounds: std::sync::atomic::AtomicUsize,
+        /// Each showing alert's group.
+        groups: Mutex<BTreeMap<String, String>>,
+        /// The groups with a summary showing.
+        summaries: Mutex<BTreeSet<String>>,
+        /// Clears a group's summary once fewer than two of its alerts are
+        /// left, as the app once did; Android then clears the rest with it.
+        old_summaries: std::sync::atomic::AtomicBool,
+    }
+    impl FakeShade {
+        fn tier(&self, alert_type: AlertType, tier: Tier) {
+            lock(&self.tiers).insert(alert_type, tier);
+        }
+        fn sounded(&self) -> usize {
+            self.sounds.load(std::sync::atomic::Ordering::SeqCst)
+        }
+        /// The person swipes it away: it goes, with no clear of the app's.
+        fn swipe(&self, tag: &str) {
+            lock(&self.shown).retain(|t| t != tag);
+        }
+        /// Android removes it for a reason of its own, not the person's.
+        fn drop_quietly(&self, tag: &str) {
+            lock(&self.shown).retain(|t| t != tag);
+        }
+        /// As Android's side: a note with no type shows under the type its
+        /// category suggests, as the app's older alerts did, at that type's
+        /// recommended choice unless set; Øphio's own notes, silently.
+        fn tier_of(&self, note: &Note) -> (Tier, bool) {
+            let device =
+                |t: AlertType, unset: Tier| lock(&self.tiers).get(&t).copied().unwrap_or(unset);
+            match (note.alert_type, note.category) {
+                (Some(t), _) => (note.want.unwrap_or(device(t, Tier::Alert)), true),
+                (None, Category::Notice) => (Tier::Silent, false),
+                (None, Category::Finished) => (
+                    device(AlertType::Finished, AlertType::Finished.default_tier()),
+                    true,
+                ),
+                (None, Category::NeedsYou) => (device(AlertType::Decision, Tier::Alert), true),
+            }
+        }
     }
     impl Shade for FakeShade {
         fn post(&self, note: &Note, since: Option<i64>) -> Result<Posted> {
@@ -1918,15 +2833,58 @@ mod tests {
             {
                 return Ok(Posted::NoRoom);
             }
-            if !shown.contains(&note.tag) {
+            // As Android's category for the type, and the choice over it.
+            let (wanted, mut loud) = self.tier_of(note);
+            if wanted == Tier::Off {
+                return Ok(Posted::Off);
+            }
+            loud &= wanted == Tier::Alert;
+            let replacing = shown.contains(&note.tag);
+            if !replacing {
                 shown.push(note.tag.clone());
             }
+            if let Some(group) = &note.group {
+                let mut groups = lock(&self.groups);
+                groups.insert(note.tag.clone(), group.clone());
+                if groups.values().filter(|g| *g == group).count() >= 2 {
+                    lock(&self.summaries).insert(group.clone());
+                }
+            }
             lock(&self.posted).push(note.clone());
+            if loud && !note.silent && !replacing {
+                self.sounds
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                return Ok(Posted::Sounded);
+            }
             Ok(Posted::Shown)
         }
         fn cancel(&self, tag: &str) {
             lock(&self.cleared).push(tag.to_owned());
             lock(&self.shown).retain(|t| t != tag);
+            // The app's summary of the group goes when none of it is left,
+            // or, as it once did, when fewer than two are; Android clears
+            // what is left of a group with its summary.
+            let Some(group) = lock(&self.groups).remove(tag) else {
+                return;
+            };
+            let left: Vec<String> = (lock(&self.groups).iter())
+                .filter(|(_, g)| **g == group)
+                .map(|(t, _)| t.clone())
+                .collect();
+            let old = self.old_summaries.load(std::sync::atomic::Ordering::SeqCst);
+            if (left.is_empty() || (old && left.len() < 2)) && lock(&self.summaries).remove(&group)
+            {
+                for t in &left {
+                    lock(&self.groups).remove(t);
+                    lock(&self.shown).retain(|s| s != t);
+                }
+            }
+        }
+        fn effective(&self, note: &Note) -> Tier {
+            if note.silent {
+                return Tier::Silent;
+            }
+            self.tier_of(note).0
         }
         fn clears(&self) -> i64 {
             lock(&self.cleared).len() as i64
@@ -1976,6 +2934,32 @@ mod tests {
     }
 
     #[test]
+    fn a_sign_in_alert_names_the_agent_and_computer_and_opens_its_sign_in() {
+        let computer = Computer {
+            profile_id: "phone".into(),
+            name: "Desk".into(),
+        };
+        let mut alert = alert(AttentionKind::WaitingForYou, 1);
+        alert.project = String::new();
+        alert.task = String::new();
+        alert.headline = Some("Claude isn't signed in on studio".into());
+        alert.sign_in = Some(Box::new(protocol::alerts::SignInAlert {
+            account_id: "claude".into(),
+            service: "Claude".into(),
+        }));
+        let note = note(&computer, &alert, Detail::TaskTitle).unwrap();
+        // The phone's own name for the computer, as every other alert has.
+        assert_eq!(note.title, "Claude isn't signed in on Desk");
+        assert_eq!(note.body, "Tap to sign in again.");
+        assert_eq!(note.category, Category::NeedsYou);
+        assert_eq!(
+            note.route,
+            serde_json::json!({ "kind": "sign_in", "profileId": "phone", "accountId": "claude" })
+        );
+        assert!(note.question.is_none());
+    }
+
+    #[test]
     fn an_alert_about_no_task_names_none() {
         let mut alert = alert(AttentionKind::WaitingForYou, 1);
         alert.project = "Problem reports".into();
@@ -1987,7 +2971,7 @@ mod tests {
     }
 
     #[test]
-    fn an_alert_is_raised_and_saved_under_one_lock_so_turning_off_clears_it() {
+    fn an_alert_is_raised_and_saved_under_one_lock_and_turning_off_keeps_it() {
         let dir = tempfile::tempdir().unwrap();
         let _one = ledger(dir.path());
         configure(ON).unwrap();
@@ -2025,20 +3009,27 @@ mod tests {
                 .notified
                 .contains(&refused.attention_id)
         );
-        let off = configure(Settings {
+        // Turning off alerts once the app is closed keeps what shows, and
+        // the watcher still raises alerts while the app runs.
+        configure(Settings {
             enabled: false,
             ..ON
         })
         .unwrap();
-        assert_eq!(off, vec![MORE.to_owned(), tag("p1", &shown.attention_id)]);
-        // Off, a frame on its way raises nothing.
         shade
             .refuse
             .store(false, std::sync::atomic::Ordering::SeqCst);
+        let later = alert(AttentionKind::Question, 4);
         frame(AlertServerFrame::Raised {
-            alert: alert(AttentionKind::Question, 4),
+            alert: later.clone(),
         });
-        assert_eq!(shade.shown(), vec![tag("p1", &shown.attention_id)]);
+        assert_eq!(
+            shade.shown(),
+            vec![
+                tag("p1", &shown.attention_id),
+                tag("p1", &later.attention_id)
+            ]
+        );
         lock(&LEDGER).take();
     }
 
@@ -2199,14 +3190,6 @@ mod tests {
         raise(&c);
         assert!(shade.shown().contains(&tag("p1", &c.attention_id)));
         assert!(!shade.shown().contains(&note_tag));
-        // Off, the note goes with every alert raised.
-        raise(&folds(AttentionKind::Completed, 11));
-        let off = configure(Settings {
-            enabled: false,
-            ..ON
-        })
-        .unwrap();
-        assert!(off.contains(&note_tag));
         lock(&LEDGER).take();
     }
 
@@ -2244,7 +3227,7 @@ mod tests {
     }
 
     #[test]
-    fn alerts_beyond_the_shades_room_wait_unrecorded_and_rise_as_it_frees() {
+    fn alerts_beyond_the_shades_room_are_counted_and_never_rise_as_it_frees() {
         let dir = tempfile::tempdir().unwrap();
         let _one = ledger(dir.path());
         configure(ON).unwrap();
@@ -2267,31 +3250,64 @@ mod tests {
             alerts.iter().map(|a| tag("p1", &a.attention_id)).collect()
         };
         assert!(frame(open(&alerts, 100)));
-        // The oldest fill the shade; a note counts the rest.
+        // The oldest fill the shade; a note counts the rest, which count
+        // as raised.
         let mut expected = tags_of(&alerts[..MAX_SHOWN]);
         expected.push(MORE.into());
         assert_eq!(shade.shown(), expected);
-        assert_eq!(saved(dir.path()).computers["p1"].notified.len(), MAX_SHOWN);
+        assert_eq!(
+            saved(dir.path()).computers["p1"].notified.len(),
+            alerts.len()
+        );
         // The list again raises none of them twice.
         assert!(frame(open(&alerts, 110)));
         assert_eq!(shade.shown(), expected);
-        // Two answered make room for the two waiting longest.
-        for a in &alerts[..2] {
-            frame(AlertServerFrame::Resolved {
-                attention_id: a.attention_id,
-            });
+        // The person swipes two away: none of those without room rises in
+        // their place, now or once the list comes again.
+        for t in &expected[..2] {
+            shade.cancel(t);
         }
-        let mut expected = tags_of(&alerts[2..MAX_SHOWN + 2]);
-        expected.insert(MAX_SHOWN - 2, MORE.into());
-        assert_eq!(shade.shown(), expected);
-        // A restart forgets the last one waiting, which the next list raises.
-        let restarted = saved(dir.path());
-        assert!(!restarted.computers["p1"].knows(&alerts[MAX_SHOWN + 2].attention_id));
-        // Answered while it waits, it goes, and the note with it.
-        let still_open = [&alerts[2..MAX_SHOWN + 2]].concat();
-        assert!(!frame(open(&still_open, 120)));
-        expected.retain(|t| t != MORE);
-        assert_eq!(shade.shown(), expected);
+        let posted = lock(&shade.posted).len();
+        assert!(frame(open(&alerts, 120)));
+        assert_eq!(lock(&shade.posted).len(), posted);
+        // Nor after a restart, which forgets the count.
+        with_book(|book| book.restarted()).unwrap();
+        frame(open(&alerts, 130));
+        assert_eq!(lock(&shade.posted).len(), posted);
+        for a in &alerts[MAX_SHOWN..] {
+            assert!(saved(dir.path()).computers["p1"].knows(&a.attention_id));
+        }
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn the_note_of_those_without_room_goes_once_they_are_answered() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[], 1));
+        let alerts: Vec<Alert> = (0..MAX_SHOWN as i64 + 1)
+            .map(|i| alert(AttentionKind::Completed, 10 + i))
+            .collect();
+        frame(open(&alerts, 100));
+        assert!(shade.shown().contains(&MORE.to_owned()));
+        // The one without room is answered: the note goes, and nothing rises.
+        frame(AlertServerFrame::Resolved {
+            attention_id: alerts[MAX_SHOWN].attention_id,
+        });
+        assert!(!shade.shown().contains(&MORE.to_owned()));
+        assert_eq!(shade.shown().len(), MAX_SHOWN);
         lock(&LEDGER).take();
     }
 
@@ -2308,36 +3324,48 @@ mod tests {
         for a in &waiting {
             let frame = AlertServerFrame::Raised { alert: a.clone() };
             let changes = rx(&mut book, frame, false, &full);
-            posted.extend(book.fit(changes.post, &full, &BTreeSet::new()));
+            posted.extend(fit_hold(&mut book, changes.post, &full, &BTreeSet::new()));
         }
         assert!(posted.is_empty());
-        let Some(Ok(note)) = book.more() else {
+        let Some(Ok(note)) = book.more(&full) else {
             panic!("a note of those waiting")
         };
         assert_eq!(note.title, "2 more alerts");
         assert_eq!(note.category, Category::NeedsYou);
         assert_eq!(note.route, serde_json::Value::Null);
+        // One more needs the person, so it alerts.
+        assert!(!note.silent);
         // Unchanged, it is not posted again.
-        assert!(book.more().is_none());
-        // Turned off, it is cleared with the rest.
-        let off = book.configure(Settings {
-            enabled: false,
-            ..ON
-        });
-        assert_eq!(off, vec![MORE.to_owned()]);
-        // And so even when this process counted none.
-        let mut fresh = Book::default();
-        assert_eq!(
-            fresh.configure(Settings {
-                enabled: false,
-                ..ON
-            }),
-            vec![MORE.to_owned()]
+        assert!(book.more(&full).is_none());
+        // One more to look at changes it silently.
+        let changes = rx(
+            &mut book,
+            AlertServerFrame::Raised {
+                alert: alert(AttentionKind::Completed, 4),
+            },
+            false,
+            &full,
         );
+        assert!(fit_hold(&mut book, changes.post, &full, &BTreeSet::new()).is_empty());
+        let Some(Ok(note)) = book.more(&full) else {
+            panic!("a new count")
+        };
+        assert!(note.silent);
+        // Swiped away, it stays gone as the count falls.
+        let answered = waiting[0].attention_id;
+        rx(
+            &mut book,
+            AlertServerFrame::Resolved {
+                attention_id: answered,
+            },
+            false,
+            &full,
+        );
+        assert!(book.more(&full).is_none());
     }
 
     #[test]
-    fn what_waits_for_room_waits_while_the_app_shows_it_and_goes_once_it_reports_it_seen() {
+    fn what_had_no_room_never_rises_and_leaves_the_count_once_seen() {
         let mut book = Book::default();
         rx(&mut book, open(&[], 1), false, &[]);
         let full: Vec<String> = (0..MAX_SHOWN).map(|i| format!("p9/{i}")).collect();
@@ -2352,19 +3380,17 @@ mod tests {
                 false,
                 &full,
             );
-            assert!(book.fit(changes.post, &full, &BTreeSet::new()).is_empty());
+            assert!(fit_hold(&mut book, changes.post, &full, &BTreeSet::new()).is_empty());
         }
         // Room frees while the app shows the computer: nothing rises.
         let in_app = BTreeSet::from(["p1".to_owned()]);
-        assert!(book.fit(Vec::new(), &[], &in_app).is_empty());
-        // The app shows the question; once it leaves, only the other rises.
+        assert!(fit_hold(&mut book, Vec::new(), &[], &in_app).is_empty());
+        // The app shows the question, and the count drops it; once the app
+        // leaves, nothing rises either: both count as raised.
         book.seen_in_app("p1", &[question.attention_id]);
-        let posted = book.fit(Vec::new(), &[], &BTreeSet::new());
-        assert_eq!(
-            posted.iter().map(Raise::tag).collect::<Vec<_>>(),
-            vec![tag("p1", &done.attention_id)]
-        );
-        assert!(!book.holding());
+        assert_eq!(book.computers["p1"].held.len(), 1);
+        assert!(fit_hold(&mut book, Vec::new(), &[], &BTreeSet::new()).is_empty());
+        assert!(book.computers["p1"].knows(&done.attention_id));
     }
 
     #[test]
@@ -2390,7 +3416,7 @@ mod tests {
             false,
             &full,
         );
-        book.fit(changes.post, &full, &BTreeSet::new());
+        fit_hold(&mut book, changes.post, &full, &BTreeSet::new());
         let by_app = AttentionId::new();
         let shown = vec![
             tag("p1", &by_app),
@@ -2403,12 +3429,13 @@ mod tests {
             vec![by_app, raised.attention_id, held.attention_id]
         );
         // The app's own alert, raised while the watcher was away, is
-        // recorded as the watcher's: a cleared shade raises it again.
+        // recorded as the watcher's: a cleared shade doesn't raise it again.
         book.raised_by_app("p1", by_app);
         assert!(book.computers["p1"].raised.contains(&by_app));
         book.started("a");
         book.started("b");
-        assert!(!book.computers["p1"].knows(&by_app));
+        assert!(book.computers["p1"].knows(&by_app));
+        assert!(book.computers["p1"].raised.is_empty());
         // At most so many.
         let many: Vec<String> = (0..MAX_SHOWING + 5)
             .map(|_| tag("p1", &AttentionId::new()))
@@ -2417,7 +3444,7 @@ mod tests {
     }
 
     #[test]
-    fn what_waits_for_room_rises_only_once_the_computer_says_what_was_answered_while_away() {
+    fn what_had_no_room_leaves_once_the_computer_says_it_was_answered_while_away() {
         let mut book = Book::default();
         rx(&mut book, open(&[], 1), false, &[]);
         let none = BTreeSet::new();
@@ -2427,11 +3454,11 @@ mod tests {
             alert: approval.clone(),
         };
         let changes = rx(&mut book, frame, false, &full);
-        assert!(book.fit(changes.post, &full, &none).is_empty());
+        assert!(fit_hold(&mut book, changes.post, &full, &none).is_empty());
         book.ended("p1");
         // Room frees, as another computer's alerts are answered, while this
-        // one is away: what it keeps waits.
-        assert!(book.fit(Vec::new(), &[], &none).is_empty());
+        // one is away: nothing rises.
+        assert!(fit_hold(&mut book, Vec::new(), &[], &none).is_empty());
         assert!(!book.holding());
         assert_eq!(book.showing("p1", &[]), vec![approval.attention_id]);
         // Back, behind a full list, the computer says it was answered: it
@@ -2442,7 +3469,7 @@ mod tests {
         let frame = open_gone(&others, 400, vec![approval.attention_id]);
         let changes = rx(&mut book, frame, false, &[]);
         assert_eq!(changes.cancel, vec![tag("p1", &approval.attention_id)]);
-        let posted = book.fit(changes.post, &[], &none);
+        let posted = fit_hold(&mut book, changes.post, &[], &none);
         assert_eq!(posted.len(), MAX_SHOWN);
         assert!(
             !posted
@@ -2490,65 +3517,28 @@ mod tests {
     }
 
     #[test]
-    fn only_the_computer_the_app_shows_waits_for_it() {
+    fn only_the_computers_the_app_shows_wait_for_it() {
         let _one = lock(&ONE_LEDGER);
+        let shown = || lock(&VIEWING).iter().cloned().collect::<Vec<_>>();
         viewing("a", true);
-        // Leaving one no longer shown leaves the one shown now.
+        // Switching: the one shown now stays when the one left goes.
         viewing("b", true);
         viewing("a", false);
-        assert_eq!(lock(&VIEWING).as_deref(), Some("b"));
+        assert_eq!(shown(), ["b"]);
+        // All: every computer the app shows waits for it, each until it goes.
+        viewing("a", true);
+        viewing("c", true);
+        assert_eq!(shown(), ["a", "b", "c"]);
         viewing("b", false);
-        assert_eq!(*lock(&VIEWING), None);
+        viewing("b", false);
+        assert_eq!(shown(), ["a", "c"]);
+        viewing("a", false);
+        viewing("c", false);
+        assert!(shown().is_empty());
     }
 
     #[test]
-    fn an_alert_that_waited_shows_the_detail_chosen_when_it_rises() {
-        let dir = tempfile::tempdir().unwrap();
-        let _one = ledger(dir.path());
-        configure(Settings {
-            enabled: true,
-            detail: Detail::TaskTitle,
-        })
-        .unwrap();
-        let shade = FakeShade::default();
-        *lock(&shade.shown) = (0..MAX_SHOWN).map(|i| format!("p9/{i}")).collect();
-        let none = BTreeSet::new();
-        let frame = |frame: AlertServerFrame| {
-            update(
-                current_watcher(),
-                &shade,
-                &none,
-                |book, shown| rx(book, frame, false, shown),
-                |_| (),
-            )
-            .unwrap();
-        };
-        frame(open(&[], 1));
-        let done = alert(AttentionKind::Completed, 2);
-        frame(AlertServerFrame::Raised {
-            alert: done.clone(),
-        });
-        configure(ON).unwrap();
-        lock(&shade.shown).clear();
-        update(
-            current_watcher(),
-            &shade,
-            &none,
-            |_, _| Changes::default(),
-            |_| (),
-        )
-        .unwrap();
-        let posted = lock(&shade.posted);
-        let note = posted
-            .iter()
-            .find(|n| n.tag == tag("p1", &done.attention_id));
-        assert_eq!(note.map(|n| n.body.as_str()), Some("Studio · Site"));
-        drop(posted);
-        lock(&LEDGER).take();
-    }
-
-    #[test]
-    fn an_alert_android_had_no_room_for_after_all_waits_for_room() {
+    fn an_alert_android_had_no_room_for_after_all_is_counted_and_never_rises() {
         let dir = tempfile::tempdir().unwrap();
         let _one = ledger(dir.path());
         configure(ON).unwrap();
@@ -2572,24 +3562,19 @@ mod tests {
             alert: question.clone(),
         }));
         assert_eq!(shade.shown(), vec![MORE.to_owned()]);
-        assert!(!saved(dir.path()).computers["p1"].knows(&question.attention_id));
-        // Room frees: it rises, and the note goes.
+        assert!(saved(dir.path()).computers["p1"].knows(&question.attention_id));
+        // Room frees: it doesn't rise, here or from the next list.
         shade.full.store(false, std::sync::atomic::Ordering::SeqCst);
-        let holding = update(
+        update(
             current_watcher(),
             &shade,
             &none,
             |_, _| Changes::default(),
-            |b| b.holding(),
+            |_| (),
         )
         .unwrap();
-        assert!(!holding);
-        assert_eq!(shade.shown(), vec![tag("p1", &question.attention_id)]);
-        assert!(
-            saved(dir.path()).computers["p1"]
-                .raised
-                .contains(&question.attention_id)
-        );
+        frame(open(std::slice::from_ref(&question), 3));
+        assert_eq!(shade.shown(), vec![MORE.to_owned()]);
         lock(&LEDGER).take();
     }
 
@@ -2659,10 +3644,10 @@ mod tests {
             |book, _| unwatched(book, &computer()),
             |b| b.holding(),
         );
-        assert_eq!(room, Some(false));
+        assert!(room.is_some());
         let raised = tag("p1", &question.attention_id);
         assert!(!lock(&shade.posted).iter().any(|n| n.tag == raised));
-        assert!(shade.shown().is_empty());
+        assert!(!shade.shown().contains(&raised));
         lock(&LEDGER).take();
     }
 
@@ -2862,7 +3847,8 @@ mod tests {
         let first = receive(&mut book, &computer(), frame, false, &[], Timestamp(1_300));
         assert_eq!(tags(&first), vec![tag("p1", &after.attention_id)]);
         assert_eq!(book.computers["p1"].since, Some(Timestamp(9_400)));
-        // Turned off, nothing begins.
+        // With alerts off once the app closes, watching still begins: the
+        // app running raises them.
         let mut off = Book {
             settings: Some(Settings {
                 enabled: false,
@@ -2871,7 +3857,7 @@ mod tests {
             ..Book::default()
         };
         off.begin("p1", Timestamp(1));
-        assert!(off.computers.is_empty());
+        assert!(off.computers.contains_key("p1"));
     }
 
     #[test]
@@ -2888,7 +3874,10 @@ mod tests {
         assert_eq!(note.title, "Question from Codex");
         assert_eq!(note.category, Category::NeedsYou);
         assert_eq!(note.body, "Studio · Site");
-        assert_eq!(note.group, None);
+        // A project's notifications stack together.
+        let project = question.project_id.as_uuid();
+        assert_eq!(note.group, Some(format!("p1/{project}")));
+        assert_eq!(note.alert_type, Some(AlertType::Question));
         assert!(rx(&mut book, raised, false, &[]).post.is_empty());
 
         let resolved = rx(
@@ -3000,34 +3989,960 @@ mod tests {
     }
 
     #[test]
-    fn a_cleared_shade_raises_again_what_was_raised_and_still_waits() {
-        let mut book = Book::default();
-        book.started("4:1");
-        rx(&mut book, open(&[], 1), false, &[]);
-        let (raised, seen, answered) = (
+    fn a_swiped_alert_never_comes_back_and_one_still_showing_returns_silently() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        with_book(|book| book.started("4:1")).unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[], 1));
+        let (kept, swiped, seen) = (
             alert(AttentionKind::Approval, 2),
             alert(AttentionKind::Question, 3),
-            alert(AttentionKind::Completed, 4),
+            alert(AttentionKind::WaitingForYou, 4),
         );
-        for (alert, in_app) in [(&raised, false), (&seen, true), (&answered, false)] {
-            let frame = AlertServerFrame::Raised {
-                alert: alert.clone(),
-            };
-            rx(&mut book, frame, in_app, &[]);
+        for a in [&kept, &swiped, &seen] {
+            frame(AlertServerFrame::Raised { alert: a.clone() });
         }
-        book.seen_in_app("p1", &[seen.attention_id]);
-        let reopened = |book: &mut Book| {
-            let frame = open(&[raised.clone(), seen.clone()], 5);
-            tags(&rx(book, frame, false, &[]))
+        assert_eq!(shade.shown().len(), 3);
+        // The person swipes one away, which Android tells the app, and sees
+        // another in the app.
+        shade.swipe(&tag("p1", &swiped.attention_id));
+        dismissed(dir.path(), &tag("p1", &swiped.attention_id), &shade).unwrap();
+        let cleared = handled("p1", &[seen.attention_id]).unwrap();
+        for t in &cleared {
+            shade.cancel(t);
+        }
+        let still_open = [kept.clone(), swiped.clone(), seen.clone()];
+        let posted = |shade: &FakeShade| lock(&shade.posted).len();
+        // A reconnect brings nothing back, and records the swipe.
+        let before = posted(&shade);
+        frame(open(&still_open, 5));
+        assert_eq!(posted(&shade), before);
+        let book = saved(dir.path());
+        assert!(book.computers["p1"].unsent.contains(&swiped.attention_id));
+        assert!(book.computers["p1"].unsent.contains(&seen.attention_id));
+        // A restart of the app's process, with the shade as it was: nothing.
+        with_book(|book| {
+            book.restarted();
+            book.started("4:1");
+        })
+        .unwrap();
+        frame(open(&still_open, 6));
+        assert_eq!(posted(&shade), before);
+        // An update clears the shade. Read again from storage, as the new
+        // app's process does, only the one still showing comes back, and
+        // silently; the swiped and the seen ones stay gone.
+        lock(&shade.shown).clear();
+        let mut book: Book = saved(dir.path());
+        book.restarted();
+        book.started("4:2");
+        with_book(|b| *b = book).unwrap();
+        frame(open(&still_open, 7));
+        let back: Vec<Note> = lock(&shade.posted)[before..].to_vec();
+        assert_eq!(back.len(), 1);
+        assert_eq!(back[0].tag, tag("p1", &kept.attention_id));
+        assert!(back[0].silent);
+        // Again: nothing more.
+        frame(open(&still_open, 8));
+        assert_eq!(posted(&shade), before + 1);
+        // A restart of the phone, after the person swiped the one put back:
+        // nothing at all.
+        shade.swipe(&tag("p1", &kept.attention_id));
+        dismissed(dir.path(), &tag("p1", &kept.attention_id), &shade).unwrap();
+        frame(open(&still_open, 9));
+        with_book(|book| {
+            book.restarted();
+            book.started("5:2");
+        })
+        .unwrap();
+        lock(&shade.shown).clear();
+        frame(open(&still_open, 10));
+        assert_eq!(posted(&shade), before + 1);
+        // Something new still alerts.
+        let new = alert(AttentionKind::Question, 11);
+        frame(AlertServerFrame::Raised { alert: new.clone() });
+        assert_eq!(shade.shown(), vec![tag("p1", &new.attention_id)]);
+        lock(&LEDGER).take();
+    }
+
+    /// As `update` would, at `now` ms on this phone's clock.
+    fn missing_at(now: i64) -> Changes {
+        with_book(|book| {
+            let shown = Vec::new();
+            let since = book.clears;
+            Changes {
+                post: book.missing(&shown, now, since),
+                cancel: Vec::new(),
+            }
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn only_the_persons_word_handles_an_alert_and_one_android_removed_comes_back() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
         };
-        // The watcher starting again, with the shade as it was, repeats nothing.
-        book.started("4:1");
-        assert_eq!(reopened(&mut book), Vec::<String>::new());
-        // After a restart or an update, only what was raised here and is
-        // still open comes back.
-        book.started("5:1");
-        assert_eq!(reopened(&mut book), vec![tag("p1", &raised.attention_id)]);
-        assert_eq!(reopened(&mut book), Vec::<String>::new());
+        frame(open(&[], 1));
+        let question = alert(AttentionKind::Question, 2);
+        frame(AlertServerFrame::Raised {
+            alert: question.clone(),
+        });
+        let t = tag("p1", &question.attention_id);
+        // Android removes it, as for a force stop or a category replaced:
+        // no delete intent, so it isn't handled and isn't told.
+        shade.drop_quietly(&t);
+        frame(open(std::slice::from_ref(&question), 3));
+        let book = saved(dir.path());
+        assert!(book.computers["p1"].unsent.is_empty());
+        assert!(book.computers["p1"].raised.contains(&question.attention_id));
+        // Missing a while, it goes back, silently.
+        with_book(|book| {
+            let seen = book.computers.get_mut("p1").unwrap();
+            for at in seen.missing.values_mut() {
+                *at -= MISSING_MS;
+            }
+        })
+        .unwrap();
+        frame(open(std::slice::from_ref(&question), 4));
+        assert_eq!(shade.shown(), vec![t.clone()]);
+        assert!(lock(&shade.posted).last().unwrap().silent);
+        assert_eq!(shade.sounded(), 1);
+        // Missing only a moment, as a swipe whose delete intent is on its
+        // way: nothing yet.
+        shade.drop_quietly(&t);
+        let now = Timestamp::now().millis();
+        assert!(missing_at(now).post.is_empty());
+        assert!(missing_at(now + MISSING_MS / 2).post.is_empty());
+        dismissed(dir.path(), &t, &shade).unwrap();
+        assert!(missing_at(now + MISSING_MS * 2).post.is_empty());
+        assert!(
+            saved(dir.path()).computers["p1"]
+                .unsent
+                .contains(&question.attention_id)
+        );
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn answering_one_of_a_projects_two_alerts_leaves_the_other_showing_and_unhandled() {
+        for old in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            configure(ON).unwrap();
+            let shade = FakeShade::default();
+            shade
+                .old_summaries
+                .store(old, std::sync::atomic::Ordering::SeqCst);
+            let frame = |frame: AlertServerFrame| {
+                update(
+                    current_watcher(),
+                    &shade,
+                    &BTreeSet::new(),
+                    |book, shown| rx(book, frame, false, shown),
+                    |_| (),
+                )
+                .unwrap()
+            };
+            frame(open(&[], 1));
+            let first = alert(AttentionKind::Approval, 2);
+            let mut second = alert(AttentionKind::Approval, 3);
+            second.project_id = first.project_id;
+            for a in [&first, &second] {
+                frame(AlertServerFrame::Raised { alert: a.clone() });
+            }
+            assert_eq!(lock(&shade.summaries).len(), 1);
+            // The first is answered at the computer.
+            frame(AlertServerFrame::Resolved {
+                attention_id: first.attention_id,
+            });
+            let other = tag("p1", &second.attention_id);
+            // With the summary kept while one is left, the other shows. As
+            // the app once did, Android drops it with the summary: even
+            // then it isn't handled, and it comes back.
+            assert_eq!(shade.shown().contains(&other), !old, "old: {old}");
+            let book = saved(dir.path());
+            assert!(book.computers["p1"].unsent.is_empty());
+            assert!(book.computers["p1"].raised.contains(&second.attention_id));
+            if old {
+                with_book(|book| {
+                    let seen = book.computers.get_mut("p1").unwrap();
+                    seen.missing.insert(second.attention_id, 0);
+                })
+                .unwrap();
+                frame(open(std::slice::from_ref(&second), 4));
+                assert!(shade.shown().contains(&other));
+            }
+            lock(&LEDGER).take();
+        }
+    }
+
+    #[test]
+    fn muting_a_project_clears_what_shows_here_without_handling_it() {
+        let mut book = Book::default();
+        rx(&mut book, open(&[], 1), false, &[]);
+        let (loud, followed) = (
+            alert(AttentionKind::Question, 2),
+            Alert {
+                follow: true,
+                ..alert(AttentionKind::Completed, 3)
+            },
+        );
+        for a in [&loud, &followed] {
+            rx(
+                &mut book,
+                AlertServerFrame::Raised { alert: a.clone() },
+                false,
+                &[],
+            );
+        }
+        let muted = |a: &Alert| Alert {
+            project_tier: Some(Tier::Off),
+            ..a.clone()
+        };
+        let changes = rx(
+            &mut book,
+            open(&[muted(&loud), muted(&followed)], 4),
+            false,
+            &[],
+        );
+        // The muted project's goes; the task the person follows stays.
+        assert_eq!(changes.cancel, vec![tag("p1", &loud.attention_id)]);
+        assert!(!book.computers["p1"].raised.contains(&loud.attention_id));
+        assert!(book.computers["p1"].raised.contains(&followed.attention_id));
+        // Local only: nothing to tell the computer, and nothing raised again.
+        assert!(book.computers["p1"].unsent.is_empty());
+        assert!(
+            rx(&mut book, open(std::slice::from_ref(&loud), 5), false, &[])
+                .post
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn a_full_shade_makes_room_for_one_that_alerts() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        shade.tier(AlertType::Finished, Tier::Silent);
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[], 1));
+        let quiet: Vec<Alert> = (0..MAX_SHOWN as i64)
+            .map(|i| alert(AttentionKind::Completed, 10 + i))
+            .collect();
+        for a in &quiet {
+            frame(AlertServerFrame::Raised { alert: a.clone() });
+        }
+        assert_eq!(shade.shown().len(), MAX_SHOWN);
+        // One more to look at waits behind the note.
+        let another = alert(AttentionKind::Completed, 50);
+        frame(AlertServerFrame::Raised {
+            alert: another.clone(),
+        });
+        assert!(!shade.shown().contains(&tag("p1", &another.attention_id)));
+        // A question takes the oldest quiet one's place.
+        let question = alert(AttentionKind::Question, 60);
+        frame(AlertServerFrame::Raised {
+            alert: question.clone(),
+        });
+        let shown = shade.shown();
+        assert!(shown.contains(&tag("p1", &question.attention_id)));
+        assert!(!shown.contains(&tag("p1", &quiet[0].attention_id)));
+        // The one cleared to make room isn't handled, nor put back.
+        let book = saved(dir.path());
+        assert!(book.computers["p1"].unsent.is_empty());
+        assert!(!book.computers["p1"].raised.contains(&quiet[0].attention_id));
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn a_type_this_phone_doesnt_know_shows_silently() {
+        let mut book = Book::default();
+        let mut future = alert(AttentionKind::Question, 2);
+        future.alert_type = None;
+        // From a computer that labels types, a missing one is newer than
+        // this phone: silent.
+        let changes = rx(
+            &mut book,
+            open(std::slice::from_ref(&future), 3),
+            false,
+            &[],
+        );
+        let _ = changes;
+        let changes = rx(
+            &mut book,
+            AlertServerFrame::Raised {
+                alert: Alert {
+                    attention_id: AttentionId::new(),
+                    ..future.clone()
+                },
+            },
+            false,
+            &[],
+        );
+        let note = changes.post[0].note(Detail::Minimal).unwrap();
+        assert_eq!(note.want, Some(Tier::Silent));
+        // From an older computer, which labels none, it goes by its kind.
+        let mut older = Book::default();
+        let frame = AlertServerFrame::Open {
+            alerts: vec![],
+            now: Timestamp(1),
+            gone: vec![],
+            handled: false,
+        };
+        rx(&mut older, frame, false, &[]);
+        let changes = rx(
+            &mut older,
+            AlertServerFrame::Raised { alert: future },
+            false,
+            &[],
+        );
+        let note = changes.post[0].note(Detail::Minimal).unwrap();
+        assert_eq!(note.want, None);
+        assert_eq!(note.alert_type, Some(AlertType::Question));
+    }
+
+    #[test]
+    fn choices_from_the_old_categories_carry_over_only_when_quieter() {
+        let old = |pairs: &[(&str, i32)]| -> BTreeMap<String, i32> {
+            pairs.iter().map(|(c, i)| ((*c).to_owned(), *i)).collect()
+        };
+        // Untouched old categories change nothing.
+        assert!(
+            imported_tiers(&old(&[("needs-you", 4), ("finished", 3), ("updates", 3)])).is_empty()
+        );
+        // Finished tasks made silent: what showed there, and alerts by
+        // default, becomes silent; what is already silent or off stays.
+        let silent = imported_tiers(&old(&[("finished", 2)]));
+        assert_eq!(silent.get(&AlertType::Failed), Some(&Tier::Silent));
+        assert_eq!(silent.get(&AlertType::Finished), None);
+        assert_eq!(silent.get(&AlertType::Reply), None);
+        assert_eq!(silent.get(&AlertType::Question), None);
+        // Needs you switched off: every type under it is off.
+        let off = imported_tiers(&old(&[("needs-you", 0), ("updates", 0)]));
+        for t in [
+            AlertType::Question,
+            AlertType::Approval,
+            AlertType::GoAhead,
+            AlertType::AppUpdate,
+        ] {
+            assert_eq!(off.get(&t), Some(&Tier::Off), "{t:?}");
+        }
+        // Already off by default: nothing to say.
+        assert_eq!(off.get(&AlertType::Slow), None);
+    }
+
+    /// Ages what is missing from the shade, as ten seconds would.
+    fn age_missing() {
+        with_book(|book| {
+            for seen in book.computers.values_mut() {
+                for at in seen.missing.values_mut() {
+                    *at -= MISSING_MS;
+                }
+            }
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn an_answered_alert_isnt_put_back_while_its_computer_is_silent() {
+        for told in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            configure(ON).unwrap();
+            let shade = FakeShade::default();
+            let laptop = Computer {
+                profile_id: "p2".into(),
+                name: "Laptop".into(),
+            };
+            let frame = |computer: &Computer, frame: AlertServerFrame| {
+                update(
+                    current_watcher(),
+                    &shade,
+                    &BTreeSet::new(),
+                    |book, shown| receive(book, computer, frame, false, shown, Timestamp(0)),
+                    |_| (),
+                )
+                .unwrap()
+            };
+            frame(&computer(), open(&[], 1));
+            frame(&laptop, open(&[], 1));
+            let question = alert(AttentionKind::Question, 2);
+            frame(
+                &computer(),
+                AlertServerFrame::Raised {
+                    alert: question.clone(),
+                },
+            );
+            let t = tag("p1", &question.attention_id);
+            assert_eq!(shade.shown(), vec![t.clone()]);
+            // The first computer's connection is dead. The person answers in
+            // the app, which clears it: told to the watcher, or not.
+            shade.cancel(&t);
+            if told {
+                cleared_by_app(std::slice::from_ref(&t)).unwrap();
+            }
+            // The other computer speaks twice, ten seconds apart.
+            frame(
+                &laptop,
+                AlertServerFrame::Raised {
+                    alert: alert(AttentionKind::Completed, 3),
+                },
+            );
+            age_missing();
+            frame(
+                &laptop,
+                AlertServerFrame::Raised {
+                    alert: alert(AttentionKind::Completed, 4),
+                },
+            );
+            assert!(!shade.shown().contains(&t), "told: {told}");
+            // Nor is it handled: the computer says whether it is open.
+            let book = saved(dir.path());
+            assert!(book.computers["p1"].unsent.is_empty());
+            assert!(!book.computers["p1"].raised.contains(&question.attention_id));
+            lock(&LEDGER).take();
+        }
+    }
+
+    #[test]
+    fn a_swiped_project_note_handles_only_what_it_counted() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[], 1));
+        let bundled = |kind, at| Alert {
+            bundle: true,
+            ..alert(kind, at)
+        };
+        let a = bundled(AttentionKind::Question, 2);
+        let b = Alert {
+            project_id: a.project_id,
+            ..bundled(AttentionKind::Approval, 3)
+        };
+        let c = Alert {
+            project_id: a.project_id,
+            ..bundled(AttentionKind::Approval, 4)
+        };
+        frame(AlertServerFrame::Raised { alert: a.clone() });
+        frame(AlertServerFrame::Raised { alert: b.clone() });
+        let note_tag = folded_tag("p1", &a.project_id);
+        let swiped = (lock(&shade.posted).iter().rev())
+            .find(|n| n.tag == note_tag)
+            .unwrap()
+            .handles
+            .clone();
+        assert_eq!(swiped.len(), 2);
+        // The person swipes the note; before Android says so, C comes in.
+        shade.swipe(&note_tag);
+        frame(AlertServerFrame::Raised { alert: c.clone() });
+        dismissed(dir.path(), &swiped.join("\n"), &shade).unwrap();
+        let book = saved(dir.path());
+        let seen = &book.computers["p1"];
+        assert!(seen.unsent.contains(&a.attention_id) && seen.unsent.contains(&b.attention_id));
+        assert!(!seen.unsent.contains(&c.attention_id));
+        assert!(seen.raised.contains(&c.attention_id));
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn a_project_note_put_back_or_in_a_burst_is_silent_and_its_count_too() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        with_book(|book| book.started("4:1")).unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[], 1));
+        let first = Alert {
+            bundle: true,
+            ..alert(AttentionKind::Question, 2)
+        };
+        let second = Alert {
+            project_id: first.project_id,
+            ..first.clone()
+        };
+        let second = Alert {
+            attention_id: AttentionId::new(),
+            created_at: Timestamp(3),
+            ..second
+        };
+        frame(AlertServerFrame::Raised {
+            alert: first.clone(),
+        });
+        frame(AlertServerFrame::Raised {
+            alert: second.clone(),
+        });
+        // The second folds the two into one note, in the same burst: silent.
+        let note_tag = folded_tag("p1", &first.project_id);
+        let note = |shade: &FakeShade| {
+            (lock(&shade.posted).iter().rev())
+                .find(|n| n.tag == note_tag)
+                .cloned()
+                .unwrap()
+        };
+        assert!(note(&shade).silent);
+        assert_eq!(note(&shade).alert_type, Some(AlertType::Question));
+        assert_eq!(shade.sounded(), 1);
+        // An update clears the shade: what showed goes back, silently.
+        lock(&shade.shown).clear();
+        let mut book: Book = saved(dir.path());
+        book.restarted();
+        book.started("4:2");
+        with_book(|b| *b = book).unwrap();
+        frame(open(&[first.clone(), second.clone()], 5));
+        assert!(lock(&shade.posted).iter().skip(2).all(|n| n.silent));
+        assert_eq!(shade.sounded(), 1);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn the_note_of_those_without_room_shows_as_oephios_own() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        // Finished tasks off, as recommended: the note doesn't depend on it.
+        shade.tier(AlertType::Finished, Tier::Off);
+        shade.full.store(true, std::sync::atomic::Ordering::SeqCst);
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[], 1));
+        frame(AlertServerFrame::Raised {
+            alert: Alert {
+                alert_type: Some(AlertType::PrReady),
+                ..alert(AttentionKind::Completed, 2)
+            },
+        });
+        assert_eq!(shade.shown(), vec![MORE.to_owned()]);
+        let note = lock(&shade.posted).last().cloned().unwrap();
+        assert_eq!(note.category, Category::Notice);
+        assert!(note.silent);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn something_missing_is_looked_at_again_on_its_own_and_a_late_swipe_clears_the_copy() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |b| look_again(b, &computer()),
+            )
+            .unwrap()
+        };
+        assert_eq!(frame(open(&[], 1)), None);
+        let question = alert(AttentionKind::Question, 2);
+        frame(AlertServerFrame::Raised {
+            alert: question.clone(),
+        });
+        let t = tag("p1", &question.attention_id);
+        // Gone, as for a force stop: the watcher asks to look again soon,
+        // without waiting for the computer.
+        shade.drop_quietly(&t);
+        let again = frame(open(std::slice::from_ref(&question), 3)).expect("a look again");
+        assert!(again <= Duration::from_millis(MISSING_MS as u64 + 100));
+        age_missing();
+        let again = update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, _| unwatched(book, &computer()),
+            |b| look_again(b, &computer()),
+        )
+        .unwrap();
+        assert_eq!(shade.shown(), vec![t.clone()]);
+        assert_eq!(again, None);
+        // The swipe that removed it is told late: the copy put back goes.
+        dismissed(dir.path(), &t, &shade).unwrap();
+        assert!(shade.shown().is_empty());
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn handled_on_another_device_clears_here_and_never_rises() {
+        let mut book = Book::default();
+        rx(&mut book, open(&[], 1), false, &[]);
+        let (showing, coming) = (
+            alert(AttentionKind::Approval, 2),
+            alert(AttentionKind::Question, 3),
+        );
+        rx(
+            &mut book,
+            AlertServerFrame::Raised {
+                alert: showing.clone(),
+            },
+            false,
+            &[],
+        );
+        let gone = rx(
+            &mut book,
+            AlertServerFrame::Handled {
+                attention_id: showing.attention_id,
+            },
+            false,
+            &[],
+        );
+        assert_eq!(gone.cancel, vec![tag("p1", &showing.attention_id)]);
+        // Not told back to the computer, which told this phone.
+        assert!(book.computers["p1"].unsent.is_empty());
+        // Handled elsewhere before it came here: the computer lists it quiet.
+        let mut quiet = coming.clone();
+        quiet.quiet = true;
+        let listed = rx(&mut book, open(&[showing.clone(), quiet], 4), false, &[]);
+        assert!(listed.post.is_empty());
+        assert!(book.computers["p1"].knows(&coming.attention_id));
+    }
+
+    #[test]
+    fn a_choice_of_tier_takes_effect_on_the_next_alert() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[], 1));
+        let last = |shade: &FakeShade| lock(&shade.posted).last().cloned();
+        // Off on this phone: not shown, counted as handled, never raised
+        // later when turned on again.
+        shade.tier(AlertType::Finished, Tier::Off);
+        let done = alert(AttentionKind::Completed, 2);
+        frame(AlertServerFrame::Raised {
+            alert: done.clone(),
+        });
+        assert!(shade.shown().is_empty());
+        shade.tier(AlertType::Finished, Tier::Alert);
+        frame(open(std::slice::from_ref(&done), 3));
+        assert!(shade.shown().is_empty());
+        // Silent: shown without a sound.
+        shade.tier(AlertType::Finished, Tier::Silent);
+        let quiet = alert(AttentionKind::Completed, 4);
+        frame(AlertServerFrame::Raised {
+            alert: quiet.clone(),
+        });
+        assert_eq!(shade.sounded(), 0);
+        assert_eq!(last(&shade).unwrap().tag, tag("p1", &quiet.attention_id));
+        // A project's own choice over the phone's: off there.
+        let mut muted = alert(AttentionKind::Question, 5);
+        muted.project_tier = Some(Tier::Off);
+        frame(AlertServerFrame::Raised {
+            alert: muted.clone(),
+        });
+        assert!(!shade.shown().contains(&tag("p1", &muted.attention_id)));
+        // A task the person asked to hear about alerts, whatever the phone's
+        // choice for finished tasks.
+        shade.tier(AlertType::Finished, Tier::Off);
+        let mut followed = alert(AttentionKind::Completed, 6);
+        followed.follow = true;
+        frame(AlertServerFrame::Raised {
+            alert: followed.clone(),
+        });
+        let note = last(&shade).unwrap();
+        assert_eq!(note.tag, tag("p1", &followed.attention_id));
+        assert_eq!(note.want, Some(Tier::Alert));
+        assert_eq!(shade.sounded(), 1);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn a_burst_from_one_computer_makes_one_sound() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[], 1));
+        for i in 0..10 {
+            frame(AlertServerFrame::Raised {
+                alert: alert(AttentionKind::Approval, 2 + i),
+            });
+        }
+        assert_eq!(shade.shown().len(), 10);
+        assert_eq!(shade.sounded(), 1);
+        // Another computer's first still sounds.
+        let laptop = Computer {
+            profile_id: "p2".into(),
+            name: "Laptop".into(),
+        };
+        let other = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| receive(book, &laptop, frame, false, shown, Timestamp(0)),
+                |_| (),
+            )
+            .unwrap()
+        };
+        other(open(&[], 1));
+        other(AlertServerFrame::Raised {
+            alert: alert(AttentionKind::Approval, 50),
+        });
+        assert_eq!(shade.sounded(), 2);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn a_dismissal_from_android_is_recorded_without_the_watcher() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let question = alert(AttentionKind::Question, 2);
+        with_book(|book| {
+            rx(book, open(&[], 1), false, &[]);
+            rx(
+                book,
+                AlertServerFrame::Raised {
+                    alert: question.clone(),
+                },
+                false,
+                &[],
+            );
+        })
+        .unwrap();
+        let shade = FakeShade::default();
+        dismissed(dir.path(), &tag("p1", &question.attention_id), &shade).unwrap();
+        // Not a computer's alert: nothing.
+        dismissed(dir.path(), "more", &shade).unwrap();
+        let book = saved(dir.path());
+        assert!(book.computers["p1"].unsent.contains(&question.attention_id));
+        assert!(!book.computers["p1"].raised.contains(&question.attention_id));
+        // The next list doesn't raise it.
+        let mut book = book;
+        assert!(
+            rx(
+                &mut book,
+                open(std::slice::from_ref(&question), 3),
+                false,
+                &[]
+            )
+            .post
+            .is_empty()
+        );
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn the_update_to_version_2_counts_all_open_as_raised_and_says_so_once() {
+        // A book version 1 wrote: one alert raised and swiped away, and one
+        // the app showed, both still open.
+        let (swiped, unseen) = (
+            alert(AttentionKind::Completed, 2),
+            alert(AttentionKind::Approval, 3),
+        );
+        let mut old = Book {
+            version: 1,
+            settings: Some(ON),
+            ..Book::default()
+        };
+        old.started("4:1");
+        rx(&mut old, open(&[], 1), false, &[]);
+        rx(
+            &mut old,
+            AlertServerFrame::Raised {
+                alert: swiped.clone(),
+            },
+            false,
+            &[],
+        );
+        old.computers.insert("p2".into(), Seen::began(Timestamp(0)));
+        let mut text = serde_json::to_value(&old).unwrap();
+        text["version"] = 1.into();
+        // Version 1 re-raised these after an update; reading it changes that.
+        let mut book: Book = serde_json::from_value(text).unwrap();
+        book.migrate();
+        assert_eq!(book.version, VERSION);
+        book.started("4:2");
+        // An approval, a question and an answered alert are open, one never
+        // raised here and made after the phone began watching.
+        let question = alert(AttentionKind::Question, 4);
+        let listed = [swiped.clone(), unseen.clone(), question.clone()];
+        let changes = rx(&mut book, open(&listed, 50), false, &[]);
+        assert!(changes.post.is_empty());
+        assert!(
+            listed
+                .iter()
+                .all(|a| book.computers["p1"].knows(&a.attention_id))
+        );
+        // One silent note says so, with what waits for the person.
+        let note = book.calm_note(&[]).expect("the note");
+        assert_eq!(note.tag, CALM);
+        assert!(note.silent);
+        assert_eq!(note.category, Category::Notice);
+        assert_eq!(note.title, "Notifications are calmer now");
+        assert!(
+            note.body.ends_with(" 2 things wait for you in Needs you."),
+            "{}",
+            note.body
+        );
+        // Unchanged, it isn't posted again.
+        assert!(book.calm_note(&[CALM.to_owned()]).is_none());
+        // The other computer adds its own count, silently, while it shows.
+        let laptop = Computer {
+            profile_id: "p2".into(),
+            name: "Laptop".into(),
+        };
+        let waiting = alert(AttentionKind::WaitingForYou, 5);
+        receive(
+            &mut book,
+            &laptop,
+            open(std::slice::from_ref(&waiting), 60),
+            false,
+            &[],
+            Timestamp(0),
+        );
+        let note = book.calm_note(&[CALM.to_owned()]).expect("a new count");
+        assert!(note.body.ends_with(" 3 things wait for you in Needs you."));
+        // Every computer has said: it is done, and never comes back.
+        assert!(book.calm.is_none());
+        book.migrate();
+        assert!(book.calm.is_none());
+        // The next list from each raises nothing from before.
+        assert!(rx(&mut book, open(&listed, 70), false, &[]).post.is_empty());
+        // Swiped away before the second computer answers, it stays gone.
+        let mut other: Book = serde_json::from_value({
+            let mut t = serde_json::to_value(&old).unwrap();
+            t["version"] = 1.into();
+            t
+        })
+        .unwrap();
+        other.migrate();
+        rx(&mut other, open(&listed, 50), false, &[]);
+        assert!(other.calm_note(&[]).is_some());
+        receive(
+            &mut other,
+            &laptop,
+            open(std::slice::from_ref(&waiting), 60),
+            false,
+            &[],
+            Timestamp(0),
+        );
+        assert!(other.calm_note(&[]).is_none());
+        assert!(other.calm.is_none());
+    }
+
+    #[test]
+    fn the_calm_note_reaches_the_shade_once() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        with_book(|book| {
+            *book = Book {
+                version: 1,
+                settings: Some(ON),
+                ..Book::default()
+            };
+            book.computers
+                .insert("p1".into(), Seen::began(Timestamp(0)));
+            book.migrate();
+        })
+        .unwrap();
+        let shade = FakeShade::default();
+        let frame = |frame: AlertServerFrame| {
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, frame, false, shown),
+                |_| (),
+            )
+            .unwrap()
+        };
+        frame(open(&[alert(AttentionKind::Completed, 2)], 10));
+        assert_eq!(shade.shown(), vec![CALM.to_owned()]);
+        let posted = lock(&shade.posted).clone();
+        assert_eq!(posted.len(), 1);
+        assert_eq!(
+            posted[0].body,
+            "Notifications you swipe away stay away, even after an update."
+        );
+        assert!(saved(dir.path()).calm.is_none());
+        frame(open(&[], 20));
+        assert_eq!(lock(&shade.posted).len(), 1);
+        lock(&LEDGER).take();
     }
 
     #[test]
@@ -3084,9 +4999,8 @@ mod tests {
             let note = changes.post[0].note(book.detail()).unwrap();
             assert_eq!((note.title.as_str(), note.category), (title, category));
             assert_eq!(note.body, "Studio · Site · Fix the header");
-            let grouped = category == Category::Finished;
-            assert_eq!(note.group.is_some(), grouped);
-            assert_eq!(note.group_title.as_deref(), grouped.then_some("Studio"));
+            assert!(note.group.is_some());
+            assert_eq!(note.group_title.as_deref(), Some("Site · Studio"));
         }
         let none = rx(
             &mut book,
@@ -3097,6 +5011,15 @@ mod tests {
             &[],
         );
         assert!(none.post.is_empty());
+    }
+
+    #[test]
+    fn a_chat_reply_is_a_new_reply() {
+        let mut a = alert(AttentionKind::Completed, 1);
+        a.alert_type = Some(AlertType::Reply);
+        let note = note(&computer(), &a, Detail::Minimal).unwrap();
+        assert_eq!(note.title, "New reply");
+        assert_eq!(note.alert_type, Some(AlertType::Reply));
     }
 
     #[test]
@@ -3316,7 +5239,7 @@ mod tests {
     }
 
     #[test]
-    fn the_book_survives_a_restart_and_off_forgets_what_was_raised() {
+    fn the_book_survives_a_restart_and_off_keeps_what_was_raised() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join(FILE);
         let _one = lock(&ONE_LEDGER);
@@ -3340,18 +5263,15 @@ mod tests {
         })
         .unwrap();
         assert!(with_book(|b| b.computers.contains_key("p1")).unwrap());
-        // Off: what the watcher raised is cleared, since nothing else would.
-        let raised = configure(Settings {
+        // Off only stops alerts once the app is closed: what was raised is
+        // still known, so nothing comes back when it is on again.
+        configure(Settings {
             enabled: false,
             ..on
         })
         .unwrap();
-        assert_eq!(
-            raised,
-            vec![MORE.to_owned(), tag("p1", &question.attention_id)]
-        );
         let saved: Book = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
-        assert!(saved.computers.is_empty());
+        assert!(saved.computers["p1"].knows(&question.attention_id));
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -3363,6 +5283,75 @@ mod tests {
         lock(&LEDGER).take();
         init(dir.path());
         assert_eq!(settings().unwrap().map(|s| s.enabled), Some(false));
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn when_a_computer_was_heard_from_is_saved_in_minute_steps() {
+        let mut book = Book::default();
+        book.heard_from("p1", Timestamp(1_000));
+        assert_eq!(book.heard["p1"], 1_000);
+        // A ping half a minute on is not worth a write.
+        book.heard_from("p1", Timestamp(31_000));
+        assert_eq!(book.heard["p1"], 1_000);
+        book.heard_from("p1", Timestamp(61_000));
+        assert_eq!(book.heard["p1"], 61_000);
+        // The phone's clock was set back.
+        book.heard_from("p1", Timestamp(5_000));
+        assert_eq!(book.heard["p1"], 5_000);
+        book.heard_from("p2", Timestamp(7_000));
+        assert_eq!(book.heard.len(), 2);
+    }
+
+    #[test]
+    fn when_a_computer_was_heard_from_is_kept_until_it_is_unpaired() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let watcher = next_watcher();
+        note_heard("p1", watcher);
+        note_heard("p2", watcher);
+        assert_eq!(heard().keys().collect::<Vec<_>>(), ["p1", "p2"]);
+        assert!(saved(dir.path()).heard.contains_key("p1"));
+        // A stopped watcher notes nothing: its replacement may already watch.
+        let stale = watcher;
+        let watcher = next_watcher();
+        lock(&LEDGER).as_mut().unwrap().book.heard.clear();
+        note_heard("p1", stale);
+        assert!(heard().is_empty());
+        note_heard("p1", watcher);
+        note_heard("p2", watcher);
+        // Turning alerts off, or a computer refusing this phone, does not
+        // change when it was last heard from.
+        configure(Settings {
+            enabled: false,
+            detail: Detail::Minimal,
+        })
+        .unwrap();
+        refused("p1", &FakeShade::default(), watcher);
+        assert_eq!(heard().len(), 2);
+        forget_others(
+            &BTreeSet::from(["p2".to_owned()]),
+            &FakeShade::default(),
+            watcher,
+        );
+        assert_eq!(heard().keys().collect::<Vec<_>>(), ["p2"]);
+        assert_eq!(saved(dir.path()).heard.keys().collect::<Vec<_>>(), ["p2"]);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn a_book_saved_before_heard_was_kept_still_loads() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        lock(&LEDGER).take();
+        fs::write(
+            dir.path().join(FILE),
+            br#"{"version":1,"settings":{"enabled":true,"detail":"minimal"},"computers":{}}"#,
+        )
+        .unwrap();
+        init(dir.path());
+        assert_eq!(settings().unwrap().map(|s| s.enabled), Some(true));
+        assert!(heard().is_empty());
         lock(&LEDGER).take();
     }
 }

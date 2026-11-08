@@ -67,10 +67,15 @@ pub(crate) fn command(command: &Command) -> Option<&'static str> {
         ResolveApproval { .. } | PrepareContribution { .. } | SetContributionRoot { .. } => {
             Some("answer an approval")
         }
+        // An agent can't move its own task out of read-only.
+        SwitchToWork { .. } => Some("switch a task to Work"),
         // An agent can't widen what holds it.
         SetConversationAccess { .. } => Some("change what a conversation may reach"),
         // Files the person may still want are theirs to delete.
         DeleteOneOff { .. } => Some("delete a one-off's folder"),
+        // Every paired phone shows the name, so a program could pass this
+        // computer off as another one.
+        RenameComputer { .. } => Some("rename this computer"),
         // A task can't hand another task more than it was given.
         CreateTask { .. }
         | SendMessage { .. }
@@ -89,6 +94,10 @@ pub(crate) fn command(command: &Command) -> Option<&'static str> {
             AccountAction::SignIn { .. } | AccountAction::Resume { .. } => {
                 Some("give tasks an account")
             }
+            // The code finishes a sign-in every task would then be given.
+            AccountAction::SubmitSignInCode { .. } => Some("finish a sign-in"),
+            // The notice is for the person; a program could hide it.
+            AccountAction::DismissSignInNotice { .. } => Some("put away a sign-in notice"),
             AccountAction::CancelSignIn
             | AccountAction::Pause { .. }
             | AccountAction::PauseAll
@@ -125,6 +134,11 @@ pub(crate) fn command(command: &Command) -> Option<&'static str> {
             // Stopping leaves what's picked unmerged, a choice that is the
             // person's as the picking was.
             GithubAction::StopTogether { .. } => Some("stop merging pull requests together"),
+            // Merge it would let an agent's own pull request merge without
+            // the person; the choice is theirs, as merging is.
+            GithubAction::SetWhenGreen { .. } => {
+                Some("choose whether a pull request merges by itself")
+            }
             // An agent files issues with its own tool, which says who wrote
             // them; this one posts in the person's name alone.
             GithubAction::FileIssue { .. } => Some("file a GitHub issue in your name"),
@@ -140,6 +154,9 @@ pub(crate) fn command(command: &Command) -> Option<&'static str> {
         SetDisabledInOphio { .. } => Some("change what agents in Øphio are kept from"),
         SetLaunchDefaults { .. } => Some("change the launch flags work starts with"),
         SetNotificationSettings { .. } => Some("change which alerts reach you"),
+        // Its finish would alert on every phone, past what the person chose
+        // for the type and a project they muted: their word alone.
+        SetTaskNotify { .. } => Some("choose which tasks alert you when they're done"),
         // What the person did on a checklist starts its agent again, so
         // only the person does it.
         ChecklistTick { .. } => Some("tick off your checklist"),
@@ -156,6 +173,8 @@ pub(crate) fn command(command: &Command) -> Option<&'static str> {
         SetReportSettings { .. } => Some("change where problem reports go"),
         SetReportVerdict { .. } => Some("tell reporters where their problem stands"),
         LookIntoReport { .. } => Some("choose a problem report for the fixer"),
+        // A report can come from anyone; only the person has an agent read one.
+        StartReportTask { .. } => Some("have an agent look into a problem report"),
         AcknowledgeAttention { .. } => Some("close a request for the person"),
         AddProject { .. }
         | ReviewContribution { .. }
@@ -227,6 +246,7 @@ pub(crate) fn query(query: &Query) -> Option<&'static str> {
         // Its names are what agents are kept from.
         DisabledInOphio => Some("read what is disabled in Øphio"),
         Snapshot { .. }
+        | ReportTaskProject
         | ContributionDelivery { .. }
         | ContributionCapabilities
         | ContributionOperation { .. }
@@ -279,7 +299,7 @@ pub(crate) fn query(query: &Query) -> Option<&'static str> {
         | Task { .. }
         | Run { .. }
         | Approval { .. }
-        | Accounts
+        | Accounts { .. }
         | AgentLogins
         | GithubProject { .. }
         | GithubItems { .. }
@@ -291,6 +311,33 @@ pub(crate) fn query(query: &Query) -> Option<&'static str> {
 mod tests {
     use super::*;
     use protocol::contribution::{ContributionApproval, ContributionInput};
+
+    /// An agent can't make its own task's finish alert the person, as
+    /// they can't be asked whether it should.
+    #[test]
+    fn only_the_person_asks_to_hear_when_a_task_is_done() {
+        for on in [true, false] {
+            let what = command(&Command::SetTaskNotify {
+                task_id: protocol::TaskId::new(),
+                on,
+            })
+            .expect("a started program is refused");
+            let refused = refusal(what);
+            assert_eq!(refused.code, ErrorCode::PermissionDenied);
+            assert!(refused.message.contains("started this program"));
+            assert!(refused.message.contains("alert you when they're done"));
+        }
+        // The person's other alert choices are theirs too.
+        assert!(
+            command(&Command::SetNotificationSettings {
+                off: Vec::new(),
+                bundle: false,
+                projects: Vec::new(),
+                types: false,
+            })
+            .is_some()
+        );
+    }
 
     #[test]
     fn contribution_trust_requires_the_person_but_delivery_review_and_cancel_do_not() {

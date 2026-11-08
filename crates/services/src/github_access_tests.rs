@@ -18,6 +18,7 @@ fn request(project: ProjectId, number: u64) -> CommandEnvelope {
         *github = Some(Box::new(GithubLink::Issue {
             number,
             review_with: None,
+            when_green: None,
         }));
         *mode = None;
         *conversation = None;

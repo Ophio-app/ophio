@@ -7,7 +7,7 @@ import { sha256Hex } from "../../host/transfer";
 import { uuidv7 } from "../../protocol/ids";
 import { AnnotationStore, blobs, MAX_SOURCES, outgoingSources, useAnnotation, type AnnotationDraft, type SourceDraft } from "../../state/annotations";
 import { extractMoment, stillAt } from "./sources";
-import { placeMoments, useMoments, Watch } from "./Watch";
+import { placeMoments, useMoments, Watch } from "./WatchView";
 import { videoAt } from "./watch";
 
 vi.mock("./sources", async (original) => ({ ...(await original<typeof import("./sources")>()), stillAt: vi.fn() }));

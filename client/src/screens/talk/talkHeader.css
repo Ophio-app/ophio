@@ -63,6 +63,12 @@
 .chat-head__sub > :first-child {
   flex: none;
 }
+/* What it may do has a line of its own, ending in an ellipsis where it
+   doesn't fit. The button itself doesn't clip, so its focus ring shows. */
+.chat-head__sub > .chat-head__may {
+  flex: 0 1 auto;
+  overflow: visible;
+}
 .chat-head__sub > * + *::before {
   content: "·";
   content: "·" / "";
@@ -299,4 +305,8 @@
 /* Typing: the pull request waits until the keyboard closes. */
 :root.kb-open .chat-pr {
   display: none;
+}
+/* "Tell me when it's done", on: the bell rings in the accent. */
+.task-bell.is-on {
+  color: var(--accent-text);
 }

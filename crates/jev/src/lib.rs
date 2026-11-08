@@ -139,8 +139,14 @@ impl Jev {
             .send()
             .await
             .map_err(failure)?;
-        if !response.status().is_success() {
+        // Only a refused key needs the person to link Jev again; a busy or
+        // failing service is tried again with the next command.
+        let status = response.status();
+        if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
             return Err(Error::Refused);
+        }
+        if !status.is_success() {
+            return Err(Error::Unavailable);
         }
         if response.content_length().is_some_and(|n| n > limit as u64) {
             return Err(Error::Malformed);

@@ -95,6 +95,7 @@ impl FakeHub {
                     inbox_path: None,
                     host_id: HostId::new(),
                     name: "Synthetic computer".into(),
+                    renamed: false,
                     os_label: "synthetic".into(),
                     companion_version: "test".into(),
                     boot_epoch: BootEpoch::new(),
@@ -155,6 +156,8 @@ impl FakeHub {
     fn approval(&self, kind: ApprovalKind) -> Approval {
         let task = self.task();
         let a = Approval {
+            headline: None,
+            facts: Vec::new(),
             outcome: None,
             approval_id: ApprovalId::new(),
             run_id: RunId::new(),
@@ -171,6 +174,8 @@ impl FakeHub {
             shortened: false,
             revision: 1,
             state: ApprovalState::Pending,
+            access_request: None,
+            actions: None,
             delivery: None,
             requested_at: self.clock.now(),
             expires_at: None,
@@ -308,10 +313,12 @@ impl Hub for FakeHub {
                     status_line: Some("PRIVATE STATUS".into()),
                     wake: None,
                     asked_by: None,
+                    report: None,
                     start: None,
                     browser: false,
                     conversation: false,
                     review: None,
+                    notify_done: false,
                 });
                 Some(CommandResult::TaskCreated {
                     task_id: id,

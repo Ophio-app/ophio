@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Platform, LocalNotification, NotificationPermission } from "../host/link";
 import type { HostSession, PendingCommand } from "../host/session";
-import type { AttentionItem, HarnessKind } from "../protocol/types";
+import type { AlertType, AttentionItem, HarnessKind, NotificationSettings, Tier } from "../protocol/types";
 import type { HostState } from "../state/projection";
 import type { UiStore } from "../app/ui";
 import { Store } from "../state/store";
 import { appLock } from "./lock";
+import { SIGN_IN_ON_PHONE_FEATURE } from "../app/signInFeature";
 import { reportPlatformError } from "./errors";
 import { backgroundAlerts } from "./alerts";
 import { alertsFor, bundlesFor, itemTopic, notificationSettings } from "./notificationSettings";
+import { ALERT_TYPES_FEATURE, alertTypeOf, tierFor, typeInfo } from "./alertTypes";
+import { deviceTiers } from "./deviceTiers";
 
 export type NotificationDetail = "minimal" | "task_title";
 const KEY = "notification-detail";
@@ -71,13 +74,17 @@ export interface NeedsYouRoute {
   projectId: string;
 }
 export interface ReportRoute { kind: "report"; profileId: string; reportId: string }
-export type OpenRoute = AttentionRoute | AppUpdateRoute | NeedsYouRoute | ReportRoute;
+/** An agent that isn't signed in on the computer: leads to signing it in again. */
+export interface SignInRoute { kind: "sign_in"; profileId: string; accountId: string }
+export type OpenRoute = AttentionRoute | AppUpdateRoute | NeedsYouRoute | ReportRoute | SignInRoute;
 const named = (v: unknown): v is string => typeof v === "string" && !!v && v.length <= 256;
-/** Where a notification leads: an attention item, a project's Needs you, or Versions for an update. */
+/** Where a notification leads: an attention item, a project's Needs you,
+ * Versions for an update, a problem report or an agent's sign-in. */
 export function parseOpenRoute(value: unknown): OpenRoute | null {
   if (value && typeof value === "object") {
     const r = value as Record<string, unknown>;
     if (r.kind === "report" && named(r.profileId) && named(r.reportId)) return { kind: "report", profileId: r.profileId, reportId: r.reportId };
+    if (r.kind === "sign_in" && named(r.profileId) && named(r.accountId)) return { kind: "sign_in", profileId: r.profileId, accountId: r.accountId };
     if (r.kind === "app_update" && named(r.profileId))
       return { kind: "app_update", profileId: r.profileId };
     if (r.kind === "needs_you" && named(r.profileId) && named(r.projectId))
@@ -105,6 +112,21 @@ export function foldedNotification(
     route: { kind: "needs_you", profileId: computer.profileId, projectId: project.project_id } satisfies NeedsYouRoute,
   };
 }
+/** Short names, as the background watcher names an agent that isn't signed in. */
+const SIGN_IN_SERVICES: Record<string, string> = { claude: "Claude", codex: "Codex" };
+/** The alert for an agent that isn't signed in on the computer, as the
+ * background watcher raises it. */
+export function signInNotification(item: AttentionItem, computer: { profileId: string; name: string }): LocalNotification | null {
+  if (!item.account_id || item.task_id || item.resolved_at !== null) return null;
+  const service = SIGN_IN_SERVICES[item.account_id] ?? "An agent";
+  return {
+    id: `${computer.profileId}/${item.attention_id}`,
+    title: `${service} isn’t signed in on ${computer.name}`.slice(0, 256),
+    body: "Tap to sign in again.",
+    category: "needs_you",
+    route: { kind: "sign_in", profileId: computer.profileId, accountId: item.account_id } satisfies SignInRoute,
+  };
+}
 /** As the background watcher names them, so an alert both raise reads the same. */
 const AGENTS: Record<HarnessKind, string> = { claude_code: "Claude Code", codex: "Codex", hermes: "Hermes", open_claw: "OpenClaw", pi: "Pi" };
 function alertKind(kind: AttentionItem["kind"], harness: HarnessKind): { category: "needs_you" | "finished"; title: string } | null {
@@ -117,24 +139,37 @@ function alertKind(kind: AttentionItem["kind"], harness: HarnessKind): { categor
     default: return null;
   }
 }
+/** Types whose item's own title is the computer's headline for it, such as
+ * "PR #12 merged", shown in place of the kind's heading as the watcher does. */
+const HEADLINED = new Set<AlertType>(["merged", "pr_ready", "pr_needs_you", "issues", "issue_call", "batch"]);
+
 export function notificationFor(
   item: AttentionItem,
   state: HostState,
   computer: { profileId: string; name: string },
   detail: NotificationDetail,
+  choice?: Choice,
 ): LocalNotification | null {
-  if (item.report_id && item.resolved_at === null && state.capabilities?.features.includes("reports_v1")) return { id: `${computer.profileId}/${item.attention_id}`, title: "Your problem report", body: "There’s an update on your report.", category: item.kind === "question" ? "needs_you" : "finished", route: { kind: "report", profileId: computer.profileId, reportId: item.report_id } satisfies ReportRoute };
+  const typed = choice ? { alertType: choice.type, want: choice.tier, ...(choice.tier === "silent" ? { silent: true } : {}) } : {};
+  if (item.report_id && item.resolved_at === null && state.capabilities?.features.includes("reports_v1")) return { id: `${computer.profileId}/${item.attention_id}`, title: "Your problem report", body: "There’s an update on your report.", category: item.kind === "question" ? "needs_you" : "finished", route: { kind: "report", profileId: computer.profileId, reportId: item.report_id } satisfies ReportRoute, ...typed };
+  if (item.account_id && !item.task_id) {
+    const note = state.capabilities?.features.includes(SIGN_IN_ON_PHONE_FEATURE) ? signInNotification(item, computer) : null;
+    return note && { ...note, ...typed };
+  }
   const task = item.task_id ? state.tasks[item.task_id] : undefined;
   const project = task ? state.projects[task.project_id] : undefined;
   if (item.resolved_at !== null || !project || !task) return null;
   const alert = alertKind(item.kind, task.harness);
   if (!alert) return null;
+  const category = choice ? (typeInfo(choice.type).group === "needs_you" ? "needs_you" : "finished") : alert.category;
+  const headline = choice && HEADLINED.has(choice.type) && item.topic && item.title.trim() ? item.title.trim().slice(0, 256) : null;
   return {
     id: `${computer.profileId}/${item.attention_id}`,
-    title: alert.title,
+    title: headline ?? (choice?.type === "reply" ? "New reply" : alert.title),
     body: [computer.name, project.name, ...(detail === "task_title" ? [task.title] : [])].join(" · ").slice(0, 2048),
-    category: alert.category,
-    ...(alert.category === "finished" ? { group: `${computer.profileId}:finished`, groupTitle: computer.name.slice(0, 256) } : {}),
+    category,
+    ...typed,
+    ...(category === "finished" ? { group: `${computer.profileId}:finished`, groupTitle: computer.name.slice(0, 256) } : {}),
     route: {
       kind: "attention",
       profileId: computer.profileId,
@@ -142,6 +177,34 @@ export function notificationFor(
     } satisfies AttentionRoute,
   };
 }
+/** What an item is, as a notification, and how it shows on this device. */
+export interface Choice { type: AlertType; tier: Exclude<Tier, "off"> }
+
+/**
+ * Whether the app shows `item` itself, and how, by the rules the watcher
+ * applies: the item's type; this device's choice for it; the project's own
+ * choice, or Off for a muted project; a task's "Tell me when it's done",
+ * which makes its finish, failure or reply alert. An older computer's
+ * switches for every project still hold back what they turn off.
+ */
+export function choose(item: AttentionItem, state: HostState, settings: NotificationSettings, device: { tier(type: AlertType): Tier }): Choice | null {
+  const task = item.task_id ? state.tasks[item.task_id] : undefined;
+  const type = alertTypeOf(item, !!task?.conversation);
+  if (!type) return null;
+  const typed = state.capabilities?.features.includes(ALERT_TYPES_FEATURE) ?? false;
+  if (!typed) {
+    if (item.account_id && !item.task_id) { if (settings.off.includes("needs_you")) return null; }
+    else if (item.report_id && !item.task_id) { if (settings.off.includes("reports")) return null; }
+    else {
+      const topic = itemTopic(item);
+      if (task && topic && !alertsFor(settings, task.project_id, topic)) return null;
+    }
+  }
+  const project = task && typed ? settings.projects.find((p) => p.project_id === task.project_id) : undefined;
+  const tier = tierFor(type, device.tier(type), project, !!task?.notify_done);
+  return tier === "off" ? null : { type, tier };
+}
+
 /** Tasks and conversations open on the screen, by computer: their alerts
  * leave the shade as they open, answered or not, as the person has seen
  * them. What still needs an answer stays under Needs you. */
@@ -159,6 +222,10 @@ export function viewingTask(profileId: string, taskId: string): () => void {
   };
 }
 
+/** Whether the screen shows a computer's work, and so its alerts. */
+export interface Viewed { get(): boolean; subscribe(listener: () => void): () => void }
+const ALWAYS_VIEWED: Viewed = { get: () => true, subscribe: () => () => {} };
+
 /** Snapshot is a baseline, not a burst of new notifications. Updates and replay
  * of an existing identity never notify twice, including when seen in foreground.
  * An item answered anywhere clears its alert, whichever side raised it.
@@ -169,16 +236,22 @@ export function watchAttention(
   platform: Platform,
   session: HostSession,
   computer: string,
+  viewed: Viewed = ALWAYS_VIEWED,
 ): () => void {
   if (!platform.notify) return () => {};
   const access = notificationAccess(platform);
   const offAccess = access.start();
   const watcher = backgroundAlerts(platform);
   const offWatcher = watcher?.start();
-  watcher?.viewing(session.profileId, true);
+  // Only the computer on the screen shows its alerts there; the app raises
+  // another's as alerts, unless the watcher raises them itself.
+  let showing = viewed.get();
+  if (showing) watcher?.viewing(session.profileId, true);
   const lock = appLock(platform);
   const settings = notificationSettings(session);
   const offSettings = settings.follow();
+  const tiers = deviceTiers(platform);
+  const offTiers = tiers.start();
   // Alerts this app raised and are still open, by project, each saying
   // whether it needs the person; and the projects among them that show as
   // one note that counts them.
@@ -218,7 +291,7 @@ export function watchAttention(
     const initial = !primed;
     primed = true;
     // The lock screen hides the app's own: only what it shows unlocked counts.
-    const visible = document.visibilityState !== "hidden" && !lock.get().locked;
+    const visible = showing && document.visibilityState !== "hidden" && !lock.get().locked;
     const answered: string[] = [];
     const shown: string[] = [];
     const recount = new Set<string>();
@@ -256,21 +329,22 @@ export function watchAttention(
       }
       if (seen.has(item.attention_id)) continue;
       seen.add(item.attention_id);
-      // Part of something that alerts once, as a whole: seen, never raised.
-      if (visible || initial || item.quiet) continue;
+      // Part of something that alerts once, as a whole, or already handled
+      // on one of the person's devices: seen, never raised.
+      if (visible || initial || item.quiet || item.alert_handled_at) continue;
       // The watcher raises it, even if Android freezes this page first.
       if (watcher?.covers(session.profileId)) continue;
-      if (item.report_id) {
-        if (!settings.current().off.includes("reports")) {
-          const notification = notificationFor(item, state, here, "minimal");
-          if (notification) show(notification, "Problem report update");
-        }
+      const choice = choose(item, state, settings.current(), tiers);
+      if (!choice) continue;
+      if (!item.task_id) {
+        // No project of its own: a sign-in notice or a problem report.
+        const notification = notificationFor(item, state, here, "minimal", choice);
+        if (notification) show(notification, item.report_id ? "Problem report update" : notification.title);
         continue;
       }
-      const project = item.task_id ? state.projects[state.tasks[item.task_id]?.project_id ?? ""] : undefined;
-      const topic = itemTopic(item);
-      if (!project || (topic && !alertsFor(settings.current(), project.project_id, topic))) continue;
-      const notification = notificationFor(item, state, here, lock.get().enabled ? "minimal" : notificationDetail.get());
+      const project = state.projects[state.tasks[item.task_id]?.project_id ?? ""];
+      if (!project) continue;
+      const notification = notificationFor(item, state, here, lock.get().enabled ? "minimal" : notificationDetail.get(), choice);
       if (!notification) continue;
       // The banner already sits under this computer, so it names only the work.
       const name = notification.body.startsWith(`${computer} · `) ? notification.body.slice(computer.length + 3) : notification.body;
@@ -316,9 +390,15 @@ export function watchAttention(
   });
   const onVisibility = () => changed(true);
   document.addEventListener("visibilitychange", onVisibility);
+  const offViewed = viewed.subscribe(() => {
+    if (viewed.get() === showing) return;
+    showing = viewed.get();
+    watcher?.viewing(session.profileId, showing);
+    changed(true);
+  });
   return () => {
-    off(); offLock(); openedChanged.delete(onOpened); document.removeEventListener("visibilitychange", onVisibility); offAccess(); offSettings();
-    watcher?.viewing(session.profileId, false);
+    off(); offLock(); offViewed(); openedChanged.delete(onOpened); document.removeEventListener("visibilitychange", onVisibility); offAccess(); offSettings(); offTiers();
+    if (showing) watcher?.viewing(session.profileId, false);
     offWatcher?.();
   };
 }
@@ -391,7 +471,7 @@ export class NotificationAccess extends Store<NotificationState> {
       await action.call(this.platform);
     } catch {
       error = permission === "blocked"
-        ? "Android’s notification settings couldn’t be opened. Try again."
+        ? "The phone’s notification settings couldn’t be opened. Try again."
         : "Task alerts weren’t enabled. You can try again in Settings › Notifications.";
     } finally {
       await this.refresh();
@@ -431,39 +511,56 @@ export function missedAlertText(missed: MissedAlerts, permission: NotificationPe
 
 export interface AlertContext { projectId: string; taskId: string }
 
+/** Which offer a task action brings: on a computer that keeps a task's bell,
+ * "Tell you when this task is done?"; on an older one, "Get alerts?", which
+ * asks for the phone's permission. */
+export type AlertOfferKind = "bell" | "permission";
+
 /** Only accepted commands issued during this visit qualify. A snapshot, replay
- * or an automatic queue dispatch never becomes a permission offer. */
+ * or an automatic queue dispatch never becomes a permission offer. Each kind
+ * of offer is made once per computer, remembered apart, so having answered
+ * the older offer doesn't hide the bell's. */
 export class TaskAlertsOffer extends Store<AlertContext | null> {
-  #offered = false;
-  #key: string;
+  #offered: Record<AlertOfferKind, boolean> = { bell: false, permission: false };
+  #keys: Record<AlertOfferKind, string>;
   constructor(profileId: string) {
     super(null);
-    this.#key = `task-alerts-offer.${profileId}`;
-    try { this.#offered = localStorage.getItem(this.#key) === "seen"; } catch { /* Remember in this session. */ }
+    this.#keys = { bell: `task-bell-offer.${profileId}`, permission: `task-alerts-offer.${profileId}` };
+    for (const kind of ["bell", "permission"] as const) {
+      try { this.#offered[kind] = localStorage.getItem(this.#keys[kind]) === "seen"; } catch { /* Remember in this session. */ }
+    }
   }
 
-  shown(): void {
-    if (this.#offered) return;
-    this.#offered = true;
-    try { localStorage.setItem(this.#key, "seen"); }
+  shown(kind: AlertOfferKind): void {
+    if (this.#offered[kind]) return;
+    this.#offered[kind] = true;
+    try { localStorage.setItem(this.#keys[kind], "seen"); }
     catch { reportPlatformError({ operation: "Task alerts", message: "Your alert choice couldn’t be saved on this device. It may be offered again after a restart." }); }
   }
 
-  dismiss(): void { this.shown(); this.set(null); }
+  dismiss(kind: AlertOfferKind): void { this.shown(kind); this.set(null); }
 
   watch(session: HostSession, access: NotificationAccess): () => void {
     let watching = true;
     const seen = new Set(Object.keys(session.commands.get()));
     const changed = () => {
-      if (this.#offered || this.get()) return;
+      if (this.get() || (this.#offered.bell && this.#offered.permission)) return;
       for (const command of Object.values(session.commands.get())) {
         if (seen.has(command.id) || command.phase === "sending") continue;
         seen.add(command.id);
         if ((command.phase !== "accepted" && command.phase !== "duplicate") || document.visibilityState !== "visible") continue;
-        const context = alertContext(command, session.state.get());
+        const state = session.state.get();
+        const context = alertContext(command, state);
         if (!context) continue;
+        // A computer that keeps a task's bell: offer this task's, whatever
+        // Android's permission (the bell asks for it as it turns on).
+        if (state.capabilities?.features.includes(ALERT_TYPES_FEATURE)) {
+          if (!this.#offered.bell && access.platform.notify && !state.tasks[context.taskId]?.notify_done) this.set(context);
+          continue;
+        }
+        if (this.#offered.permission) continue;
         void access.refresh().then((permission) => {
-          if (watching && !this.#offered && !this.get() && permission === "promptable" && document.visibilityState === "visible") this.set(context);
+          if (watching && !this.#offered.permission && !this.get() && permission === "promptable" && document.visibilityState === "visible") this.set(context);
         });
       }
     };

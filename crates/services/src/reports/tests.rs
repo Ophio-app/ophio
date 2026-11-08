@@ -544,7 +544,11 @@ async fn status_questions_and_progress_alert_once_and_answers_clear_attention() 
     intake.state.lock().unwrap().updates = vec![update(ReportProgress::Reproduced)];
     force_poll(&f).await;
     f.hub.reports_once().await.unwrap();
-    let (alerts, _) = f.hub.open_alerts(&Caller::local_owner()).await.unwrap();
+    let (alerts, _) = f
+        .hub
+        .open_alerts(&Caller::local_owner(), false)
+        .await
+        .unwrap();
     assert_eq!(alerts.len(), 1);
     let alert_id = alerts[0].attention_id;
     assert!(alerts[0].report.is_some());
@@ -553,7 +557,12 @@ async fn status_questions_and_progress_alert_once_and_answers_clear_attention() 
     force_poll(&f).await;
     f.hub.reports_once().await.unwrap();
     assert_eq!(
-        f.hub.open_alerts(&Caller::local_owner()).await.unwrap().0[0].attention_id,
+        f.hub
+            .open_alerts(&Caller::local_owner(), false)
+            .await
+            .unwrap()
+            .0[0]
+            .attention_id,
         alert_id
     );
     intake.state.lock().unwrap().updates = vec![update(ReportProgress::InReview)];
@@ -561,7 +570,7 @@ async fn status_questions_and_progress_alert_once_and_answers_clear_attention() 
     f.hub.reports_once().await.unwrap();
     assert!(
         f.hub
-            .open_alerts(&Caller::local_owner())
+            .open_alerts(&Caller::local_owner(), false)
             .await
             .unwrap()
             .0
@@ -601,7 +610,7 @@ async fn status_questions_and_progress_alert_once_and_answers_clear_attention() 
     until(|| !intake.state.lock().unwrap().answers.is_empty()).await;
     assert!(
         f.hub
-            .open_alerts(&Caller::local_owner())
+            .open_alerts(&Caller::local_owner(), false)
             .await
             .unwrap()
             .0
@@ -730,13 +739,23 @@ async fn release_feed_shows_halted_build_and_a_fix_in_the_selected_ring() {
             build: "new-build".into()
         }
     );
-    let alerts = f.hub.open_alerts(&Caller::local_owner()).await.unwrap().0;
+    let alerts = f
+        .hub
+        .open_alerts(&Caller::local_owner(), false)
+        .await
+        .unwrap()
+        .0;
     assert_eq!(alerts.len(), 1);
     let id = alerts[0].attention_id;
     force_poll(&f).await;
     f.hub.reports_once().await.unwrap();
     assert_eq!(
-        f.hub.open_alerts(&Caller::local_owner()).await.unwrap().0[0].attention_id,
+        f.hub
+            .open_alerts(&Caller::local_owner(), false)
+            .await
+            .unwrap()
+            .0[0]
+            .attention_id,
         id
     );
     f.close().await;
@@ -913,6 +932,9 @@ async fn the_subscription_records_state_blocks_and_quiet_alerts_without_content(
         topic: None,
         quiet: false,
         report_id: None,
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
     };
     f.hub
         .write(|tx| {
@@ -921,7 +943,10 @@ async fn the_subscription_records_state_blocks_and_quiet_alerts_without_content(
                 "meta",
                 "notification_settings",
                 &protocol::notifications::NotificationSettings {
-                    off: vec![protocol::notifications::AlertTopic::Finished],
+                    projects: vec![protocol::notifications::ProjectNotifications {
+                        mute: true,
+                        ..protocol::notifications::ProjectNotifications::new(project)
+                    }],
                     ..Default::default()
                 },
             )?;
@@ -1073,7 +1098,7 @@ async fn closed_questions_clear_attention_and_closed_reports_stop_polling() {
     f.hub.reports_once().await.unwrap();
     assert_eq!(
         f.hub
-            .open_alerts(&Caller::local_owner())
+            .open_alerts(&Caller::local_owner(), false)
             .await
             .unwrap()
             .0
@@ -1087,7 +1112,7 @@ async fn closed_questions_clear_attention_and_closed_reports_stop_polling() {
     f.hub.reports_once().await.unwrap();
     assert!(
         f.hub
-            .open_alerts(&Caller::local_owner())
+            .open_alerts(&Caller::local_owner(), false)
             .await
             .unwrap()
             .0

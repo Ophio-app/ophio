@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{BINARY_NAME, BridgeError, PERMISSION_TOOL, framing, socket};
 use ports::bridge::{
-    ANSWER_TOOLS, ASK_TOOL, ASK_TOOLS, BROWSER_TOOLS, BridgeFile, BridgePointer, BridgeRequest,
-    BridgeResponse, BrowserAction, GITHUB_TOOLS, GithubCall, HUMAN_TOOL, PERSON_TOOLS, PersonCall,
-    QUESTIONS_TOOL, RUN_TOKEN_ENV, SOCKET_ENV, WAKE_TOOL, WORK_TOOLS, WorkCall,
+    ACCESS_TOOL, ANSWER_TOOLS, ASK_TOOL, ASK_TOOLS, BROWSER_TOOLS, BridgeFile, BridgePointer,
+    BridgeRequest, BridgeResponse, BrowserAction, GITHUB_TOOLS, GithubCall, HUMAN_TOOL,
+    OPEN_APP_TOOL, PERSON_TOOLS, PersonCall, QUESTIONS_TOOL, RUN_TOKEN_ENV, SOCKET_ENV, WAKE_TOOL,
+    WORK_TOOLS, WorkCall,
 };
 use protocol::control::TargetPoint;
 use serde::Deserialize;
@@ -55,12 +56,13 @@ pub async fn run_stdio(bridge_file: Option<&Path>) -> Result<(), BridgeError> {
                 browser,
                 github,
                 checklist_answers,
+                read_only,
                 ..
-            } => Ok((computer_use, browser, github, checklist_answers)),
+            } => Ok((computer_use, browser, github, checklist_answers, read_only)),
             _ => Err(BridgeError::Authentication),
         }
     };
-    let (computer_use, browser, github, checklist_answers) =
+    let (computer_use, browser, github, checklist_answers, read_only) =
         tokio::time::timeout(Duration::from_secs(5), handshake)
             .await
             .map_err(|_| BridgeError::Timeout)??;
@@ -72,6 +74,7 @@ pub async fn run_stdio(bridge_file: Option<&Path>) -> Result<(), BridgeError> {
         browser,
         github,
         checklist_answers,
+        read_only,
         observation: None,
     };
     serve(tokio::io::stdin(), tokio::io::stdout(), client).await
@@ -88,6 +91,8 @@ struct Client<R, W> {
     github: bool,
     /// The run only reads the checklist and answers on it.
     checklist_answers: bool,
+    /// The run only reads (Plan, Ask) and may only ask for more.
+    read_only: bool,
     observation: Option<(u32, u32, u64)>,
 }
 
@@ -99,7 +104,9 @@ fn refusal(name: &str, computer_use: bool, browser: bool, github: bool) -> Optio
     let planning = WORK_TOOLS.contains(&name);
     let asking = ASK_TOOLS.contains(&name);
     if computer_use {
-        return if name == PERMISSION_TOOL {
+        return if name == ACCESS_TOOL {
+            Some("asking for more access is not available to the computer specialist")
+        } else if name == PERMISSION_TOOL {
             Some("permission escalation is not available to the computer specialist")
         } else if browsing {
             Some("the agent browser is not available to the computer specialist")
@@ -114,6 +121,7 @@ fn refusal(name: &str, computer_use: bool, browser: bool, github: bool) -> Optio
         };
     }
     if name == PERMISSION_TOOL
+        || name == ACCESS_TOOL
         || showing
         || (planning && (!github || asking))
         || (browser && (browsing || name == HUMAN_TOOL))
@@ -140,6 +148,9 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
             return tool_error(
                 "this turn only reads the checklist and answers the person with checklist_reply",
             );
+        }
+        if self.read_only && name != ACCESS_TOOL {
+            return tool_error("this turn only reads; ask for more with request_access");
         }
         if let Some(reason) = refusal(name, self.computer_use, self.browser, self.github) {
             return tool_error(reason);
@@ -168,6 +179,7 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
         let posting = matches!(request, BridgeRequest::Github { .. });
         let showing = matches!(request, BridgeRequest::Person { .. });
         let planning = matches!(request, BridgeRequest::Work { .. });
+        let asking = matches!(request, BridgeRequest::RequestAccess { .. });
         let looking = matches!(
             request,
             BridgeRequest::Browser {
@@ -220,6 +232,7 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
                 && !posting
                 && !showing
                 && !planning
+                && !asking
                 && width > 0
                 && height > 0 =>
             {
@@ -245,13 +258,37 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
             BridgeResponse::GithubResult { text } if posting => text_result(&text),
             BridgeResponse::PersonResult { text } if showing => text_result(&text),
             BridgeResponse::WorkResult { text } if planning => text_result(&text),
+            BridgeResponse::AccessResult { text } if asking => text_result(&text),
             BridgeResponse::Done
-                if !permission && !observe && !browsing && !posting && !showing && !planning =>
+                if !permission
+                    && !observe
+                    && !browsing
+                    && !posting
+                    && !showing
+                    && !planning
+                    && !asking =>
             {
                 text_result("Done")
             }
+            BridgeResponse::AppOpened { text }
+                if !permission
+                    && !observe
+                    && !browsing
+                    && !posting
+                    && !showing
+                    && !planning
+                    && !asking =>
+            {
+                text_result(&text)
+            }
             BridgeResponse::HumanResult { text }
-                if !permission && !observe && !browsing && !posting && !showing && !planning =>
+                if !permission
+                    && !observe
+                    && !browsing
+                    && !posting
+                    && !showing
+                    && !planning
+                    && !asking =>
             {
                 text_result(&text)
             }
@@ -349,9 +386,12 @@ where
                     if params.get("cursor").is_some_and(|v| !v.is_null()) {
                         Err((-32602, "unknown cursor"))
                     } else {
-                        let tools = match bridge.checklist_answers {
-                            true => answer_tools(),
-                            false => tools(bridge.computer_use, bridge.browser, bridge.github),
+                        let tools = if bridge.checklist_answers {
+                            answer_tools()
+                        } else if bridge.read_only {
+                            vec![access_tool()]
+                        } else {
+                            tools(bridge.computer_use, bridge.browser, bridge.github)
                         };
                         let mut list = json!({ "tools": tools });
                         // 2026-07-28 requires cache hints on a list. This
@@ -451,7 +491,18 @@ struct Text {
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct OpenApp {
+    name: String,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Human {
+    reason: String,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Access {
+    needs: Vec<protocol::model::AccessNeed>,
     reason: String,
 }
 #[derive(Deserialize)]
@@ -1230,21 +1281,46 @@ fn tool_request(
         }
         "key_action" | "key" => {
             let p: Key = parse(args)?;
-            if p.keys.is_empty()
-                || p.keys.len() > 16
-                || p.keys.iter().any(|k| k.is_empty() || k.len() > 64)
+            let keys = chord_keys(&p.keys);
+            if keys.is_empty()
+                || keys.len() > 16
+                || keys.iter().any(|k| k.is_empty() || k.len() > 64)
             {
                 return Err("keys must contain 1 to 16 key names");
             }
-            BridgeRequest::Key { keys: p.keys }
+            BridgeRequest::Key { keys }
         }
         "type_text" => {
             let p: Text = parse(args)?;
             BridgeRequest::TypeText { text: p.text }
         }
+        OPEN_APP_TOOL => {
+            let p: OpenApp = parse(args)?;
+            let name = p.name.split_whitespace().collect::<Vec<_>>().join(" ");
+            if name.is_empty() || name.chars().count() > 200 {
+                return Err("name must be an app's name or kind, up to 200 characters");
+            }
+            BridgeRequest::OpenApp { name }
+        }
         HUMAN_TOOL => {
             let p: Human = parse(args)?;
             BridgeRequest::RequestHuman { reason: p.reason }
+        }
+        ACCESS_TOOL => {
+            let p: Access = parse(args)?;
+            if p.needs.is_empty() || p.needs.len() > 4 {
+                return Err(
+                    "needs must name 1 to 4 of change_files, internet, local_network, whole_computer",
+                );
+            }
+            let reason = p.reason.split_whitespace().collect::<Vec<_>>().join(" ");
+            if reason.is_empty() || reason.chars().count() > MAX_ACCESS_REASON {
+                return Err("reason must be one short line, up to 200 characters");
+            }
+            BridgeRequest::RequestAccess {
+                needs: p.needs,
+                reason,
+            }
         }
         _ if BROWSER_TOOLS.contains(&name) => BridgeRequest::Browser {
             action: browser_action(name, args)?,
@@ -1279,6 +1355,19 @@ fn answer_tools() -> Vec<Value> {
         .collect()
 }
 
+/// The longest reason `request_access` takes: one line on a phone.
+const MAX_ACCESS_REASON: usize = 200;
+
+/// How an agent asks the person for more than it has ([`ACCESS_TOOL`]).
+fn access_tool() -> Value {
+    tool(
+        ACCESS_TOOL,
+        "Ask the person for more than you have, as one card on their phone, before trying what would be refused. needs: change_files (change files and run commands in this project; in a read-only task, carry on in Work in this session), internet, local_network (their LAN, tailnet or other computers), whole_computer. reason: a few plain words starting with \"to\". If they decline, don't ask again this turn: finish without it and say what's left.",
+        json!({"needs":{"type":"array","minItems":1,"maxItems":4,"items":{"enum":["change_files","internet","local_network","whole_computer"]}},"reason":{"type":"string","maxLength":MAX_ACCESS_REASON}}),
+        &["needs", "reason"],
+    )
+}
+
 fn tools(computer_use: bool, browser: bool, github: bool) -> Vec<Value> {
     let mut result = vec![tool(
         PERMISSION_TOOL,
@@ -1287,6 +1376,7 @@ fn tools(computer_use: bool, browser: bool, github: bool) -> Vec<Value> {
         &["tool_name", "input"],
     )];
     if !computer_use {
+        result.push(access_tool());
         if browser {
             result.extend(browser_tools());
         }
@@ -1312,7 +1402,7 @@ fn tools(computer_use: bool, browser: bool, github: bool) -> Vec<Value> {
     result.push(tool("pointer_action", "Pointer action in observation image pixels, fenced by observation_revision.", json!({"action":action,"x":{"type":"number","minimum":0},"y":{"type":"number","minimum":0},"observation_revision":{"type":"integer","minimum":0}}), &["action","x","y","observation_revision"]));
     result.push(tool(
         "key_action",
-        "Press the named key combination on the bound target.",
+        "Press a key combination on the bound target, as key names such as [\"ctrl\",\"shift\",\"t\"] or [\"super\",\"Return\"]; \"ctrl+c\" is split into keys. With Ctrl, Alt or Super in the combination, a letter's case is ignored and Shift is pressed only when named: [\"ctrl\",\"W\"] is Ctrl+W.",
         json!({"keys":{"type":"array","items":{"type":"string"},"minItems":1,"maxItems":16}}),
         &["keys"],
     ));
@@ -1323,6 +1413,12 @@ fn tools(computer_use: bool, browser: bool, github: bool) -> Vec<Value> {
         &["text"],
     ));
     result.push(tool("scroll", "Scroll at an observation image pixel position, fenced by observation_revision.", json!({"x":{"type":"number","minimum":0},"y":{"type":"number","minimum":0},"dx":{"type":"number"},"dy":{"type":"number"},"observation_revision":{"type":"integer","minimum":0}}), &["x","y","dx","dy","observation_revision"]));
+    result.push(tool(
+        OPEN_APP_TOOL,
+        "Open an app installed on the computer by its name (\"Firefox\", \"Telegram\") or kind (\"the browser\", \"a terminal\", \"the file manager\"), the way the desktop's launcher would. Prefer it to finding an app through menus. The window appears where the desktop puts new windows: observe_target afterwards.",
+        json!({"name":{"type":"string","minLength":1,"maxLength":200}}),
+        &["name"],
+    ));
     result.push(tool(
         HUMAN_TOOL,
         "Ask the person to perform a step. The broker controls the handoff.",
@@ -1623,6 +1719,70 @@ fn work_tools() -> Vec<Value> {
     ]
 }
 
+/// Agents often write a whole chord as one name, "ctrl+c" or "Ctrl+Shift+T".
+/// Split such names into keys, the form the desktop expects; "+" alone, or
+/// at the end as in "ctrl++", is the plus key itself.
+fn chord_keys(names: &[String]) -> Vec<String> {
+    // Space around a name is trimmed, but a name that is only whitespace is
+    // that key: " " is Space, "\t" Tab and "\n" Return.
+    let key = |name: &str| {
+        let trimmed = name.trim();
+        if trimmed.is_empty() && !name.is_empty() {
+            name.chars().take(1).collect()
+        } else {
+            trimmed.to_owned()
+        }
+    };
+    let mut keys = Vec::new();
+    for name in names {
+        let trimmed = name.trim();
+        if trimmed.len() <= 1 || !trimmed.contains('+') {
+            keys.push(key(name));
+            continue;
+        }
+        // "ctrl++" ends in the plus key, with or without space after it.
+        let (body, plus) = match trimmed.strip_suffix("++") {
+            Some(body) => (body, true),
+            None => (name.as_str(), false),
+        };
+        keys.extend(body.split('+').map(key));
+        if plus {
+            keys.push("+".into());
+        }
+    }
+    keys
+}
+
+#[cfg(test)]
+mod chord_tests {
+    use super::*;
+    #[test]
+    fn chords_written_as_one_name_are_split_into_keys() {
+        let keys = |names: &[&str]| match tool_request("key_action", json!({ "keys": names }), None)
+            .unwrap()
+        {
+            BridgeRequest::Key { keys } => keys,
+            other => panic!("{other:?}"),
+        };
+        assert_eq!(keys(&["ctrl+c"]), ["ctrl", "c"]);
+        assert_eq!(keys(&["Ctrl + Shift + T"]), ["Ctrl", "Shift", "T"]);
+        assert_eq!(keys(&["super", "Return"]), ["super", "Return"]);
+        assert_eq!(keys(&["ctrl", "shift+t"]), ["ctrl", "shift", "t"]);
+        assert_eq!(keys(&["+"]), ["+"]);
+        assert_eq!(keys(&["ctrl++"]), ["ctrl", "+"]);
+        assert_eq!(keys(&["ctrl++ "]), ["ctrl", "+"]);
+        // Whitespace keys are keys: Space, Ctrl+Space, Tab and Return.
+        assert_eq!(keys(&[" "]), [" "]);
+        assert_eq!(keys(&["ctrl", " "]), ["ctrl", " "]);
+        assert_eq!(keys(&["ctrl+ "]), ["ctrl", " "]);
+        assert_eq!(keys(&["\t"]), ["\t"]);
+        assert_eq!(keys(&["\n"]), ["\n"]);
+        // An empty part is still refused, as an empty name always was.
+        assert!(tool_request("key_action", json!({ "keys": ["ctrl+"] }), None).is_err());
+        assert!(tool_request("key_action", json!({ "keys": [] }), None).is_err());
+    }
+}
+
 #[cfg(test)]
 mod isolation_tests {
     use super::*;
@@ -1640,6 +1800,7 @@ mod isolation_tests {
                 "key_action",
                 "type_text",
                 "scroll",
+                "open_app",
                 "request_human"
             ]
         );
@@ -1650,8 +1811,9 @@ mod isolation_tests {
         }
         assert_eq!(
             tools(false, false, false).len(),
-            1 + PERSON_TOOLS.len() + WORK_TOOLS.len()
+            2 + PERSON_TOOLS.len() + WORK_TOOLS.len()
         );
+        assert!(refusal(ACCESS_TOOL, true, true, true).is_some());
         assert!(refusal("browser_open", true, true, true).is_some());
         assert!(refusal("github_pr", true, true, true).is_some());
         assert!(refusal(PERMISSION_TOOL, true, true, true).is_some());
@@ -1802,7 +1964,7 @@ mod isolation_tests {
             .iter()
             .map(|t| t["name"].as_str().unwrap().to_owned())
             .collect();
-        let mut expected = vec![PERMISSION_TOOL];
+        let mut expected = vec![PERMISSION_TOOL, ACCESS_TOOL];
         expected.extend(PERSON_TOOLS);
         expected.extend(WORK_TOOLS);
         assert_eq!(names, expected);
@@ -2249,7 +2411,7 @@ mod isolation_tests {
             .iter()
             .map(|t| t["name"].as_str().unwrap().to_owned())
             .collect();
-        let mut expected = vec![PERMISSION_TOOL];
+        let mut expected = vec![PERMISSION_TOOL, ACCESS_TOOL];
         expected.extend(BROWSER_TOOLS);
         expected.push(HUMAN_TOOL);
         expected.extend(PERSON_TOOLS);
@@ -2296,7 +2458,7 @@ mod isolation_tests {
             .iter()
             .map(|t| t["name"].as_str().unwrap().to_owned())
             .collect();
-        let mut expected = vec![PERMISSION_TOOL];
+        let mut expected = vec![PERMISSION_TOOL, ACCESS_TOOL];
         expected.extend(GITHUB_TOOLS);
         expected.extend(PERSON_TOOLS);
         expected.extend(ASK_TOOLS);
@@ -2314,7 +2476,7 @@ mod isolation_tests {
         // A run with both gets both.
         assert_eq!(
             tools(false, true, true).len(),
-            1 + BROWSER_TOOLS.len() + 1 + GITHUB_TOOLS.len() + PERSON_TOOLS.len() + ASK_TOOLS.len()
+            2 + BROWSER_TOOLS.len() + 1 + GITHUB_TOOLS.len() + PERSON_TOOLS.len() + ASK_TOOLS.len()
         );
         assert_eq!(
             tool_request(
@@ -2415,10 +2577,11 @@ mod isolation_tests {
     /// is in every run's reach, and how to write it comes with
     /// `checklist_read` rather than here. An agent's own items, and that
     /// work it is about to do stays off the checklist, took them to 17.2k
-    /// and 15.75k.
+    /// and 15.75k. Asking for more access with one card (`request_access`)
+    /// took them to 18k and 16.55k.
     #[test]
     fn the_tool_list_stays_within_its_budget() {
-        for (github, budget) in [(false, 17_200), (true, 15_750)] {
+        for (github, budget) in [(false, 18_000), (true, 16_550)] {
             let size = serde_json::to_string(&tools(false, false, github))
                 .unwrap()
                 .len();

@@ -822,7 +822,7 @@ impl LibraryFs for FsLibrary {
 }
 
 fn move_noreplace(source: &Dir, name: &str, dest: &Dir, target: &str) -> Result<(), LibraryError> {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
         rustix::fs::renameat_with(
             source,
@@ -834,7 +834,7 @@ fn move_noreplace(source: &Dir, name: &str, dest: &Dir, target: &str) -> Result<
         .map_err(std::io::Error::from)
         .map_err(io_error)?;
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     {
         // Hard-link publication is atomic and fails on any existing destination.
         // A crash before unlink leaves two recoverable names for the same file.

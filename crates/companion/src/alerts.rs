@@ -26,6 +26,7 @@ use tokio_util::sync::CancellationToken;
 const REFILL: Duration = Duration::from_secs(2);
 
 /// What the phone was last sent.
+#[derive(Default)]
 struct Listed {
     /// The open alerts it holds.
     open: HashSet<AttentionId>,
@@ -33,6 +34,32 @@ struct Listed {
     full: bool,
     /// One left a full list, making room for one left out.
     refill: bool,
+    /// Those of `open` it was told were handled, on whichever device, so
+    /// it is told once.
+    handled: HashSet<AttentionId>,
+}
+
+/// What the phone's `Watch` said it understands: alerts it may hold
+/// quietly, and those about problem reports and sign-ins, which older
+/// phones can't read and aren't sent. A phone that chooses by type
+/// (`types`) keeps the person's choices itself, and says which of its
+/// notifications were handled.
+#[derive(Debug, Clone, Copy)]
+struct Takes {
+    quiet: bool,
+    reports: bool,
+    sign_in: bool,
+    types: bool,
+}
+impl Takes {
+    /// The phone can read an alert of this kind.
+    fn kind(self, alert: &Alert) -> bool {
+        (self.reports || alert.report.is_none()) && (self.sign_in || alert.sign_in.is_none())
+    }
+    /// The phone is sent this alert.
+    fn alert(self, alert: &Alert) -> bool {
+        (self.quiet || !alert.quiet) && self.kind(alert)
+    }
 }
 
 /// Sends the open alerts, then each one raised or resolved. Any connection
@@ -43,20 +70,43 @@ pub(crate) async fn run(
     caller: &Caller,
     shutdown: &CancellationToken,
 ) -> Result<()> {
+    let first: AlertClientFrame = tokio::select! {
+        _ = shutdown.cancelled() => return Ok(()),
+        first = tokio::time::timeout(deps.limits.heartbeat, wire::receive(&mut wire.reader)) => first.map_err(|_| Error::Timeout)??,
+    };
     let AlertClientFrame::Watch {
         showing,
         quiet,
         reports,
-    } = tokio::select! {
-        _ = shutdown.cancelled() => return Ok(()),
-        first = tokio::time::timeout(deps.limits.heartbeat, wire::receive(&mut wire.reader)) => first.map_err(|_| Error::Timeout)??,
+        sign_in,
+        types,
+        handled,
+    } = first
+    else {
+        return Err(invalid("the alerts connection starts with watch"));
     };
     if showing.len() > MAX_SHOWING {
         return Err(invalid("watch names too many alerts as showing"));
     }
+    if handled.len() > MAX_SHOWING {
+        return Err(invalid("watch names too many alerts as handled"));
+    }
+    let takes = Takes {
+        quiet,
+        reports,
+        sign_in,
+        types,
+    };
+    // What the phone handled while it couldn't say so is recorded before
+    // the list is read, so the list already counts it, on this phone and
+    // every other.
+    if !handled.is_empty() {
+        deps.hub.alerts_handled(caller, &handled).await?;
+    }
     // Attached before the open list is read, so nothing falls between them.
     let mut live = deps.hub.subscribe(caller, None).await?.live;
-    let (mut listed, head) = send_open(wire, deps, caller, showing, quiet, reports).await?;
+    let (mut listed, head) =
+        send_open(wire, deps, caller, showing, takes, &Listed::default()).await?;
     let refill = tokio::time::sleep(Duration::ZERO);
     tokio::pin!(refill);
     let mut ping = tokio::time::interval(deps.limits.alert_keepalive);
@@ -84,7 +134,7 @@ pub(crate) async fn run(
             // The list names no alerts the phone shows, so the events after
             // `head` are still read: an answer to one the list leaves out may
             // be among them, journaled before the list was.
-            () = &mut refill, if listed.refill => (listed, _) = send_open(wire, deps, caller, Vec::new(), quiet, reports).await?,
+            () = &mut refill, if listed.refill => (listed, _) = send_open(wire, deps, caller, Vec::new(), takes, &listed).await?,
             _ = ping.tick() => {
                 // Nothing came back since the last ping: the phone is gone.
                 if !answered {
@@ -100,6 +150,14 @@ pub(crate) async fn run(
                     answered = true;
                     wire::send(&mut wire.writer, Message::Pong(bytes), deps.limits.write).await?;
                 }
+                // Notifications this phone handled, which go from every other.
+                message @ Message::Text(_) if takes.types => match wire::parse(message)? {
+                    AlertClientFrame::Handled { attention_ids } if attention_ids.len() <= MAX_SHOWING => {
+                        deps.hub.alerts_handled(caller, &attention_ids).await?;
+                    }
+                    AlertClientFrame::Handled { .. } => return Err(invalid("handled names too many alerts")),
+                    AlertClientFrame::Watch { .. } => return Err(invalid("the alerts connection takes one watch")),
+                },
                 _ => return Err(invalid("the alerts connection takes no requests after watch")),
             },
             received = live.recv() => match received {
@@ -107,11 +165,11 @@ pub(crate) async fn run(
                 // marks those now quiet, or leaves them out for a phone that
                 // can't hold them quietly, and the phone puts them away.
                 Ok(Outbound::Event(envelope)) if envelope.seq > head && matches!(envelope.event, Event::NotificationSettingsChanged {}) => {
-                    (listed, _) = send_open(wire, deps, caller, Vec::new(), quiet, reports).await?;
+                    (listed, _) = send_open(wire, deps, caller, Vec::new(), takes, &listed).await?;
                 }
                 Ok(Outbound::Event(envelope)) if envelope.seq > head => {
                     let refilling = listed.refill;
-                    if let Some(frame) = change(deps, caller, &mut listed, &envelope.event, quiet, reports).await? {
+                    if let Some(frame) = change(deps, caller, &mut listed, &envelope.event, takes).await? {
                         wire::send_json(&mut wire.writer, &frame, deps.limits.write).await?;
                     }
                     if listed.refill && !refilling {
@@ -131,28 +189,33 @@ pub(crate) async fn run(
 
 /// Sends the open list, naming which of `showing` are no longer open. A
 /// phone that can't hold alerts quietly isn't sent those the person turned
-/// off.
+/// off. `before` is what the phone was sent last on this connection, if
+/// anything.
 async fn send_open(
     wire: &mut Wire,
     deps: &ServerDeps,
     caller: &Caller,
     showing: Vec<AttentionId>,
-    quiet: bool,
-    reports: bool,
+    takes: Takes,
+    before: &Listed,
 ) -> Result<(Listed, u64)> {
-    let (mut alerts, head) = deps.hub.open_alerts(caller).await?;
+    let (mut alerts, head) = deps.hub.open_alerts(caller, takes.types).await?;
     let full = alerts.len() >= MAX_OPEN_ALERTS;
-    alerts.retain(|a| (quiet || !a.quiet) && (reports || a.report.is_none()));
+    alerts.retain(|a| takes.alert(a));
+    let open: HashSet<AttentionId> = alerts.iter().map(|a| a.attention_id).collect();
     let listed = Listed {
-        open: alerts.iter().map(|a| a.attention_id).collect(),
+        handled: before.handled.intersection(&open).copied().collect(),
+        open,
         full,
         refill: false,
     };
-    let gone = gone(deps, caller, &listed, showing, reports).await?;
+    let gone = gone(deps, caller, &listed, showing, takes).await?;
     let frame = AlertServerFrame::Open {
         alerts,
         now: deps.clock.now(),
         gone,
+        // Only a phone that chooses by type says what it handled.
+        handled: takes.types,
     };
     wire::send_json(&mut wire.writer, &frame, deps.limits.write).await?;
     Ok((listed, head))
@@ -167,7 +230,7 @@ async fn gone(
     caller: &Caller,
     listed: &Listed,
     showing: Vec<AttentionId>,
-    reports: bool,
+    takes: Takes,
 ) -> Result<Vec<AttentionId>> {
     let mut asked = HashSet::new();
     let mut gone = Vec::new();
@@ -178,9 +241,9 @@ async fn gone(
         if listed.full
             && deps
                 .hub
-                .alert(caller, attention_id)
+                .alert(caller, attention_id, takes.types)
                 .await?
-                .is_some_and(|a| reports || a.report.is_none())
+                .is_some_and(|a| takes.kind(&a))
         {
             continue;
         }
@@ -196,12 +259,15 @@ async fn change(
     caller: &Caller,
     listed: &mut Listed,
     event: &Event,
-    quiet: bool,
-    reports: bool,
+    takes: Takes,
 ) -> Result<Option<AlertServerFrame>> {
-    let (attention_id, resolved) = match event {
-        Event::AttentionUpserted { item } => (item.attention_id, item.resolved_at.is_some()),
-        Event::AttentionResolved { attention_id } => (*attention_id, true),
+    let (attention_id, resolved, handled) = match event {
+        Event::AttentionUpserted { item } => (
+            item.attention_id,
+            item.resolved_at.is_some(),
+            item.alert_handled_at.is_some(),
+        ),
+        Event::AttentionResolved { attention_id } => (*attention_id, true, false),
         _ => return Ok(None),
     };
     if resolved {
@@ -214,13 +280,15 @@ async fn change(
         );
     }
     if listed.open.contains(&attention_id) {
-        return Ok(None);
+        // Handled on one of the person's devices, the device that did so
+        // included: the notification goes from this one too. An older phone
+        // can't be told, and keeps it until the item closes.
+        let tell = handled && takes.types && listed.handled.insert(attention_id);
+        return Ok(tell.then_some(AlertServerFrame::Handled { attention_id }));
     }
-    let alert: Option<Alert> = deps.hub.alert(caller, attention_id).await?;
-    Ok(alert
-        .filter(|a| (quiet || !a.quiet) && (reports || a.report.is_none()))
-        .map(|alert| {
-            listed.open.insert(attention_id);
-            AlertServerFrame::Raised { alert }
-        }))
+    let alert: Option<Alert> = deps.hub.alert(caller, attention_id, takes.types).await?;
+    Ok(alert.filter(|a| takes.alert(a)).map(|alert| {
+        listed.open.insert(attention_id);
+        AlertServerFrame::Raised { alert }
+    }))
 }

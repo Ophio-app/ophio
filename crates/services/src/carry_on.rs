@@ -101,7 +101,10 @@ impl CompanionHub {
             let mut due = Vec::new();
             for run in &live {
                 for a in r.run_pending_approvals(*run)? {
-                    if carries_on(a.kind) && now.0.saturating_sub(a.requested_at.0) >= after {
+                    if carries_on(a.kind)
+                        && a.access_request.is_none()
+                        && now.0.saturating_sub(a.requested_at.0) >= after
+                    {
                         due.push(a);
                     }
                 }

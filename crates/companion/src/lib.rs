@@ -1,6 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
 //! TLS transport and local owner interface for the companion.
 
+/// Prints a line to standard output and carries on if nothing reads it any
+/// more, as when `ophio update X | head -3` has its lines: an update or an
+/// install must never stop halfway because its reader went away. `println!`
+/// panics then instead.
+macro_rules! say {
+    () => {
+        $crate::say_line(format_args!(""))
+    };
+    ($($arg:tt)*) => {
+        $crate::say_line(format_args!($($arg)*))
+    };
+}
+
+#[doc(hidden)]
+pub fn say_line(line: std::fmt::Arguments<'_>) {
+    use std::io::Write;
+    let _ = writeln!(std::io::stdout().lock(), "{line}");
+}
+
 pub mod agent_updates;
 mod alerts;
 pub mod cli;

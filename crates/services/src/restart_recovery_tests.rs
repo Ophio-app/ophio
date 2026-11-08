@@ -21,6 +21,7 @@ async fn pending_bridge_approval_expires_on_restart_with_its_flag_intact() {
                 browser: false,
                 github: false,
                 checklist_answers: false,
+                read_only: false,
             },
             BridgeRequest::RequestHuman {
                 reason: "Pending at process exit".into(),
@@ -110,6 +111,7 @@ async fn bridge_flag_routes_both_requests_and_does_not_capture_native_approvals(
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     };
     let mut bridge_ids = Vec::new();
     for request in [
@@ -173,6 +175,8 @@ async fn bridge_flag_routes_both_requests_and_does_not_capture_native_approvals(
         .emit(
             run,
             ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "native-approval".into(),
                 kind: ApprovalKind::Tool,
                 title: "Native".into(),

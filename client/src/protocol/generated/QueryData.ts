@@ -40,6 +40,7 @@ import type { ObservedSessions } from "./ObservedSessions";
 import type { PendingChannelLink } from "./PendingChannelLink";
 import type { PreviewEndpoint } from "./PreviewEndpoint";
 import type { ProjectFolderListing } from "./ProjectFolderListing";
+import type { ProjectId } from "./ProjectId";
 import type { ProjectStageHistory } from "./ProjectStageHistory";
 import type { ProtocolError } from "./ProtocolError";
 import type { QueueView } from "./QueueView";
@@ -71,7 +72,7 @@ stage?: CommandStage, result?: CommandResult, error?: ProtocolError, } | { "kind
 /**
  * More were kept than are listed.
  */
-truncated: boolean, } | { "kind": "disabled_in_ophio", items: Array<DisabledItem>, } | { "kind": "library_trash_read", file: FileContent, } | { "kind": "reusable_draft", text: string, } | { "kind": "upload_destination", check: UploadDestinationCheck, } | { "kind": "task_artifacts", history: TaskArtifactHistory, } | { "kind": "project_shown", history: TaskArtifactHistory, } | { "kind": "agent_updates", view: AgentUpdatesView, } | { "kind": "agent_preferences", view: AgentPreferences, } | { "kind": "notification_settings", view: NotificationSettings, } | { "kind": "reports", view: ReportsView, } | { "kind": "report", detail: ReportDetail | null, } | { "kind": "inbox_report_code", code: InboxReportCode | null, } | { "kind": "report_preview", part: ComputerPart, } | { "kind": "voice", view: VoiceView, } | { "kind": "windows", catalog: WindowCatalog, } | { "kind": "observed_sessions", view: ObservedSessions, } | { "kind": "reusable_formats", native_version: string | null, formats: Array<ReusableFormat>, } | { "kind": "library_recovery_list", items: Array<LibraryRecoveryItem>, } | { "kind": "library_recovery_read", recovery: LibraryRecovery, } | { "kind": "project_stages", history: ProjectStageHistory, } | { "kind": "task_history", records: TaskRecords, 
+truncated: boolean, } | { "kind": "disabled_in_ophio", items: Array<DisabledItem>, } | { "kind": "library_trash_read", file: FileContent, } | { "kind": "reusable_draft", text: string, } | { "kind": "upload_destination", check: UploadDestinationCheck, } | { "kind": "task_artifacts", history: TaskArtifactHistory, } | { "kind": "project_shown", history: TaskArtifactHistory, } | { "kind": "agent_updates", view: AgentUpdatesView, } | { "kind": "agent_preferences", view: AgentPreferences, } | { "kind": "notification_settings", view: NotificationSettings, } | { "kind": "reports", view: ReportsView, } | { "kind": "report", detail: ReportDetail | null, } | { "kind": "inbox_report_code", code: InboxReportCode | null, } | { "kind": "report_task_project", project_id: ProjectId | null, } | { "kind": "report_preview", part: ComputerPart, } | { "kind": "voice", view: VoiceView, } | { "kind": "windows", catalog: WindowCatalog, } | { "kind": "observed_sessions", view: ObservedSessions, } | { "kind": "reusable_formats", native_version: string | null, formats: Array<ReusableFormat>, } | { "kind": "library_recovery_list", items: Array<LibraryRecoveryItem>, } | { "kind": "library_recovery_read", recovery: LibraryRecovery, } | { "kind": "project_stages", history: ProjectStageHistory, } | { "kind": "task_history", records: TaskRecords, 
 /**
  * Where the next page begins; absent after the oldest task.
  */

@@ -14,8 +14,8 @@ import { useId, useState } from "react";
 import { CircleDashed, CircleSlash, GitMerge, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useHost } from "../../app/context";
 import {
-  MAX_ROUNDS, SET_ASIDE_WORDS, confirmed, counted, dispositionWords, findingWhere, numberWord, reviewResult, reviewerReasons, rulesWords, uncheckedReasons,
-  setAside, shortCommit, taskReviewInput, unchecked, verdictWords, cap, areaWords, type Fact, type ReviewResult,
+  SET_ASIDE_WORDS, confirmed, counted, dispositionWords, findingWhere, numberWord, reviewResult, reviewerReasons, rulesWords, uncheckedReasons,
+  setAside, shortCommit, taskReviewInput, unchecked, useSensitiveRounds, verdictWords, cap, areaWords, type Fact, type ReviewResult,
 } from "../../app/review";
 import { Button } from "../../design/Button";
 import { Pill } from "../../design/Chip";
@@ -27,9 +27,9 @@ import { agentLabel } from "../talk/intent";
 import "./github.css";
 
 /** A task's pull request review, worked out once for the card and the merge button. */
-export function taskReviewOf(task: Task | null | undefined, pr?: PrSummary | null): ReviewResult | null {
+export function taskReviewOf(task: Task | null | undefined, pr?: PrSummary | null, sensitiveRounds = false): ReviewResult | null {
   if (!task) return null;
-  const input = taskReviewInput(task, pr);
+  const input = taskReviewInput(task, pr, sensitiveRounds);
   return input ? reviewResult(input) : null;
 }
 
@@ -45,9 +45,10 @@ const FACTS: { key: "review" | "checks" | "evidence" | "approval"; label: string
  * recorded no review and no need for approval.
  */
 export function ReviewResultCard({ task, pr }: { task: Task; pr?: PrSummary | null }) {
-  const result = taskReviewOf(task, pr);
+  const result = taskReviewOf(task, pr, useSensitiveRounds());
   const github = task.github;
   const heading = useId();
+  const checker = useAgent(github?.checked_by ?? github?.review?.reviewer);
   if (!result || !github) return null;
   const review = github.review ?? null;
   const escalated = result.needsYou === "escalated" ? review?.escalated?.trim() : null;
@@ -56,13 +57,19 @@ export function ReviewResultCard({ task, pr }: { task: Task; pr?: PrSummary | nu
     <section className={`review-result review-result--${tone}`} aria-labelledby={heading}>
       <h3 id={heading} className="review-result__eyebrow">Review result</h3>
       <p className="review-result__headline">{result.headline.join(" ")}</p>
+      {result.clear && (
+        <p className="review-result__verdict">
+          <ShieldCheck size={16} aria-hidden />
+          <span>{`${checker ? `Checked by ${checker}` : "Checked"} in ${counted(result.rounds, "round")}, nothing left to fix.`}</span>
+        </p>
+      )}
       {escalated && (
         <Notice tone="warn" report={false} icon={ShieldAlert} title="Why it needs you">{escalated}</Notice>
       )}
       <dl className="review-facts">
         {FACTS.map(({ key, label }) => <FactRow key={key} label={label} fact={result[key]} />)}
       </dl>
-      <ReviewDetails review={review} approval={github.approval ?? null} head={pr?.head ?? github.pr?.head ?? null} />
+      <ReviewDetails review={review} approval={github.approval ?? null} head={pr?.head ?? github.pr?.head ?? null} maxRounds={result.maxRounds} />
     </section>
   );
 }
@@ -84,7 +91,7 @@ function useAgent(choice: LaunchChoice | null | undefined): string | null {
 }
 
 /** Everything behind the headline, folded away until asked for. */
-function ReviewDetails({ review, approval, head }: { review: PrReview | null; approval: ApprovalNeed | null; head: string | null }) {
+function ReviewDetails({ review, approval, head, maxRounds }: { review: PrReview | null; approval: ApprovalNeed | null; head: string | null; maxRounds: number }) {
   const reviewer = useAgent(review?.reviewer);
   const verifier = useAgent(review?.verifier);
   const findings = review?.findings ?? [];
@@ -117,7 +124,7 @@ function ReviewDetails({ review, approval, head }: { review: PrReview | null; ap
             {covered ? <li>It reviewed the change up to commit {shortCommit(covered)}.</li> : <li>No round of review has finished.</li>}
             {covered && head && head !== covered && <li>The pull request has newer commits, up to {shortCommit(head)}. {review?.reviewing_head === head ? "A review of them is under way." : "They haven’t been reviewed."}</li>}
             {covered && head === covered && <li>That is the pull request’s newest commit.</li>}
-            <li>{cap(counted(rounds, "round"))} of review {rounds === 1 ? "has" : "have"} been used, of at most {numberWord(MAX_ROUNDS)}.</li>
+            <li>{cap(counted(rounds, "round"))} of review {rounds === 1 ? "has" : "have"} been used, of at most {numberWord(maxRounds)}.</li>
             {(review?.not_run ?? []).map((n) => <li key={n}>This check was not run: {n.replace(/[.]+$/, "")}.</li>)}
           </ul>
         </div>

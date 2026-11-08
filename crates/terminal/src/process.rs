@@ -271,16 +271,25 @@ impl ProcessTree {
     }
 
     pub(crate) fn kill(&self) -> io::Result<()> {
+        use nix::sys::signal::kill;
         use nix::{
             errno::Errno,
-            sys::signal::{Signal, kill, killpg},
+            sys::signal::{Signal, killpg},
             unistd::Pid,
         };
-        #[cfg(target_os = "linux")]
         {
             // Job-control shells create separate process groups in one session.
             // Include descendants that have created their own session as well.
             let mut processes = Vec::new();
+            #[cfg(target_os = "macos")]
+            for pid in platform_macos::process::all()? {
+                if let Some(parent) = platform_macos::process::parent(pid)
+                    && let Ok(session) = nix::unistd::getsid(Some(Pid::from_raw(pid)))
+                {
+                    processes.push((pid, parent.cast_signed(), session.as_raw()));
+                }
+            }
+            #[cfg(target_os = "linux")]
             for entry in std::fs::read_dir("/proc")?.flatten() {
                 let Ok(pid) = entry.file_name().to_string_lossy().parse::<i32>() else {
                     continue;
@@ -320,6 +329,9 @@ impl ProcessTree {
         }
         match killpg(Pid::from_raw(self.pid), Signal::SIGKILL) {
             Ok(()) | Err(Errno::ESRCH) => Ok(()),
+            // A Mac refuses to signal a group of nothing but zombies.
+            #[cfg(target_os = "macos")]
+            Err(Errno::EPERM) => Ok(()),
             Err(e) => Err(e.into()),
         }
     }
@@ -333,6 +345,7 @@ pub(crate) use windows::ProcessTree;
 
 #[cfg(all(test, unix))]
 mod tests {
+    #[cfg(target_os = "linux")]
     use super::*;
     use std::io::Read;
 

@@ -26,12 +26,16 @@ async fn in_run_subscription_hides_inbox_attention_in_live_and_paged_history() {
         topic: None,
         quiet: false,
         report_id: Some(ReportId::new()),
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
     };
     let ordinary = AttentionItem {
         attention_id: AttentionId::new(),
         kind: AttentionKind::Failure,
         task_id: Some(TaskId::new()),
         report_id: None,
+        account_id: None,
         ..item.clone()
     };
     let start = f.hub.journal_head();
@@ -87,6 +91,7 @@ async fn discovery_publishes_control_before_the_first_command() {
             &caller,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -161,6 +166,7 @@ async fn geometry_handover_publishes_revision_and_refuses_only_old_coordinates()
             &caller,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -214,6 +220,7 @@ async fn private_ready_requires_native_confirmation_and_fences_old_binding() {
             browser: false,
             github: false,
             checklist_answers: false,
+            read_only: false,
         };
         let before = f
             .hub
@@ -460,6 +467,7 @@ async fn lock_fences_admitted_and_late_input_and_publishes_why() {
                 &caller,
                 Query::Snapshot {
                     reads_withheld: None,
+                    account_items: false,
                 },
             )
             .await

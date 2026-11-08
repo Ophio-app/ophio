@@ -429,21 +429,44 @@ pub trait Hub: Send + Sync + 'static {
     /// Every alert open for `caller`, oldest first and at most
     /// [`protocol::alerts::MAX_OPEN_ALERTS`] of the newest, with the journal
     /// head they were read at. A live event with a higher seq is newer.
+    ///
+    /// `types` is the phone's word that it chooses by each alert's type
+    /// itself. The hub marks an alert quiet the same for every phone: what
+    /// the person put away on the computer (a muted project, or a project's
+    /// Off for a type) is quiet for both, so a phone that chooses by type
+    /// puts away what it already shows.
     async fn open_alerts(
         &self,
         _caller: &Caller,
+        _types: bool,
     ) -> Result<(Vec<protocol::alerts::Alert>, u64), ProtocolError> {
         Err(ProtocolError::new(
             protocol::ErrorCode::Unsupported,
             "Background alerts are unavailable",
         ))
     }
-    /// One attention item as an alert, when it is open and `caller` may see it.
+    /// One attention item as an alert, when it is open and `caller` may see
+    /// it, marked quiet as for [`open_alerts`](Self::open_alerts).
     async fn alert(
         &self,
         _caller: &Caller,
         _attention_id: protocol::AttentionId,
+        _types: bool,
     ) -> Result<Option<protocol::alerts::Alert>, ProtocolError> {
+        Err(ProtocolError::new(
+            protocol::ErrorCode::Unsupported,
+            "Background alerts are unavailable",
+        ))
+    }
+    /// One of `caller`'s devices handled these alerts' notifications. Each
+    /// open alert `caller` could be sent is marked handled, at most
+    /// [`protocol::alerts::MAX_SHOWING`], and published as changed; the
+    /// rest are passed over.
+    async fn alerts_handled(
+        &self,
+        _caller: &Caller,
+        _attention_ids: &[protocol::AttentionId],
+    ) -> Result<(), ProtocolError> {
         Err(ProtocolError::new(
             protocol::ErrorCode::Unsupported,
             "Background alerts are unavailable",

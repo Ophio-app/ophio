@@ -18,6 +18,8 @@ import { pendingQueueItems, useQueue } from "../work/useQueue";
 import { agentLabel, modeSupport, writerHold, writerHoldText } from "./intent";
 import { LaunchLine } from "./LaunchLine";
 import { modeLabel } from "./ModePicker";
+import { governedByAccess } from "./mayDo";
+import { useMayDo } from "./MayDoLine";
 import { confirmed } from "./send";
 import { startSummary } from "./startSummary";
 import { bundleSummary } from "./timeline";
@@ -56,6 +58,8 @@ function QueuedRequest({ route, task, item, queue, reload }: Props & { task: Tas
   const run = useHost((s) => task.current_run ? s.runs[task.current_run] : undefined);
   const held = useHost((s) => writerHold(queue.writer, s), shallowEqual);
   const openTask = useOpenTask();
+  // A chat, or a task a chat became, is what its access lets it do, not a mode.
+  const may = useMayDo(task);
   const signature = requestSignature(task, item);
   const [reviewed, setReviewed] = useState({ task: task.revision, queue: queue.revision, signature });
   const [text, setText, saved] = useLocalText(`${profile.profileId}.queue-prompt.${item.item_id}`, item.request?.prompt ?? "");
@@ -166,8 +170,8 @@ function QueuedRequest({ route, task, item, queue, reload }: Props & { task: Tas
       {edited && <Button disabled={!online || !permitted || changed || !text.trim() || !!unknown || starting} pending={pending === "save"} onClick={() => void submit(true)}>Save prompt changes</Button>}
       {item.request?.bundle && <p>{bundleSummary(item.request.bundle)} · saved with this request</p>}
     </Section>
-    <Section title="Where and who"><p className="review__strong">{project?.name} · {profile.name}</p><p className="review__mono">{project?.host_path}</p><p>{agentLabel(harnesses, { harness: task.harness, model: task.model, effort: task.effort })}</p><p>Mode: {modeLabel(task.mode)}</p>
-      <LaunchLine harness={task.harness} policy={task.launch_policy} mode={task.mode ?? "work"} /></Section>
+    <Section title="Where and who"><p className="review__strong">{project?.name} · {profile.name}</p><p className="review__mono">{project?.host_path}</p><p>{agentLabel(harnesses, { harness: task.harness, model: task.model, effort: task.effort })}</p>{governedByAccess(task) ? <p>{may}</p> : <p>Mode: {modeLabel(task.mode)}</p>}
+      {!task.conversation && <LaunchLine harness={task.harness} policy={task.launch_policy} mode={task.access ? "work" : task.mode ?? "work"} />}</Section>
     {task.mission && <Section title="Requested scope"><p>{task.mission.goal}</p>
       {task.mission.bounds.map((bound, i) => <p key={i}>{bound.text} · {bound.enforcement === "enforced" ? "Enforced by the computer" : "Requested instruction"}</p>)}
       {task.mission.completion_checks.length > 0 && <><h3>Requested checks</h3><ul>{task.mission.completion_checks.map((check, i) => <li key={i}>{check}</li>)}</ul></>}

@@ -5,7 +5,7 @@ use ports::desktop::DesktopBackend;
 use protocol::control::{InputAction, PointerButton, TargetPoint};
 use std::{
     fs::File,
-    io::Read,
+    io::{Read, Write},
     os::unix::{fs::FileExt, net::UnixListener},
     sync::{
         Arc, Mutex,
@@ -30,7 +30,7 @@ use wayland_protocols_wlr::{
 };
 use wayland_server::{
     Client, DataInit, Dispatch, Display, DisplayHandle, GlobalDispatch, New, Resource,
-    protocol::{wl_buffer, wl_output, wl_seat, wl_shm, wl_shm_pool},
+    protocol::{wl_buffer, wl_keyboard, wl_output, wl_seat, wl_shm, wl_shm_pool},
 };
 #[derive(Default)]
 struct Recorded {
@@ -39,9 +39,24 @@ struct Recorded {
     keys: Vec<(u32, u32)>,
     keymaps: Vec<String>,
     captures: Vec<u8>,
+    /// Virtual keyboards and pointers created and destroyed.
+    keyboards: (usize, usize),
+    pointers: (usize, usize),
+    modifiers: Vec<u32>,
+    /// Keymaps (as text) and keys (evdev code, state), in arrival order.
+    log: Vec<Logged>,
+    /// Virtual keyboards that have been given a keymap.
+    keymapped: std::collections::HashSet<wayland_server::backend::ObjectId>,
+}
+#[derive(Debug, Clone)]
+enum Logged {
+    Keymap(String),
+    Key { pressed: bool },
 }
 struct State {
     has_keyboard: bool,
+    /// The seat keyboard's layout, sent to every wl_keyboard.
+    layout: String,
     events: Arc<Mutex<Recorded>>,
     tone: Arc<AtomicU8>,
     still: Arc<AtomicBool>,
@@ -65,6 +80,14 @@ impl Server {
         Self::with_options(ext, true)
     }
     fn with_options(ext: bool, has_keyboard: bool) -> Self {
+        Self::with_layout(ext, has_keyboard, "us")
+    }
+    fn with_layout(ext: bool, has_keyboard: bool, layout: &str) -> Self {
+        let context = xkbcommon::xkb::Context::new(xkbcommon::xkb::CONTEXT_NO_FLAGS);
+        let layout =
+            xkbcommon::xkb::Keymap::new_from_names(&context, "evdev", "pc105", layout, "", None, 0)
+                .unwrap()
+                .get_as_string(xkbcommon::xkb::KEYMAP_FORMAT_TEXT_V1);
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("wayland-test");
         let listener = UnixListener::bind(&path).unwrap();
@@ -76,6 +99,7 @@ impl Server {
         let done = stop.clone();
         let mut state = State {
             has_keyboard,
+            layout,
             events: events.clone(),
             tone: tone.clone(),
             still: still.clone(),
@@ -95,6 +119,7 @@ impl Server {
             }
             handle.create_global::<State, ZwlrVirtualPointerManagerV1, _>(2, ());
             handle.create_global::<State, ZwpVirtualKeyboardManagerV1, _>(1, ());
+            handle.create_global::<State, ZxdgOutputManagerV1, _>(3, ());
             while !done.load(Ordering::Relaxed) {
                 while let Ok((socket, _)) = listener.accept() {
                     display
@@ -331,7 +356,7 @@ impl Dispatch<ZwlrScreencopyFrameV1, ()> for State {
 }
 impl Dispatch<ZwlrVirtualPointerManagerV1, ()> for State {
     fn request(
-        _: &mut Self,
+        _state: &mut Self,
         _: &Client,
         _: &ZwlrVirtualPointerManagerV1,
         request: zwlr_virtual_pointer_manager_v1::Request,
@@ -341,6 +366,7 @@ impl Dispatch<ZwlrVirtualPointerManagerV1, ()> for State {
     ) {
         if let zwlr_virtual_pointer_manager_v1::Request::CreateVirtualPointer { id, .. } = request {
             data.init(id, ());
+            _state.events.lock().unwrap().pointers.0 += 1;
         }
     }
 }
@@ -366,13 +392,14 @@ impl Dispatch<ZwlrVirtualPointerV1, ()> for State {
             zwlr_virtual_pointer_v1::Request::Button { button, state, .. } => {
                 events.buttons.push((button, state.into()))
             }
+            zwlr_virtual_pointer_v1::Request::Destroy => events.pointers.1 += 1,
             _ => {}
         }
     }
 }
 impl Dispatch<ZwpVirtualKeyboardManagerV1, ()> for State {
     fn request(
-        _: &mut Self,
+        _state: &mut Self,
         _: &Client,
         _: &ZwpVirtualKeyboardManagerV1,
         request: zwp_virtual_keyboard_manager_v1::Request,
@@ -383,6 +410,7 @@ impl Dispatch<ZwpVirtualKeyboardManagerV1, ()> for State {
         if let zwp_virtual_keyboard_manager_v1::Request::CreateVirtualKeyboard { id, .. } = request
         {
             data.init(id, ());
+            _state.events.lock().unwrap().keyboards.0 += 1;
         }
     }
 }
@@ -390,16 +418,29 @@ impl Dispatch<ZwpVirtualKeyboardV1, ()> for State {
     fn request(
         state: &mut Self,
         _: &Client,
-        _: &ZwpVirtualKeyboardV1,
+        keyboard: &ZwpVirtualKeyboardV1,
         request: zwp_virtual_keyboard_v1::Request,
         _: &(),
         _: &DisplayHandle,
         _: &mut DataInit<'_, Self>,
     ) {
         let mut events = state.events.lock().unwrap();
+        // As wlroots does: keys or modifiers before a keymap end the client.
+        if matches!(
+            request,
+            zwp_virtual_keyboard_v1::Request::Key { .. }
+                | zwp_virtual_keyboard_v1::Request::Modifiers { .. }
+        ) && !events.keymapped.contains(&keyboard.id())
+        {
+            keyboard.post_error(zwp_virtual_keyboard_v1::Error::NoKeymap, "no keymap");
+            return;
+        }
         match request {
             zwp_virtual_keyboard_v1::Request::Key { key, state, .. } => {
-                events.keys.push((key, state))
+                events.keys.push((key, state));
+                events.log.push(Logged::Key {
+                    pressed: state == 1,
+                });
             }
             zwp_virtual_keyboard_v1::Request::Keymap { fd, size, .. } => {
                 let mut text = String::new();
@@ -407,8 +448,14 @@ impl Dispatch<ZwpVirtualKeyboardV1, ()> for State {
                     .take(size.into())
                     .read_to_string(&mut text)
                     .unwrap();
+                events.keymapped.insert(keyboard.id());
+                events.log.push(Logged::Keymap(text.clone()));
                 events.keymaps.push(text);
             }
+            zwp_virtual_keyboard_v1::Request::Modifiers { mods_depressed, .. } => {
+                events.modifiers.push(mods_depressed)
+            }
+            zwp_virtual_keyboard_v1::Request::Destroy => events.keyboards.1 += 1,
             _ => {}
         }
     }
@@ -430,7 +477,31 @@ macro_rules! noop {
     };
 }
 noop!(wl_output::WlOutput, u32);
-noop!(wl_seat::WlSeat, ());
+noop!(wl_keyboard::WlKeyboard, ());
+impl Dispatch<wl_seat::WlSeat, ()> for State {
+    fn request(
+        state: &mut Self,
+        _: &Client,
+        _: &wl_seat::WlSeat,
+        request: wl_seat::Request,
+        _: &(),
+        _: &DisplayHandle,
+        data: &mut DataInit<'_, Self>,
+    ) {
+        if let wl_seat::Request::GetKeyboard { id } = request {
+            assert!(state.has_keyboard, "get_keyboard on a seat without one");
+            let keyboard = data.init(id, ());
+            let mut file = tempfile::tempfile_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+            file.write_all(state.layout.as_bytes()).unwrap();
+            file.write_all(b"\0").unwrap();
+            keyboard.keymap(
+                wl_keyboard::KeymapFormat::XkbV1,
+                std::os::fd::AsFd::as_fd(&file),
+                state.layout.len() as u32 + 1,
+            );
+        }
+    }
+}
 noop!(wl_buffer::WlBuffer, Buffer);
 
 #[tokio::test]
@@ -497,7 +568,8 @@ async fn real_protocol_pixels_damage_input_and_hotplug() {
         .unwrap();
     {
         let recorded = server.events.lock().unwrap();
-        assert_eq!(recorded.motion[0], (8064, 3968, 8192, 4096));
+        // The last pixel, 1/256 px inside it.
+        assert_eq!(recorded.motion[0], (8065, 3969, 8192, 4096));
         assert_eq!(recorded.buttons, [(0x110, 1), (0x110, 0)]);
         assert_eq!(recorded.keys.len(), 6);
         let context = xkbcommon::xkb::Context::new(xkbcommon::xkb::CONTEXT_NO_FLAGS);
@@ -707,4 +779,202 @@ async fn a_headless_seat_without_a_keyboard_never_receives_get_keyboard() {
     let driver = WaylandDriver::new(server.path.clone());
     assert!(driver.text_keysyms().await.unwrap().is_empty());
     assert!(server.events.lock().unwrap().keys.is_empty());
+}
+
+async fn inject(
+    sink: &mut Box<dyn ports::desktop::InputSink>,
+    target: &protocol::control::ControlTarget,
+    action: InputAction,
+) {
+    sink.inject(&action, &target.geometry).await.unwrap();
+}
+
+#[tokio::test]
+async fn keys_arrive_on_the_seat_layouts_own_keycodes_and_devices_leave_with_control() {
+    // The seat's keyboard is German: z and y trade places there.
+    let server = Server::with_layout(false, true, "de");
+    let desktop = server.desktop();
+    let target = desktop.targets().await.unwrap().remove(0);
+    let mut sink = desktop.input_sink(target.target_id).await.unwrap();
+    // Opening the sink adds nothing to the desktop yet.
+    assert_eq!(server.events.lock().unwrap().keyboards, (0, 0));
+    let chord = |keys: &[&str]| InputAction::KeyChord {
+        keys: keys.iter().map(|k| k.to_string()).collect(),
+    };
+    inject(&mut sink, &target, chord(&["super", "Enter"])).await;
+    inject(&mut sink, &target, chord(&["ctrl", "z"])).await;
+    inject(&mut sink, &target, InputAction::Text { text: "y".into() }).await;
+    {
+        let recorded = server.events.lock().unwrap();
+        // evdev codes: Super 125 and Enter 28, never 0 or Escape's 1.
+        assert_eq!(recorded.keys[..4], [(125, 1), (28, 1), (28, 0), (125, 0)]);
+        // Ctrl 29, and z on the German layout's own key, evdev 21.
+        assert_eq!(recorded.keys[4..8], [(29, 1), (21, 1), (21, 0), (29, 0)]);
+        assert_eq!(recorded.keys[8..], [(44, 1), (44, 0)]);
+        // Super held reaches the compositor as Mod4 before Enter is pressed.
+        assert_eq!(recorded.modifiers[1], 1 << 6);
+        assert_eq!(*recorded.modifiers.last().unwrap(), 0);
+        assert_eq!(recorded.keymaps.len(), 1, "one keymap for the session");
+        assert!(
+            recorded.keymaps[0].contains("German"),
+            "the seat layout is uploaded"
+        );
+        assert_eq!(recorded.keyboards, (1, 0));
+    }
+    // Control ends: the virtual keyboard leaves the seat.
+    sink.release_all().await.unwrap();
+    assert_eq!(server.events.lock().unwrap().keyboards, (1, 1));
+    inject(
+        &mut sink,
+        &target,
+        InputAction::PointerMove {
+            to: TargetPoint { x: 0.5, y: 0.5 },
+        },
+    )
+    .await;
+    inject(&mut sink, &target, chord(&["Escape"])).await;
+    {
+        let recorded = server.events.lock().unwrap();
+        assert_eq!(recorded.keyboards, (2, 1));
+        assert_eq!(recorded.pointers, (1, 0));
+        assert_eq!(recorded.keys[recorded.keys.len() - 2..], [(1, 1), (1, 0)]);
+    }
+    drop(sink);
+    for _ in 0..200 {
+        if server.events.lock().unwrap().pointers.1 == 1 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    let recorded = server.events.lock().unwrap();
+    assert_eq!((recorded.keyboards, recorded.pointers), ((2, 2), (1, 1)));
+}
+
+/// A keymap that could not be written must leave no keyboard without one,
+/// and no model that thinks the compositor has a keymap it never got. Runs
+/// in a child process, which alone may change where temporary files go.
+#[test]
+fn a_keymap_that_cannot_be_written_leaves_input_working() {
+    let status = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "keymap_write_failure_child",
+            "--ignored",
+            "--test-threads=1",
+        ])
+        .env("OPHIO_KEYMAP_FAILURE_CHILD", "1")
+        .stdout(std::process::Stdio::null())
+        .status()
+        .unwrap();
+    assert!(status.success());
+}
+#[tokio::test]
+#[ignore = "run by a_keymap_that_cannot_be_written_leaves_input_working"]
+async fn keymap_write_failure_child() {
+    if std::env::var_os("OPHIO_KEYMAP_FAILURE_CHILD").is_none() {
+        return;
+    }
+    #[allow(unsafe_code)]
+    fn temporary_files(working: bool) {
+        let dir = if working {
+            env!("CARGO_TARGET_TMPDIR")
+        } else {
+            "/nonexistent/ophio-test"
+        };
+        // SAFETY: this process runs this one test on one thread.
+        unsafe { std::env::set_var("TMPDIR", dir) };
+    }
+    let server = Server::new();
+    let desktop = server.desktop();
+    let target = desktop.targets().await.unwrap().remove(0);
+    let mut sink = desktop.input_sink(target.target_id).await.unwrap();
+    let chord = InputAction::KeyChord {
+        keys: vec!["ctrl".into()],
+    };
+    // The first keyboard's keymap cannot be written.
+    temporary_files(false);
+    assert!(sink.inject(&chord, &target.geometry).await.is_err());
+    temporary_files(true);
+    inject(&mut sink, &target, chord).await;
+    // A new character's keymap cannot be written either.
+    temporary_files(false);
+    let text = InputAction::Text { text: "é".into() };
+    assert!(sink.inject(&text, &target.geometry).await.is_err());
+    temporary_files(true);
+    inject(&mut sink, &target, text).await;
+    let log = server.events.lock().unwrap().log.clone();
+    // The é key went down after a keymap that has é.
+    let pressed = log
+        .iter()
+        .rposition(|e| matches!(e, Logged::Key { pressed: true }))
+        .unwrap();
+    let keymap = log[..pressed]
+        .iter()
+        .rev()
+        .find_map(|e| match e {
+            Logged::Keymap(text) => Some(text),
+            _ => None,
+        })
+        .unwrap();
+    assert!(
+        keymap.contains("0xe9"),
+        "é's key was pressed without its keymap"
+    );
+}
+
+use wayland_protocols::xdg::xdg_output::zv1::server::{
+    zxdg_output_manager_v1::{self, ZxdgOutputManagerV1},
+    zxdg_output_v1::ZxdgOutputV1,
+};
+global!(ZxdgOutputManagerV1);
+noop!(ZxdgOutputV1, ());
+impl Dispatch<ZxdgOutputManagerV1, ()> for State {
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &ZxdgOutputManagerV1,
+        request: zxdg_output_manager_v1::Request,
+        _: &(),
+        _: &DisplayHandle,
+        data: &mut DataInit<'_, Self>,
+    ) {
+        if let zxdg_output_manager_v1::Request::GetXdgOutput { id, output } = request {
+            let id_of_output = *output.data::<u32>().unwrap();
+            let xdg = data.init(id, ());
+            // Output 0 is 64x32 at scale 2; the hotplugged output 1 has a
+            // fractional scale of 1.6, which only xdg-output describes.
+            let (x, width, height) = if id_of_output == 0 {
+                (0, 32, 16)
+            } else {
+                (32, 40, 20)
+            };
+            xdg.logical_position(x, 0);
+            xdg.logical_size(width, height);
+        }
+    }
+}
+
+#[tokio::test]
+async fn pointer_motion_follows_a_fractionally_scaled_monitor_plugged_in_during_control() {
+    let server = Server::new();
+    let desktop = server.desktop();
+    let target = desktop.targets().await.unwrap().remove(0);
+    let mut sink = desktop.input_sink(target.target_id).await.unwrap();
+    let corner = TargetPoint { x: 1.0, y: 1.0 };
+    inject(&mut sink, &target, InputAction::PointerMove { to: corner }).await;
+    server.hotplug.send(()).unwrap();
+    // The phone picks the target again once its geometry revision moves on.
+    let target = loop {
+        let targets = desktop.targets().await.unwrap();
+        if targets.len() == 3 {
+            break targets.into_iter().find(|t| t.label == "TEST-0").unwrap();
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    };
+    inject(&mut sink, &target, InputAction::PointerMove { to: corner }).await;
+    let motion = server.events.lock().unwrap().motion.clone();
+    // Alone, the desktop was 32x16 logical pixels; with the new monitor's
+    // 40x20 beside it, 72x20. TEST-0's last pixel is at 31.5, 15.5.
+    assert_eq!(motion[0], (8065, 3969, 8192, 4096));
+    assert_eq!(motion[1], (8065, 3969, 72 * 256, 20 * 256));
 }

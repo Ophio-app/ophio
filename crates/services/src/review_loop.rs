@@ -23,7 +23,8 @@ use crate::github::{cut, project_tasks, span, text};
 use crate::github_after::{AFTER, After, fence, items, report};
 use crate::github_dupes::{Failure, same_failure};
 use crate::github_watch::{
-    REVIEW, as_creator, change_link, change_pr_link, hold, raise_headline, reported, speaking,
+    REVIEW, as_creator, change_link, change_pr_link, headline_item, hold, raise_headline,
+    raise_item, reported, speaking,
 };
 use crate::{CompanionHub, error};
 use ports::github::{Github, Method};
@@ -36,7 +37,7 @@ use protocol::{
     BootEpoch, CommandId, ErrorCode, Event, ProtocolError, RunId, TaskId,
     command::{Command, CommandEnvelope, CommandResult, TaskPlacement},
     model::{AttentionItem, AttentionKind, Run, RunState, Task, TaskKind, TaskMode, TaskState},
-    notifications::AlertTopic,
+    notifications::{AlertTopic, AlertType},
     time::Timestamp,
 };
 use serde::{Deserialize, Serialize};
@@ -51,6 +52,17 @@ pub(crate) const LISTED: &str = "review_listed";
 pub(crate) const COVERED: &str = "review_covered";
 /// Rounds of review a pull request gets before the person decides.
 pub(crate) const ROUNDS: u32 = 3;
+/// Rounds for one that touches something sensitive, such as security or
+/// stored data: worth longer to get right before the person is asked.
+pub(crate) const SENSITIVE_ROUNDS: u32 = 5;
+
+/// Rounds of review the pull request linked as `github` gets.
+pub(crate) fn rounds(github: &TaskGithub) -> u32 {
+    match github.approval {
+        Some(_) => SENSITIVE_ROUNDS,
+        None => ROUNDS,
+    }
+}
 /// The most findings one verifier checks; a review that reports more
 /// leaves the least serious aside.
 const MAX_CHECKED: usize = 20;
@@ -735,9 +747,10 @@ pub(crate) fn next(settings: &protocol::github::GithubSettings, github: &TaskGit
         return Next::Hold(why.clone());
     }
     let open = review.findings.iter().filter(|f| outstanding(f)).count();
+    let rounds = rounds(github);
     let Some(reviewed) = review.reviewed_head.as_deref() else {
-        return match review.round >= ROUNDS {
-            true => Next::Hold(out_of_rounds(open)),
+        return match review.round >= rounds {
+            true => Next::Hold(out_of_rounds(rounds, open)),
             false => Next::Review,
         };
     };
@@ -746,43 +759,29 @@ pub(crate) fn next(settings: &protocol::github::GithubSettings, github: &TaskGit
         .as_ref()
         .map(|p| p.head.as_str())
         .unwrap_or_default();
-    if reviewed == head {
-        // Handed back at this commit, and nothing pushed since. One whose
-        // correction the last round didn't answer for is asked about again.
-        let handed = (review.findings.iter())
-            .filter(|f| f.disposition == FindingDisposition::Fixing)
-            .count();
-        return match (handed, open) {
-            (0, 0) => Next::Clear,
-            (0, _) => Next::Recheck {
-                since: reviewed.to_owned(),
-                last: review.round >= ROUNDS,
-            },
-            (1, _) => Next::Hold(
-                "The agent was handed a problem the review confirmed and pushed nothing for it, so it won't merge by itself.".into(),
-            ),
-            (n, _) => Next::Hold(format!(
-                "The agent was handed {n} problems the review confirmed and pushed nothing for them, so it won't merge by itself."
-            )),
-        };
+    // A fixer may answer a mistaken finding without changing the code.
+    // The next round must weigh that answer too; an unchanged commit is
+    // not proof of inaction. This consumes the same bounded round budget.
+    if reviewed == head && open == 0 {
+        return Next::Clear;
     }
     Next::Recheck {
         since: reviewed.to_owned(),
-        last: review.round >= ROUNDS,
+        last: review.round >= rounds,
     }
 }
 
-/// Why a pull request whose rounds have run out is held.
-pub(crate) fn out_of_rounds(open: usize) -> String {
+/// Why a pull request whose `rounds` have run out is held.
+pub(crate) fn out_of_rounds(rounds: u32, open: usize) -> String {
     match open {
         0 => format!(
-            "The review has had its {ROUNDS} rounds, and the change moved again after the last, so it won't merge by itself until you look."
+            "The review has had its {rounds} rounds, and the change moved again after the last, so it won't merge by itself until you look."
         ),
         1 => format!(
-            "The review has had its {ROUNDS} rounds and a problem it confirmed is still open, so it won't merge by itself."
+            "The review has had its {rounds} rounds and a problem it confirmed is still open, so it won't merge by itself."
         ),
         n => format!(
-            "The review has had its {ROUNDS} rounds and {n} problems it confirmed are still open, so it won't merge by itself."
+            "The review has had its {rounds} rounds and {n} problems it confirmed are still open, so it won't merge by itself."
         ),
     }
 }
@@ -1661,6 +1660,9 @@ impl CompanionHub {
                 topic: None,
                 quiet: false,
                 report_id: None,
+                account_id: None,
+                alert: None,
+                alert_handled_at: None,
             };
             tx.put("attention", item.attention_id, &item)?;
             tx.emit(Event::AttentionUpserted { item })?;
@@ -1698,15 +1700,20 @@ impl CompanionHub {
                 }
                 Batch::Find { .. } => {
                     tx.delete(crate::github_after::FILING, v.run_id)?;
-                    raise_headline(
-                        tx,
-                        review.task_id,
-                        AttentionKind::WaitingForYou,
-                        AlertTopic::Issues,
-                        "The finder's findings weren't checked",
-                        Some(format!("{why} So nothing was filed. What it found is in the task.")),
-                        now,
-                    )
+                    let why = format!("{why} So nothing was filed. What it found is in the task.");
+                    let item = AttentionItem {
+                        // About issues, but the review couldn't finish.
+                        alert: Some(AlertType::Failed),
+                        ..headline_item(
+                            review.task_id,
+                            AttentionKind::WaitingForYou,
+                            AlertTopic::Issues,
+                            "The finder's findings weren't checked",
+                            Some(why),
+                            now,
+                        )
+                    };
+                    raise_item(tx, item)
                 }
                 Batch::Check { number, found, .. } => {
                     let repo = review.github.as_deref().and_then(|g| g.repo.clone());
@@ -2107,16 +2114,20 @@ impl CompanionHub {
         // and no outside content the person hasn't looked at.
         let filed = match self.not_now(&finder).await? {
             Some((held, e)) => {
-                let headline = match held {
-                    true => "Review the agent's report",
-                    false => "The finder's findings weren't filed",
+                let (alert_type, headline) = match held {
+                    true => (AlertType::Decision, "Review the agent's report"),
+                    false => (AlertType::Failed, "The finder's findings weren't filed"),
                 };
                 let now = self.inner.clock.now();
                 self.write(|tx| {
                     let topic = AlertTopic::Issues;
                     let kind = AttentionKind::WaitingForYou;
                     let why = Some(e.message.clone());
-                    raise_headline(tx, finder.task_id, kind, topic, headline, why, now)
+                    let item = AttentionItem {
+                        alert: Some(alert_type),
+                        ..headline_item(finder.task_id, kind, topic, headline, why, now)
+                    };
+                    raise_item(tx, item)
                 })?;
                 Ok(Vec::new())
             }
@@ -2150,15 +2161,18 @@ impl CompanionHub {
                     n => format!("the {n} findings it confirmed weren't filed"),
                 };
                 let why = format!("{} So {what}. They're in the task.", e.message);
-                raise_headline(
-                    tx,
-                    finder.task_id,
-                    AttentionKind::WaitingForYou,
-                    AlertTopic::Issues,
-                    "The finder's findings weren't filed",
-                    Some(why),
-                    now,
-                )?;
+                let item = AttentionItem {
+                    alert: Some(AlertType::Failed),
+                    ..headline_item(
+                        finder.task_id,
+                        AttentionKind::WaitingForYou,
+                        AlertTopic::Issues,
+                        "The finder's findings weren't filed",
+                        Some(why),
+                        now,
+                    )
+                };
+                raise_item(tx, item)?;
             }
             tx.delete(VERIFYING, v.review)?;
             tx.delete(crate::github_after::FILING, v.run_id)?;
@@ -2293,6 +2307,12 @@ impl CompanionHub {
             if decides {
                 g.checked_by = Some(out.checked_by.clone());
             }
+            // What this round found sensitive counts already, before the
+            // approval it raises is recorded.
+            let rounds = match out.report.sensitive.is_empty() {
+                true => rounds(g),
+                false => SENSITIVE_ROUNDS,
+            };
             let review: &mut PrReview = g.review.get_or_insert_default();
             // The earlier findings this round answered for, or handed back.
             let mut answered = std::collections::BTreeSet::new();
@@ -2349,7 +2369,7 @@ impl CompanionHub {
             // An earlier one this round didn't answer for, as a recheck that
             // left it out or a whole review that wasn't shown it, isn't known
             // corrected or not here: it waits to be asked about again, and
-            // isn't counted as handed back with nothing pushed.
+            // remains outstanding for the next round.
             if decides {
                 for (at, f) in review.findings[..earlier].iter_mut().enumerate() {
                     if outstanding(f) && !answered.contains(&at) {
@@ -2372,7 +2392,9 @@ impl CompanionHub {
             review.updated_at = Some(now);
             let open = review.findings.iter().filter(|f| outstanding(f)).count();
             escalated = match came_back.as_slice() {
-                [] if decides && review.round >= ROUNDS && open > 0 => Some(out_of_rounds(open)),
+                [] if decides && review.round >= rounds && open > 0 => {
+                    Some(out_of_rounds(rounds, open))
+                }
                 [] => None,
                 [one] => Some(format!(
                     "“{}” came back after it was corrected, so Øphio stopped reviewing it, and it won't merge by itself.",
@@ -2684,6 +2706,38 @@ mod tests {
             next(&on, &checked(Some(round(ROUNDS, None, vec![])), "b")),
             Next::Hold(_)
         ));
+        // A sensitive change gets more rounds before the person decides.
+        let sensitive = |review| {
+            let mut g = checked(Some(review), "b");
+            g.approval = Some(protocol::review::ApprovalNeed {
+                areas: vec![protocol::review::SensitiveArea::Credentials],
+                paths: Vec::new(),
+                head: "b".into(),
+            });
+            g
+        };
+        assert_eq!(
+            next(&on, &sensitive(round(ROUNDS, Some("a"), vec![]))),
+            Next::Recheck {
+                since: "a".into(),
+                last: false
+            }
+        );
+        assert_eq!(
+            next(&on, &sensitive(round(SENSITIVE_ROUNDS, Some("a"), vec![]))),
+            Next::Recheck {
+                since: "a".into(),
+                last: true
+            }
+        );
+        assert_eq!(
+            next(&on, &sensitive(round(ROUNDS, None, vec![]))),
+            Next::Review
+        );
+        assert!(matches!(
+            next(&on, &sensitive(round(SENSITIVE_ROUNDS, None, vec![]))),
+            Next::Hold(why) if why.contains("5 rounds")
+        ));
         // Handed back and nothing pushed.
         let open = ReviewFinding {
             title: "A".into(),
@@ -2700,10 +2754,21 @@ mod tests {
             disposition: FindingDisposition::Fixing,
             round: 1,
         };
-        assert!(matches!(
-            next(&on, &checked(Some(round(1, Some("a"), vec![open.clone()])), "a")),
-            Next::Hold(why) if why.contains("pushed nothing for it")
-        ));
+        for round_number in [1, ROUNDS] {
+            assert_eq!(
+                next(
+                    &on,
+                    &checked(
+                        Some(round(round_number, Some("a"), vec![open.clone()])),
+                        "a"
+                    )
+                ),
+                Next::Recheck {
+                    since: "a".into(),
+                    last: round_number >= ROUNDS,
+                }
+            );
+        }
         // Not answered for at this commit: asked about again, not held.
         let unanswered = ReviewFinding {
             disposition: FindingDisposition::Open,

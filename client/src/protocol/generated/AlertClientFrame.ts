@@ -11,4 +11,23 @@ quiet: boolean,
  * The phone understands [`Alert::report`]. Older phones aren't sent
  * report alerts at all.
  */
-reports: boolean, };
+reports: boolean, 
+/**
+ * The phone understands [`Alert::sign_in`]. Older phones aren't
+ * sent sign-in alerts at all.
+ */
+sign_in: boolean, 
+/**
+ * The phone chooses by [`Alert::alert_type`] and
+ * [`Alert::project_tier`] itself: alerts the person turned off on
+ * every phone aren't marked quiet for it, as the phone keeps that
+ * choice. Older phones send false.
+ */
+types?: boolean, 
+/**
+ * Alerts handled on this phone while it couldn't say so, at most
+ * [`MAX_SHOWING`]: the computer records them as [`Handled`] does.
+ *
+ * [`Handled`]: AlertClientFrame::Handled
+ */
+handled?: Array<AttentionId>, } | { "type": "handled", attention_ids: Array<AttentionId>, };

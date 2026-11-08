@@ -2,5 +2,6 @@
 import type { PasswordManager } from "./PasswordManager";
 import type { Secret } from "./Secret";
 import type { ServiceProfile } from "./ServiceProfile";
+import type { Timestamp } from "./Timestamp";
 
-export type AccountAction = { "action": "sign_in", account_id: string, } | { "action": "cancel_sign_in" } | { "action": "pause", account_id: string, } | { "action": "resume", account_id: string, } | { "action": "pause_all" } | { "action": "sign_out", account_id: string, } | { "action": "delete", account_id: string, } | { "action": "set_key", account_id: string, key: Secret, } | { "action": "add_service", service: ServiceProfile, } | { "action": "check", account_id: string | null, } | { "action": "set_up_password_manager", manager: PasswordManager, } | { "action": "password_manager_done" };
+export type AccountAction = { "action": "sign_in", account_id: string, on_phone?: boolean, } | { "action": "submit_sign_in_code", account_id: string, started_at: Timestamp, code: Secret, } | { "action": "dismiss_sign_in_notice", account_id: string, } | { "action": "cancel_sign_in" } | { "action": "pause", account_id: string, } | { "action": "resume", account_id: string, } | { "action": "pause_all" } | { "action": "sign_out", account_id: string, } | { "action": "delete", account_id: string, } | { "action": "set_key", account_id: string, key: Secret, } | { "action": "add_service", service: ServiceProfile, } | { "action": "check", account_id: string | null, } | { "action": "set_up_password_manager", manager: PasswordManager, } | { "action": "password_manager_done" };

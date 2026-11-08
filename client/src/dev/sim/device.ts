@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { AlertChannel, AlertsState, Platform, SharedItem, LocalNotification, NotificationPermission } from "../../host/link";
+import type { AlertType, Tier } from "../../protocol/types";
+import { recommendedTiers } from "../../platform/alertTypes";
 import { ANDROID_SAVE_LIMIT } from "../../host/transfer";
 
 /** Deterministic local phone capabilities; no operating-system side effects. */
@@ -11,6 +13,12 @@ export function simulatedDevice() {
   /** Ids the app cleared, and the alerts it reported seen, in order. */
   const cancelled: string[] = [];
   const seen: { profileId: string; attentionIds: string[] }[] = [];
+  /** Items the app said the person saw on screen, in order. */
+  const handled: { profileId: string; attentionIds: string[] }[] = [];
+  /** Each type's choice, as Android's categories keep it, and the changes asked. */
+  const tierChanges: { alertType: AlertType; tier: Tier }[] = [];
+  /** Set, the next change of tier is refused as Android would. */
+  let refuseTier: string | null = null;
   /** The computer whose alerts the app's screen shows, as the watcher hears. */
   let viewing: string | null = null;
   /** Alerts the app raised, which the watcher records as raised. */
@@ -22,7 +30,8 @@ export function simulatedDevice() {
   let alerts: AlertsState = {
     settings: { enabled: true, detail: "minimal" },
     statuses: {},
-    android: { running: true, unrestricted: false, needsYou: true, finished: true },
+    tiers: recommendedTiers(),
+    android: { running: true, unrestricted: false },
   };
   const channels: AlertChannel[] = [];
   let batteryRequests = 0;
@@ -35,11 +44,29 @@ export function simulatedDevice() {
   let permissionFailure = false;
   let installedBuild = "sim";
   const installs: string[] = [];
+  /**
+   * What Android allows the app: whether it may install apps, what the person
+   * chooses in Android's Install unknown apps setting, and whether Android
+   * asks to confirm each update (as before Android 12).
+   */
+  let installing = { allowed: true, allowsInSettings: true, asks: false };
+  let installSettingsOpened = 0;
+  const foreground = new Set<() => void>();
+  const backInFront = () => { for (const listener of foreground) listener(); };
   const controls = {
     installs,
+    get appInstalls() { return { ...installing, settingsOpened: installSettingsOpened }; },
+    /** Sets what Android allows the app, as its settings would. */
+    setAppInstalls(next: Partial<typeof installing>) { installing = { ...installing, ...next }; },
+    /** The app comes back to the front, as from Android's settings. */
+    foreground: backInFront,
     notifications,
     cancelled,
     seen,
+    handled,
+    tierChanges,
+    /** The next change of tier fails with `message`, as Android might. */
+    refuseTier(message: string | null) { refuseTier = message; },
     raised,
     awake,
     channels,
@@ -80,6 +107,7 @@ export function simulatedDevice() {
     | "alerts"
     | "appInfo"
     | "appUpdate"
+    | "onForeground"
     | "saveToPhone"
     | "downloadLimit"
     | "notificationPermission"
@@ -127,9 +155,19 @@ export function simulatedDevice() {
     alerts: {
       async state() { return alerts; },
       async configure(settings) {
-        alerts = { ...alerts, settings, android: { ...alerts.android, running: settings.enabled } };
+        // The watcher runs while the app does; the choice is whether it
+        // keeps going once the app closes.
+        alerts = { ...alerts, settings, android: { ...alerts.android, running: true } };
         return alerts;
       },
+      async setTier(alertType, tier) {
+        tierChanges.push({ alertType, tier });
+        if (refuseTier) { const message = refuseTier; refuseTier = null; throw new Error(message); }
+        alerts = { ...alerts, tiers: { ...alerts.tiers, [alertType]: tier } };
+        if (tier === "off") cancelled.push(...notifications.filter((n) => n.alertType === alertType).map((n) => n.id));
+        return alerts;
+      },
+      async handled(profileId, attentionIds) { handled.push({ profileId, attentionIds }); },
       async battery() { batteryRequests++; },
       async channel(channel) { channels.push(channel); },
       async seen(profileId, attentionIds) { seen.push({ profileId, attentionIds }); },
@@ -151,9 +189,21 @@ export function simulatedDevice() {
       return { savedAs: `Downloads/${savedName}` };
     },
     appUpdate: {
-      async check(offers) { return { offer: offers.find(o => o.version !== installedBuild) ?? null, asks: false, version: installedBuild }; },
+      async check(offers, options) {
+        const answer = { offer: offers.find(o => o.version !== installedBuild) ?? null, allowed: installing.allowed, asks: installing.asks, version: installedBuild };
+        if (options?.openSettings && !installing.allowed) {
+          // The person visits Android's setting and comes back a moment later.
+          installSettingsOpened++;
+          setTimeout(() => { installing = { ...installing, allowed: installing.allowsInSettings }; backInFront(); }, 400);
+        }
+        return answer;
+      },
       async install(_profile, _app, sha256) { installs.push(sha256); installedBuild = "sim-next"; },
       onResult() { return () => {}; },
+    },
+    onForeground(listener) {
+      foreground.add(listener);
+      return () => { foreground.delete(listener); };
     },
     async appInfo() {
       return { version: "0.1.0", build: "sim", keyProtection: "simulated", deviceName: "Pixel 9" };

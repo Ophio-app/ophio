@@ -14,6 +14,9 @@ export function ReadinessCheck({ label = "Check again", children }: { label?: st
   const run = useCommand();
   const online = useLink().state === "online";
   const allowed = useHost(s => s.grants?.admin === true);
+  // Until the computer says what this phone may do, as when the app opens
+  // without reaching it, a missing permission is not yet known.
+  const refused = useHost(s => s.grants != null && s.grants.admin !== true);
   const last = useStore(session.commands, commands => Object.values(commands)
     .filter(c => c.body.command === "run_readiness_check").at(-1));
   const progress = useHost(s => last ? s.commandStages[last.id] : undefined);
@@ -31,7 +34,7 @@ export function ReadinessCheck({ label = "Check again", children }: { label?: st
         </Button>
         {children}
       </div>
-      {!allowed && <p className="fine">Device management permission is needed to run checks.</p>}
+      {refused && <p className="fine">Device management permission is needed to run checks.</p>}
       {!online && <p className="fine">Reconnect to check the computer.</p>}
       {unknown ? <StateLine phase="unknown" detail="The computer hasn’t confirmed these checks." />
         : failed ? <StateLine phase="failed" detail={progress?.error?.message ?? last?.error?.message ?? "The computer couldn’t run these checks."} />

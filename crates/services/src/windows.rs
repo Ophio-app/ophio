@@ -8,16 +8,29 @@ use protocol::{
     control::{DesktopLockState, InputState, LeaseOwner, LeaseState},
     windows::*,
 };
-use std::{sync::atomic::Ordering, time::Instant};
+use std::sync::atomic::Ordering;
 struct Authority {
     hub: CompanionHub,
     caller: Caller,
-    deadline: Instant,
+    /// The display's live lease, as renewed or revoked since admission.
+    lease: std::sync::Arc<crate::control::LiveLease>,
+    lease_id: protocol::ids::LeaseId,
+    generation: u64,
+    /// How an app launch that couldn't be stopped can be checked again.
+    unstopped: std::sync::Mutex<crate::control::Unconfirmed>,
 }
 impl ports::windows::WindowAuthority for Authority {
+    fn unstopped(&self, launch: std::sync::Arc<dyn ports::LaunchCheck>) {
+        if let Ok(mut unstopped) = self.unstopped.lock() {
+            *unstopped = Some(launch);
+        }
+    }
     fn check(&self) -> Result<(), ports::PlatformError> {
-        if self.hub.inner.clock.monotonic() >= self.deadline
-            || *self.hub.inner.shutdown.borrow()
+        if !self.lease.holds(
+            self.lease_id,
+            self.generation,
+            self.hub.inner.clock.monotonic(),
+        ) || *self.hub.inner.shutdown.borrow()
             || self.hub.inner.local_stops.load(Ordering::SeqCst) != 0
             || self
                 .hub
@@ -139,18 +152,33 @@ impl CompanionHub {
         let authority = std::sync::Arc::new(Authority {
             hub: self.clone(),
             caller: caller.clone(),
-            deadline,
+            lease: target.live.clone(),
+            lease_id: control.lease_id,
+            generation: control.generation,
+            unstopped: Default::default(),
         });
         ports::windows::WindowAuthority::check(authority.as_ref()).map_err(window_error)?;
         let requested_at = self.inner.clock.now();
         // Adapters bound their native calls and join/stop work before returning.
         // Do not cancel a native call and then release this target lock early.
-        let result = backend.act(action, authority).await;
+        let result = backend.act(action, authority.clone()).await;
+        // An app may still open: the display keeps that fact before anything
+        // else can fail, so no Stop or shutdown claims it was let go cleanly.
+        let unresolved = matches!(result, Err(ports::PlatformError::LaunchUnstopped));
+        if unresolved {
+            let check = authority.unstopped.lock().ok().and_then(|mut c| c.take());
+            target.launches.unstopped(check);
+            self.mark_launch(&mut target);
+        }
         let (status, summary) = match &result {
             Ok((_, detail)) => (protocol::model::FactStatus::Done, detail.clone()),
             Err(ports::PlatformError::OutcomeUnknown(_)) => (
                 protocol::model::FactStatus::Unknown,
                 "The desktop did not confirm this window action".into(),
+            ),
+            Err(ports::PlatformError::LaunchUnstopped) => (
+                protocol::model::FactStatus::Unknown,
+                "The app's launch couldn't be stopped; it may still open".into(),
             ),
             Err(_) => (
                 protocol::model::FactStatus::Failed,
@@ -180,7 +208,10 @@ impl CompanionHub {
             })
             .is_err()
         {
-            let _ = self.revoke_locked(&mut target, false).await;
+            let released = self.revoke_locked(&mut target, false).await;
+            if unresolved {
+                return Err(crate::control::unresolved_release(released));
+            }
             return Err(error(
                 ErrorCode::OutcomeUnknown,
                 "The desktop action finished but its control receipt could not be saved",
@@ -197,6 +228,11 @@ impl CompanionHub {
                     detail,
                 },
             })),
+            // The person's control ends; the mark was set above.
+            Err(ports::PlatformError::LaunchUnstopped) => {
+                let released = self.revoke_locked(&mut target, false).await;
+                Err(crate::control::unresolved_release(released))
+            }
             Err(error) => {
                 if matches!(error, ports::PlatformError::OutcomeUnknown(_)) {
                     let _ = self.revoke_locked(&mut target, false).await;

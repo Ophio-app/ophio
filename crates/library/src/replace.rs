@@ -3,7 +3,7 @@
 use cap_std::fs::Dir;
 use ports::library::LibraryError;
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub(crate) fn replace(
     parent: &Dir,
     temp: &str,
@@ -236,7 +236,7 @@ mod native {
     }
 }
 
-#[cfg(not(any(target_os = "linux", windows)))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 pub(crate) fn replace(
     _parent: &Dir,
     _temp: &str,

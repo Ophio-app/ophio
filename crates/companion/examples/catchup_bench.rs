@@ -70,6 +70,7 @@ async fn main() {
     let (mut applied, mut events, mut closed, mut bytes) = (0u64, 0u64, 0u64, 0f64);
     ws.send(text(&ClientFrame::Subscribe(Subscribe {
         after_seq: Some(0),
+        account_items: false,
     })))
     .await
     .unwrap();
@@ -91,6 +92,7 @@ async fn main() {
                 closed += 1;
                 ws.send(text(&ClientFrame::Subscribe(Subscribe {
                     after_seq: Some(after_seq.min(applied)),
+                    account_items: false,
                 })))
                 .await
                 .unwrap();

@@ -203,14 +203,18 @@ fn summary(
         _ => AlertTopic::Finished,
     };
     let body = (!lines.is_empty()).then(|| lines.join("\n"));
-    Ok(Some(Some(headline_item(
-        task_id,
-        AttentionKind::Completed,
-        topic,
-        &headline,
-        body,
-        now,
-    ))))
+    Ok(Some(Some(AttentionItem {
+        // What the Run all came to as a whole, whichever its topic.
+        alert: Some(protocol::notifications::AlertType::Batch),
+        ..headline_item(
+            task_id,
+            AttentionKind::Completed,
+            topic,
+            &headline,
+            body,
+            now,
+        )
+    })))
 }
 
 /// Tells the person how `project_id`'s Run all went, once, when it can.

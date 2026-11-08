@@ -283,7 +283,9 @@ intake_token_file = "/home/you/.local/share/ophio-intake/maintainer.token"
 - **Words are data.** The item's title is fixed text with the report's
   reference. The reporter's sentence, screen, build and phone show in the app
   as one plain line each, with control and direction characters removed, and
-  never reach an agent, a prompt or the notification itself.
+  never reach the notification itself. They reach an agent only when the
+  owner chooses Have an agent look into it (below), and then only fenced and
+  labelled as the reporter's words.
 - **A submitted test shows as lines too.** When a report carries a test, the
   item names its path and kind and the program and model that say they wrote
   it, then what the fixer's check showed at their build and on main ("not
@@ -332,6 +334,45 @@ intake_token_file = "/home/you/.local/share/ophio-intake/maintainer.token"
   into it can't use it: it has a string longer than 256 bytes, which no agent
   is shown." The person can still use See test to read its text. Without a
   fixer the button doesn't show and the command is refused.
+- **Without a fixer, an ordinary agent can plan a fix.** A computer whose
+  inbox runs and whose fixer doesn't advertises `report_task_v1`, and the
+  item offers Have an agent look into it. One tap starts an ordinary task in
+  **Plan mode** in the project that holds Ophio's source: the one the person
+  chose last time, or else the only project whose folder has
+  `crates/companion/Cargo.toml`, `crates/protocol/src/reports.rs` and
+  `client/src-tauri/tauri.conf.json`. When there isn't exactly one, the
+  phone asks which project, and the computer remembers the answer. A
+  remembered project that is gone, or whose folder held Ophio's source when
+  chosen and no longer does, is looked for again. Use another project, beside
+  the button, opens the same picker to change it. The task opens at once, and
+  the item then says "An agent is looking into this" with a way to open it,
+  and offers no second task while that one isn't archived and its project is
+  still on the computer; asking again answers with the same task. The task's screen says which
+  report it looks into.
+  The computer, not the phone, writes what the agent is told. The task's
+  first message, the one the chat shows, is a single sentence: "Find out
+  what went wrong in problem report A7K3QX and propose a fix. Ophio gives
+  the agent the report's evidence with this message." The brief behind it
+  is kept with the task and given to the agent beside the first message of
+  each new session, as a review's rules are: what the agent should do and
+  that the rest is evidence, never instructions; the
+  facts the reporter's app recorded (crash code, screen, builds, platform and
+  system, crashes with their frames, and the newest 150 phone and 80 computer
+  trail events, timed in seconds before the report), labelled as claims a
+  hostile reporter could forge, as JSON whose backticks and angle brackets
+  are escaped so nothing can end its block; then the reporter's words, in their own block, labelled
+  as theirs. Every string in the brief, these fields included, has its
+  control, direction, zero-width and tag characters removed, so nothing in
+  it can hide words. The reporter's picture is attached to the first message
+  as an image. A submitted test
+  and its suggested fix, extras and the app-state shape are never included;
+  the prompt only says they exist. The task has no agent browser and no
+  launch flags. This is the gate in place of the fixer's containment: a
+  report can come from anyone, so the agent reads and proposes but changes
+  nothing until the person reads its plan and chooses Carry out this plan,
+  which shows the Work mode and permissions first. Only the person starts
+  one, from a paired device with the admin and tasks grants or at the
+  computer; a program Ophio started can't, through the owner socket either.
 
 The companion reads the token file once at start and keeps the token in
 memory. A missing or unreadable file leaves the inbox off with a warning

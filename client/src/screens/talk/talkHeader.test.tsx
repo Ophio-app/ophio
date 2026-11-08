@@ -73,7 +73,11 @@ it("goes back from a task to Tasks, counting what needs the person, and the name
   const all = openAttention(app.session.state.get()).length;
   expect(all).toBeGreaterThan(1);
   const back = screen.getByRole("button", { name: `Tasks, ${all} need attention` });
-  expect(screen.getByRole("heading", { level: 1 }).querySelector("button")).toBeNull();
+  // The name is only a name; the line under it saying what the task may do
+  // is what opens its controls.
+  const heading = screen.getByRole("heading", { level: 1 });
+  expect(heading.querySelector(".chat-head__title button")).toBeNull();
+  expect([...heading.querySelectorAll("button")].map((b) => b.className)).toEqual(["may-do chat-head__may"]);
   expect(app.ui.canGoBack()).toBe(true);
   fireEvent.click(back);
   await tick(100);

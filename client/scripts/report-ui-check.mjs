@@ -86,7 +86,7 @@ try {
   assert.equal(picture.marked, true); assert.ok(Buffer.from(picture.data, "base64").length <= 512 * 1024);
   await button("Done").click();
   await page.evaluate(() => window.__sim.host.reports.crash());
-  await page.getByRole("dialog", { name: "Ophio closed unexpectedly", exact: true }).waitFor();
+  await page.getByRole("dialog", { name: /^Ophio on your computer stopped unexpectedly at / }).waitFor();
   await shot("crash-prompt"); await button("Not now").click();
   await page.evaluate(() => window.__sim.reports.screenshot());
   await button("Report").waitFor(); await shot("screenshot-chip");

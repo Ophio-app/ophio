@@ -17,6 +17,8 @@ object AlertWatcher {
 
     /** Whether the app's screen is in front and unlocked, so shows alerts itself. */
     @Volatile var screen = false
+    /** Whether the app's screen exists, in front or not: it keeps the watcher running. */
+    @Volatile var screenAlive = false
     @Volatile private var notifications: Notifications? = null
     @Volatile private var context: Context? = null
 
@@ -32,9 +34,57 @@ object AlertWatcher {
 
     /**
      * Starts watching, with the app's files under `dataDir`. `cleared` changes
-     * whenever Android clears the app's alerts, which are then raised again.
+     * whenever Android clears the app's alerts: after a restart of the phone
+     * or an update of the app, what still showed is put back silently.
      */
     @JvmStatic external fun start(dataDir: String, cleared: String): Boolean
+
+    /**
+     * Starts watching in this process, unless it already does. The app runs
+     * it whenever it is open; the service keeps it running once the app
+     * closes, if the person wants that.
+     */
+    fun startHere(context: Context): Boolean =
+        try {
+            attach(context)
+            // Restarting the phone or updating the app clears the alerts shown.
+            val resolver = context.contentResolver
+            val boot = android.provider.Settings.Global.getInt(resolver, android.provider.Settings.Global.BOOT_COUNT, -1)
+            val updated = context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
+            start(context.dataDir.absolutePath, "$boot:$updated")
+        } catch (_: Throwable) {
+            false
+        }
+
+    /**
+     * The person swiped away, or opened, a notification standing for `tags`,
+     * one per line: an alert's own tag, or those a project's note counted.
+     */
+    @JvmStatic external fun dismissed(dataDir: String, tags: String)
+
+    /** Every notification type, as JSON: its id, words, group and recommended choice. */
+    @JvmStatic external fun types(): String
+
+    /**
+     * From the old categories' importance, as JSON, the choices each type
+     * takes over: only quieter ones.
+     */
+    @JvmStatic external fun importTiers(old: String): String
+
+    /** How the note `json` would show now: `alert`, `silent` or `off`; null when unknown. */
+    @JvmStatic
+    fun effective(json: String): String? =
+        try {
+            val note = JSONObject(json)
+            notifications?.effective(
+                note.optString("category").takeIf { it.isNotEmpty() },
+                note.optString("alertType").takeIf { it.isNotEmpty() },
+                note.optString("want").takeIf { it.isNotEmpty() },
+                note.optBoolean("silent", false),
+            )
+        } catch (_: Exception) {
+            null
+        }
 
     @JvmStatic external fun stop()
 
@@ -73,7 +123,13 @@ object AlertWatcher {
                     "The phone could not send it."
                 }
             }
-        if (why == null) shade.cancel(tag) else shade.unsent(tag, asked, why)
+        if (why == null) {
+            shade.cancel(tag)
+            // Answered from here: handled, here and on every other device.
+            runCatching { dismissed(context.dataDir.absolutePath, tag) }
+        } else {
+            shade.unsent(tag, asked, why)
+        }
     }
 
     @JvmStatic
@@ -114,11 +170,17 @@ object AlertWatcher {
                 note.optString("groupTitle").takeIf { !note.isNull("groupTitle") },
                 since.takeIf { it >= 0 },
                 note.optJSONObject("question")?.let(Asking::of),
+                silent = note.optBoolean("silent", false),
+                alertType = note.optString("alertType").takeIf { it.isNotEmpty() },
+                want = note.optString("want").takeIf { it.isNotEmpty() },
+                handles = note.optJSONArray("handles")?.let { a -> List(a.length()) { a.getString(it) } },
             )
             return when (posted) {
                 Notifications.Posted.SHOWN -> 0
                 Notifications.Posted.FULL -> 1
                 Notifications.Posted.CLEARED -> 3
+                Notifications.Posted.OFF -> 4
+                Notifications.Posted.SOUNDED -> 5
             }
         } catch (_: Exception) {
             return 2

@@ -2,14 +2,18 @@
 //! CONNECT-only proxy. Host policy is checked before DNS and throughout tunnels.
 use ports::sandbox::{Blocked, OnBlocked};
 use protocol::capability::HarnessKind;
-use std::{
-    io,
-    path::{Path, PathBuf},
-    thread,
-};
+#[cfg(target_os = "linux")]
+use std::path::PathBuf;
+use std::{io, path::Path, thread};
+#[cfg(target_os = "macos")]
+use tokio::net::TcpListener;
+#[cfg(target_os = "linux")]
+use tokio::net::UnixListener;
+#[cfg(all(test, target_os = "linux"))]
+use tokio::net::UnixStream;
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::{TcpStream, UnixListener, UnixStream},
+    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
+    net::TcpStream,
     sync::watch,
     task::JoinSet,
 };
@@ -48,16 +52,29 @@ pub(crate) struct Policy {
     pub local: bool,
 }
 
+/// On Linux the sandbox reaches it through a socket file put inside. A Mac's
+/// sandbox can name a loopback port it may reach, and a program there needs no
+/// helper to get to it.
 pub(crate) struct Proxy {
+    #[cfg(target_os = "linux")]
     directory: tempfile::TempDir,
+    #[cfg(target_os = "macos")]
+    port: u16,
+    /// The same port on IPv6, held so that no other program can answer there:
+    /// a Mac's sandbox can name only `localhost`, which means both.
+    #[cfg(target_os = "macos")]
+    _v6: Option<std::net::TcpListener>,
     policy: watch::Sender<Option<Policy>>,
     worker: Option<thread::JoinHandle<()>>,
 }
 impl std::fmt::Debug for Proxy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Proxy")
-            .field("socket", &self.socket())
-            .finish_non_exhaustive()
+        let mut proxy = f.debug_struct("Proxy");
+        #[cfg(target_os = "linux")]
+        proxy.field("socket", &self.socket());
+        #[cfg(target_os = "macos")]
+        proxy.field("port", &self.port);
+        proxy.finish_non_exhaustive()
     }
 }
 impl Proxy {
@@ -76,17 +93,29 @@ impl Proxy {
         blocked: Option<OnBlocked>,
         allow_loopback: bool,
     ) -> io::Result<Self> {
+        #[cfg(target_os = "linux")]
         let directory = tempfile::Builder::new()
             .prefix("proxy-")
             .tempdir_in(state)?;
+        #[cfg(target_os = "linux")]
         let listener = crate::sys::bind_unix(directory.path(), "connect.sock")?;
+        #[cfg(target_os = "macos")]
+        let (listener, v6) = {
+            let _ = state;
+            loopback_port()?
+        };
+        #[cfg(target_os = "macos")]
+        let port = listener.local_addr()?.port();
         listener.set_nonblocking(true)?;
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?;
         let (policy, mut changes) = watch::channel(Some(policy));
         let worker = thread::Builder::new().name("sandbox-proxy".into()).spawn(move || runtime.block_on(async move {
+            #[cfg(target_os = "linux")]
             let Ok(listener) = UnixListener::from_std(listener) else { return };
+            #[cfg(target_os = "macos")]
+            let Ok(listener) = TcpListener::from_std(listener) else { return };
             let mut tasks = JoinSet::new();
             loop {
                 tokio::select! {
@@ -107,13 +136,24 @@ impl Proxy {
             while tasks.join_next().await.is_some() {}
         }))?;
         Ok(Self {
+            #[cfg(target_os = "linux")]
             directory,
+            #[cfg(target_os = "macos")]
+            port,
+            #[cfg(target_os = "macos")]
+            _v6: v6,
             policy,
             worker: Some(worker),
         })
     }
+    #[cfg(target_os = "linux")]
     pub fn socket(&self) -> PathBuf {
         self.directory.path().join("connect.sock")
+    }
+    /// The loopback port it listens on.
+    #[cfg(target_os = "macos")]
+    pub fn port(&self) -> u16 {
+        self.port
     }
     pub fn update(&self, policy: Policy) {
         self.policy.send_replace(Some(policy));
@@ -126,6 +166,24 @@ impl Drop for Proxy {
             let _ = worker.join();
         }
     }
+}
+
+/// A loopback port free on both IPv4 and IPv6. A computer with no IPv6 loopback
+/// has nothing there to hold.
+#[cfg(target_os = "macos")]
+fn loopback_port() -> io::Result<(std::net::TcpListener, Option<std::net::TcpListener>)> {
+    use std::net::TcpListener;
+    let mut last = None;
+    for _ in 0..32 {
+        let listener = TcpListener::bind(("127.0.0.1", 0))?;
+        let port = listener.local_addr()?.port();
+        match TcpListener::bind(("::1", port)) {
+            Ok(v6) => return Ok((listener, Some(v6))),
+            Err(e) if e.kind() == io::ErrorKind::AddrNotAvailable => return Ok((listener, None)),
+            Err(e) => last = Some(e),
+        }
+    }
+    Err(last.unwrap_or_else(|| io::Error::other("no free loopback port")))
 }
 
 fn authority(text: &str) -> io::Result<(String, u16)> {
@@ -146,7 +204,7 @@ fn authority(text: &str) -> io::Result<(String, u16)> {
     Ok((host.to_ascii_lowercase(), port))
 }
 async fn serve(
-    mut stream: UnixStream,
+    mut stream: impl AsyncRead + AsyncWrite + Unpin,
     kind: HarnessKind,
     mut changes: watch::Receiver<Option<Policy>>,
     blocked: Option<OnBlocked>,
@@ -351,8 +409,18 @@ mod tests {
         internet: false,
         local: false,
     };
+    #[cfg(target_os = "linux")]
+    async fn reach(proxy: &Proxy) -> UnixStream {
+        UnixStream::connect(proxy.socket()).await.unwrap()
+    }
+    #[cfg(target_os = "macos")]
+    async fn reach(proxy: &Proxy) -> TcpStream {
+        TcpStream::connect(("127.0.0.1", proxy.port()))
+            .await
+            .unwrap()
+    }
     async fn connect(proxy: &Proxy, authority: &str) -> String {
-        let mut client = UnixStream::connect(proxy.socket()).await.unwrap();
+        let mut client = reach(proxy).await;
         client
             .write_all(format!("CONNECT {authority} HTTP/1.1\r\n\r\n").as_bytes())
             .await
@@ -362,6 +430,7 @@ mod tests {
         response
     }
     #[tokio::test]
+    #[cfg(target_os = "linux")]
     async fn listens_under_a_home_folder_too_long_for_a_socket_address() {
         // A seven-letter user's sandbox state put connect.sock one byte past
         // what a socket address holds, and every limited chat failed to start.
@@ -515,7 +584,7 @@ mod tests {
         let tcp = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = tcp.local_addr().unwrap().port();
         let request = format!("CONNECT 127.0.0.1:{port} HTTP/1.1\r\n\r\n");
-        let mut denied = UnixStream::connect(proxy.socket()).await.unwrap();
+        let mut denied = reach(&proxy).await;
         denied.write_all(request.as_bytes()).await.unwrap();
         let mut response = String::new();
         denied.read_to_string(&mut response).await.unwrap();
@@ -529,7 +598,7 @@ mod tests {
             stream.write_all(&buf).await.unwrap();
             let _ = stream.read_u8().await;
         });
-        let mut client = UnixStream::connect(proxy.socket()).await.unwrap();
+        let mut client = reach(&proxy).await;
         client.write_all(request.as_bytes()).await.unwrap();
         let mut response = vec![0; b"HTTP/1.1 200 Connection Established\r\n\r\n".len()];
         client.read_exact(&mut response).await.unwrap();

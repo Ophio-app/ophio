@@ -34,7 +34,7 @@ const available = { state: "available" } as const;
 export interface ApprovalCase {
   tool: string;
   input: unknown;
-  approval: Pick<Approval, "title" | "detail" | "detail_lines" | "questions" | "scope" | "shortened"> & { kind: string };
+  approval: Pick<Approval, "title" | "headline" | "facts" | "detail" | "detail_lines" | "questions" | "scope" | "shortened"> & { kind: string };
 }
 
 /** The companion's approval shapes, for shot plans and tests that stage one. */
@@ -99,7 +99,7 @@ export function capabilities(): HostCapabilities {
     conversation_access: available,
     // Alex Chen's Discord chat stays linked after the bot token was removed.
     discord: { state: "permission_missing", remedy: `${PROGRAM_NAME} channels token set discord` },
-    features: ["reports_v1", "report_inbox_code_v1", "channel_link_review", "task_history", "project_folders", "launch_policy_v1", "task_branch_v1", "accounts_v1", "launchers_v1", "agent_logins_v1", "github_v1", "system_stats_v1", "collaboration_v1", "found_previews_v1", "fix_launch_v1", "agent_updates_v1", "read_only_turn_v1", "github_review_v1", "agent_preferences_v1", "github_issues_v1", "github_uat_v1", "github_run_v1", "github_close_v1", "notification_settings_v1", "queue_markup_v1", "launch_defaults_v1", "project_shown_v1", "conversations_v1", "findings_v1", "contribution_import_v1", "github_together_v1", "unarchive_task_v1", "checklist_v1", "checklist_agent_items_v1", "disable_in_ophio_v1", "review_rules_v1"],
+    features: ["reports_v1", "report_inbox_code_v1", "channel_link_review", "task_history", "project_folders", "launch_policy_v1", "task_branch_v1", "accounts_v1", "launchers_v1", "agent_logins_v1", "github_v1", "system_stats_v1", "collaboration_v1", "found_previews_v1", "fix_launch_v1", "agent_updates_v1", "read_only_turn_v1", "github_review_v1", "agent_preferences_v1", "github_issues_v1", "github_uat_v1", "github_run_v1", "github_close_v1", "notification_settings_v1", "queue_markup_v1", "launch_defaults_v1", "project_shown_v1", "conversations_v1", "findings_v1", "contribution_import_v1", "github_together_v1", "unarchive_task_v1", "checklist_v1", "checklist_agent_items_v1", "disable_in_ophio_v1", "review_rules_v1", "review_rounds_v2", "github_when_green_v1", "conversation_access_v1", "switch_to_work_v1", "computer_name_v1", "sign_in_on_phone_v1", "alert_types_v1"],
   };
 }
 

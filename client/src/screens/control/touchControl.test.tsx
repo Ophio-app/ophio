@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createRef } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ControlTarget, InputAction } from "../../protocol/types";
 import { LivePicture } from "./LivePicture";
@@ -13,7 +13,16 @@ const target: ControlTarget = {
 // The surface is 400 × 225 CSS pixels, so (100, 45) is a quarter across and a fifth down.
 let clock = 0;
 let send = vi.fn<(action: InputAction) => boolean>();
+let frames = new Map<number, FrameRequestCallback>();
+const flushFrames = () => act(() => {
+  const pending = [...frames.values()]; frames.clear();
+  for (const callback of pending) callback(clock);
+});
 beforeEach(() => {
+  frames = new Map();
+  let frameId = 0;
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++frameId, callback); return frameId; });
+  vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
   clock = 1000;
   send = vi.fn(() => true);
   localStorage.clear();
@@ -34,8 +43,10 @@ const canvas = createRef<HTMLCanvasElement>();
 const show = () => render(<LivePicture target={target} canvas={canvas} retry={() => undefined} enabled send={send}
   picture={{ at: Date.now(), revision: 1, connected: true, error: null }} />);
 const surface = () => canvas.current?.parentElement?.parentElement as HTMLElement;
-const touch = (kind: "Down" | "Move" | "Up", x: number, y: number, pointerId = 1) =>
+const touch = (kind: "Down" | "Move" | "Up", x: number, y: number, pointerId = 1) => {
   fireEvent[`pointer${kind}`](surface(), { pointerId, clientX: x, clientY: y });
+  flushFrames();
+};
 const tap = (x: number, y: number) => {
   touch("Down", x, y);
   clock += 40;
@@ -164,6 +175,53 @@ it("keeps Touchpad as a choice this device remembers", () => {
   cleanup();
   show();
   expect(screen.getByRole("radio", { name: "Touchpad" }).getAttribute("aria-checked")).toBe("true");
+});
+
+it("classifies both fingers together so a horizontal scroll never locks into zoom", () => {
+  show();
+  fireEvent.click(screen.getByRole("radio", { name: "Touchpad" }));
+  touch("Down", 100, 100, 1); touch("Down", 200, 100, 2);
+  fireEvent.pointerMove(surface(), { pointerId: 1, clientX: 120, clientY: 100 });
+  fireEvent.pointerMove(surface(), { pointerId: 2, clientX: 220, clientY: 100 });
+  flushFrames();
+  expect(canvas.current?.parentElement?.style.transform).toBe("translate(0px, 0px) scale(1)");
+  expect(sent()).toEqual([{ action: "scroll", at: { x: 0.5, y: 0.5 }, dx: -80, dy: -0 }]);
+});
+
+it("inline drags stop at the visible picture boundary even when zoomed", () => {
+  show();
+  fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+  fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+  touch("Down", 100, 100); clock += 200;
+  touch("Move", 600, 100); touch("Up", 600, 100);
+  expect(sent().filter(a => a.action === "pointer_move").at(-1))
+    .toEqual({ action: "pointer_move", to: { x: 0.5, y: 100 / 450 } });
+});
+
+it("touchpad scrolling never moves the pointer when the second finger lifts", () => {
+  show();
+  fireEvent.click(screen.getByRole("radio", { name: "Touchpad" }));
+  touch("Down", 100, 100, 1); touch("Down", 200, 100, 2);
+  touch("Move", 100, 60, 1);
+  expect(sent()).toEqual([{ action: "scroll", at: { x: 0.5, y: 0.5 }, dx: -0, dy: 80 }]);
+  touch("Up", 200, 100, 2);
+  touch("Move", 100, 20, 1); touch("Up", 100, 20, 1);
+  expect(sent()).toHaveLength(1);
+  send.mockClear();
+  touch("Down", 100, 100, 1); touch("Down", 200, 100, 2);
+  clock += 50;
+  touch("Up", 100, 100, 1); touch("Up", 200, 100, 2);
+  expect(sent()).toEqual([{ action: "click", button: "right", at: { x: 0.5, y: 0.5 }, count: 1 }]);
+});
+
+it("switching mode cancels any contact already down", () => {
+  show();
+  touch("Down", 100, 100);
+  fireEvent.click(screen.getByRole("radio", { name: "Touchpad" }));
+  touch("Move", 200, 100); touch("Up", 200, 100);
+  expect(sent()).toEqual([]);
+  tap(200, 100);
+  expect(sent()).toEqual([{ action: "click", button: "left", at: { x: 0.5, y: 0.5 }, count: 1 }]);
 });
 
 it("full screen works the same, and two fingers tapped together right-click between them", () => {

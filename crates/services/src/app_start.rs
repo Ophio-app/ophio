@@ -424,6 +424,8 @@ impl CompanionHub {
         }
         let id = ApprovalId::new();
         let facts = ToolApproval {
+            headline: None,
+            subject: Default::default(),
             kind: ApprovalKind::Command,
             title: format!("Start {name} with this command?"),
             detail: Some(format!(

@@ -138,6 +138,7 @@ where
                 browser: binding.browser,
                 github: binding.github,
                 checklist_answers: binding.checklist_answers,
+                read_only: binding.read_only,
             },
         )
         .await?;
@@ -191,7 +192,42 @@ fn refusal(binding: &BridgeBinding, request: &BridgeRequest) -> Option<&'static 
             Some("planning work is not available to the computer specialist")
         }
         BridgeRequest::RequestHuman { .. } if binding.browser || binding.computer_use => None,
+        // Any run may ask the person for more; Plan and Ask runs may do only that.
+        BridgeRequest::RequestAccess { .. } => None,
         _ if binding.computer_use => None,
         _ => Some("computer use is not enabled for this run"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use protocol::{RunId, model::AccessNeed};
+
+    fn binding(computer_use: bool, read_only: bool) -> BridgeBinding {
+        BridgeBinding {
+            run_id: RunId::new(),
+            target_id: None,
+            computer_use,
+            browser: false,
+            github: false,
+            checklist_answers: false,
+            read_only,
+        }
+    }
+
+    #[test]
+    fn every_run_may_ask_for_more_access() {
+        let ask = BridgeRequest::RequestAccess {
+            needs: vec![AccessNeed::Internet],
+            reason: "fetch the docs".into(),
+        };
+        for (computer_use, read_only) in [(false, false), (false, true), (true, false)] {
+            assert_eq!(refusal(&binding(computer_use, read_only), &ask), None);
+        }
+        let key = BridgeRequest::Key {
+            keys: vec!["a".into()],
+        };
+        assert!(refusal(&binding(false, false), &key).is_some());
     }
 }

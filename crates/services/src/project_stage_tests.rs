@@ -154,6 +154,7 @@ async fn implementation_release_and_reverse_transitions_leave_execution_authorit
             &owner,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -190,6 +191,7 @@ async fn implementation_release_and_reverse_transitions_leave_execution_authorit
                 &owner,
                 Query::Snapshot {
                     reads_withheld: None,
+                    account_items: false,
                 },
             )
             .await

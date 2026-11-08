@@ -696,7 +696,8 @@ fn describe_agent_logins(view: &protocol::agent_logins::AgentLoginsView) -> Stri
     out
 }
 async fn find_account(client: &mut OwnerClient, name: &str) -> Result<protocol::accounts::Account> {
-    let QueryData::Accounts { view } = query(client, Query::Accounts).await? else {
+    let QueryData::Accounts { view } = query(client, Query::Accounts { on_phone: false }).await?
+    else {
         return Err(crate::error::invalid("unexpected accounts response"));
     };
     let wanted = name.trim();
@@ -1113,6 +1114,7 @@ pub async fn execute(cli: Cli, factory: &dyn HubFactory) -> Result<()> {
                 &mut client,
                 Query::Snapshot {
                     reads_withheld: Some(true),
+                    account_items: false,
                 },
             )
             .await?;
@@ -1207,7 +1209,7 @@ pub async fn execute(cli: Cli, factory: &dyn HubFactory) -> Result<()> {
         Action::Accounts { action, json } => {
             let mut client = OwnerClient::connect(&paths.socket()).await?;
             match action {
-                None => match query(&mut client, Query::Accounts).await? {
+                None => match query(&mut client, Query::Accounts { on_phone: false }).await? {
                     data if json => print_json(&data),
                     QueryData::Accounts { view } => {
                         print!("{}", describe_accounts(&view));
@@ -1431,6 +1433,7 @@ pub async fn execute(cli: Cli, factory: &dyn HubFactory) -> Result<()> {
                 &mut client,
                 Query::Snapshot {
                     reads_withheld: Some(true),
+                    account_items: false,
                 },
             )
             .await?
@@ -1702,6 +1705,7 @@ async fn checklist_project(client: &mut OwnerClient, named: &str) -> Result<prot
         client,
         Query::Snapshot {
             reads_withheld: Some(true),
+            account_items: false,
         },
     )
     .await?
@@ -3089,6 +3093,7 @@ mod fingerprint_tests {
             manage_url: None,
             needs,
             browser_sign_in: false,
+            phone_sign_in: false,
             note: None,
             used_by: vec![],
         };

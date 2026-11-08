@@ -56,7 +56,6 @@ fn version_number(text: &str) -> Option<(u64, u64, u64)> {
     })
 }
 pub(crate) fn candidates() -> Vec<PathBuf> {
-    let executable = if cfg!(windows) { "codex.exe" } else { "codex" };
     // Where tasks look (see `ports::agent_program`), and where Codex's
     // older installs kept it.
     #[cfg(not(windows))]
@@ -82,13 +81,21 @@ pub(crate) fn candidates() -> Vec<PathBuf> {
                 ".local/opt/codex",
                 "AppData/Local/Programs",
                 "AppData/Roaming/npm",
+                "AppData/Local/Programs/OpenAI/Codex/bin",
             ] {
                 folders.push(PathBuf::from(&root).join(suffix));
             }
         }
         folders
     };
-    let paths = folders.into_iter().map(|folder| folder.join(executable));
+    #[cfg(not(windows))]
+    let paths = folders.into_iter().map(|folder| folder.join("codex"));
+    // On Windows, `codex.exe`, or the program behind npm's script, as tasks
+    // find it.
+    #[cfg(windows)]
+    let paths = folders
+        .into_iter()
+        .filter_map(|folder| ports::agent_program::windows_program_in(&folder, "codex"));
     let mut unique = Vec::new();
     let mut canonical = Vec::new();
     for path in paths {

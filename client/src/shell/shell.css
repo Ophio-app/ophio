@@ -500,7 +500,9 @@
 :root.app-tight .screen__body {
   min-height: min(10rem, 45%);
 }
-:root.app-tight .ctx__computer {
+/* In All, which computer the project is on stays: it is the only place
+   that says so. */
+:root.app-tight .ctx__computer:not(.ctx__computer--all) {
   display: none;
 }
 /* Without the computer's line the header needs only its touch target. */

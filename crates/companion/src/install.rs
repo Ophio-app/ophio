@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Service operations are invoked only by explicit CLI subcommands.
+#[cfg(any(target_os = "linux", windows, target_os = "macos"))]
+use crate::local::OwnerClient;
 #[cfg(any(target_os = "linux", windows))]
-use crate::local::{OwnerClient, OwnerRequest, OwnerResponse};
+use crate::local::{OwnerRequest, OwnerResponse};
 use crate::{Error, Result, config::APP_NAME};
 use ports::PRODUCT_NAME;
 use std::path::Path;
-#[cfg(any(target_os = "linux", windows))]
+#[cfg(any(target_os = "linux", windows, target_os = "macos"))]
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,15 +64,16 @@ pub enum ServiceCommand {
     ///
     /// On Linux, this installs a systemd user service and starts it now. An
     /// existing Øphio service, or the earlier companion program's, is replaced
-    /// and restarted. On Windows, this registers Øphio to start when you log
-    /// in and, unless it is running already, starts it now; either way it runs
-    /// in the background, without a window.
+    /// and restarted. On a Mac, this installs a launchd agent and starts it
+    /// now. On Windows, this registers Øphio to start when you log in and,
+    /// unless it is running already, starts it now; either way it runs in the
+    /// background, without a window.
     Install,
     /// Stop starting Øphio at login, and stop it.
     ///
     /// On Linux, this stops the service, and the earlier companion program's.
-    /// On Windows, this stops Øphio if it is running. Settings, paired devices
-    /// and data are kept; `ophio uninstall-data` deletes them.
+    /// On a Mac or Windows, this stops Øphio if it is running. Settings, paired
+    /// devices and data are kept; `ophio uninstall-data` deletes them.
     Uninstall,
     /// Show the state of the login service.
     Status,
@@ -87,24 +90,25 @@ pub async fn service(command: ServiceCommand) -> Result<()> {
         )
         .await?
         {
-            println!("{note}");
+            say!("{note}");
         }
         Ok(())
     }
     #[cfg(windows)]
     {
-        println!(
+        say!(
             "{}",
             windows::service(command, &crate::config::Paths::discover()?).await?
         );
         Ok(())
     }
-    #[cfg(not(any(target_os = "linux", windows)))]
+    #[cfg(target_os = "macos")]
     {
-        let _ = command;
-        Err(Error::Unsupported(
-            "startup registration is not supported on this platform",
-        ))
+        println!(
+            "{}",
+            macos::service(command, &crate::config::Paths::discover()?).await?
+        );
+        Ok(())
     }
 }
 
@@ -136,12 +140,9 @@ pub(crate) async fn start_now(paths: &crate::config::Paths) -> Result<()> {
     {
         windows::start_now(paths, &std::env::current_exe()?).await
     }
-    #[cfg(not(any(target_os = "linux", windows)))]
+    #[cfg(target_os = "macos")]
     {
-        let _ = paths;
-        Err(Error::Unsupported(
-            "starting in the background is not supported on this platform",
-        ))
+        macos::start_now(paths).await
     }
 }
 
@@ -187,10 +188,9 @@ pub(crate) async fn stop_now(paths: &crate::config::Paths) -> Result<bool> {
     {
         windows::stop(paths).await
     }
-    #[cfg(not(any(target_os = "linux", windows)))]
+    #[cfg(target_os = "macos")]
     {
-        let _ = paths;
-        Ok(false)
+        macos::stop_now(paths).await
     }
 }
 
@@ -207,9 +207,9 @@ pub(crate) async fn starts_at_login() -> Result<bool> {
     {
         Ok(platform_windows::startup::status()? == platform_windows::startup::Status::Registered)
     }
-    #[cfg(not(any(target_os = "linux", windows)))]
+    #[cfg(target_os = "macos")]
     {
-        Ok(false)
+        macos::starts_at_login()
     }
 }
 
@@ -245,24 +245,21 @@ pub(crate) async fn login_service(paths: &crate::config::Paths) -> Result<Option
             .await
             .map(Some)
     }
-    #[cfg(not(any(target_os = "linux", windows)))]
+    #[cfg(target_os = "macos")]
     {
-        let _ = paths;
-        Err(Error::Unsupported(
-            "startup registration is not supported on this platform",
-        ))
+        macos::login_service(paths).await
     }
 }
 
 /// How long setup and `service install` wait for an Øphio they started to
 /// answer, and for a running one to finish stopping.
-#[cfg(any(target_os = "linux", windows))]
+#[cfg(any(target_os = "linux", windows, target_os = "macos"))]
 const WAIT: Duration = Duration::from_secs(30);
-#[cfg(any(target_os = "linux", windows))]
+#[cfg(any(target_os = "linux", windows, target_os = "macos"))]
 const POLL: Duration = Duration::from_millis(200);
 
 /// Whether this user's Øphio answers on its owner socket or pipe.
-#[cfg(any(target_os = "linux", windows))]
+#[cfg(any(target_os = "linux", windows, target_os = "macos"))]
 async fn running(paths: &crate::config::Paths) -> Result<bool> {
     match OwnerClient::connect(&paths.socket()).await {
         Ok(_) => Ok(true),
@@ -271,7 +268,7 @@ async fn running(paths: &crate::config::Paths) -> Result<bool> {
     }
 }
 
-#[cfg(any(target_os = "linux", windows))]
+#[cfg(any(target_os = "linux", windows, target_os = "macos"))]
 enum Started {
     Running,
     /// Not answering yet after [`WAIT`].
@@ -281,7 +278,7 @@ enum Started {
 
 /// Waits for an Øphio just started to answer, so that a failure to start is
 /// reported rather than lost. `child` is its process, when this started it.
-#[cfg(any(target_os = "linux", windows))]
+#[cfg(any(target_os = "linux", windows, target_os = "macos"))]
 async fn started(
     paths: &crate::config::Paths,
     mut child: Option<&mut std::process::Child>,
@@ -305,7 +302,7 @@ async fn started(
 
 /// Starts `executable run` in a process group of its own, with no input or
 /// output, so that it carries on after the terminal that started it closes.
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub(crate) fn detached(executable: &Path) -> std::io::Result<std::process::Child> {
     use std::os::unix::process::CommandExt;
     let mut command = std::process::Command::new(executable);
@@ -367,6 +364,10 @@ pub(crate) fn start_in_background(executable: &Path) -> std::io::Result<std::pro
 
 /// Logon startup on Windows is a per-user Run entry, never a Session-0
 /// service; `run` started by it goes on without a window.
+#[cfg(target_os = "macos")]
+#[path = "install_macos.rs"]
+mod macos;
+
 #[cfg(windows)]
 mod windows {
     use super::*;
@@ -550,6 +551,19 @@ async fn systemctl(systemctl: &impl Systemctl, args: &[&str]) -> Result<()> {
         ));
     }
     Ok(())
+}
+
+/// The login service's name in launchd, on a Mac.
+#[cfg(target_os = "macos")]
+pub(crate) const LABEL: &str = macos::LABEL;
+#[cfg(target_os = "macos")]
+pub(crate) use macos::run_job;
+
+/// After an update, rewrites the login agent as this version writes it, if it is
+/// one Øphio wrote for `executable`. launchd reads it when it next starts.
+#[cfg(target_os = "macos")]
+pub(crate) async fn refresh_unit(executable: &Path) -> Result<Option<String>> {
+    macos::refresh(executable).await
 }
 
 /// After an update, rewrites the login service's unit as this version writes

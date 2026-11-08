@@ -13,7 +13,7 @@ export function companionDownload() {
 export function companionSteps(config = companionDownload()): string {
   return [
     `Install ${PRODUCT_NAME} on your computer`,
-    config.url ? `Download the Linux or Windows archive: ${config.url}` : `This build has no download link for ${PRODUCT_NAME}. Ask the person who supplied this app for the archive.`,
+    config.url ? `Download the Linux archive: ${config.url}` : `This build has no download link for ${PRODUCT_NAME}. Ask the person who supplied this app for the archive.`,
     ...(config.checksum ? [`Check the archive checksum: ${config.checksum}`] : []),
     "1. Extract the archive and follow INSTALL.md. Keep both executables together.",
     `2. Linux: the installer starts setup when it finishes; otherwise run "$HOME/.local/bin/${PROGRAM_NAME}" setup in your ordinary graphical login session. Windows: in PowerShell in the extracted folder, not as administrator, run .\\${PROGRAM_NAME}.exe setup. Setup starts ${PRODUCT_NAME} now and whenever you sign in.`,

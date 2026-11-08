@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Explicit session inputs only. Construction never connects to a desktop.
-mod apps;
+pub(crate) mod apps;
 #[cfg(target_os = "linux")]
 mod kwin;
 use async_trait::async_trait;
@@ -100,7 +100,7 @@ impl LinuxWindows {
         }
     }
     fn program(&self, name: &str) -> Result<PathBuf, PlatformError> {
-        apps::program(&self.environment, name).ok_or_else(|| {
+        apps::program_path(&self.environment, name).ok_or_else(|| {
             PlatformError::Unsupported(format!(
                 "Install {name} on the computer to use {} window actions",
                 self.backend.name()
@@ -306,15 +306,29 @@ impl WindowActions for LinuxWindows {
                 .get(app_id)
                 .cloned()
                 .ok_or(PlatformError::TargetNotFound)?;
-            apps::revalidate(&entry)?;
+            // Bounded as a launch's own reads are: this display stays locked
+            // meanwhile, and nothing has started.
+            let read = entry.clone();
+            tokio::time::timeout(
+                Duration::from_millis(1000),
+                tokio::task::spawn_blocking(move || apps::revalidate(&read)),
+            )
+            .await
+            .map_err(|_| {
+                PlatformError::TemporarilyUnavailable(
+                    "The computer took too long to read the app’s entry. Nothing was opened; ask again"
+                        .into(),
+                )
+            })?
+            .map_err(|_| PlatformError::Native("The app’s entry could not be read".into()))??;
             authority.check()?;
-            self.command(
-                "gio",
-                &[
-                    "launch",
-                    entry.path.to_str().ok_or(PlatformError::TargetNotFound)?,
-                ],
-                true,
+            // In its own scope, so the app outlives an Øphio restart.
+            crate::launch::open_entry(
+                &self.environment,
+                &entry.path,
+                &entry.name,
+                &|| authority.check(),
+                &|launch| authority.unstopped(launch),
             )
             .await?;
             return Ok((
@@ -434,6 +448,23 @@ impl WindowActions for LinuxWindows {
             )
         })
     }
+    async fn focused(&self) -> Option<ports::windows::FocusedWindow> {
+        match &self.backend {
+            Backend::Hyprland { socket } => parse_hyprland_focus(
+                &self
+                    .command("hyprctl", &["-i", socket, "-j", "activewindow"], false)
+                    .await
+                    .ok()?,
+            ),
+            Backend::Sway { socket } => parse_sway_focus(
+                &self
+                    .command("swaymsg", &["-s", socket, "-r", "-t", "get_tree"], false)
+                    .await
+                    .ok()?,
+            ),
+            _ => None,
+        }
+    }
 }
 async fn run(
     program: &Path,
@@ -529,6 +560,52 @@ fn parse_hyprland(clients: &str, active: &str) -> Result<Vec<NativeWindow>, Plat
             },
         })
         .collect())
+}
+fn parse_hyprland_focus(text: &str) -> Option<ports::windows::FocusedWindow> {
+    let v = json(text).ok()?;
+    let at = v["at"].as_array()?;
+    let size = v["size"].as_array()?;
+    let address = string(&v["address"]);
+    if !hex_id(&address) {
+        return None;
+    }
+    Some(ports::windows::FocusedWindow {
+        id: address,
+        app: string(&v["class"]),
+        x: at.first()?.as_f64()?,
+        y: at.get(1)?.as_f64()?,
+        width: size.first()?.as_f64()?,
+        height: size.get(1)?.as_f64()?,
+    })
+}
+fn parse_sway_focus(text: &str) -> Option<ports::windows::FocusedWindow> {
+    fn visit(node: &Value, depth: usize) -> Option<&Value> {
+        if depth > 64 {
+            return None;
+        }
+        if node["focused"] == true && matches!(node["type"].as_str(), Some("con" | "floating_con"))
+        {
+            return Some(node);
+        }
+        ["nodes", "floating_nodes"]
+            .into_iter()
+            .flat_map(|field| node[field].as_array().into_iter().flatten())
+            .find_map(|child| visit(child, depth + 1))
+    }
+    let tree = json(text).ok()?;
+    let node = visit(&tree, 0)?;
+    let rect = &node["rect"];
+    Some(ports::windows::FocusedWindow {
+        id: node["id"].as_u64()?.to_string(),
+        app: node["app_id"]
+            .as_str()
+            .map(str::to_owned)
+            .unwrap_or_else(|| string(&node["window_properties"]["class"])),
+        x: rect["x"].as_f64()?,
+        y: rect["y"].as_f64()?,
+        width: rect["width"].as_f64()?,
+        height: rect["height"].as_f64()?,
+    })
 }
 fn parse_sway(text: &str) -> Result<Vec<NativeWindow>, PlatformError> {
     fn visit(

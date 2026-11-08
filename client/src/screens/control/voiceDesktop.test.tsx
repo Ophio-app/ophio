@@ -151,6 +151,8 @@ it("starts voice control from the live desktop, keeps the picture watch-only and
   expect(screen.queryByRole("button", { name: "Voice" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Keyboard" })).toBeNull();
 
+  expect(screen.getByLabelText("Typed command").getAttribute("placeholder")).toBe("Open the browser, or press Super Enter");
+
   // A sensitive field is typed: Stop voice hands input back to this device.
   fireEvent.change(screen.getByLabelText("Typed command"), { target: { value: "type my password" } });
   fireEvent.click(screen.getByRole("button", { name: "Send command" }));

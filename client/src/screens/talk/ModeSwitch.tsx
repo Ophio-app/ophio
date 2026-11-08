@@ -16,18 +16,21 @@ export function launchName(a: Pick<AgentChoice, "harness" | "launchPolicy">): st
   return choice ? `“${choice.label}”` : "the agent’s own permission settings";
 }
 
-export function ModeSwitch({ from, to, who = "This new task", flags }: {
+export function ModeSwitch({ from, to, who = "This new task", flags, chat = false }: {
   from: TaskMode;
   to: TaskMode;
   /** What switches, as the sentence's subject. */
   who?: string;
   /** What Work starts with, where it is known. */
   flags?: Pick<AgentChoice, "harness" | "launchPolicy"> | null;
+  /** It comes from a chat, which its access governs whatever mode the
+   * computer runs it in, so it is never called Ask. */
+  chat?: boolean;
 }) {
-  if (from === to) return null;
+  if (!chat && from === to) return null;
   return (
     <p className="mode-switch" role="note">
-      <span className="mode-switch__what">Switching from {modeLabel(from)} to {modeLabel(to)}.</span>{" "}
+      <span className="mode-switch__what">{chat ? `From a chat to ${modeLabel(to)} mode.` : `Switching from ${modeLabel(from)} to ${modeLabel(to)}.`}</span>{" "}
       {to === "work" ? `${who} can change files${flags ? `, and starts with ${launchName(flags)}` : ""}.` : `${who} only reads.`}
     </p>
   );

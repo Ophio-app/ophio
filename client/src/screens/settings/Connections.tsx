@@ -12,6 +12,7 @@ import {
   useLink,
   shallowEqual,
 } from "../../app/context";
+import { useLastHeard } from "../../app/lastHeard";
 import { useNow } from "../../design/time";
 import { Age } from "../../design/Age";
 import { Button } from "../../design/Button";
@@ -19,7 +20,7 @@ import { TextField } from "../../design/Field";
 import { Section } from "../../design/ListRow";
 import { Notice } from "../../design/Notice";
 import { CHECK_WORD } from "../../design/remedy";
-import { Remedy } from "../../design/Remedy";
+import { Remedy } from "../../design/RemedyNotice";
 import { Sheet } from "../../design/Sheet";
 import { StateLine } from "../../design/StateLine";
 import { useTightLayout } from "../../shell/keyboard";
@@ -93,7 +94,7 @@ export default function Connections(_props: RouteProps<"connections">) {
     readiness = useHost((s) => s.readiness),
     capabilities = useHost((s) => s.capabilities),
     grants = useHost((s) => s.grants),
-    lastHeard = useHost((s) => s.lastHeardAt);
+    lastHeard = useLastHeard(link.state !== "online");
   const devices = useMemo(
     () => standing(reported, profile.deviceId),
     [reported, profile.deviceId],

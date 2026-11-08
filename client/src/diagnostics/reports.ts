@@ -89,6 +89,18 @@ export class ReportService extends Store<ReportsState> {
     }
     this.set({ ...next, sent });
   }
+  /** Every paired computer's session, by profile, for a report about a
+   * computer other than the one on screen and its follow-ups. */
+  #sessions: (profileId: string) => Session | undefined = () => undefined;
+  setSessions(find: (profileId: string) => Session | undefined): () => void {
+    this.#sessions = find;
+    return () => { if (this.#sessions === find) this.#sessions = () => undefined; };
+  }
+  /** The session for `profileId`, or the attached one. */
+  #sessionFor(profileId: string | null | undefined): Session | null {
+    if (!profileId || profileId === this.#session?.profileId) return this.#session;
+    return this.#sessions(profileId) ?? null;
+  }
   attach(session: Session, ui: Pick<UiStore, "get">): () => void {
     this.#session = session;
     this.#store = () => ({ host: session.state.get(), ui: ui.get() });
@@ -111,14 +123,16 @@ export class ReportService extends Store<ReportsState> {
   #reachable(session = this.#session): boolean { return this.#supported(session) && session?.link.get().state === "online"; }
   async startReport(origin: ReportOrigin, context: ReportContextInput): Promise<ReportDraft> {
     const salt = reportSalt(), id = uuidv7(this.#now());
-    const session = this.#session;
-    const bundle = await buildBundle({ id, now: this.#now(), salt, origin, context, phone: this.#phone, trail: this.#trail.snapshot(), store: this.#store(), crashes: await this.#crashes.collect() });
+    // A report about another computer describes that computer's state.
+    const session = this.#sessionFor(context.profileId);
+    const store = session && session !== this.#session ? { host: session.state.get() } : this.#store();
+    const bundle = await buildBundle({ id, now: this.#now(), salt, origin, context, phone: this.#phone, trail: this.#trail.snapshot(), store, crashes: await this.#crashes.collect() });
     const draft: ReportDraft = { id, reference: reportReference(id), salt, bundle, description: describeBundle(bundle), phoneOnly: true, extras: [], computerSending: true, profileId: session?.profileId ?? null, previewRevision: 0, taskId: context.task, signatureSide: context.errorSide ?? (context.command && context.error ? "computer" : "phone") };
     await this.#preview(draft);
     return draft;
   }
   async #preview(draft: ReportDraft): Promise<void> {
-    const session = this.#session;
+    const session = this.#sessionFor(draft.profileId);
     const revision = ++draft.previewRevision;
     if (!this.#reachable(session) || session?.profileId !== draft.profileId) return;
     try {
@@ -175,7 +189,7 @@ export class ReportService extends Store<ReportsState> {
       if (!this.get().settings.sending) break;
       const bundle = queued.bundle;
       let sent = false;
-      const session = this.#session;
+      const session = this.#sessionFor(queued.profileId);
       if (queued.computerSending && this.#reachable(session) && (queued.profileId === null || queued.profileId === session?.profileId)) {
         try { await session!.command({ command: "submit_report", bundle }, { label: "Send report" }); sent = true; } catch { /* The same report id makes a direct retry safe. */ }
       }
@@ -212,9 +226,10 @@ export class ReportService extends Store<ReportsState> {
       return update ? { ...r, history: update.history, questions: update.questions, checked_at: now } : r;
     }) });
   }
-  async answer(value: IntakeAnswer): Promise<void> {
+  /** `via` is the computer the question came through, when not the one on screen. */
+  async answer(value: IntakeAnswer, via: Session | null = this.#session): Promise<void> {
     if (this.get().direct.some(r => r.report_id === value.report_id)) { const r = await this.#intake.answer(value); this.#applyUpdates(r.reports, r.now); }
-    else if (this.#reachable()) await this.#session!.command({ command: "answer_report_question", ...value }, { label: "Answer report question" });
+    else if (this.#reachable(via)) await via!.command({ command: "answer_report_question", ...value }, { label: "Answer report question" });
     else throw new Error("Connect to the computer to answer this question.");
   }
   async withdraw(reportId: string): Promise<void> {

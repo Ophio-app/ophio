@@ -338,6 +338,7 @@ async fn main() {
             &owner,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -413,6 +414,7 @@ async fn main() {
             &callers[0],
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await

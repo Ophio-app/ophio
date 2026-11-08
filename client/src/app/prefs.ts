@@ -14,6 +14,11 @@ export interface Prefs {
   /** Reduce motion regardless of the system setting. */
   reduceMotion: boolean;
   lastProfileId: string | null;
+  /** The header showed every computer at once when last chosen. */
+  allComputers?: boolean;
+  /** With All computers, Tasks and To-Do show every project; false once a
+   * project was chosen there. Absent is true. */
+  allProjects?: boolean;
   claudeBypassPermissions: boolean;
   codexBypassPermissions: boolean;
   /** The agent new work goes to where a project has no default of its own;
@@ -42,6 +47,8 @@ function load(): Prefs {
       codexBypassPermissions: typeof saved?.codexBypassPermissions === "boolean" ? saved.codexBypassPermissions : true,
       defaultAgent: typeof saved?.defaultAgent === "string" ? saved.defaultAgent : null,
       tiltPan: saved?.tiltPan === true,
+      allComputers: saved?.allComputers === true,
+      allProjects: saved?.allProjects !== false,
       warningsOff: saved?.warningsOff === true,
       hiddenWarnings: Array.isArray(saved?.hiddenWarnings) ? saved.hiddenWarnings.filter((id): id is string => typeof id === "string") : [],
       screenNames: saved?.screenNames && typeof saved.screenNames === "object" && !Array.isArray(saved.screenNames)

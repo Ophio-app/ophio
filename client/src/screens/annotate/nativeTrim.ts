@@ -44,7 +44,7 @@ export async function nativeTrim(
       result.endMs > range.end * 1000 + 1000
     )
       throw new DerivativeError(
-        "Android returned an invalid clip range. Use screenshots instead.",
+        "The phone returned an invalid clip range. Use screenshots instead.",
       );
     const parts: ArrayBuffer[] = [];
     for (let offset = 0; offset < result.size;) {

@@ -430,6 +430,11 @@ pub enum GithubLink {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         #[ts(optional)]
         review_with: Option<LaunchChoice>,
+        /// Whether its pull request merges once it is green or waits for
+        /// the person. Omitted, the project's setting decides.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        when_green: Option<WhenGreen>,
     },
     /// Take over an open pull request.
     Pr {
@@ -625,6 +630,26 @@ pub struct TaskGithub {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub approval: Option<crate::review::ApprovalNeed>,
+    /// The person's choice for this task: whether its pull request merges
+    /// once it is green or waits for them. Unset, the project's setting
+    /// decides.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub when_green: Option<WhenGreen>,
+}
+
+/// What happens to a task's pull request once its checks pass and its
+/// review is clear.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS,
+)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum WhenGreen {
+    /// Øphio merges it, as Through merge does.
+    Merge,
+    /// It waits for the person to merge it, as in Drafts.
+    Leave,
 }
 
 #[derive(
@@ -925,4 +950,13 @@ pub enum GithubAction {
     /// Stop Merge together: what hasn't merged is left out. Once it has
     /// ended, put it away.
     StopTogether { project_id: ProjectId },
+    /// Choose whether one task's pull request merges once it is green or
+    /// waits for the person; none goes back to the project's setting.
+    /// Merge is refused where the person's account can't merge.
+    SetWhenGreen {
+        task_id: TaskId,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        when_green: Option<WhenGreen>,
+    },
 }

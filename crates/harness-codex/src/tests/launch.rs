@@ -173,6 +173,7 @@ fn a_browsing_work_run_gets_the_browser_tools_with_the_token_kept_off_the_comman
         browser: true,
         github: false,
         checklist_answers: false,
+        read_only: false,
     });
     let (file, server) = bridge_server(&spec).unwrap().unwrap();
     let args = arguments(&spec, Some(&server), false, None, &[]).unwrap();
@@ -213,10 +214,22 @@ fn a_browsing_work_run_gets_the_browser_tools_with_the_token_kept_off_the_comman
     // person things, and only that.
     spec.mode = TaskMode::Plan;
     assert!(bridge_server(&spec).unwrap().is_none());
+    // A read-only run's bridge offers request_access alone.
+    spec.bridge.as_mut().unwrap().read_only = true;
+    for mode in [TaskMode::Plan, TaskMode::Ask] {
+        spec.mode = mode;
+        let (_file, server) = bridge_server(&spec).unwrap().unwrap();
+        assert!(
+            server.contains("enabled_tools=[\"request_access\"]"),
+            "{server}"
+        );
+    }
+    spec.bridge.as_mut().unwrap().read_only = false;
     spec.mode = TaskMode::Work;
     spec.bridge.as_mut().unwrap().browser = false;
     let (_file, server) = bridge_server(&spec).unwrap().unwrap();
     let tools: Vec<String> = (ports::bridge::PERSON_TOOLS.iter())
+        .chain([&ports::bridge::ACCESS_TOOL])
         .chain(ports::bridge::WORK_TOOLS)
         .map(|t| format!("\"{t}\""))
         .collect();
@@ -251,6 +264,7 @@ fn a_run_linked_to_github_gets_the_github_tools_and_is_told_how_to_use_them() {
         browser: false,
         github: true,
         checklist_answers: false,
+        read_only: false,
     });
     spec.github = Some("## GitHub\nThis task is linked to GitHub.".into());
     let (_file, server) = bridge_server(&spec).unwrap().unwrap();
@@ -330,6 +344,7 @@ fn a_turn_answering_on_the_checklist_gets_its_read_and_reply_tools_alone() {
         browser: false,
         github: false,
         checklist_answers: true,
+        read_only: false,
     });
     for mode in [TaskMode::Ask, TaskMode::Work] {
         spec.mode = mode;

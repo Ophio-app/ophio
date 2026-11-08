@@ -13,6 +13,7 @@ import type {
   Grants,
   MediaClientFrame,
   PairingOffer,
+  Project,
   ProtocolError,
   Query,
   ServerFrame,
@@ -49,7 +50,8 @@ import { reportPhone } from "./reportPhone";
 import { simulatedDevice } from "./device";
 import { paintDesktop } from "./annotate";
 
-import { simulatedLifecycle, secondProfile } from "./lifecycle";
+import { simulatedLifecycle, secondProfile, thirdProfile } from "./lifecycle";
+import { otherProjects, otherWork, type OtherWork } from "./computers";
 
 type Sendable = Exclude<ClientFrame, { type: "hello" } | { type: "authenticate" }>;
 
@@ -78,6 +80,8 @@ export interface SimControls {
   offline(reason?: string): void;
   /** Another device answers at the computer's address until `online()`. */
   impostor(): void;
+  /** This phone is off Tailscale until `online()`. */
+  tailscaleOff(): void;
   online(): void;
   /** Re-authenticate with restricted phone grants for access-state checks. */
   permissions(grants: Partial<Grants>): void;
@@ -96,6 +100,10 @@ export interface SimControls {
   stops: { ignore(taskId: string, activity?: boolean, ends?: boolean): void; restart(taskId: string): void };
   /** The computer's owner. Unless held, they confirm each request at once. */
   pairing: { hold(): void; confirm(): void; refuse(): void; expire(): void };
+  /** The computer reports this agent signed out; raises the "isn't signed in" notice if this phone may manage accounts. */
+  signedOut(accountId: "claude" | "codex"): void;
+  /** Completes the sign-in on the phone that is running now. */
+  finishSignIn(): void;
   /** A fixture handoff from Clankerhub, as a transport would deliver it; its id. */
   handoff(over?: Parameters<typeof fixtureHandoff>[1]): string | null;
 }
@@ -134,9 +142,10 @@ class SimControlLink implements ControlLink {
         this.#setState({
           state: "offline",
           since: Date.now(),
-          reason: this.env.mismatch ? SIM_MISMATCH : this.env.offlineReason,
+          reason: this.env.mismatch ? SIM_MISMATCH : this.env.noTailscale ? SIM_NO_TAILSCALE : this.env.offlineReason,
           retryAt: Date.now() + 4000,
           ...(this.env.mismatch && { mismatch: true }),
+          ...(this.env.noTailscale && { noTailscale: true }),
         });
         this.#later(4000, () => this.connect());
         return;
@@ -175,7 +184,7 @@ class SimControlLink implements ControlLink {
   /** Called by SimEnv when the simulated network goes away. */
   lose(reason: string, retryMs = 4000): void {
     if (this.#state.state === "idle" || this.#state.state === "failed") return;
-    this.#drop({ state: "offline", since: Date.now(), reason, retryAt: Date.now() + retryMs, ...(this.env.mismatch && { mismatch: true }) });
+    this.#drop({ state: "offline", since: Date.now(), reason, retryAt: Date.now() + retryMs, ...(this.env.mismatch && { mismatch: true }), ...(this.env.noTailscale && { noTailscale: true }) });
     this.#later(retryMs, () => this.connect());
   }
 
@@ -198,12 +207,19 @@ class SimControlLink implements ControlLink {
       case "ping":
         this.#later(40, () => this.#frame({ type: "pong", nonce: frame.nonce }));
         return true;
-      case "subscribe":
+      case "subscribe": {
         this.#detach?.();
-        host.replayAfter(frame.after_seq, (f) => this.#frame(f));
-        this.#detach = host.attach((f) => this.#frame(f));
+        // As the computer: notices about an account only to an app that shows them.
+        const accountItems = frame.account_items === true;
+        const pass = (f: Parameters<Parameters<typeof host.attach>[0]>[0]) => {
+          if (!accountItems && f.type === "event" && f.event.type === "attention_upserted" && f.event.item.account_id) return;
+          this.#frame(f);
+        };
+        host.replayAfter(frame.after_seq, pass);
+        this.#detach = host.attach(pass);
         void host.work.pictures();
         return true;
+      }
       case "query": {
         const { query_id, query } = frame;
         // The computer refuses a query this device wasn't granted.
@@ -237,12 +253,19 @@ class SimControlLink implements ControlLink {
             ? "This device or chat wasn’t given permission for that"
             : body.command === "agent_login" && !(body.action.action === "answer_code" ? this.env.grants.approvals : this.env.grants.accounts)
             ? "This device or chat wasn’t given permission for that"
-            : body.command === "github" && !(["mark_pr_ready", "merge_pr", "merge_together", "stop_together", "file_issue", "run_issues", "set_group", "close_issue"].includes(body.action.action) ? this.env.grants.tasks : this.env.grants.admin)
+            // A pull request merging by itself is a merge said yes to ahead of time (`grants.rs`).
+            : body.command === "create_task" && body.github?.type === "issue" && body.github.when_green === "merge" && !this.env.grants.approvals
+            ? "This device or chat wasn’t given permission for that"
+            : body.command === "github" && body.action.action === "set_when_green" && body.action.when_green === "merge" && !this.env.grants.approvals
+            ? "This device or chat wasn’t given permission for that"
+            : body.command === "github" && !(["mark_pr_ready", "merge_pr", "merge_together", "stop_together", "file_issue", "run_issues", "set_group", "close_issue", "set_when_green"].includes(body.action.action) ? this.env.grants.tasks : this.env.grants.admin)
             ? "This device or chat wasn’t given permission for that"
             : body.command === "unlock_desktop" && !(this.env.grants.control_input && this.env.grants.admin)
             ? "This device or chat wasn’t given permission for that"
-            : (["checklist_tick", "checklist_answer", "checklist_ask", "checklist_deliver", "remove_checklist"].includes(body.command) && !this.env.grants.tasks)
-              || (body.command === "set_file_delivery" && !this.env.grants.admin)
+            // Only the person does these on the computer (`person_only.rs`), so
+            // no agent may; a paired device is the person, held to its tasks grant.
+            : (["checklist_tick", "checklist_answer", "checklist_ask", "checklist_deliver", "remove_checklist", "set_task_notify"].includes(body.command) && !this.env.grants.tasks)
+              || (["set_file_delivery", "rename_computer"].includes(body.command) && !this.env.grants.admin)
             ? "This device or chat wasn’t given permission for that"
             : null;
         const result = refusal
@@ -737,6 +760,7 @@ class SimEnv {
   forcedOffline = false;
   offlineReason = "Can't reach studio";
   mismatch = false;
+  noTailscale = false;
   dropReceipt = false;
   latencyMs = 0;
   revoked = false;
@@ -774,16 +798,40 @@ export function createSimPlatform(): Platform {
   env.incompatible = params.has("incompatible");
   const lifecycle = simulatedLifecycle(params.has("lock-test"));
   // `same-name`: an older pairing of a reinstalled computer, still called the
-  // same, at another port and certificate.
+  // same, at another port and certificate. `two-computers` adds a spare
+  // desktop and `three-computers` a laptop too, each with projects of its own.
+  // `computer-offline=<name>` leaves that one out of reach.
   const spare = new SimEnv(), otherProfile = params.has("same-name")
     ? { ...secondProfile(PROFILE), name: PROFILE.name, addresses: ["studio.tail1234.ts.net:47101"],
       certSha256: "c29e04b7a1f35d6e8c0b2a4f6d8e1c3b5a7f9e0d2c4b6a8f1e3d5c7b9a0f2e4d", pairedAt: PROFILE.pairedAt - 90 * 24 * 3600_000 }
     : secondProfile(PROFILE);
-  spare.host.host = { ...spare.host.host, host_id: otherProfile.hostId, name: otherProfile.name };
-  spare.host.projects = [];
-  spare.host.tasks = []; spare.host.runs = []; spare.host.approvals = []; spare.host.attention = [];
-  spare.host.control = []; spare.host.targets = [];
-  const environment = (profileId: string) => profileId === otherProfile.profileId ? spare : env;
+  const laptop = new SimEnv(), laptopProfile = thirdProfile(PROFILE);
+  // Each other computer has only its own projects and work (none in the
+  // reinstalled `same-name` one). Every array is fresh: the simulated computer
+  // and the phone must never share an object.
+  const quiet = (other: SimEnv, profile: HostProfile, projects: Project[], work: OtherWork | null) => {
+    const now = Date.now();
+    other.host.host = { ...other.host.host, host_id: profile.hostId, name: profile.name };
+    other.host.projects = projects;
+    other.host.tasks = work?.tasks ?? []; other.host.runs = work?.runs ?? [];
+    other.host.approvals = work?.approvals ?? []; other.host.attention = work?.attention ?? [];
+    other.host.control = []; other.host.targets = [];
+    const seeds = Object.entries(work?.timelines ?? {})
+      .flatMap(([taskId, items]) => items.map((s) => ({ taskId, at: now - s.ago, runId: s.runId, body: s.body })))
+      .sort((a, b) => a.at - b.at);
+    for (const s of seeds) other.host.emit({ type: "timeline_appended", task_id: s.taskId, item: { seq: other.host.seq + 1, at: s.at, run_id: s.runId, item: s.body } }, undefined, "native", s.at);
+    // The checklists replace studio's once they are seeded, before any query reads them.
+    const lists = work?.checklists ?? [];
+    void other.host.checklists.ready.then(() => { other.host.checklists.lists = new Map(lists.map((l) => [l.project_id, l])); });
+    other.offlineReason = `Can't reach ${profile.name}`;
+  };
+  const spareWork = !params.has("same-name");
+  quiet(spare, otherProfile, spareWork ? otherProjects("spare", Date.now()) : [], spareWork ? otherWork("spare", Date.now()) : null);
+  quiet(laptop, laptopProfile, otherProjects("laptop", Date.now()), otherWork("laptop", Date.now()));
+  const offlineName = params.get("computer-offline");
+  if (offlineName) for (const [other, profile] of [[env, PROFILE], [spare, otherProfile], [laptop, laptopProfile]] as const)
+    if (profile.name === offlineName) other.forcedOffline = true;
+  const environment = (profileId: string) => profileId === otherProfile.profileId ? spare : profileId === laptopProfile.profileId ? laptop : env;
 
   const drills = controlDrills(() => env.host);
   const owner = simulatedOwner();
@@ -808,17 +856,26 @@ export function createSimPlatform(): Platform {
     offline(reason) {
       env.forcedOffline = true;
       env.mismatch = false;
+      env.noTailscale = false;
       if (reason) env.offlineReason = reason;
       env.loseAll(env.offlineReason);
     },
     impostor() {
       env.forcedOffline = true;
       env.mismatch = true;
+      env.noTailscale = false;
       env.loseAll(SIM_MISMATCH);
+    },
+    tailscaleOff() {
+      env.forcedOffline = true;
+      env.mismatch = false;
+      env.noTailscale = true;
+      env.loseAll(SIM_NO_TAILSCALE);
     },
     online() {
       env.forcedOffline = false;
       env.mismatch = false;
+      env.noTailscale = false;
       for (const l of env.links) l.connect();
       for (const l of env.side) l.connect();
     },
@@ -846,6 +903,8 @@ export function createSimPlatform(): Platform {
         ? `The ${kind} is no longer on the computer.`
         : `The computer refused the ${kind} connection (${code}). Check its settings.`) });
     },
+    signedOut(accountId) { env.host.accounts.signedOut(accountId, env.grants.accounts); },
+    finishSignIn() { env.host.accounts.finishSignIn(); },
     handoff(over) {
       const { packetJson, handoffJson } = fixtureHandoff(Date.now(), over);
       return handoffs().receive(packetJson, handoffJson)?.id ?? null;
@@ -873,7 +932,8 @@ export function createSimPlatform(): Platform {
     async appInfo() { return { ...await device.capabilities.appInfo!(), protocol: { major: 1, minor: 0 } }; },
     async profiles() {
       const names = localNames();
-      const paired = params.has("two-computers") || params.has("same-name") ? [PROFILE, otherProfile] : [PROFILE];
+      const paired = params.has("three-computers") ? [PROFILE, otherProfile, laptopProfile]
+        : params.has("two-computers") || params.has("same-name") ? [PROFILE, otherProfile] : [PROFILE];
       return localStorage.getItem(PAIRED_KEY) === "1" ? paired.map((p) => ({ ...p, name: names[p.profileId] ?? p.name })) : [];
     },
     parsePairingLink,
@@ -923,6 +983,7 @@ export function createSimPlatform(): Platform {
 
 const SIM_PAIRING_CODE = "482913";
 /** What the native link says when no address presents the pinned certificate. */
+const SIM_NO_TAILSCALE = "This phone isn’t connected to Tailscale. Turn Tailscale on to reach the computer.";
 const SIM_MISMATCH = "Another device answered at the computer’s address with a different certificate, so nothing was sent to it.";
 
 /** The owner answering pairing requests at the simulated computer. */
@@ -1029,6 +1090,7 @@ function queryAllowed(g: Grants, q: Query): boolean {
     case "report_preview":
       return g.view;
     case "inbox_report_code":
+    case "report_task_project":
       return g.admin;
     case "voice":
       return g.view && g.control_input;

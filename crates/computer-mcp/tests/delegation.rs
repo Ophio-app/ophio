@@ -51,7 +51,7 @@ impl BridgeHandler for Broker {
     async fn unbound(&self, _: &BridgeBinding) {}
 }
 #[tokio::test]
-async fn native_parent_delegates_six_tools_child_identity_and_late_call_is_fenced() {
+async fn native_parent_delegates_seven_tools_child_identity_and_late_call_is_fenced() {
     let dir = test_support::private_tempdir().unwrap();
     let binary = dir.path().join("fake-claude");
     test_support::executable(
@@ -69,6 +69,7 @@ async fn native_parent_delegates_six_tools_child_identity_and_late_call_is_fence
             browser: false,
             github: false,
             checklist_answers: false,
+            read_only: false,
         },
         stopped: AtomicBool::new(false),
         requests: Mutex::new(Vec::new()),
@@ -119,6 +120,7 @@ async fn native_parent_delegates_six_tools_child_identity_and_late_call_is_fence
             browser: false,
             github: false,
             checklist_answers: false,
+            read_only: false,
         }),
         project_settings: false,
         env: Default::default(),
@@ -140,7 +142,7 @@ async fn native_parent_delegates_six_tools_child_identity_and_late_call_is_fence
     let mut ready = [0; 5];
     child.read_exact(&mut ready).await.unwrap();
     assert_eq!(ready, *b"ready");
-    assert_eq!(broker.requests.lock().unwrap().len(), 6);
+    assert_eq!(broker.requests.lock().unwrap().len(), 7);
     broker.stopped.store(true, Ordering::SeqCst);
     child.write_all(b"x").await.unwrap();
     let mut parent = None;
@@ -172,7 +174,7 @@ async fn native_parent_delegates_six_tools_child_identity_and_late_call_is_fence
     }
     assert_eq!(parent.as_deref(), Some("native-session"));
     assert!(child_id);
-    assert_eq!(broker.requests.lock().unwrap().len(), 6);
+    assert_eq!(broker.requests.lock().unwrap().len(), 7);
     run.control.pause_for_private().await.unwrap();
     let _ = stop.send(());
     server.await.unwrap().unwrap();

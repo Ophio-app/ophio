@@ -7,7 +7,7 @@ import { createSimPlatform } from "../../dev/sim/platform";
 import { ids } from "../../dev/sim/scenario";
 import { HostSession } from "../../host/session";
 import { RouteProvider } from "../../shell/Screen";
-import Inbox from "./Inbox";
+import Inbox from "./InboxScreen";
 import { inboxStore } from "./inbox";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });

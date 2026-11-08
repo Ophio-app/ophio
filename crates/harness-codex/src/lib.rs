@@ -116,7 +116,9 @@ impl HarnessAdapter for CodexAdapter {
             Availability::Available
         } else {
             Availability::Unsupported {
-                reason: "Install Codex on the computer or configure its executable path".into(),
+                // There is no setting for where it is; these are where Øphio looks.
+                reason: "Install Codex on the computer, for example from Øphio’s setup. Øphio looks for it on its PATH and in the folders Codex’s installers use"
+                    .into(),
             }
         };
         let start_run = if let (Some(binary), Some(capability)) = (&binary, capability) {
@@ -340,6 +342,7 @@ impl HarnessAdapter for CodexAdapter {
         let (urgent_tx, urgent_rx) = mpsc::channel(8);
         let (done_tx, done_rx) = watch::channel(false);
         let closed = Arc::new(AtomicBool::new(false));
+        let person_spoke = Arc::new(AtomicBool::new(false));
         let control = Arc::new(Control {
             normal: normal_tx,
             urgent: urgent_tx,
@@ -348,6 +351,7 @@ impl HarnessAdapter for CodexAdapter {
             fallback,
             process_id: child.id(),
             closed: closed.clone(),
+            person_spoke: person_spoke.clone(),
             container: container.clone(),
         });
         let readiness_warning = self.readiness_warning.clone();
@@ -366,6 +370,7 @@ impl HarnessAdapter for CodexAdapter {
                 sequence: 0,
                 pending: HashMap::new(),
                 approvals: HashMap::new(),
+                declined: HashSet::new(),
                 queue: VecDeque::new(),
                 thread: None,
                 turn: None,
@@ -381,8 +386,10 @@ impl HarnessAdapter for CodexAdapter {
                 file_changes: HashMap::new(),
                 readiness_warning,
                 closed,
+                person_spoke,
                 rate_limits: limits::RateWindows::default(),
                 usage_limited: false,
+                signed_out: false,
             };
             // Kept until the run ends, so a bridge never started still has
             // its file removed.
@@ -574,9 +581,10 @@ fn arguments(
 fn bridge_server(
     spec: &RunSpec,
 ) -> Result<Option<(tempfile::NamedTempFile, String)>, HarnessError> {
-    // A read-only turn has one only to answer on the checklist.
-    let Some(bridge) =
-        (spec.bridge.as_ref()).filter(|b| spec.mode == TaskMode::Work || b.checklist_answers)
+    // A read-only turn has one only to answer on the checklist, or to ask
+    // for more with request_access alone.
+    let Some(bridge) = (spec.bridge.as_ref())
+        .filter(|b| spec.mode == TaskMode::Work || b.checklist_answers || b.read_only)
     else {
         return Ok(None);
     };
@@ -611,10 +619,13 @@ fn bridge_server(
         .collect();
     let tools: Vec<String> = if bridge.checklist_answers {
         ports::bridge::ANSWER_TOOLS.to_vec()
+    } else if bridge.read_only {
+        vec![ports::bridge::ACCESS_TOOL]
     } else if bridge.computer_use {
         ports::bridge::COMPUTER_TOOLS.to_vec()
     } else {
         let mut tools = ports::bridge::PERSON_TOOLS.to_vec();
+        tools.push(ports::bridge::ACCESS_TOOL);
         if bridge.browser {
             tools.extend(ports::bridge::BROWSER_TOOLS);
             tools.push(ports::bridge::HUMAN_TOOL);
@@ -639,6 +650,44 @@ fn bridge_server(
         tools.join(","),
     );
     Ok(Some((file, server)))
+}
+
+/// A question for the person, which declining answers rather than refuses.
+fn asks_the_person(method: &str) -> bool {
+    matches!(
+        method,
+        "item/tool/requestUserInput" | "mcpServer/elicitation/request"
+    )
+}
+
+/// What makes two of Codex's requests the same request: what it asks for,
+/// its exact words and, for a file change, the change it announced, never
+/// the ids of its thread, turn and item.
+fn declined_key(
+    approval: &PendingApproval,
+    planned: &[ports::tool_approval::Preview],
+) -> (String, String) {
+    let mut params = approval.params.clone();
+    if let Some(fields) = params.as_object_mut() {
+        fields.retain(|key, _| {
+            !matches!(
+                key.as_str(),
+                "itemId" | "threadId" | "turnId" | "callId" | "approvalId" | "id" | "requestId"
+            )
+        });
+    }
+    let shown = approval.event(planned);
+    let lines: Vec<&str> = (shown.detail_lines.iter())
+        .map(|l| l.text.as_str())
+        .collect();
+    (
+        approval.method.clone(),
+        format!(
+            "{params}\n{}\n{}",
+            shown.detail.unwrap_or_default(),
+            lines.join("\n")
+        ),
+    )
 }
 
 fn toml_string(text: &str) -> String {
@@ -845,6 +894,8 @@ struct Control {
     process_id: Option<u32>,
     /// Admission, closed by Stop; shared with the actor.
     closed: Arc<AtomicBool>,
+    /// Set as the person's own message is sent: see `Actor::person_spoke`.
+    person_spoke: Arc<AtomicBool>,
     container: Arc<containment::Container>,
 }
 impl Control {
@@ -909,6 +960,9 @@ impl RunControl for Control {
     }
     fn close_admission(&self) {
         self.closed.store(true, Ordering::SeqCst);
+    }
+    fn person_spoke(&self) {
+        self.person_spoke.store(true, Ordering::SeqCst);
     }
     async fn resolve_approval(
         &self,
@@ -981,6 +1035,9 @@ struct Actor {
     sequence: u64,
     pending: HashMap<Id, (tokio::time::Instant, Pending)>,
     approvals: HashMap<String, PendingApproval>,
+    /// What the person declined in this turn, by request kind and exact
+    /// request: asked again, it is declined at once, without another card.
+    declined: HashSet<(String, String)>,
     queue: VecDeque<(MessageRef, Vec<Input>)>,
     thread: Option<String>,
     turn: Option<String>,
@@ -998,9 +1055,15 @@ struct Actor {
     file_changes: HashMap<String, Vec<ports::tool_approval::Preview>>,
     readiness_warning: Arc<std::sync::Mutex<Option<String>>>,
     closed: Arc<AtomicBool>,
+    /// The next message is the person's own, so what they declined may be
+    /// asked for again. Ophio's own messages (a nudge, word that nobody
+    /// answered) leave it.
+    person_spoke: Arc<AtomicBool>,
     rate_limits: limits::RateWindows,
     /// This turn's refusal for usage was reported; the failed turn repeats it.
     usage_limited: bool,
+    /// The sign-in was refused this turn, and said so once.
+    signed_out: bool,
 }
 impl Actor {
     fn emit(&self, event: HarnessEvent) -> Result<(), HarnessError> {
@@ -1407,6 +1470,17 @@ impl Actor {
             return Ok(());
         }
         let event = approval.event(&planned);
+        if !asks_the_person(&approval.method)
+            && self.declined.contains(&declined_key(&approval, &planned))
+        {
+            let result = approval.response(&ApprovalDecision::Deny { reason: None })?;
+            self.write(&json!({"id":approval.id,"result":result}))
+                .await?;
+            self.emit(HarnessEvent::Warning {
+                text: "Codex asked again for something you declined in this turn, so it was declined again without asking you".into(),
+            })?;
+            return Ok(());
+        }
         self.emit(HarnessEvent::ApprovalRequested(event))?;
         self.approvals.insert(key, approval);
         Ok(())
@@ -1527,15 +1601,28 @@ impl Actor {
                     Normal::Approval(id,decision,reply)=> {
                         let Some(approval)=self.approvals.get(&id) else { let _=reply.send(Err(HarnessError::Protocol("approval is no longer pending".into()))); continue; };
                         if self.spec.mode != TaskMode::Work && !approval.read_only_decision(&decision) {
-                            let _ = reply.send(Err(HarnessError::Unsupported("Ask and Plan cannot approve writes, sandbox escapes or external tool effects; start a Work task instead".into())));
+                            let _ = reply.send(Err(HarnessError::Unsupported("This task only reads, so Codex can’t be allowed this. Switch the task to Work to allow it.".into())));
                             continue;
                         }
                         let result=match approval.response(&decision) { Ok(v)=>v,Err(error)=> { let _=reply.send(Err(error)); continue; } };
                         let native_id=approval.id.clone();
+                        // Only what the person declined, never Ophio's own
+                        // declines (a request nobody answered in time, say).
+                        if ports::harness::declined_by_person(&decision) && !asks_the_person(&approval.method) {
+                            let planned = (approval.params["itemId"].as_str())
+                                .and_then(|item| self.file_changes.get(item))
+                                .cloned()
+                                .unwrap_or_default();
+                            let key = declined_key(approval, &planned);
+                            if self.declined.len() < 64 { self.declined.insert(key); }
+                        }
                         self.write(&json!({"id":native_id,"result":result})).await?;
                         self.approvals.remove(&id); let _=reply.send(Ok(()));
                     },
                     Normal::Send(message_ref,input,delivery,reply)=> {
+                        // The person may have changed their mind: what they
+                        // declined may be asked for again.
+                        if self.person_spoke.swap(false, Ordering::SeqCst) { self.declined.clear(); }
                         // After Stop nothing new may start a turn.
                         if self.thread.is_none() || stopping || self.closed.load(Ordering::SeqCst) { let _=reply.send(Err(HarnessError::NotActive)); continue; }
                         if self.turn.is_none() && !self.starting { self.start_turn(Some(message_ref),input,Some(reply)).await?; }

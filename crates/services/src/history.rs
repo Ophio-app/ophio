@@ -304,6 +304,7 @@ pub(crate) fn fill(
     g: &Grants,
     snapshot: &mut Snapshot,
     reads_withheld: bool,
+    account_items: bool,
 ) -> store::Result<()> {
     if !g.tasks && !g.approvals {
         return Ok(());
@@ -315,7 +316,12 @@ pub(crate) fn fill(
         append(&mut carried, live.split_live(task, g).0);
     }
     if g.tasks {
-        carried.attention.extend(live.unattached);
+        // An agent's sign-in, for those who may manage accounts, on an app
+        // that shows it; an older one would count it without showing it.
+        carried.attention.extend(
+            (live.unattached.into_iter())
+                .filter(|a| a.account_id.is_none() || (g.accounts && account_items)),
+        );
     }
     // Every approval carried so far is pending.
     let pending = std::mem::take(&mut carried.approvals);
@@ -514,7 +520,10 @@ pub(crate) fn fill_whole(
     if g.tasks {
         snapshot.tasks = r.list("task")?;
         snapshot.runs = r.list("run")?;
-        snapshot.attention = r.list("attention")?;
+        // A chat can't show an agent's sign-in notice.
+        snapshot.attention = (r.list::<AttentionItem>("attention")?.into_iter())
+            .filter(|a| a.account_id.is_none())
+            .collect();
     }
     if g.approvals {
         snapshot.approvals = r.list("approval")?;

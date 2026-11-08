@@ -17,6 +17,11 @@ pub struct Discovery {
 }
 impl Discovery {
     pub async fn detect() -> Self {
+        // Not on a service's PATH on a Mac, where the app keeps it.
+        Self::detect_with(ports::tailscale::program()).await
+    }
+    /// What `tailscale`, the program found where it is installed, says.
+    async fn detect_with(tailscale: Option<std::path::PathBuf>) -> Self {
         let hostname = hostname::get()
             .ok()
             .and_then(|name| name.into_string().ok())
@@ -25,8 +30,14 @@ impl Discovery {
             hostname,
             ..Self::default()
         };
-        let mut command = tokio::process::Command::new("tailscale");
-        command.args(["status", "--json"]).kill_on_drop(true);
+        let Some(tailscale) = tailscale else {
+            return result;
+        };
+        let mut command = tokio::process::Command::new(tailscale);
+        command
+            .args(["status", "--json"])
+            .env(ports::tailscale::AS_CLI.0, ports::tailscale::AS_CLI.1)
+            .kill_on_drop(true);
         #[cfg(windows)]
         command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW: Øphio may run without a console.
         if let Ok(Ok(output)) = tokio::time::timeout(Duration::from_secs(3), command.output()).await
@@ -165,7 +176,8 @@ struct TailSelf {
     dns_name: Option<String>,
 }
 
-#[cfg(test)]
+// Only Linux answers on the whole of 127.0.0.0/8 without being set up to.
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::*;
     use std::sync::{Arc, Mutex};
@@ -218,5 +230,33 @@ mod tests {
         assert!(listeners.try_recv().is_err());
         shutdown.cancel();
         following.await.unwrap();
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tailscale_tests {
+    use super::*;
+
+    /// A Mac's Tailscale program is the app, which answers as the command-line
+    /// tool only when told to: a service has no terminal to show it.
+    #[tokio::test]
+    async fn the_tailnet_address_is_read_from_a_program_that_needs_telling_it_is_a_cli() {
+        let dir = tempfile::tempdir().unwrap();
+        let program = dir.path().join("Tailscale");
+        std::fs::write(
+            &program,
+            "#!/bin/sh\n[ \"$TAILSCALE_BE_CLI\" = 1 ] || { echo 'The Tailscale GUI failed to start' >&2; exit 1; }\n\
+             echo '{\"BackendState\":\"Running\",\"Self\":{\"TailscaleIPs\":[\"100.64.0.7\"],\"DNSName\":\"studio.example.ts.net.\"}}'\n",
+        )
+        .unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let found = Discovery::detect_with(Some(program)).await;
+        assert_eq!(
+            found.tailscale_ips,
+            ["100.64.0.7".parse::<IpAddr>().unwrap()]
+        );
+        assert_eq!(found.dns_name.as_deref(), Some("studio.example.ts.net"));
+        assert!(Discovery::detect_with(None).await.tailscale_ips.is_empty());
     }
 }

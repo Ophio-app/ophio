@@ -1,7 +1,26 @@
 // SPDX-License-Identifier: Apache-2.0
 use protocol::voice::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use voice_control::{Driver, Error};
+use voice_control::{Authority, Driver, Error};
+/// Authority that allows once, then has ended.
+#[derive(Default)]
+struct Once(std::sync::atomic::AtomicBool);
+impl Authority for Once {
+    fn check(&self) -> Result<(), Error> {
+        if self.0.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            Err(Error::Stopped)
+        } else {
+            Ok(())
+        }
+    }
+}
+/// Authority that always allows, for the driver under test.
+struct Allowed;
+impl Authority for Allowed {
+    fn check(&self) -> Result<(), Error> {
+        Ok(())
+    }
+}
 
 #[tokio::test]
 async fn private_pipe_snapshot_click_type_stale_sensitive_picture_and_detach() {
@@ -37,8 +56,11 @@ async fn private_pipe_snapshot_click_type_stale_sensitive_picture_and_detach() {
             literal: Some(format!("http://{address}")),
             scroll_y: 0,
             previous_tab: false,
+            app: None,
         };
-        browser.act(&action, &initial).await?;
+        browser
+            .act(&action, &initial, std::sync::Arc::new(Allowed))
+            .await?;
         let mut snapshot = browser.snapshot().await?;
         for _ in 0..100 {
             if snapshot.elements.iter().any(|e| e.name == "Inside frame") {
@@ -61,10 +83,15 @@ async fn private_pipe_snapshot_click_type_stale_sensitive_picture_and_detach() {
             literal: None,
             scroll_y: 0,
             previous_tab: false,
+            app: None,
         };
-        browser.act(&click, &snapshot).await?;
+        browser
+            .act(&click, &snapshot, std::sync::Arc::new(Allowed))
+            .await?;
         assert!(matches!(
-            browser.act(&click, &snapshot).await,
+            browser
+                .act(&click, &snapshot, std::sync::Arc::new(Allowed))
+                .await,
             Err(Error::StaleTarget)
         ));
         let snapshot = browser.snapshot().await?;
@@ -81,12 +108,37 @@ async fn private_pipe_snapshot_click_type_stale_sensitive_picture_and_detach() {
             literal: Some("Verbatim words".into()),
             scroll_y: 0,
             previous_tab: false,
+            app: None,
         };
-        browser.act(&typing, &snapshot).await?;
+        // Authority withdrawn after the first check (while focusing runs the
+        // page's handlers): nothing may be typed.
+        let mut withdrawn = typing.clone();
+        withdrawn.literal = Some("Withdrawn words".into());
+        assert!(
+            browser
+                .act(&withdrawn, &snapshot, std::sync::Arc::new(Once::default()))
+                .await
+                .is_err()
+        );
+        let snapshot = browser.snapshot().await?;
+        assert!(
+            !snapshot
+                .elements
+                .iter()
+                .any(|e| e.name.contains("Withdrawn"))
+        );
+        browser
+            .act(&typing, &snapshot, std::sync::Arc::new(Allowed))
+            .await?;
         let snapshot = browser.snapshot().await?;
         assert!(snapshot.elements.iter().any(|e| e.name == "Verbatim words"));
         typing.target = snapshot.elements.iter().find(|e| e.sensitive).cloned();
-        assert!(browser.act(&typing, &snapshot).await.is_err());
+        assert!(
+            browser
+                .act(&typing, &snapshot, std::sync::Arc::new(Allowed))
+                .await
+                .is_err()
+        );
         assert!(
             browser
                 .picture()

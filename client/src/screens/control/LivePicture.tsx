@@ -58,6 +58,8 @@ interface Contact {
   maxPointers: number;
   /** Touch: this finger drags with the left button held. */
   dragging: boolean;
+  /** A direct-touch long press has already sent its right click. */
+  longPressed: boolean;
 }
 /** Two fingers down together: where they began, and what they are doing once
  * one has moved far enough to say. */
@@ -66,6 +68,9 @@ interface Pair {
   center: Point;
   at: number;
   intent: "zoom" | "scroll" | "tapped" | null;
+  lastGap: number;
+  lastCenter: Point;
+  frame: number | null;
 }
 /** What a full-screen picture's overlay draws its controls from. */
 export interface PictureTools {
@@ -104,6 +109,7 @@ export function LivePicture({
   voice = false,
   full = false,
   tilt = false,
+  touchBehavior = "position-first",
   overlay,
 }: {
   compact?: boolean;
@@ -114,6 +120,8 @@ export function LivePicture({
   full?: boolean;
   /** Tipping the phone pans a zoomed picture (tilt.ts). */
   tilt?: boolean;
+  /** Opt-in: one tap clicks its position; the default first positions the pointer. */
+  touchBehavior?: "position-first" | "direct";
   overlay?: (tools: PictureTools) => ReactNode;
   target: ControlTarget;
   canvas: RefObject<HTMLCanvasElement | null>;
@@ -139,12 +147,18 @@ export function LivePicture({
   viewNow.current = view;
   const contacts = useRef(new Map<number, Contact>());
   /** Touch: the last tap, which another close by turns into a click. */
-  const lastTap = useRef<{ at: number; point: Point } | null>(null);
+  const lastTap = useRef<{ at: number; point: Point; target?: TargetPoint } | null>(null);
+  const longPress = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelLongPress = () => {
+    if (longPress.current !== null) clearTimeout(longPress.current);
+    longPress.current = null;
+  };
   const pointer = useRef<TargetPoint>(picture.cursor ?? { x: 0.5, y: 0.5 });
   const [phonePointer, setPhonePointer] = useState(pointer.current);
   const held = useRef(false);
   const pair = useRef<Pair | null>(null);
   const surface = useRef<HTMLDivElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
   const size = () => {
     const box = surface.current?.getBoundingClientRect();
     return { width: box?.width ?? 0, height: box?.height ?? 0 };
@@ -156,14 +170,22 @@ export function LivePicture({
   useEffect(() => {
     const el = surface.current;
     if (!onRegion || !el) return;
-    const report = () => onRegion(visibleRegion(view, el.getBoundingClientRect()));
+    const report = () => {
+      const box = el.getBoundingClientRect();
+      const clip = full ? stage.current?.getBoundingClientRect() : null;
+      onRegion(visibleRegion(view, box, clip ? {
+        left: clip.left - box.left, top: clip.top - box.top,
+        width: clip.width, height: clip.height,
+      } : undefined));
+    };
     report();
     // Turning the phone resizes the surface under the same pan and zoom.
     const resized =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(report);
     resized?.observe(el);
+    if (stage.current) resized?.observe(stage.current);
     return () => resized?.disconnect();
-  }, [view, onRegion]);
+  }, [view, onRegion, full]);
   useEffect(() => () => onRegion?.(null), [onRegion]);
   const fresh =
     picture.connected &&
@@ -178,13 +200,9 @@ export function LivePicture({
     const box = surface.current?.getBoundingClientRect();
     if (!box) return null;
     const v = viewNow.current;
+    const clip = full ? stage.current?.getBoundingClientRect() ?? box : box;
     return targetPoint(
-      edge
-        ? {
-            x: clamp(p.x, box.left, box.left + box.width),
-            y: clamp(p.y, box.top, box.top + box.height),
-          }
-        : p,
+      edge ? { x: clamp(p.x, clip.left, clip.right), y: clamp(p.y, clip.top, clip.bottom) } : p,
       {
         left: box.left,
         top: box.top,
@@ -194,15 +212,15 @@ export function LivePicture({
         pan: v.pan,
         dpr: window.devicePixelRatio,
       },
+      edge,
     );
   };
   const show = (next: { zoom: number; pan: Point }) => {
     viewNow.current = next;
     setView(next);
   };
-  const remote = (action: InputAction) => {
-    if (enabled && locked) send?.(action);
-  };
+  const remote = (action: InputAction) =>
+    enabled && locked && (send?.(action) ?? false);
   const release = () => {
     if (held.current)
       send?.({
@@ -213,18 +231,64 @@ export function LivePicture({
       });
     held.current = false;
   };
+  const resetGesture = () => {
+    cancelLongPress();
+    release();
+    contacts.current.clear();
+    if (pair.current?.frame != null) cancelAnimationFrame(pair.current.frame);
+    pair.current = null;
+    lastTap.current = null;
+  };
+  const resetNow = useRef(resetGesture);
+  resetNow.current = resetGesture;
+  useEffect(() => {
+    resetNow.current();
+    setRightNext(false);
+    setDrag(false);
+  }, [enabled, locked, full, touchBehavior, target.target_id, target.geometry.revision]);
+  useEffect(() => () => resetNow.current(), []);
+  const followOnResize = useRef(enabled && full);
+  followOnResize.current = enabled && full;
+  useEffect(() => {
+    const el = surface.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    let previous = el.getBoundingClientRect();
+    let previousStage = stage.current?.getBoundingClientRect();
+    const observer = new ResizeObserver(() => {
+      const next = el.getBoundingClientRect();
+      const nextStage = stage.current?.getBoundingClientRect();
+      if (next.width === previous.width && next.height === previous.height &&
+          next.left === previous.left && next.top === previous.top &&
+          nextStage?.width === previousStage?.width && nextStage?.height === previousStage?.height) return;
+      previous = next;
+      previousStage = nextStage;
+      // A rotation or keyboard resize changes the coordinate system mid-touch.
+      // Stop that gesture rather than jumping or keeping a remote button held.
+      resetNow.current();
+      // Hidden routes have no size, but retain their picture position for return.
+      if (next.width > 0 && next.height > 0) {
+        const resized = clampPan(viewNow.current, next);
+        // The native keyboard may make the picture narrower. Keep the known
+        // pointer reachable without inventing a remote caret position.
+        show(followOnResize.current ? followPointer(resized, pointer.current, next) : resized);
+      }
+    });
+    observer.observe(el);
+    if (stage.current) observer.observe(stage.current);
+    return () => observer.disconnect();
+  }, [full]);
   const press = (at: TargetPoint) => {
     pointer.current = at;
-    remote({ action: "pointer_move", to: at });
-    held.current = true;
-    remote({ action: "pointer_button", button: "left", pressed: true, at });
+    if (!remote({ action: "pointer_move", to: at })) return false;
+    held.current = remote({ action: "pointer_button", button: "left", pressed: true, at });
+    return held.current;
   };
   const clickAt = (at: TargetPoint) => {
     remote({ action: "click", button: rightNext ? "right" : "left", at, count: 1 });
     setRightNext(false);
   };
   const chooseMode = (next: PointerMode) => {
-    release();
+    resetGesture();
     setRightNext(false);
     setMode(next);
     try {
@@ -236,14 +300,17 @@ export function LivePicture({
   /** Two fingers pinch the picture, or slide: a zoomed picture moves first,
    * under Touch as far as its edges and then the computer scrolls under the
    * fingers with the rest, scaled so the page follows them. */
-  const twoFingers = (contact: Contact, other: Contact, p: Point) => {
+  const twoFingers = () => {
     const box = surface.current?.getBoundingClientRect();
     const two = pair.current;
-    if (!box || !two) return;
-    const gap = Math.hypot(p.x - other.last.x, p.y - other.last.y);
-    const before = Math.hypot(contact.last.x - other.last.x, contact.last.y - other.last.y);
-    const center = mid(p, other.last), was = mid(contact.last, other.last);
+    const [a, b] = [...contacts.current.values()];
+    if (!box || !two || !a || !b) return;
+    const gap = Math.hypot(a.last.x - b.last.x, a.last.y - b.last.y);
+    const before = two.lastGap;
+    const center = mid(a.last, b.last), was = two.lastCenter;
     const step = { x: center.x - was.x, y: center.y - was.y };
+    two.lastGap = gap;
+    two.lastCenter = center;
     two.intent ??= twoFingerIntent(two.gap, gap, two.center, center);
     const v = viewNow.current;
     if (two.intent === "zoom" && before > 0)
@@ -278,8 +345,7 @@ export function LivePicture({
     if (Math.max(c.distance, Math.hypot(end.x - c.start.x, end.y - c.start.y)) > TAP_SLOP) {
       const from = atPoint(c.start),
         to = atPoint(end, true);
-      if (from && to) {
-        press(from);
+      if (from && to && press(from)) {
         pointer.current = to;
         remote({ action: "pointer_move", to });
         release();
@@ -288,12 +354,25 @@ export function LivePicture({
     } else {
       const at = atPoint(c.start);
       if (!at) return;
-      if (isDoubleTap(lastTap.current, c.at, c.start)) clickAt(pointer.current);
+      if (touchBehavior === "direct") {
+        // A close second tap must land on the first click's desktop pixel:
+        // even tiny phone drift can exceed the computer's double-click radius.
+        // Each tap sends only one ordinary click (count: 2 adds a third).
+        const button = rightNext ? "right" : "left";
+        const clickPoint = button === "left" && isDoubleTap(lastTap.current, c.at, c.start)
+          ? lastTap.current?.target ?? at : at;
+        pointer.current = clickPoint;
+        const accepted = remote({ action: "click", button, at: clickPoint, count: 1 });
+        setRightNext(false);
+        // A refused first click or a right click cannot start a left double click.
+        lastTap.current = button === "left" && accepted
+          ? { at: performance.now(), point: c.start, target: clickPoint } : null;
+      } else if (isDoubleTap(lastTap.current, c.at, c.start)) clickAt(pointer.current);
       else {
         pointer.current = at;
         remote({ action: "pointer_move", to: at });
       }
-      lastTap.current = { at: performance.now(), point: c.start };
+      if (touchBehavior !== "direct") lastTap.current = { at: performance.now(), point: c.start };
     }
     setPhonePointer(pointer.current);
   };
@@ -307,18 +386,39 @@ export function LivePicture({
       distance: 0,
       maxPointers: 1,
       dragging: false,
+      longPressed: false,
     });
+    if (contacts.current.size > 1) cancelLongPress();
+    if (touchBehavior === "direct" && mode === "touch" && enabled && locked && contacts.current.size === 1) {
+      const id = e.pointerId;
+      longPress.current = setTimeout(() => {
+        longPress.current = null;
+        const contact = contacts.current.get(id);
+        if (!contact || contacts.current.size !== 1 || contact.distance > TAP_SLOP ||
+            contact.dragging || !enabled || !locked) return;
+        const at = atPoint(contact.start);
+        // Even a refused right click must not turn into a left click on lift.
+        contact.longPressed = true;
+        lastTap.current = null;
+        if (at) {
+          pointer.current = at;
+          remote({ action: "click", button: "right", at, count: 1 });
+          setRightNext(false);
+          setPhonePointer(at);
+        }
+      }, LONG_PRESS_MS);
+    }
     for (const c of contacts.current.values())
       c.maxPointers = Math.max(c.maxPointers, contacts.current.size);
     if (contacts.current.size > 1) release();
-    if ((full || mode === "touch") && contacts.current.size === 2) {
+    if (contacts.current.size === 2) {
       const [a, b] = [...contacts.current.values()].map((c) => c.last) as [Point, Point];
-      pair.current = { gap: Math.hypot(a.x - b.x, a.y - b.y), center: mid(a, b), at: performance.now(), intent: null };
+      const gap = Math.hypot(a.x - b.x, a.y - b.y), center = mid(a, b);
+      pair.current = { gap, center, lastGap: gap, lastCenter: center, frame: null, at: performance.now(), intent: null };
     }
     setPhonePointer(pointer.current);
     if (mode === "touchpad" && drag && locked && enabled && contacts.current.size === 1) {
-      held.current = true;
-      remote({
+      held.current = remote({
         action: "pointer_button",
         button: "left",
         pressed: true,
@@ -331,34 +431,26 @@ export function LivePicture({
     if (!contact) return;
     const p = { x: e.clientX, y: e.clientY },
       delta = { x: p.x - contact.last.x, y: p.y - contact.last.y };
+    if (contact.longPressed) return;
+    if (Math.hypot(p.x - contact.start.x, p.y - contact.start.y) > TAP_SLOP)
+      cancelLongPress();
     const other = [...contacts.current.entries()].find(
       ([id]) => id !== e.pointerId,
     )?.[1];
-    if ((other || contact.maxPointers > 1) && (full || (mode === "touch" && enabled && locked))) {
+    if (other || contact.maxPointers > 1) {
       // Two fingers pinch or slide, whichever they start doing; the finger
       // left after either moves nothing.
-      if (other) twoFingers(contact, other, p);
+      // Browsers deliver one event per finger even for a coordinated motion.
+      // Classify their combined positions once per frame; a horizontal scroll
+      // must not become a pinch merely because its first finger reported first.
+      if (other && pair.current && pair.current.frame === null)
+        pair.current.frame = requestAnimationFrame(() => {
+          if (!pair.current) return;
+          pair.current.frame = null;
+          twoFingers();
+        });
     } else if (!locked || !enabled) {
-      if (other) {
-        const previous = Math.hypot(
-          contact.last.x - other.last.x,
-          contact.last.y - other.last.y,
-        );
-        const next = Math.hypot(p.x - other.last.x, p.y - other.last.y);
-        const box = surface.current?.getBoundingClientRect();
-        if (box && previous > 0)
-          setView((v) =>
-            pinchView(
-              v,
-              {
-                x: (contact.last.x + other.last.x) / 2 - box.left,
-                y: (contact.last.y + other.last.y) / 2 - box.top,
-              },
-              next / previous,
-              { x: delta.x / 2, y: delta.y / 2 },
-            ),
-          );
-      } else if (view.zoom > 1)
+      if (view.zoom > 1)
         setView((v) => fitted({
           ...v,
           pan: { x: v.pan.x + delta.x, y: v.pan.y + delta.y },
@@ -380,16 +472,9 @@ export function LivePicture({
         pointer.current = at;
         remote({ action: "pointer_move", to: at });
       }
-    } else if (other)
-      remote({
-        action: "scroll",
-        at: pointer.current,
-        dx: -delta.x * 2,
-        dy: -delta.y * 2,
-      });
-    else {
+    } else {
       const box = surface.current?.getBoundingClientRect();
-      if (box) {
+      if (box && box.width > 0 && box.height > 0) {
         pointer.current = {
           x: clamp(pointer.current.x + delta.x / box.width / view.zoom),
           y: clamp(pointer.current.y + delta.y / box.height / view.zoom),
@@ -409,8 +494,17 @@ export function LivePicture({
   const up = (e: PointerEvent<HTMLDivElement>, cancelled = false) => {
     const c = contacts.current.get(e.pointerId);
     if (!c) return;
+    if (cancelled) { resetGesture(); return; }
+    cancelLongPress();
     const two = pair.current;
-    if (full && two && !cancelled && two.intent === null && contacts.current.size === 2 && performance.now() - two.at < LONG_PRESS_MS && enabled && locked) {
+    if (two?.frame != null) {
+      cancelAnimationFrame(two.frame);
+      two.frame = null;
+      twoFingers();
+    }
+    if (two && two.intent === null && contacts.current.size === 2 &&
+        ![...contacts.current.values()].some((contact) => contact.longPressed) &&
+        performance.now() - two.at < LONG_PRESS_MS && enabled && locked) {
       // Two fingers tapped together: a right click, as on a laptop's touchpad.
       two.intent = "tapped";
       const center = mid(...([...contacts.current.values()].map((x) => x.last) as [Point, Point]));
@@ -422,7 +516,7 @@ export function LivePicture({
     const wasHeld = held.current;
     release();
     if (wasHeld) lastTap.current = null;
-    if (cancelled || wasHeld || !enabled || !locked) return;
+    if (wasHeld || c.dragging || c.longPressed || !enabled || !locked) return;
     if (mode === "touch") touchUp(c, { x: e.clientX, y: e.clientY });
     else {
       const gesture = recognizeGesture(
@@ -470,7 +564,11 @@ export function LivePicture({
     onPointerMove: move,
     onPointerUp: (e: PointerEvent<HTMLDivElement>) => up(e),
     onPointerCancel: (e: PointerEvent<HTMLDivElement>) => up(e, true),
-    onLostPointerCapture: release,
+    onLostPointerCapture: (e: PointerEvent<HTMLDivElement>) => {
+      // Normal pointer-up also loses capture. Preserve its tap history, but
+      // never leave a cancelled contact around to steal the next gesture.
+      if (contacts.current.has(e.pointerId)) resetGesture();
+    },
     onContextMenu: (e: { preventDefault(): void }) => e.preventDefault(),
   };
   const errorNotice = picture.error && (
@@ -525,7 +623,7 @@ export function LivePicture({
   if (full)
     return (
       <div className="live-picture live-picture--full">
-        <div className="picture-stage" data-scroll-x {...touch}>
+        <div ref={stage} className="picture-stage" data-scroll-x {...touch}>
           <div ref={surface} className="picture-surface" style={{ aspectRatio: `${w} / ${h}`, "--ar": w / h } as CSSProperties}>
             {content}
           </div>
@@ -567,7 +665,7 @@ export function LivePicture({
         {/* On the picture, so a late frame doesn't push the controls down. The
             caption says how old it is. */}
         {!fresh && picture.at !== null && (
-          <span className="picture-paused" role="status">Agent paused</span>
+          <span className="picture-paused" role="status">Input paused</span>
         )}
       </div>
       {errorNotice}
@@ -604,6 +702,7 @@ export function LivePicture({
             icon={locked ? Lock : Unlock}
             aria-pressed={locked}
             onClick={() => {
+              cancelLongPress();
               release();
               contacts.current.clear();
               setLocked((v) => !v);

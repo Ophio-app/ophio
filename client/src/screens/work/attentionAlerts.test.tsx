@@ -8,13 +8,16 @@ import { ids } from "../../dev/sim/scenario";
 import { HostSession } from "../../host/session";
 import { RouteProvider } from "../../shell/Screen";
 import { BottomNav } from "../../shell/BottomNav";
-import Attention, { attentionDestination } from "./Attention";
+import Attention, { attentionDestination } from "./AttentionScreen";
 import Receipt from "./Receipt";
+import NeedsYou from "./NeedsYou";
+import { forgetHandled } from "../../platform/handled";
+import { appLock } from "../../platform/lock";
 
 let app: App;
 const advance = async (ms = 600) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 beforeEach(async () => {
-  vi.useFakeTimers(); localStorage.clear();
+  vi.useFakeTimers(); localStorage.clear(); forgetHandled();
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   HTMLDialogElement.prototype.close = function () { this.open = false; };
@@ -34,7 +37,7 @@ function Front() {
   const route = s.stacks[s.tab].at(-1);
   if (!route) throw new Error("Missing route");
   return <><RouteProvider value={{ tab: s.tab, route, depth: s.stacks[s.tab].length - 1, active: true }}>
-    {route.screen === "attention" ? <Attention route={route} /> : route.screen === "receipt" ? <Receipt route={route} /> : null}
+    {route.screen === "attention" ? <Attention route={route} /> : route.screen === "receipt" ? <Receipt route={route} /> : route.screen === "needs_you" ? <NeedsYou route={route} /> : null}
   </RouteProvider><BottomNav /></>;
 }
 function open(route: Route) { app.ui.push(route); render(<AppProvider app={app}><Front /></AppProvider>); }
@@ -100,7 +103,7 @@ it("the owner's verdict on a problem report goes to the computer for everyone wh
   fireEvent.click(screen.getByRole("button", { name: "A feature request" })); await advance();
   expect(last()).toEqual({ command: "set_report_verdict", report_id: reportId, verdict: { verdict: "declined", reason: "feature_request" } });
   expect(screen.queryByRole("group", { name: "Why decline" })).toBeNull();
-  // Nothing here starts work.
+  // A verdict starts no work.
   expect(Object.values(app.session.commands.get()).every(c => c.body.command === "set_report_verdict")).toBe(true);
 });
 
@@ -303,4 +306,76 @@ it("real evidence loading failures retain the stop notice and a working retry", 
   failed = false; fireEvent.click(screen.getByRole("button", { name: "Reload evidence" })); await advance();
   expect(screen.queryByText("Evidence storage unavailable")).toBeNull();
   expect(spy.mock.calls.filter(([q]) => q.kind === "task_artifacts")).toHaveLength(2);
+});
+
+function visibility(value: "visible" | "hidden") {
+  Object.defineProperty(document, "visibilityState", { configurable: true, value });
+  document.dispatchEvent(new Event("visibilitychange"));
+}
+let stopLock = () => {};
+const unlock = () => { stopLock = appLock(app.platform).start(); };
+afterEach(() => stopLock());
+const handledIds = () => window.__sim!.device.handled.flatMap((h) => h.attentionIds);
+
+/** A browser where every observed row is wholly on screen. */
+function everyRowShows() {
+  vi.stubGlobal("IntersectionObserver", class {
+    constructor(readonly callback: IntersectionObserverCallback) {}
+    observe(target: Element) { queueMicrotask(() => this.callback([{ target, isIntersecting: true, intersectionRatio: 1 } as IntersectionObserverEntry], this as unknown as IntersectionObserver)); }
+    unobserve() {} disconnect() {} takeRecords() { return []; }
+  });
+}
+afterEach(() => vi.unstubAllGlobals());
+
+it("items looked at in Needs you count as handled once each, only while the app is in front and used", async () => {
+  const device = window.__sim!.device;
+  everyRowShows();
+  // Unlocked, as the app is once opened.
+  unlock(); await advance();
+  visibility("hidden");
+  open({ screen: "needs_you", projectId: ids.pTide }); await advance(3000);
+  // Behind another app nothing is seen.
+  expect(device.handled).toEqual([]);
+  act(() => visibility("visible")); await advance(3000);
+  // On screen, but nobody is using the app: a tablet left open on the list.
+  expect(device.handled).toEqual([]);
+  fireEvent.pointerDown(document.body); await advance(0);
+  const state = app.session.state.get();
+  const listed = Object.values(state.attention).filter((a) => a.resolved_at === null && a.task_id && state.tasks[a.task_id]?.project_id === ids.pTide).map((a) => a.attention_id);
+  expect(new Set(handledIds())).toEqual(new Set(listed));
+  expect(handledIds()).toContain(ids.atApproval);
+  expect(device.handled.every((h) => h.profileId === app.profile.profileId)).toBe(true);
+  // Their notifications leave this phone's shade too.
+  expect(device.cancelled).toEqual(expect.arrayContaining(handledIds().map((id) => `${app.profile.profileId}/${id}`)));
+  // Each is told once per app session, however often the list shows it.
+  const count = handledIds().length;
+  act(() => visibility("hidden")); act(() => visibility("visible")); await advance(3000);
+  fireEvent.pointerDown(document.body); await advance(0);
+  expect(handledIds()).toHaveLength(count);
+  visibility("visible");
+});
+
+it("requests folded in a closed group aren't seen until the group is opened", async () => {
+  everyRowShows();
+  unlock(); await advance();
+  // A second request from the same task, so the two fold into one group.
+  const first = app.session.state.get().attention[ids.atApproval]!;
+  const again = { ...first, attention_id: "again", approval_id: "0192f7a1-0000-7000-8000-00000000a9a1", created_at: first.created_at + 1 };
+  act(() => app.session.state.set((s) => ({ ...s, attention: { ...s.attention, again } })));
+  open({ screen: "needs_you", projectId: ids.pTide }); await advance();
+  fireEvent.pointerDown(document.body); await advance(3000);
+  const group = [...document.querySelectorAll<HTMLDetailsElement>("details.work-attention-group")].find((d) => d.textContent?.startsWith("2 "));
+  expect(group?.open).toBe(false);
+  expect(handledIds()).not.toContain("again");
+  expect(handledIds()).not.toContain(ids.atApproval);
+  expect(handledIds().length).toBeGreaterThan(0);
+  act(() => { group!.open = true; group!.dispatchEvent(new Event("toggle")); });
+  fireEvent.pointerDown(document.body); await advance(3000);
+  expect(handledIds()).toEqual(expect.arrayContaining(["again", ids.atApproval]));
+});
+
+it("opening an item's own screen counts it as handled", async () => {
+  unlock(); await advance();
+  open({ screen: "attention", attentionId: ids.atReady }); await advance();
+  expect(handledIds()).toContain(ids.atReady);
 });

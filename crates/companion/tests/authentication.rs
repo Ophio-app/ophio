@@ -30,6 +30,10 @@ async fn pinned_tls_authentication_and_attributed_command() {
     fixture.stop().await;
 }
 
+#[cfg_attr(
+    target_os = "macos",
+    ignore = "uses 127.0.0.2, which a Mac answers on only when set up to"
+)]
 #[tokio::test]
 async fn an_address_that_appears_while_running_is_served() {
     // As when Tailscale comes up after Øphio has started.
@@ -436,6 +440,10 @@ async fn a_stalled_request_releases_its_connection_at_the_authentication_deadlin
     fixture.stop().await;
 }
 
+#[cfg_attr(
+    target_os = "macos",
+    ignore = "uses 127.0.0.2, which a Mac answers on only when set up to"
+)]
 #[tokio::test]
 async fn one_peer_cannot_hold_every_connection_before_authentication() {
     use tokio::io::AsyncReadExt;

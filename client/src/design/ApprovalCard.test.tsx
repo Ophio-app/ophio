@@ -9,7 +9,7 @@ it("disables both offline decisions with the same connection explanation", () =>
   const onDecide = vi.fn();
   render(<ApprovalCard approval={approvals(Date.now())[0]!} agent="Claude Code" myDeviceId="phone" canDecide
     disabled disabledReason="Connect to the computer to answer this request." onDecide={onDecide} />);
-  for (const name of ["Deny…", "Allow"]) {
+  for (const name of ["Decline…", "Allow"]) {
     const button = screen.getByRole("button", { name });
     expect(button).toHaveProperty("disabled", true);
     fireEvent.click(button);
@@ -40,9 +40,9 @@ it("drops the unconfirmed-decision warning once reconnecting lets the request be
 it("makes denial primary in the review form and sends the reason", async () => {
   const onDecide = vi.fn().mockResolvedValue(undefined);
   render(<ApprovalCard approval={approvals(Date.now())[0]!} agent="Claude Code" myDeviceId="phone" canDecide onDecide={onDecide} />);
-  fireEvent.click(screen.getByRole("button", { name: "Deny…" }));
+  fireEvent.click(screen.getByRole("button", { name: "Decline…" }));
   expect(screen.queryByRole("button", { name: "Allow" })).toBeNull();
-  const deny = screen.getByRole("button", { name: /^Deny$/ });
+  const deny = screen.getByRole("button", { name: /^Decline$/ });
   expect(deny.classList.contains("btn--primary")).toBe(true);
   fireEvent.change(screen.getByLabelText("Reason (optional)"), { target: { value: "Wait for the maintainer" } });
   await act(async () => { fireEvent.click(deny); });
@@ -50,16 +50,67 @@ it("makes denial primary in the review form and sends the reason", async () => {
 });
 
 import type { Approval } from "../protocol/types";
-it.each(cases.filter(c => !("questions" in c.approval)))("shows $tool facts without opening Exact request, and says when they were shortened", ({ approval, input }) => {
-  render(<ApprovalCard approval={{ ...approvals(Date.now())[0]!, ...approval, kind: approval.kind as Approval["kind"], raw_request: JSON.stringify(input) }} agent="Claude Code" myDeviceId={null} canDecide onDecide={async () => {}} />);
-  expect(screen.getByRole("heading", { name: approval.title })).toBeTruthy();
-  const detail = document.querySelector(".approval__detail");
+it.each(cases.filter(c => !("questions" in c.approval)))("reads $tool at a glance, with the decision above the request itself", ({ approval, input }) => {
+  render(<ApprovalCard approval={{ ...approvals(Date.now())[0]!, headline: undefined, facts: undefined, ...approval, kind: approval.kind as Approval["kind"], raw_request: JSON.stringify(input) }} agent="Claude Code" myDeviceId={null} canDecide onDecide={async () => {}} />);
+  // The agent's own account heads it, else what the computer calls it.
+  expect(screen.getByRole("heading", { name: approval.headline ?? approval.title })).toBeTruthy();
+  const glance = document.querySelector(".approval__glance");
+  if (approval.facts?.length) {
+    const said = approval.facts.map(f => f.text).join(", ");
+    expect(glance!.textContent).toBe(said.charAt(0).toUpperCase() + said.slice(1));
+  } else {
+    expect(glance).toBeNull();
+  }
+  // Decline and Allow come before the request, which is one tap away.
+  const allow = screen.getByRole("button", { name: "Allow" });
+  const more = document.querySelector<HTMLDetailsElement>("details.approval__more")!;
+  expect(more.open).toBe(false);
+  expect(allow.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(more.querySelector("summary")!.textContent).toBe(approval.kind === "command" ? "Show command" : "Show details");
+  const detail = more.querySelector(".approval__detail");
   expect(detailLines(detail!)).toEqual(approval.detail_lines!.map(line => ({ text: line.label ? `${line.label}: ${line.text}` : line.text, code: line.code && line.change !== "omitted" ? line.text : null, change: line.change ?? null })));
   expect(detailLines(detail!).map(line => line.change ? `${PLAIN_MARK[line.change]} ${line.text}` : line.text).join("\n")).toBe(approval.detail);
-  expect(detail?.closest("details")).toBeNull();
-  expect(document.querySelector("details")?.open).toBe(false);
-  expect(screen.getByText("This request once")).toBeTruthy();
+  expect(within(more).getByText("This request once")).toBeTruthy();
   expect(screen.queryByText("Shortened · the full request is under Exact request") !== null).toBe(approval.shortened);
+  act(() => { more.open = true; more.dispatchEvent(new Event("toggle")); });
+  expect(more.querySelector("summary")!.textContent).toBe(approval.kind === "command" ? "Hide command" : "Hide details");
+});
+
+it("marks the risky part of what a request does, in words as well as colour", () => {
+  const approval: Approval = { ...approvals(Date.now())[0]!, headline: "Clean and publish", facts: [{ text: "deletes target" , risky: true }, { text: "makes a git commit" }, { text: "pushes to origin", risky: true }] };
+  render(<ApprovalCard approval={approval} agent="Claude Code" myDeviceId={null} canDecide onDecide={async () => {}} />);
+  const glance = document.querySelector(".approval__glance")!;
+  expect(glance.textContent).toBe("Check this: Deletes target, makes a git commit, Check this: pushes to origin");
+  expect([...glance.querySelectorAll("mark")].map(m => m.textContent)).toEqual(["Check this: Deletes target", "Check this: pushes to origin"]);
+  expect(glance.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+});
+
+it("shows the start of the request where an older computer says nothing about what it does", () => {
+  const approval = approvals(Date.now())[0]!;
+  const { headline: _, facts: __, ...older } = approval;
+  render(<ApprovalCard approval={{ ...older, detail: "cargo test\nRun the tests", detail_lines: [{ text: "cargo test", code: true }, { text: "Run the tests" }] }} agent="Claude Code" myDeviceId={null} canDecide onDecide={async () => {}} />);
+  expect(screen.getByRole("heading", { name: "Run a shell command" })).toBeTruthy();
+  expect(document.querySelector(".approval__peek")!.textContent).toContain("cargo test");
+  expect(screen.getByRole("button", { name: "Allow" })).toBeTruthy();
+});
+
+it("draws the buttons it is given, which act through the card", async () => {
+  const act1 = vi.fn().mockResolvedValue(undefined);
+  render(<ApprovalCard approval={approvals(Date.now())[0]!} agent="Claude Code" myDeviceId={null} canDecide onDecide={async () => {}}
+    actions={(ctx) => <>
+      <button type="button" disabled={ctx.disabled} onClick={() => void ctx.run("other", act1)}>{ctx.sending === "other" ? "Going" : "Another way"}</button>
+      <button type="button" onClick={ctx.decline}>No</button>
+    </>} />);
+  expect(screen.queryByRole("button", { name: "Allow" })).toBeNull();
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Another way" })); });
+  expect(act1).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("status").textContent).toBe("Sent. Updating…");
+});
+
+it("sits in a list row without a frame or heading row of its own", () => {
+  render(<ApprovalCard approval={approvals(Date.now())[0]!} agent="Claude Code" myDeviceId={null} canDecide embedded onDecide={async () => {}} />);
+  expect(document.querySelector(".approval--embedded")).toBeTruthy();
+  expect(document.querySelector(".approval__head")).toBeNull();
 });
 
 /** How the companion's plain detail marks each line of a proposed change. */

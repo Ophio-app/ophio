@@ -15,13 +15,14 @@ export function ReportQuestionCard({ reportId, question, onAnswered }: { reportI
     if (expected) return;
     const perform = () => {
       setExpected(choice); setError(null);
-      void reports.answer({ report_id: reportId, question_id: question.question_id, answer: { choice, at: Date.now() } }).then(() => { onAnswered?.(); void computerReports(session).refresh(); }).catch(e => { setExpected(null); setError(describeError(e, profile.name)); void computerReports(session).refresh(); });
+      void reports.answer({ report_id: reportId, question_id: question.question_id, answer: { choice, at: Date.now() } }, session).then(() => { onAnswered?.(); void computerReports(session).refresh(); }).catch(e => { setExpected(null); setError(describeError(e, profile.name)); void computerReports(session).refresh(); });
     };
     if (choice.choice === "allow" && question.template.template === "may_we_see") {
       const source = reports.get().tasks[reportId];
       const taskId = source?.profileId === profile.profileId ? source.taskId : undefined;
       if (question.template.part === "task_transcript" && !taskId) { setError("This phone no longer has the task link for that conversation. You can choose Don’t allow."); return; }
-      openReport({ type: "follow_up", report_id: reportId }, taskId ? { task: taskId } : {}, { extra: question.template.part === "names" ? { type: "names" } : { type: "task_transcript", task_id: taskId! }, onSent: perform });
+      // Through the computer the question came from, which may not be the one on screen.
+      openReport({ type: "follow_up", report_id: reportId }, { profileId: profile.profileId, ...(taskId ? { task: taskId } : {}) }, { extra: question.template.part === "names" ? { type: "names" } : { type: "task_transcript", task_id: taskId! }, onSent: perform });
     } else perform();
   };
   const answered = question.answer?.choice ?? expected;
@@ -38,7 +39,17 @@ export function ReportAttention({ reportId }: { reportId: string }) {
   const questions = report?.questions.filter(q => !q.answer) ?? [];
   return <div className="settings-card report-stack"><p>Report {report?.reference ?? "update"}</p>{questions.map(q => <ReportQuestionCard key={q.question_id} reportId={reportId} question={q} />)}<Button variant="quiet" onClick={() => ui.push({ screen: "settings", section: "settings-reports", reportId })}>Open report</Button></div>;
 }
-export function ReportNeedsYou() {
-  const { reports: all } = useReports();
-  return <>{all.filter(r => r.questions.some(q => !q.answer)).map(r => <ReportAttention key={r.report_id} reportId={r.report_id} />)}</>;
+/** Reports with a question for the person. `fromComputer` keeps to those
+ * this computer carries, leaving the phone's own to the computer on screen,
+ * so All lists each once. */
+function useAsking(fromComputer: boolean) {
+  const { reports: all, view } = useReports();
+  const own = fromComputer ? new Set((view?.reports ?? []).map((r) => r.report_id)) : null;
+  return all.filter(r => r.questions.some(q => !q.answer) && (!own || own.has(r.report_id)));
+}
+export function useReportQuestions(fromComputer = false): number {
+  return useAsking(fromComputer).length;
+}
+export function ReportNeedsYou({ fromComputer = false }: { fromComputer?: boolean }) {
+  return <>{useAsking(fromComputer).map(r => <ReportAttention key={r.report_id} reportId={r.report_id} />)}</>;
 }

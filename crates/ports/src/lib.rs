@@ -19,22 +19,24 @@ pub mod harness;
 pub mod library;
 pub mod media;
 pub mod model_name;
+pub mod request_facts;
 pub mod sandbox;
 pub mod servers;
 pub mod speech;
 pub mod system;
+pub mod tailscale;
 pub mod terminal;
 pub mod tool_approval;
 
 pub use clock::{Clock, SystemClock};
 pub use desktop::{
-    CapturedFrame, DesktopBackend, DesktopCapabilities, FrameStream, InputSink, PixelFormat,
-    PlatformError, UnlockOutcome,
+    CapturedFrame, DesktopBackend, DesktopCapabilities, FrameStream, InputSink, LaunchCheck,
+    PixelFormat, PlatformError, UnlockOutcome,
 };
 pub use harness::{
-    Containment, Disabled, DisabledEntry, HarnessAdapter, HarnessError, HarnessEvent, ImageInput,
-    MessageRef, NativeApproval, NativeEntry, PromptInput, RunControl, RunEnv, RunExit, RunSpec,
-    RunStart, RunStarted, SCRATCH_ENV, TASK_ENV, TerminalBlock, ToolBridge,
+    Containment, Disabled, DisabledEntry, HELPER_STEP, HarnessAdapter, HarnessError, HarnessEvent,
+    ImageInput, MessageRef, NativeApproval, NativeEntry, PromptInput, RunControl, RunEnv, RunExit,
+    RunSpec, RunStart, RunStarted, SCRATCH_ENV, TASK_ENV, TerminalBlock, ToolBridge,
 };
 pub use library::{LibraryChange, LibraryError, LibraryFs, RootSpec, SaveRequest, TrashEntry};
 pub use media::{

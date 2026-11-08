@@ -28,8 +28,19 @@ pub enum VoiceActionKind {
     SwitchTab,
     Focus,
     PressKey,
+    /// Opens an installed app, chosen on the computer from what was said.
+    Launch,
     Cancel,
     None,
+}
+/// An installed app a voice command opens, as the computer's own app list
+/// names it. The computer finds it again by `id` before opening it; the id
+/// is never run as a command.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct VoiceApp {
+    pub id: String,
+    pub name: String,
 }
 #[derive(
     Debug, Clone, Copy, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS,
@@ -87,6 +98,10 @@ pub struct VoiceAction {
     pub literal: Option<String>,
     pub scroll_y: i32,
     pub previous_tab: bool,
+    /// The app a launch opens. Absent from older computers' receipts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub app: Option<VoiceApp>,
 }
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS,
@@ -184,6 +199,20 @@ pub struct VoiceSessionView {
     pub picture: Option<VoicePicture>,
     pub steps: Vec<VoiceStep>,
     pub ended: Option<VoiceStopCause>,
+    /// A command voice control can't do itself, offered to a computer-use
+    /// agent. Only when the computer can run computer use and this device
+    /// may start it; the phone starts it only on the person's tap. Older
+    /// phones ignore it and show `understood`, a plain refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub offer: Option<VoiceAgentOffer>,
+}
+/// What an agent would be asked to do, in the person's own words.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct VoiceAgentOffer {
+    /// The finished transcript, verbatim: the agent's whole instruction.
+    pub instruction: String,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
 #[ts(export)]

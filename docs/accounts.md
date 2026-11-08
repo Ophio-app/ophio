@@ -10,8 +10,8 @@ account's name, who it is signed in as and its state, never a secret.
 
 | Service | Kind | Signs in with | Tasks receive |
 |---|---|---|---|
-| Claude Code | Agent login | `claude auth login` | The agent uses its own login |
-| Codex | Agent login | `codex login` | The agent uses its own login |
+| Claude Code | Agent login | `claude auth login`, on the computer or the phone | The agent uses its own login |
+| Codex | Agent login | `codex login`, or `codex login --device-auth` from the phone | The agent uses its own login |
 | GitHub | CLI login | `gh auth login --web` | `GH_CONFIG_DIR`, a private folder for this account |
 | OpenRouter | API key | The key, pasted on the phone | `OPENROUTER_API_KEY` |
 | Google (Gmail) | OAuth app | Google's page, with your own OAuth client | `GOOGLE_OAUTH_ACCESS_TOKEN` and `GOOGLE_APPLICATION_CREDENTIALS` |
@@ -48,6 +48,63 @@ phone:
 
 A sign-in that fails, is cancelled or takes longer than 10 minutes is said so
 plainly, and nothing is saved.
+
+### Claude Code and Codex, from the phone
+
+Claude Code and Codex can also be signed in again entirely from the phone, in
+its own browser, so a sign-in that lapses while you are away can be fixed
+from anywhere. No model or agent run is involved.
+
+1. Tap **Sign in again** on the account, on a "Claude isn't signed in" notice
+   in Needs you, or on its notification. The phone asks for its own unlock.
+2. The computer starts the agent's own sign-in, the kind meant for finishing
+   on another device, and sends the phone the provider's page. Nothing opens
+   on the computer's screen.
+3. Tap **Open the sign-in page** and sign in there.
+   - **Claude Code:** the page then shows a code. Copy it, paste it into
+     **Paste the code from the sign-in page** and tap **Sign in**. The
+     computer types it into Claude Code once. A code Claude Code refuses is
+     said so, and you can paste it again.
+   - **Codex:** the phone shows a one-time code, with **Copy**. Enter it on
+     the page. This works only once your ChatGPT account allows it: turn on
+     **Enable device code sign-in for Codex** in ChatGPT's security settings
+     (chatgpt.com/settings/security). Where it isn't on, the phone says so and
+     links there.
+4. The computer checks with the agent's own status command and the phone says
+   who is signed in.
+
+**Finish on the computer's screen instead** keeps the sign-in described
+above. The page's link and the pasted code cross the paired, encrypted link
+once; neither is logged, saved or shown again. Only a phone that may manage
+accounts sees the link or Codex's code; anything else that asks, a program
+Ophio started among them, sees only the provider's name. A pasted code goes
+only to the sign-in it was copied for. A computer that doesn't offer this yet
+(an older Ophio) keeps the computer's-screen sign-in only.
+
+On Windows, Claude Code also opens its own sign-in page in the computer's
+browser while you finish on the phone: Ophio can't stand in for the browser
+there. Close that page; the sign-in on the phone isn't affected.
+
+### When an agent isn't signed in
+
+The computer checks whether Claude Code and Codex are signed in when it
+starts, every few minutes after, straight after a task is refused because one
+isn't, and after a sign-in in Accounts. It also notices a run that the agent
+refused because its sign-in expired ("Please run /login", or Codex's refused
+refresh). An agent that is installed but has never been signed in on this
+computer raises nothing, and nor does one you sign out yourself in Accounts,
+until it has been signed in again. Otherwise each phone that may manage
+accounts gets one notice in Needs you, and one notification: "Claude isn't signed in on
+Studio", with **Sign in again** and **Not now**. Not now puts that notice away
+for this lapse; once the agent has been signed in, the next lapse alerts
+again. An older version of the app isn't sent the notice. It names the computer, so with several computers, or in **All
+computers**, the button signs in on the right one. There is one notice for
+each lapse, however often it is seen; it goes away once the agent is signed
+in again. After a refused run the notice stays until a sign-in finishes or
+the model answers a later run, since the agent's own status command can still
+say "signed in" for a login it can't renew. A run that started before the
+latest sign-in in Accounts, and so had the older one, raises nothing when it
+is refused, whether or not a notice was open.
 
 For an API key, tap **Set key** (or **Replace key**) and paste it, or let the
 phone's password manager fill the one field. The key crosses the paired,

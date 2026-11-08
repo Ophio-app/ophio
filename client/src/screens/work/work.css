@@ -92,10 +92,12 @@
   content: "−" / "";
 }
 .work-row-line,
+.work-row-may,
 .work-row-state {
   display: block;
 }
-.work-row-line {
+.work-row-line,
+.work-row-may {
   margin-top: var(--s1);
 }
 .work-task-row {
@@ -744,22 +746,32 @@
 .work-attention-item {
   container: work-attention / inline-size;
 }
-/* Wide, Deny and Allow sit at the top right, beside what the agent asks,
+/* What its task may do, under the request's button, aligned with its words. */
+.work-attention-may {
+  margin: calc(-1 * var(--s2)) 0 0;
+  /* As .work-screen .row: its padding, a 1.5rem icon and the gap. */
+  padding: 0 var(--s4) var(--s3) calc(var(--s4) + 1.5rem + var(--s3));
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  overflow-wrap: break-word;
+}
+/* Wide, Decline and Allow sit at the top right, beside what the agent asks,
    rather than below it: on a phone on its side the first answer then shows
    without scrolling. */
 @container work-attention (min-width: 34rem) {
-  .talk-quick-approval {
+  .talk-quick-approval .approval--glance {
     grid-template-columns: minmax(0, 1fr) auto;
     column-gap: var(--s4);
   }
-  .talk-quick-approval > * {
+  .talk-quick-approval .approval--glance > * {
     grid-column: 1;
   }
-  .talk-quick-approval > .talk-quick-approval__actions {
+  .talk-quick-approval .approval--glance > .approval__actions {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 1 / span 3;
     align-self: start;
     flex-wrap: nowrap;
+    margin-top: 0;
   }
 }
 /* On a phone on its side, New and the segments share a row, which scrolls

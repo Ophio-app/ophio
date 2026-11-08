@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { storeOf } from "./onComputer";
 import type { Project, Task } from "../protocol/types";
 import { projectTasks, runningTasks, type HostState } from "../state/projection";
 import type { UiState, UiStore } from "./ui";
@@ -40,7 +41,8 @@ export function usePinnedTalkTask(projectId: string): Task | null {
   const visible = useUi(s => s.tab === "talk" && s.stacks.talk.at(-1)?.screen === "talk" && !s.taskList);
   const task = useHost(s => talkTask(s, projectId, selected));
   useLayoutEffect(() => {
-    if (visible && selected === undefined && task) ui.selectTask(projectId, task.task_id);
+    // Kept up to date, not tapped: in place, never a switch of computers.
+    if (visible && selected === undefined && task) storeOf(ui).selectTask(projectId, task.task_id);
   }, [visible, selected, task, projectId, ui]);
   return task;
 }
@@ -48,8 +50,10 @@ export function usePinnedTalkTask(projectId: string): Task | null {
 /** Stop can also originate in the rail above Talk, before a host update. */
 export function pinStoppedConversation(state: HostState, ui: UiStore, task: Task): void {
   const local = ui.get();
+  // Keeping it in view moves nothing, so Stop from All's list for another
+  // computer changes that computer's Talk in place and never switches to it.
   if (local.stacks[local.tab].at(-1)?.screen === "talk" && taskOnScreen(state, local)?.task_id === task.task_id)
-    ui.selectTask(task.project_id, task.task_id);
+    storeOf(ui).selectTask(task.project_id, task.task_id);
 }
 
 export function taskOnScreen(state: HostState, ui: Pick<UiState, "tab" | "stacks" | "projectId" | "taskByProject" | "taskList">): Task | null {

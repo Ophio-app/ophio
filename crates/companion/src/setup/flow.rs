@@ -1674,6 +1674,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                 None if looks >= SIGN_IN_START => {
                     break SignInStage::Failed {
                         reason: "The sign-in didn't start.".into(),
+                        help_url: None,
                     };
                 }
                 _ => {}
@@ -1719,7 +1720,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
             SignInStage::Done { identity: None } => fact(Mark::Ok, name, "Signed in"),
             SignInStage::Cancelled => fact(Mark::Info, name, "Sign-in cancelled"),
             SignInStage::TimedOut => fact(Mark::Warn, name, "The sign-in timed out"),
-            SignInStage::Failed { reason } => fact(Mark::Stop, name, shown(&reason)),
+            SignInStage::Failed { reason, .. } => fact(Mark::Stop, name, shown(&reason)),
             _ => fact(Mark::Warn, name, "The sign-in ended"),
         }];
         if !matches!(blocks[0], Block::Fact { mark: Mark::Ok, .. })
@@ -3362,9 +3363,14 @@ pub(super) fn claude_installer() -> Run {
     }
 }
 fn codex_installer() -> Run {
-    let script = "npm install -g @openai/codex";
-    if cfg!(windows) {
-        // npm is a script there, which only a shell runs.
+    codex_installer_for(cfg!(windows))
+}
+pub(super) fn codex_installer_for(windows: bool) -> Run {
+    if windows {
+        // npm is a script there, which only a shell runs. PowerShell would
+        // pick npm.ps1, which Windows' default policy for scripts refuses to
+        // run ("running scripts is disabled on this system"), so npm.cmd.
+        let script = "npm.cmd install -g @openai/codex";
         Run::Program {
             program: "powershell".into(),
             args: vec!["-NoProfile".into(), "-Command".into(), script.into()],
@@ -3374,7 +3380,7 @@ fn codex_installer() -> Run {
         Run::Program {
             program: "npm".into(),
             args: vec!["install".into(), "-g".into(), "@openai/codex".into()],
-            shown: script.into(),
+            shown: "npm install -g @openai/codex".into(),
         }
     }
 }

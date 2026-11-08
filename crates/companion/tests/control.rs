@@ -204,7 +204,10 @@ async fn backlog_caught_up_live_filter_and_resubscribe() {
     }
     let mut client = fixture.authenticated(ConnectionKind::Control).await;
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: Some(0) }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: Some(0),
+            account_items: false,
+        }))
         .await;
     for seq in 1..=3 {
         assert!(
@@ -221,7 +224,10 @@ async fn backlog_caught_up_live_filter_and_resubscribe() {
         matches!(client.receive::<ServerFrame>().await, ServerFrame::Event(event) if event.seq == 4)
     );
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: Some(3) }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: Some(3),
+            account_items: false,
+        }))
         .await;
     assert!(
         matches!(client.receive::<ServerFrame>().await, ServerFrame::Event(event) if event.seq == 4)
@@ -245,7 +251,10 @@ async fn queued_event_frames_leave_together_each_its_own_message() {
     let client = fixture.connect_over(ConnectionKind::Control, records).await;
     let mut client = fixture.authenticate(client).await;
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: None }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: None,
+            account_items: false,
+        }))
         .await;
     assert_eq!(
         client.receive::<ServerFrame>().await,
@@ -272,7 +281,10 @@ async fn one_hundred_thousand_events_do_not_block_receipts() {
     let fixture = Fixture::new().await;
     let mut client = fixture.authenticated(ConnectionKind::Control).await;
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: None }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: None,
+            account_items: false,
+        }))
         .await;
     assert_eq!(
         client.receive::<ServerFrame>().await,
@@ -325,7 +337,10 @@ async fn overflowing_event_queue_resyncs_without_closing_control() {
     .await;
     let mut client = fixture.authenticated(ConnectionKind::Control).await;
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: Some(0) }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: Some(0),
+            account_items: false,
+        }))
         .await;
     assert_eq!(
         client.receive::<ServerFrame>().await,
@@ -353,7 +368,10 @@ async fn overflowing_event_queue_resyncs_without_closing_control() {
         ServerFrame::Pong { nonce: 5 }
     );
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: Some(8) }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: Some(8),
+            account_items: false,
+        }))
         .await;
     assert_eq!(
         client.receive::<ServerFrame>().await,
@@ -377,6 +395,7 @@ async fn a_long_backlog_replays_in_order_a_page_at_a_time() {
     client
         .send(&ClientFrame::Subscribe(Subscribe {
             after_seq: Some(10),
+            account_items: false,
         }))
         .await;
     let mut seen = vec![];
@@ -405,7 +424,10 @@ async fn broadcast_lag_replays_retained_events() {
     .await;
     let mut client = fixture.authenticated(ConnectionKind::Control).await;
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: Some(0) }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: Some(0),
+            account_items: false,
+        }))
         .await;
     assert_eq!(
         client.receive::<ServerFrame>().await,
@@ -529,7 +551,15 @@ async fn a_program_the_companion_started_uses_the_owners_controls_but_never_cons
         command(Command::DeleteOneOff {
             project_id: protocol::ProjectId::new(),
         }),
+        command(Command::RenameComputer {
+            name: "Another computer".into(),
+        }),
         command(loosened_login()),
+        // Its task's finish would alert past what the person chose.
+        command(Command::SetTaskNotify {
+            task_id: protocol::TaskId::new(),
+            on: true,
+        }),
         r#"{"op":"answer_pairing","code":"123456","confirm":true}"#.to_owned(),
         r#"{"op":"quit"}"#.to_owned(),
     ];
@@ -564,9 +594,10 @@ async fn a_program_the_companion_started_uses_the_owners_controls_but_never_cons
         panic!("expected a receipt, not {}", replies[1]);
     };
     assert_eq!(receipt.status, protocol::ReceiptStatus::Accepted);
-    // It never consents for the person, loosens a login, deletes their files,
-    // nor ends Øphio.
-    for reply in &replies[2..5] {
+    // It never consents for the person, deletes their files, renames the
+    // computer every phone sees, loosens a login, asks to hear when a task
+    // is done, nor ends Øphio.
+    for reply in &replies[2..7] {
         let ServerFrame::Receipt(receipt) = serde_json::from_str(reply).unwrap() else {
             panic!("expected a receipt, not {reply}");
         };
@@ -576,7 +607,7 @@ async fn a_program_the_companion_started_uses_the_owners_controls_but_never_cons
             protocol::ErrorCode::PermissionDenied
         );
     }
-    for reply in &replies[5..] {
+    for reply in &replies[7..] {
         let ServerFrame::Fatal(error) = serde_json::from_str(reply).unwrap() else {
             panic!("expected a refusal, not {reply}");
         };
@@ -792,6 +823,7 @@ async fn unsafe_cursor_is_rejected_before_hub_and_maximum_is_exact() {
     client
         .send(&ClientFrame::Subscribe(Subscribe {
             after_seq: Some(protocol::MAX_SAFE_INTEGER + 1),
+            account_items: false,
         }))
         .await;
     assert!(matches!(client.receive::<ServerFrame>().await,
@@ -813,6 +845,7 @@ async fn unsafe_cursor_is_rejected_before_hub_and_maximum_is_exact() {
     client
         .send(&ClientFrame::Subscribe(Subscribe {
             after_seq: Some(protocol::MAX_SAFE_INTEGER),
+            account_items: false,
         }))
         .await;
     assert_eq!(
@@ -908,7 +941,10 @@ async fn an_event_too_large_to_send_is_a_gap_and_the_connection_stays() {
     fixture.hub.head.store(3, Ordering::SeqCst);
     let mut client = fixture.authenticated(ConnectionKind::Control).await;
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: Some(0) }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: Some(0),
+            account_items: false,
+        }))
         .await;
     assert!(
         matches!(client.receive::<ServerFrame>().await, ServerFrame::Event(event) if event.seq == 1)
@@ -929,7 +965,10 @@ async fn an_event_too_large_to_send_is_a_gap_and_the_connection_stays() {
     );
     // Resubscribed from the snapshot's place, the journal carries on.
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: Some(3) }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: Some(3),
+            account_items: false,
+        }))
         .await;
     assert_eq!(
         client.receive::<ServerFrame>().await,
@@ -948,7 +987,10 @@ async fn an_event_too_large_to_send_is_a_gap_and_the_connection_stays() {
     );
     fixture.hub.emit(5);
     client
-        .send(&ClientFrame::Subscribe(Subscribe { after_seq: Some(4) }))
+        .send(&ClientFrame::Subscribe(Subscribe {
+            after_seq: Some(4),
+            account_items: false,
+        }))
         .await;
     assert!(
         matches!(client.receive::<ServerFrame>().await, ServerFrame::Event(event) if event.seq == 5)

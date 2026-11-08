@@ -2,7 +2,7 @@
 import { useEffect, useMemo } from "react";
 import { AnnotationStore } from "../state/annotations";
 import { useStore } from "../state/store";
-import { Speech } from "../screens/annotate/Speech";
+import { Speech } from "../screens/annotate/SpeechView";
 import { MAX_REPORT_WORDS } from "../diagnostics/constants";
 
 export function ReportSpeech({ words, onWords, onRecording }: { words: string; onWords(words: string): void; onRecording(active: boolean): void }) {

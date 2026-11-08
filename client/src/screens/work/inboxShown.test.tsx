@@ -11,7 +11,7 @@ import { ids } from "../../dev/sim/scenario";
 import { HostSession } from "../../host/session";
 import type { ArtifactMeta, PreviewEndpoint, Query } from "../../protocol/types";
 import { RouteProvider } from "../../shell/Screen";
-import Inbox from "./Inbox";
+import Inbox from "./InboxScreen";
 import { PROJECT_SHOWN_FEATURE } from "./useProjectShown";
 
 vi.mock("./pictures", async (original) => ({

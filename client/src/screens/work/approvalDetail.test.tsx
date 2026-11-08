@@ -31,7 +31,8 @@ const codeIn = (root: Element) => [...root.querySelectorAll("code")].map(code =>
 it("sets the command, pattern and path of a request as code in the Needs you row, a grouped row and the sheet", async () => {
   const route = { screen: "work" } as const;
   render(<AppProvider app={app}><RouteProvider value={{ tab: "work", route, depth: 0, active: true }}><AttentionList projectId={ids.pTide} /></RouteProvider></AppProvider>);
-  const quick = document.querySelector(".talk-quick-approval__detail")!;
+  // The row's card keeps the request under Show command.
+  const quick = document.querySelector(".talk-quick-approval .approval__more .approval__detail")!;
   expect(codeIn(quick)).toEqual(["printf fixture"]);
   expect(quick.textContent).toContain("Print fixture text");
 
@@ -39,7 +40,7 @@ it("sets the command, pattern and path of a request as code in the Needs you row
   const first = host.approvals.find(a => a.approval_id === ids.aTest)!;
   const item = host.attention.find(a => a.attention_id === ids.atApproval)!;
   const grep = cases.find(c => c.tool === "Grep")!.approval;
-  const second: Approval = { ...first, ...grep, kind: "tool", approval_id: crypto.randomUUID(), native_request_id: "toolu_grep", requested_at: Date.now() };
+  const second: Approval = { ...first, headline: undefined, facts: undefined, ...grep, kind: "tool", approval_id: crypto.randomUUID(), native_request_id: "toolu_grep", requested_at: Date.now() };
   act(() => {
     host.emit({ type: "approval_upserted", approval: second });
     host.emit({ type: "attention_upserted", item: { ...item, attention_id: crypto.randomUUID(), approval_id: second.approval_id, created_at: Date.now() } });
@@ -63,15 +64,15 @@ it("keeps a proposed change out of a grouped row and shows it in the sheet", asy
   const first = host.approvals.find(a => a.approval_id === ids.aTest)!;
   const item = host.attention.find(a => a.attention_id === ids.atApproval)!;
   const edit = cases.find(c => (c.input as { file_path?: string }).file_path === "client/src/screens/Home.tsx")!.approval;
-  const second: Approval = { ...first, ...edit, kind: "file_edit", approval_id: crypto.randomUUID(), native_request_id: "toolu_edit", requested_at: Date.now() };
+  const second: Approval = { ...first, headline: undefined, facts: undefined, ...edit, kind: "file_edit", approval_id: crypto.randomUUID(), native_request_id: "toolu_edit", requested_at: Date.now() };
   act(() => {
     host.emit({ type: "approval_upserted", approval: second });
     host.emit({ type: "attention_upserted", item: { ...item, attention_id: crypto.randomUUID(), approval_id: second.approval_id, created_at: Date.now() } });
   });
   await advance();
   fireEvent.click(screen.getByText(/^2 approvals/));
-  const row = screen.getByText("client/src/screens/Home.tsx").closest("button")!;
-  expect(row.textContent).toContain("Replace one match: 126 → 157 characters");
+  // The grouped row says what it changes, worked out by the computer.
+  const row = screen.getByText("Changes client/src/screens/Home.tsx").closest("button")!;
   expect(row.querySelector(".approval__change")).toBeNull();
 
   fireEvent.click(row);

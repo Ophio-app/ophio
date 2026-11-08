@@ -17,6 +17,16 @@ pub(crate) struct Live {
     inside: Mutex<Option<std::net::SocketAddr>>,
     asked: Mutex<Vec<std::net::SocketAddr>>,
 }
+impl Backend {
+    /// Each change the running sandbox was asked to make, in order.
+    pub(crate) fn sandbox_changes(&self) -> Vec<Reach> {
+        self.sandbox.changes.lock().unwrap().clone()
+    }
+    /// The running sandbox can't change as it runs: its turn must end.
+    pub(crate) fn needs_restart(&self) {
+        self.sandbox.restart.store(true, Ordering::SeqCst);
+    }
+}
 #[async_trait::async_trait]
 impl Sandboxes for Backend {
     fn availability(&self) -> Availability {
@@ -808,5 +818,179 @@ async fn a_chat_shows_a_page_it_serves_inside_its_sandbox_while_its_turn_lasts()
     backend.sandbox.asked.lock().unwrap().clear();
     assert_eq!(check().await, Some(false));
     assert!(backend.sandbox.asked.lock().unwrap().is_empty());
+    f.close().await;
+}
+
+/// Raises `kind` from `run` as its agent would, and returns the card.
+async fn raised(f: &Fixture, run: RunId, kind: ApprovalKind) -> Approval {
+    let native_request_id = uuid::Uuid::new_v4().to_string();
+    f.harness
+        .emit(
+            run,
+            ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
+                native_request_id: native_request_id.clone(),
+                kind,
+                title: format!("{kind:?}"),
+                detail: None,
+                detail_lines: Vec::new(),
+                questions: Vec::new(),
+                raw_request: None,
+                scope: "once".into(),
+                shortened: false,
+                tool_call: None,
+            }),
+        )
+        .await;
+    tokio::time::timeout(Duration::from_secs(15), async {
+        loop {
+            let found = (f.hub.read(|r| r.list::<Approval>("approval")).unwrap())
+                .into_iter()
+                .find(|a| a.native_request_id == native_request_id);
+            if let Some(approval) = found {
+                return approval;
+            }
+            tokio::time::sleep(Duration::from_millis(1)).await;
+        }
+    })
+    .await
+    .expect("approval was not raised")
+}
+async fn decide(f: &Fixture, approval: &Approval, decision: ApprovalDecision) -> CommandReceipt {
+    let mut envelope = CommandEnvelope::new(Command::ResolveApproval {
+        approval_id: approval.approval_id,
+        decision,
+    });
+    envelope.expected_revision = Some(approval.revision.into());
+    f.hub.submit(&Caller::local_owner(), envelope).await
+}
+/// Allow is refused before anything is claimed, and Deny still goes.
+async fn only_declined(f: &Fixture, approval: &Approval) {
+    let receipt = decide(f, approval, ApprovalDecision::Allow).await;
+    assert_eq!(
+        receipt.error.as_ref().map(|e| e.code),
+        Some(ErrorCode::Unsupported),
+        "{:?}: {receipt:?}",
+        approval.kind
+    );
+    assert!(
+        f.hub
+            .read(|r| r.get::<CommandId>("approval_claim", approval.approval_id))
+            .unwrap()
+            .is_none()
+    );
+    let receipt = decide(f, approval, ApprovalDecision::Deny { reason: None }).await;
+    assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
+}
+
+/// A chat is an Ask task whose turns start as Work inside the sandbox its
+/// access holds. Claude Code still asks about some commands there, and the
+/// person's Allow lets them run inside that sandbox. What would act outside
+/// it can only be declined, as in any Ask task.
+#[tokio::test]
+async fn a_chat_allows_what_stays_inside_its_sandbox() {
+    let backend = Arc::new(Backend::default());
+    let f = Fixture::with(|b| b.sandboxes(backend.clone())).await;
+    let project = f.project().await;
+    allow_ask(&f);
+    let access = ConversationAccess {
+        read: vec![project],
+        write: vec![project],
+        internet: false,
+        ..Default::default()
+    };
+    let receipt = f
+        .hub
+        .submit(&Caller::local_owner(), create(project, access))
+        .await;
+    let Some(CommandResult::TaskCreated { task_id, .. }) = receipt.result else {
+        panic!("{receipt:?}")
+    };
+    let task: Task = f.hub.read(|r| r.require("task", task_id)).unwrap();
+    assert!(task.conversation);
+    assert_eq!(task.mode, TaskMode::Ask);
+    let spec = dispatched(&f, task_id).await;
+    run_started(&f, task_id).await;
+    assert!(spec.sandbox.is_some());
+    assert_eq!(spec.mode, TaskMode::Work);
+    for kind in [ApprovalKind::Command, ApprovalKind::FileEdit] {
+        let approval = raised(&f, spec.run_id, kind).await;
+        let receipt = decide(&f, &approval, ApprovalDecision::Allow).await;
+        assert_eq!(
+            receipt.status,
+            ReceiptStatus::Accepted,
+            "{kind:?}: {receipt:?}"
+        );
+        assert!(
+            f.hub
+                .read(|r| r.get::<CommandId>("approval_claim", approval.approval_id))
+                .unwrap()
+                .is_some()
+        );
+    }
+    // Ophio's own tools, logins and posts act on the computer itself, and
+    // hosted search and fetches don't pass through the sandbox.
+    for kind in [
+        ApprovalKind::Tool,
+        ApprovalKind::Network,
+        ApprovalKind::LoginUse,
+        ApprovalKind::GithubPost,
+        ApprovalKind::ComputerUse,
+        ApprovalKind::Other,
+    ] {
+        let approval = raised(&f, spec.run_id, kind).await;
+        only_declined(&f, &approval).await;
+    }
+    f.close().await;
+}
+
+/// An Ask or Plan task that isn't held to any access starts read-only, so
+/// nothing it asks for can be allowed, whatever kind it is.
+#[tokio::test]
+async fn ask_and_plan_tasks_outside_a_chat_still_refuse_allow() {
+    let f = Fixture::new().await;
+    let project = f.project().await;
+    allow_ask(&f);
+    f.hub
+        .write(|tx| {
+            let mut infos: Vec<protocol::capability::HarnessInfo> =
+                tx.read().require("meta", "harnesses")?;
+            infos[0].modes.push(protocol::capability::ModeSupport {
+                mode: TaskMode::Plan,
+                availability: Availability::Available,
+                enforcement: "fixture".into(),
+            });
+            tx.put("meta", "harnesses", &infos)
+        })
+        .unwrap();
+    for mode in [TaskMode::Ask, TaskMode::Plan] {
+        let mut envelope = create(project, ConversationAccess::default());
+        if let Command::CreateTask {
+            mode: m,
+            conversation,
+            access,
+            ..
+        } = &mut envelope.body
+        {
+            *m = Some(mode);
+            *conversation = None;
+            *access = None;
+        }
+        let receipt = f.hub.submit(&Caller::local_owner(), envelope).await;
+        let Some(CommandResult::TaskCreated { task_id, .. }) = receipt.result else {
+            panic!("{receipt:?}")
+        };
+        let spec = dispatched(&f, task_id).await;
+        run_started(&f, task_id).await;
+        assert_eq!(spec.mode, mode);
+        for kind in [ApprovalKind::Command, ApprovalKind::FileEdit] {
+            let approval = raised(&f, spec.run_id, kind).await;
+            only_declined(&f, &approval).await;
+        }
+        f.hub
+            .finish_run(spec.run_id, RunState::Completed, None)
+            .unwrap();
+    }
     f.close().await;
 }

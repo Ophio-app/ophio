@@ -64,7 +64,28 @@ pub enum AlertClientFrame {
         /// report alerts at all.
         #[serde(default)]
         reports: bool,
+        /// The phone understands [`Alert::sign_in`]. Older phones aren't
+        /// sent sign-in alerts at all.
+        #[serde(default)]
+        sign_in: bool,
+        /// The phone chooses by [`Alert::alert_type`] and
+        /// [`Alert::project_tier`] itself: alerts the person turned off on
+        /// every phone aren't marked quiet for it, as the phone keeps that
+        /// choice. Older phones send false.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        types: bool,
+        /// Alerts handled on this phone while it couldn't say so, at most
+        /// [`MAX_SHOWING`]: the computer records them as [`Handled`] does.
+        ///
+        /// [`Handled`]: AlertClientFrame::Handled
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        handled: Vec<AttentionId>,
     },
+    /// The person handled these alerts' notifications on this phone:
+    /// swiped them away, opened them, or saw the items on screen. Sent
+    /// only to a computer whose open list said `handled`, at most
+    /// [`MAX_SHOWING`] at once.
+    Handled { attention_ids: Vec<AttentionId> },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
@@ -81,11 +102,19 @@ pub enum AlertServerFrame {
         now: Timestamp,
         #[serde(default)]
         gone: Vec<AttentionId>,
+        /// The computer takes [`AlertClientFrame::Handled`]. Older
+        /// computers say nothing, and close a connection that sends it.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        handled: bool,
     },
     /// A new alert.
     Raised { alert: Alert },
     /// An alert answered, dismissed or closed anywhere.
     Resolved { attention_id: AttentionId },
+    /// One of the person's devices handled this alert's notification: it
+    /// goes from this one too, and isn't raised again. Sent only to a phone
+    /// whose `Watch` said `types`.
+    Handled { attention_id: AttentionId },
 }
 
 /// One attention item as a notification needs it.
@@ -135,6 +164,48 @@ pub struct Alert {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub report: Option<Box<crate::reports::ReportAlert>>,
+    /// The agent on the computer that isn't signed in. Its `project_id` and
+    /// `task_id` are then the nil id and its `project` and `task` empty.
+    /// Sent only to a phone whose `Watch` said `sign_in`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub sign_in: Option<Box<SignInAlert>>,
+    /// What the notification is about, in the types the person chooses
+    /// by. Older computers send none; the phone then works it out. A type
+    /// newer than this phone reads as none, so the rest of the list still
+    /// arrives.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "newer_is_none"
+    )]
+    #[ts(optional)]
+    pub alert_type: Option<crate::notifications::AlertType>,
+    /// The project's own choice for this type, over the phone's: `Off`
+    /// when the project is muted. One newer than this phone reads as none.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "newer_is_none"
+    )]
+    #[ts(optional)]
+    pub project_tier: Option<crate::notifications::Tier>,
+    /// The person asked to be told when this task is done, so its finish,
+    /// failure or reply alerts whatever the phone's choice.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub follow: bool,
+}
+
+/// An agent that isn't signed in on the computer, as its notification
+/// names it: "Claude isn't signed in on Studio", with Sign in again.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct SignInAlert {
+    /// The account to sign in again, `claude` or `codex`.
+    pub account_id: String,
+    /// Its short name, such as "Claude".
+    pub service: String,
 }
 
 /// An agent's question as a notification shows it, answered with
@@ -168,6 +239,17 @@ impl AttentionKind {
     }
 }
 
+/// A value only a newer computer would send, read as none rather than
+/// refusing the whole frame it came in.
+fn newer_is_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::de::DeserializeOwned,
+{
+    let value = Option::<serde_json::Value>::deserialize(deserializer)?;
+    Ok(value.and_then(|v| serde_json::from_value(v).ok()))
+}
+
 /// `text` cut to [`MAX_ALERT_TEXT`] characters.
 pub fn alert_text(text: &str) -> String {
     cut(text, MAX_ALERT_TEXT)
@@ -195,6 +277,9 @@ mod tests {
                 showing: vec![],
                 quiet: false,
                 reports: false,
+                sign_in: false,
+                types: false,
+                handled: vec![],
             }
         );
         let id = AttentionId::new();
@@ -202,15 +287,23 @@ mod tests {
             showing: vec![id],
             quiet: true,
             reports: false,
+            sign_in: true,
+            types: false,
+            handled: vec![],
         };
         let text = serde_json::to_string(&watch).unwrap();
         assert_eq!(
             text,
             format!(
-                r#"{{"type":"watch","showing":["{}"],"quiet":true,"reports":false}}"#,
+                r#"{{"type":"watch","showing":["{}"],"quiet":true,"reports":false,"sign_in":true}}"#,
                 id.as_uuid()
             )
         );
+        let handled = AlertClientFrame::Handled {
+            attention_ids: vec![id],
+        };
+        let text = serde_json::to_string(&handled).unwrap();
+        assert!(text.starts_with(r#"{"type":"handled","attention_ids":["#));
         let resolved = AlertServerFrame::Resolved {
             attention_id: AttentionId::new(),
         };
@@ -220,6 +313,29 @@ mod tests {
             serde_json::from_str::<AlertServerFrame>(&text).unwrap(),
             resolved
         );
+    }
+
+    #[test]
+    fn a_type_from_a_newer_computer_keeps_the_list() {
+        let alert = serde_json::json!({
+            "attention_id": AttentionId::new(),
+            "kind": "question",
+            "project_id": ProjectId::new(),
+            "project": "Site",
+            "task_id": TaskId::new(),
+            "task": "Fix it",
+            "harness": "codex",
+            "created_at": 1,
+            "alert_type": "something_new",
+            "project_tier": "louder_still",
+        });
+        let open = serde_json::json!({ "type": "open", "alerts": [alert], "now": 2 });
+        let AlertServerFrame::Open { alerts, .. } = serde_json::from_value(open).unwrap() else {
+            panic!("an open list")
+        };
+        assert_eq!(alerts.len(), 1);
+        assert_eq!(alerts[0].alert_type, None);
+        assert_eq!(alerts[0].project_tier, None);
     }
 
     #[test]

@@ -14,14 +14,16 @@ import type { Availability, Command, CommandReceipt, ControlTarget } from "../..
 import { Screen } from "../../shell/Screen";
 import { NotAllowed } from "../../shell/NotAllowed";
 import type { RouteProps } from "../types";
-import { agentUnavailable, goalKey, preferredComputerAgent, targetBlocker, usesComputerItself, COMPUTER_TOOLS } from "./computerReview";
+import { agentUnavailable, goalKey, preferredComputerAgent, restorePreviousGoal, targetBlocker, usesComputerItself, COMPUTER_TOOLS } from "./computerReview";
 import { ConnectionNote } from "./Feedback";
 import { Unlock, useLocked } from "./Unlock";
 import { writerActivity, writerHold, writerHoldText } from "../talk/intent";
 import "./control.css";
+import { HARNESS_ACCOUNT, useSignInOn } from "../settings/signIn";
+import { SignInAgainButton } from "../settings/SignInAgain";
 
 type Start = Extract<Command, { command: "create_task" }>;
-interface Draft { goal: string; target: string; harness: string; model: string; attempt?: { id: string; body: Start } }
+interface Draft { goal: string; target: string; harness: string; model: string; attempt?: { id: string; body: Start }; before?: string | null }
 const EMPTY: Draft = { goal: "", target: "", harness: "", model: "" };
 function read(key: string, projectId: string): Draft {
   try {
@@ -80,18 +82,20 @@ export default function ComputerReview({ route }: RouteProps<"computer_use_revie
     return () => { disposed = true; };
   }, [session, online, profile.name]);
   const locked = useLocked();
+  const signInOn = useSignInOn();
+  const signInFor = selectedAgent?.account.state === "signed_out" && signInOn ? HARNESS_ACCOUNT[selectedAgent.kind] : undefined;
   const targetReasonFor = (target: ControlTarget): string | null => targetBlocker(caps, target, controls[target.target_id], grants);
   const targetReason = selectedTarget ? targetReasonFor(selectedTarget) : "Choose a target reported by the computer.";
   const occupied = selectedTarget && (controls[selectedTarget.target_id]?.lease?.state === "active" || controls[selectedTarget.target_id]?.private_step !== null && controls[selectedTarget.target_id]?.private_step !== undefined);
   const reason = !project ? "Choose a project on this computer first." : !grants?.computer_use || !grants.tasks || !grants.view || !grants.control_input ? "This device doesn’t have permission to start computer use."
     : caps?.computer_use.state !== "available" ? `Computer use is unavailable. ${availabilityDetail(caps?.computer_use) ?? "Check the computer’s desktop permissions and local Stop indicator."}`
-      : !selectedAgent ? "Choose an eligible agent." : agentUnavailable(selectedAgent) ?? targetReason ?? (occupied ? "This target is already in use or in a private step." : null)
+      : !selectedAgent ? "Choose an eligible agent." : agentUnavailable(selectedAgent, signInOn) ?? targetReason ?? (occupied ? "This target is already in use or in a private step." : null)
         ?? (modelId && !model ? "That model is no longer in the computer’s catalog." : null)
         ?? (held ? (held.unresolved ? `${writerHoldText(held, project.name)} Check it or choose another project first.` : `${writerActivity(held, project.name)}. Stop it or choose another project first.`) : null);
-  const accepted = async (receipt: CommandReceipt) => {
+  const accepted = async (receipt: CommandReceipt, attemptId: string) => {
     const result = await commandResult(session, receipt);
     if (result?.kind !== "task_created") throw new Error("It may have started, but the computer hasn’t said which task it is. Check Tasks before starting another.");
-    localStorage.removeItem(key);
+    restorePreviousGoal(key, attemptId, draft.before);
     ui.finish(["computer_use_review"]);
     ui.push({ screen: "computer_use", taskId: result.task_id });
   };
@@ -107,7 +111,7 @@ export default function ComputerReview({ route }: RouteProps<"computer_use_revie
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const unanswered = new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new OutcomeUnknownError(attempt.id)), 8_000); });
-      await accepted(await Promise.race([unanswered, session.command(attempt.body, { commandId: attempt.id, label: "Start computer use" })]));
+      await accepted(await Promise.race([unanswered, session.command(attempt.body, { commandId: attempt.id, label: "Start computer use" })]), attempt.id);
     }
     catch (e) {
       if (e instanceof CommandError && e.error.code !== "outcome_unknown") save({ attempt: undefined });
@@ -119,7 +123,7 @@ export default function ComputerReview({ route }: RouteProps<"computer_use_revie
     setBusy(true);
     try {
       const r = await session.query({ kind: "command_status", command_id: draft.attempt.id });
-      if (r.receipt && r.receipt.status !== "rejected") await accepted(r.receipt);
+      if (r.receipt && r.receipt.status !== "rejected") await accepted(r.receipt, draft.attempt.id);
       else if (r.receipt?.error) { save({ attempt: undefined }); setError(r.receipt.error.message); }
       else { setChecked(true); setError("The computer has no record of this request. Retry sends the same reviewed request and identity."); }
     } catch (e) { setError(describeError(e, profile.name)); }
@@ -144,7 +148,7 @@ export default function ComputerReview({ route }: RouteProps<"computer_use_revie
       {locked && <Unlock />}
     </Section>
     <Section title="Agent"><div className="computer-choices" role="group" aria-label="Eligible agents">{agents.map((agent) => {
-      const unavailable = agentUnavailable(agent);
+      const unavailable = agentUnavailable(agent, signInOn);
       return <button key={agent.kind} type="button" className={`computer-choice${unavailable ? " computer-choice--unavailable" : ""}`} aria-pressed={harness === agent.kind} disabled={!!unavailable || !!draft.attempt}
         onClick={() => save({ harness: agent.kind, model: agent.models.find((m) => m.is_default)?.id ?? "" })}><strong>{agent.display_name}</strong>{unavailable ? <Why>{unavailable}</Why> : <span>Ready for computer use</span>}{harness === agent.kind && <Selected />}</button>;
     })}</div>{!agents.length && <Empty title="No agents reported">Connect to the computer to check its agents.</Empty>}</Section>
@@ -156,7 +160,7 @@ export default function ComputerReview({ route }: RouteProps<"computer_use_revie
     </Section>}
     <Section title="What the agent can do"><ul className="computer-tools">{COMPUTER_TOOLS.map((tool) => <li key={tool}>{tool}</li>)}</ul><p className="fine">{itself ? `${selectedAgent.display_name} works on this target with these tools only. It can’t run commands or change files.` : "The agent’s computer specialist works on this target. It cannot run shell commands or write files through these controls."}</p></Section>
     <TextArea label="Goal" value={draft.goal} onChange={(goal) => save({ goal })} rows={3} disabled={!!draft.attempt} hint="Saved on this device until it starts." />
-    {reason && <Notice tone="warn">{reason}</Notice>}
+    {reason && <Notice tone="warn" action={signInFor && reason === agentUnavailable(selectedAgent!, signInOn) ? <SignInAgainButton accountId={signInFor} /> : undefined}>{reason}</Notice>}
   </Screen>;
 }
 

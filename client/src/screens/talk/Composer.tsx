@@ -33,6 +33,7 @@ import { TaskAgentChip, TaskAgentSheet, useTaskAgent } from "./TaskAgent";
 import { agentLabel, resolveAgent, composerMode, defaultIntent, modeSupport, writerBlockLine, writerHold, writerQueueLine, HOLDER_TITLE, needsReview, sameIntent, sendLabel, type Intent, type IntentOption } from "./intent";
 import { CONVERSATIONS_FEATURE, CONVERSATIONS_UPDATE, NEW_CONVERSATION, conversationSummary, intoTask, nextChoice, startConversation, turnModel } from "./conversation";
 import { INTO_TASK_TEXT, IntoTaskSheet } from "./IntoTask";
+import { SwitchToWorkChip } from "./SwitchToWorkChip";
 import { availabilityText } from "../../design/Notice";
 import { check, repeatable, resend, send, useAutoSettle, type SendRequest } from "./send";
 import { READ_ONLY_TURN_FEATURE, summarizable, summaryRequest } from "./summarize";
@@ -533,6 +534,7 @@ export function Composer({
               Turn into a task
             </Chip>
           )}
+          {task && !carryable && <SwitchToWorkChip task={task} />}
           {options.length > (talking ? 1 : 0) && (
             <Chip className={`composer__chip composer__how${label === "Stop and send" ? " composer__how--warn" : " composer__opt"}`} onClick={() => setPicking(true)} aria-haspopup="dialog">
               {intent.kind === "message" && <><span className="visually-hidden">How to send:</span>{" "}</>}{option?.label ?? "Send"}

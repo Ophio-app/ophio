@@ -200,11 +200,34 @@ pub enum PlatformError {
     Io(#[from] std::io::Error),
     #[error("Computer is locked")]
     Locked,
+    /// The computer's screen is asleep, so there is nothing to see until it
+    /// wakes. Says so for the person, in the platform's own words.
+    #[error("screen asleep: {0}")]
+    ScreenAsleep(String),
     #[error("Text contains characters unavailable to the active keyboard")]
     TextUnavailable {
         characters: String,
         paste_available: bool,
     },
+    /// An app launch hung and couldn't be confirmed stopped: an app may
+    /// still open. Nothing that relies on the display being let go may
+    /// claim it was.
+    #[error(
+        "An app may still open: the computer couldn’t stop its launch. Check the computer before continuing"
+    )]
+    LaunchUnstopped,
+}
+
+/// A launch that couldn't be confirmed stopped, as its launcher can look at
+/// it again later: the display it was on is let go of again only once this
+/// says nothing of it is left.
+#[async_trait::async_trait]
+pub trait LaunchCheck: Send + Sync + std::fmt::Debug {
+    /// Whether nothing of the launch is left running, by the platform's own
+    /// word, asked once more within a short time limit of its own. With
+    /// `stop`, whatever is left of it is stopped again first, as the
+    /// launch's own cleanup tried to. Anything short of proof is false.
+    async fn stopped(&self, stop: bool) -> bool;
 }
 
 impl PlatformError {
@@ -216,9 +239,13 @@ impl PlatformError {
             PlatformError::TemporarilyUnavailable(_) => ErrorCode::TemporarilyUnavailable,
             PlatformError::TargetNotFound => ErrorCode::NotFound,
             PlatformError::GeometryChanged => ErrorCode::StaleRevision,
-            PlatformError::OutcomeUnknown(_) => ErrorCode::OutcomeUnknown,
+            PlatformError::OutcomeUnknown(_) | PlatformError::LaunchUnstopped => {
+                ErrorCode::OutcomeUnknown
+            }
             PlatformError::Native(_) | PlatformError::Io(_) => ErrorCode::NativeFailure,
-            PlatformError::Locked => ErrorCode::TemporarilyUnavailable,
+            PlatformError::Locked | PlatformError::ScreenAsleep(_) => {
+                ErrorCode::TemporarilyUnavailable
+            }
             PlatformError::TextUnavailable { .. } => ErrorCode::Unsupported,
         }
     }

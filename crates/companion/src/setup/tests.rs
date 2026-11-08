@@ -3621,6 +3621,8 @@ fn did(summary: &str, status: ActivityStatus, key: Option<&str>) -> TimelineBody
 
 fn approval(kind: ApprovalKind, lines: Vec<ApprovalDetailLine>) -> Approval {
     Approval {
+        headline: None,
+        facts: Vec::new(),
         outcome: None,
         approval_id: ApprovalId::new(),
         run_id: RunId::new(),
@@ -3637,6 +3639,8 @@ fn approval(kind: ApprovalKind, lines: Vec<ApprovalDetailLine>) -> Approval {
         shortened: false,
         revision: 1,
         state: ApprovalState::Pending,
+        access_request: None,
+        actions: None,
         delivery: None,
         requested_at: Timestamp(0),
         expires_at: None,
@@ -3746,4 +3750,30 @@ fn an_extra_no_longer_offered_is_dropped_and_the_rest_kept() {
     let progress: Progress = serde_json::from_slice(saved).unwrap();
     assert_eq!(progress.left, [Pick::Voice]);
     assert_eq!(progress.agent, Some(HarnessKind::Codex));
+}
+
+/// On Windows, Codex's install runs npm's `.cmd`: PowerShell would otherwise
+/// run npm's `.ps1`, which Windows' default policy for scripts refuses.
+#[test]
+fn windows_installs_codex_with_npm_s_cmd_not_its_powershell_script() {
+    let Run::Program {
+        program,
+        args,
+        shown,
+    } = flow::codex_installer_for(true)
+    else {
+        unreachable!()
+    };
+    assert_eq!(program, "powershell");
+    assert_eq!(
+        args,
+        ["-NoProfile", "-Command", "npm.cmd install -g @openai/codex"]
+    );
+    assert_eq!(shown, "npm.cmd install -g @openai/codex");
+    // Elsewhere npm is started itself, as before.
+    let Run::Program { program, args, .. } = flow::codex_installer_for(false) else {
+        unreachable!()
+    };
+    assert_eq!(program, "npm");
+    assert_eq!(args, ["install", "-g", "@openai/codex"]);
 }

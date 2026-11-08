@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { Canvas } from "./Canvas";
+import { Canvas } from "./CanvasView";
 import { FIT, fitTransform, toViewport } from "./canvas";
 import type { Mark } from "../../protocol/types";
 import type { SourceDraft } from "../../state/annotations";

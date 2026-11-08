@@ -61,7 +61,10 @@ import { useCarryPlan, withPlan } from "./carryPlan";
 import { choiceOf, fixChoiceOf, fixSent, lastRole, linkDetail, linkWords, planOnlyText, planOnlyWhy, readOnlyLink, reminderText, rememberRole, useGithubProject, useGithubSupported } from "../../app/github";
 import { GITHUB_UPDATE } from "../../app/githubFeature";
 import { LinkSheet } from "../github/LinkSheet";
+import { WHEN_GREEN_UPDATE, useWhenGreenSupported } from "../github/WhenGreen";
 import { ThroughMergeWarning, answerWarning, useGithubRun } from "../github/common";
+import { SignedOut } from "../settings/SignInAgain";
+import { useSignInOn } from "../settings/signIn";
 
 const TITLE: Record<ReviewIntent, string> = {
   new_task: "Review new task",
@@ -315,6 +318,7 @@ function RequestReview({ route }: RouteProps<"review">) {
   // What GitHub work it's for: unless chosen, the project's GitHub setting
   // links Work to a new pull request, and a Next up item to its source's.
   const githubSupported = useGithubSupported();
+  const whenGreenSupported = useWhenGreenSupported();
   const githubAsked = creates && !alone && githubSupported && !!grants?.tasks && project?.vcs?.kind === "git";
   const githubProject = useGithubProject(githubAsked ? projectId : null);
   const githubView = githubAsked ? githubProject.view : null;
@@ -340,6 +344,7 @@ function RequestReview({ route }: RouteProps<"review">) {
   useEffect(() => { takeSendAsk(projectId, taskId); }, [projectId, taskId]);
 
   useAutoSettle(projectId, taskId, draft?.attempt ?? null);
+  const signInOn = useSignInOn();
 
   if (!project || (taskId && !task)) {
     return (
@@ -385,16 +390,17 @@ function RequestReview({ route }: RouteProps<"review">) {
     : null;
   // The fixes' launch flags are their own, not the finder's: it reads in Plan.
   const fixWith = link?.type === "find" ? fixSent(link.fix_with, fixLaunchSupported) : null;
-  const fixBlocker = fixWith && findThen !== "file_only" ? agentChoiceBlocker(harnesses.find((h) => h.kind === fixWith.harness), fixWith) : null;
+  const fixBlocker = fixWith && findThen !== "file_only" ? agentChoiceBlocker(harnesses.find((h) => h.kind === fixWith.harness), fixWith, signInOn) : null;
   const githubBlocker = !link
     ? (githubAsked && details.github === undefined && !githubView && !githubProject.error ? "Checking the project’s GitHub setting…" : null)
     : !githubSupported ? GITHUB_UPDATE
+    : link.type === "issue" && link.when_green && !whenGreenSupported ? WHEN_GREEN_UPDATE
     : !githubView ? githubProject.error ?? "Checking the project’s GitHub setting…"
     : githubView.settings.mode === "off" ? "Turn on the GitHub workflow for this project in Tasks › GitHub first."
     : readOnlyLink(link) && mode !== "plan" ? planOnlyText(link)
     : fixBlocker ? `Fix with: ${fixBlocker}`
     : null;
-  const choiceBlocker = creates && agent ? agentChoiceBlocker(harness, agent) ?? (agent.launchPolicy != null && !launchSupported ? LAUNCH_POLICY_UPDATE : null) ?? (sentBranch !== null && !branchSupported ? TASK_BRANCH_UPDATE : null) ?? launchBlocker ?? githubBlocker : null;
+  const choiceBlocker = creates && agent ? agentChoiceBlocker(harness, agent, signInOn) ?? (agent.launchPolicy != null && !launchSupported ? LAUNCH_POLICY_UPDATE : null) ?? (sentBranch !== null && !branchSupported ? TASK_BRANCH_UPDATE : null) ?? launchBlocker ?? githubBlocker : null;
   // The live reading once the computer answers; until then what was captured
   // when the project was added.
   const checkedOut = branches.read ? branches.listing?.current ?? null : project.vcs?.branch ?? null;
@@ -586,6 +592,8 @@ function RequestReview({ route }: RouteProps<"review">) {
     : link?.type === "issue" ? `Named for issue #${link.number}${prefix ? `, starting “${prefix}”` : ""}.`
     : `The agent names it${prefix ? `, starting “${prefix}”` : ""}${link?.type === "stack" ? `, from #${link.number}’s branch` : ""}.`;
   const githubBranch = githubView?.repo?.default_branch ?? "main";
+  // The task's own choice, chosen on the issue, over the project's.
+  const ownWhenGreen = link?.type === "issue" ? link.when_green ?? null : null;
   const pickLink = (l: GithubLink | null) => {
     setDetails({ github: l });
     if (readOnlyLink(l)) {
@@ -623,7 +631,7 @@ function RequestReview({ route }: RouteProps<"review">) {
             </p>
           )}
           {/* Said right above the button that makes the switch. */}
-          {fromMode && agent && <ModeSwitch from={fromMode} to={mode} flags={agent} />}
+          {fromMode && agent && <ModeSwitch from={fromMode} chat={!!task?.conversation} to={mode} flags={agent} />}
           {carryingPlan && task && <ModeSwitch from={task.mode ?? "work"} to="work" who="It"
             flags={task.launch_policy ? { harness: task.harness, launchPolicy: task.launch_policy } : null} />}
           <Button
@@ -773,8 +781,10 @@ function RequestReview({ route }: RouteProps<"review">) {
                     <ChevronDown className="composer__chip-chev" aria-hidden />
                   </Chip>
                   <span className="review__sub">{linkDetail(link, sentBranch?.name ?? null)}</span>
-                  {writesLink && githubView?.settings.mode === "through_merge" && githubView.settings.warning_answered && <span className="review__sub github-reminder">{reminderText(githubBranch)}</span>}
-                  {writesLink && githubView?.settings.mode === "drafts" && <span className="review__sub">You mark it ready and merge it.</span>}
+                  {writesLink && ownWhenGreen === "merge" && githubOn && <span className="review__sub github-reminder">It merges into {githubBranch} by itself once its checks pass and any review is clear, unless it needs your approval.</span>}
+                  {writesLink && ownWhenGreen === "leave" && githubOn && <span className="review__sub">You mark it ready and merge it.</span>}
+                  {writesLink && !ownWhenGreen && githubView?.settings.mode === "through_merge" && githubView.settings.warning_answered && <span className="review__sub github-reminder">{reminderText(githubBranch)}</span>}
+                  {writesLink && !ownWhenGreen && githubView?.settings.mode === "drafts" && <span className="review__sub">You mark it ready and merge it.</span>}
                   {link && githubView?.settings.mode === "off" && (
                     <Button size="sm" variant="quiet" onClick={() => ui.push({ screen: "github", projectId })}>Turn on GitHub</Button>
                   )}
@@ -851,9 +861,11 @@ function RequestReview({ route }: RouteProps<"review">) {
                   </p>
                 )}
                 {account?.state === "signed_out" && (
-                  <Notice tone="warn" title={`${harness?.display_name} isn’t signed in`}>
-                    {account.remedy}
-                  </Notice>
+                  <SignedOut harness={harness?.kind} fallback={
+                    <Notice tone="warn" title={`${harness?.display_name} isn’t signed in`}>
+                      {account.remedy}
+                    </Notice>
+                  } />
                 )}
                 {account?.state === "unknown" && (
                   <Notice tone="unknown" title="Sign-in not confirmed">

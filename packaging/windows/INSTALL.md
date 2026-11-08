@@ -8,14 +8,20 @@ unsigned, and has no installer or automatic updater. Treat it as a preview.
 A downloaded archive carries Windows' mark of the web. Unblock it before
 extracting, so that the programs inside are not blocked one at a time: in
 File Explorer, open the archive's Properties and tick **Unblock**, or in
-PowerShell run `Unblock-File .\ophio-0.1.0-x86_64-windows.zip`.
+PowerShell, in the folder you downloaded it to, run
+`Unblock-File .\ophio-*-x86_64-windows.zip`.
 
-Extract to a folder you own, such as one under your user folder, and keep
-`ophio.exe` and `computer-mcp.exe` together, with `ophio.apk`, the phone app,
-when the archive carries it. Retain LICENSE, NOTICE, THIRD-PARTY-NOTICES.txt
-and sbom.cdx.json; the phone app carries its own notices, under Settings ›
-Versions. Øphio runs in the background with no window of its own; opening
-`ophio.exe` from File Explorer explains how to set it up and changes nothing.
+Extract to a folder you own outside Øphio's Library, such as
+`%LOCALAPPDATA%\Programs\Ophio`, and keep `ophio.exe` and `computer-mcp.exe`
+together, with `ophio.apk`, the phone app, when the archive carries it. Don't
+extract it into the `Ophio` folder in your user folder, or into a project
+folder you share: Øphio offers those folders in Library, and a paired device
+allowed to change Library files could then change Øphio's own programs.
+`.\ophio.exe doctor` says so if it finds itself there. Retain LICENSE, NOTICE,
+THIRD-PARTY-NOTICES.txt and sbom.cdx.json; the phone app carries its own
+notices, under Settings › Versions. Øphio runs in the background with no
+window of its own; opening `ophio.exe` from File Explorer explains how to set
+it up and changes nothing.
 In an ordinary, non-administrator PowerShell in that folder, run:
 
 ```powershell
@@ -55,7 +61,8 @@ listen = ["192.168.1.20"]
 ```
 
 The first time Øphio listens there, Windows Defender Firewall asks whether to
-allow it. Allow private networks only; on a standard account that needs an
+allow it. Allow private networks only; on Windows 11 the choice of networks
+is under **Show more**, and on a standard account allowing needs an
 administrator. Windows treats a new network as public until told otherwise, so
 set yours to **Private network** under **Settings › Network & internet**, in
 that network's properties. If the question was declined or closed, Windows adds

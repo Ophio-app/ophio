@@ -37,7 +37,7 @@ export function freshness(link: LinkState, caughtUp: boolean, lastHeardAt: numbe
     case "offline": {
       const wait = link.retryAt ? link.retryAt - now : null;
       const retry = wait === null ? "" : wait < 5_000 ? "Trying again now" : `Trying again in ${shortAge(wait)}`;
-      return { label: "Offline", tone: "warn", live: false, detail: sentences(link.reason, heard, retry) };
+      return { label: link.noTailscale ? "Tailscale off" : "Offline", tone: "warn", live: false, detail: sentences(link.reason, heard, retry) };
     }
     case "failed":
       return { label: FAILED[link.reason], tone: "stop", live: false, detail: sentences(link.detail) };

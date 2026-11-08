@@ -77,6 +77,8 @@ pub struct FakeHarness {
     /// Refuses the next start as unsupported, before any native write.
     pub refuse_start: Mutex<Option<String>>,
     pub fail_spawn: AtomicBool,
+    /// What its status check says of its sign-in.
+    pub account: Mutex<AccountReadiness>,
 }
 impl std::fmt::Debug for FakeHarness {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -94,6 +96,10 @@ impl Default for FakeHarness {
             specs: Mutex::new(Vec::new()),
             refuse_start: Mutex::new(None),
             fail_spawn: AtomicBool::new(false),
+            account: Mutex::new(AccountReadiness::SignedIn {
+                account_label: None,
+                plan: None,
+            }),
         }
     }
 }
@@ -132,10 +138,7 @@ impl HarnessAdapter for FakeHarness {
             native_version: Some("test".into()),
             integration: IntegrationLevel::Managed,
             installed: a.clone(),
-            account: AccountReadiness::SignedIn {
-                account_label: None,
-                plan: None,
-            },
+            account: self.account.lock().expect("fake mutex").clone(),
             models: Vec::new(),
             efforts: Vec::new(),
             modes: Vec::new(),
@@ -344,6 +347,8 @@ pub struct FakeDesktop {
     pub locks: AtomicU64,
     /// Times it was unlocked, by `FakeDesktop::PASSWORD` alone.
     pub unlocks: AtomicU64,
+    /// More displays beside `target`, with input only.
+    pub extra: Mutex<Vec<ControlTarget>>,
 }
 impl FakeDesktop {
     pub const PASSWORD: &str = "fake desktop password";
@@ -370,32 +375,48 @@ impl Default for FakeDesktop {
             captures: AtomicU64::new(0),
             locks: AtomicU64::new(0),
             unlocks: AtomicU64::new(0),
+            extra: Mutex::default(),
         }
     }
 }
 #[derive(Debug)]
 pub struct FakeInput {
     pub injected: AtomicU64,
+    /// Every action injected, in order.
+    pub actions: Mutex<Vec<InputAction>>,
     pub releases: AtomicU64,
     pub hold_release: AtomicBool,
     pub release_gate: Semaphore,
     pub fail_release: AtomicBool,
+    /// Displays whose release fails, beside every display's with `fail_release`.
+    pub fail_release_on: Mutex<Vec<TargetId>>,
 }
 impl Default for FakeInput {
     fn default() -> Self {
         Self {
             injected: AtomicU64::new(0),
+            actions: Mutex::default(),
             releases: AtomicU64::new(0),
             hold_release: AtomicBool::new(false),
             release_gate: Semaphore::new(0),
             fail_release: AtomicBool::new(false),
+            fail_release_on: Mutex::default(),
         }
     }
 }
-struct FakeSink(Arc<FakeInput>);
+struct FakeSink(Arc<FakeInput>, TargetId);
 #[async_trait]
 impl InputSink for FakeSink {
-    async fn inject(&mut self, _: &InputAction, _: &TargetGeometry) -> Result<(), PlatformError> {
+    async fn inject(
+        &mut self,
+        action: &InputAction,
+        _: &TargetGeometry,
+    ) -> Result<(), PlatformError> {
+        self.0
+            .actions
+            .lock()
+            .expect("fake mutex")
+            .push(action.clone());
         self.0.injected.fetch_add(1, Ordering::SeqCst);
         Ok(())
     }
@@ -410,7 +431,14 @@ impl InputSink for FakeSink {
                 .map_err(|_| PlatformError::Native("Synthetic closed gate".into()))?
                 .forget();
         }
-        if self.0.fail_release.load(Ordering::SeqCst) {
+        if self.0.fail_release.load(Ordering::SeqCst)
+            || self
+                .0
+                .fail_release_on
+                .lock()
+                .expect("fake mutex")
+                .contains(&self.1)
+        {
             Err(PlatformError::Native("Synthetic release failure".into()))
         } else {
             Ok(())
@@ -437,7 +465,9 @@ impl DesktopBackend for FakeDesktop {
         }
     }
     async fn targets(&self) -> Result<Vec<ControlTarget>, PlatformError> {
-        Ok(vec![self.target.lock().expect("fake mutex").clone()])
+        let mut all = vec![self.target.lock().expect("fake mutex").clone()];
+        all.extend(self.extra.lock().expect("fake mutex").iter().cloned());
+        Ok(all)
     }
     async fn capture_still(&self, id: TargetId) -> Result<CapturedFrame, PlatformError> {
         let target = self.target.lock().expect("fake mutex");
@@ -464,10 +494,17 @@ impl DesktopBackend for FakeDesktop {
         Ok(Box::new(OneFrame(Some(self.capture_still(id).await?))))
     }
     async fn input_sink(&self, id: TargetId) -> Result<Box<dyn InputSink>, PlatformError> {
-        if self.target.lock().expect("fake mutex").target_id != id {
+        if self.target.lock().expect("fake mutex").target_id != id
+            && !self
+                .extra
+                .lock()
+                .expect("fake mutex")
+                .iter()
+                .any(|t| t.target_id == id)
+        {
             return Err(PlatformError::TargetNotFound);
         }
-        Ok(Box::new(FakeSink(self.input.clone())))
+        Ok(Box::new(FakeSink(self.input.clone(), id)))
     }
     async fn lock_session(&self) -> Result<(), PlatformError> {
         self.locks.fetch_add(1, Ordering::SeqCst);

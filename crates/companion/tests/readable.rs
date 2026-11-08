@@ -47,6 +47,7 @@ impl Computer {
                     inbox_path: Some("/data/Received".into()),
                     host_id: HostId::new(),
                     name: "studio".into(),
+                    renamed: false,
                     os_label: "Linux".into(),
                     companion_version: "0.1.0".into(),
                     boot_epoch: BootEpoch::new(),

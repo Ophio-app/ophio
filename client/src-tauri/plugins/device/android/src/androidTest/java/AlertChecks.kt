@@ -14,6 +14,8 @@ import org.json.JSONObject
  * The alert ledgers, in a scratch store, and app lock's redaction, in this
  * check app's own shade. Grant it POST_NOTIFICATIONS first.
  */
+private val shownOrSounded = setOf(Notifications.Posted.SHOWN, Notifications.Posted.SOUNDED)
+
 internal object AlertChecks {
     fun run(context: Context) {
         clears()
@@ -53,7 +55,7 @@ internal object AlertChecks {
         fun offered(action: Notification.Action) = action.remoteInputs.single().choices.orEmpty().map { it.toString() }
         val tags = listOf("checks/a1", "checks/a2", "checks/a3")
         try {
-            check(shade.show(tags[0], "Question from Codex", body, null, asking = asking("Yes", "No")) == Notifications.Posted.SHOWN)
+            check(shade.show(tags[0], "Question from Codex", body, null, asking = asking("Yes", "No")) in shownOrSounded)
             until("question shown") { listed(tags[0]) != null }
             val shown = listed(tags[0])!!
             check(text(tags[0]) == question) { "the question isn't its text" }
@@ -71,7 +73,7 @@ internal object AlertChecks {
             }
 
             // Past two, the choices are offered in the reply box.
-            check(shade.show(tags[1], "Question from Codex", body, null, asking = asking("A", "B", "C")) == Notifications.Posted.SHOWN)
+            check(shade.show(tags[1], "Question from Codex", body, null, asking = asking("A", "B", "C")) in shownOrSounded)
             until("choices shown") { listed(tags[1]) != null }
             check(titles(listed(tags[1])) == listOf("Answer") && offered(listed(tags[1])!!.actions[0]) == listOf("A", "B", "C"))
 
@@ -102,7 +104,7 @@ internal object AlertChecks {
             shade.redact()
             until("question hidden") { text(tags[1]) == Notifications.LOCKED }
             check(listed(tags[1])!!.actions.isNullOrEmpty()) { "answered while app lock is on" }
-            check(shade.show(tags[2], "Question from Codex", body, null, asking = asking("Yes")) == Notifications.Posted.SHOWN)
+            check(shade.show(tags[2], "Question from Codex", body, null, asking = asking("Yes")) in shownOrSounded)
             until("locked question shown") { listed(tags[2]) != null }
             check(text(tags[2]) == Notifications.LOCKED && listed(tags[2])!!.actions.isNullOrEmpty())
             android.util.Log.i("AlertChecks", "questions answered from ${titles(shown)}")
@@ -132,16 +134,16 @@ internal object AlertChecks {
             n.notification.extras.getCharSequence(key)?.toString()
         try {
             for (tag in tags.take(3)) {
-                check(shade.show(tag, "Task finished", body, null, "finished", group, "Studio") == Notifications.Posted.SHOWN) { "not shown: $tag" }
+                check(shade.show(tag, "Task finished", body, null, "finished", group, "Studio") in shownOrSounded) { "not shown: $tag" }
             }
             for (tag in tags.drop(3)) {
-                check(shade.show(tag, "Question from Claude", body, null) == Notifications.Posted.SHOWN) { "not shown: $tag" }
+                check(shade.show(tag, "Question from Claude", body, null) in shownOrSounded) { "not shown: $tag" }
             }
             until("details shown") {
                 val shown = listed()
                 shown.size == tags.size + 1 && shown.all { text(it, Notification.EXTRA_TEXT) == body || text(it, Notification.EXTRA_TITLE) == "Studio" }
             }
-            check(shade.show(folded, "ophio has 2 notifications", body, null) == Notifications.Posted.SHOWN) { "not shown: $folded" }
+            check(shade.show(folded, "ophio has 2 notifications", body, null) in shownOrSounded) { "not shown: $folded" }
             until("project's note shown") { listed().any { it.tag == folded && text(it, Notification.EXTRA_TITLE) == "ophio has 2 notifications" } }
             // A person then turns app lock on, as AppLock does: saved, then
             // the alerts showing are hidden, paced so Android sheds none.
@@ -163,9 +165,9 @@ internal object AlertChecks {
             fun named(title: String) = listed().any { it.tag == folded && text(it, Notification.EXTRA_TITLE) == title }
             until("project's name hidden") { named("Øphio") }
             // Posted from now on, an alert is hidden from the start.
-            check(shade.show("checks/q", "Question from Claude", body, null) == Notifications.Posted.SHOWN) { "not shown again" }
+            check(shade.show("checks/q", "Question from Claude", body, null) in shownOrSounded) { "not shown again" }
             until("new hidden") { listed().any { it.tag == "checks/q" && text(it, Notification.EXTRA_TEXT) == Notifications.LOCKED } }
-            check(shade.show(folded, "ophio has 3 notifications", body, null) == Notifications.Posted.SHOWN) { "not shown again: $folded" }
+            check(shade.show(folded, "ophio has 3 notifications", body, null) in shownOrSounded) { "not shown again: $folded" }
             until("project's new count hidden") { named("Øphio") && !named("ophio has 3 notifications") }
             shade.cancel(folded)
             android.util.Log.i("AlertChecks", "redaction kept ${kept.size} of ${tags.size} alerts")
@@ -176,7 +178,7 @@ internal object AlertChecks {
             for (tag in tags) shade.cancel(tag)
             lock.edit().putBoolean("enabled", false).commit()
             for (tag in again) {
-                check(shade.show(tag, "Question from Claude", body, null) == Notifications.Posted.SHOWN) { "not shown: $tag" }
+                check(shade.show(tag, "Question from Claude", body, null) in shownOrSounded) { "not shown: $tag" }
             }
             until("details shown again") { listed().count { text(it, Notification.EXTRA_TEXT) == body } == again.size }
             // Past what this process recalls of its posts, as a new one.

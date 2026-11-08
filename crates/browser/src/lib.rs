@@ -33,7 +33,14 @@ pub fn discover() -> Option<PathBuf> {
             .map(|relative| PathBuf::from(&root).join(relative))
         })
         .collect();
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    let candidates = [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    ];
+    #[cfg(not(any(windows, target_os = "macos")))]
     let candidates = [
         "/usr/bin/chromium",
         "/usr/bin/chromium-browser",
@@ -276,14 +283,30 @@ impl Driver for Browser {
         let _serial = self.serial.lock().await;
         self.read_snapshot().await
     }
-    async fn act(&self, action: &VoiceAction, snapshot: &Snapshot) -> Result<(), Error> {
+    async fn act(
+        &self,
+        action: &VoiceAction,
+        snapshot: &Snapshot,
+        authority: std::sync::Arc<dyn voice_control::Authority>,
+    ) -> Result<(), Error> {
         let _serial = self.serial.lock().await;
         let current = self.read_snapshot().await?;
         if !current.still_matches(snapshot, action) {
             return Err(Error::StaleTarget);
         }
+        // Last, just before anything is sent to the page.
+        authority.check()?;
         let page = self.page().await?;
-        let call = |method, params| self.pipe.call(Some(&page.session), method, params);
+        // Every page call asks for authority again just before it goes out:
+        // focusing runs the page's own handlers, which take time.
+        let call = |method, params| {
+            let allowed = authority.check();
+            let (pipe, session) = (&self.pipe, &page.session);
+            async move {
+                allowed?;
+                pipe.call(Some(session), method, params).await
+            }
+        };
         if let Some(target) = &action.target {
             if action.kind == VoiceActionKind::Type && target.sensitive {
                 return Err(Error::Unavailable(
@@ -291,6 +314,7 @@ impl Driver for Browser {
                 ));
             }
             let id = serde_json::to_string(&target.id).map_err(|_| Error::StaleTarget)?;
+            authority.check()?;
             let rect = self.eval(&format!("(() => {{ const e=globalThis.__voiceControls?.nodes.get({id}); if(!e || !e.isConnected) return null; e.scrollIntoView({{block:'nearest',inline:'nearest'}}); e.focus(); const r=e.getBoundingClientRect(); let x=r.x,y=r.y,w=e.ownerDocument.defaultView; while(w.frameElement) {{ const f=w.frameElement,b=f.getBoundingClientRect(); x+=b.x+f.clientLeft; y+=b.y+f.clientTop; w=w.parent; }} return {{x:x+r.width/2,y:y+r.height/2}}; }})()")).await?;
             if action.kind == VoiceActionKind::Click {
                 let x = rect["x"].as_f64().ok_or(Error::StaleTarget)?;
@@ -369,6 +393,7 @@ impl Driver for Browser {
                 } else {
                     (at + 1) % pages.len()
                 };
+                authority.check()?;
                 self.pipe
                     .call(
                         None,
@@ -377,6 +402,7 @@ impl Driver for Browser {
                     )
                     .await?;
                 self.attach(pages[next]).await?;
+                authority.check()?;
                 self.pipe
                     .call(
                         None,
@@ -390,7 +416,12 @@ impl Driver for Browser {
                     .literal
                     .as_deref()
                     .filter(|k| voice_control::policy::allowed_key(k))
-                    .ok_or(Error::StaleTarget)?;
+                    .ok_or_else(|| {
+                        Error::Unavailable(
+                            "Shortcuts with Ctrl, Alt, Shift or Super work in desktop voice control"
+                                .into(),
+                        )
+                    })?;
                 let native = match key {
                     "enter" => "Enter",
                     "tab" => "Tab",
@@ -427,6 +458,9 @@ impl Driver for Browser {
                 )
                 .await?;
                 self.held.lock().await.clear();
+            }
+            VoiceActionKind::Launch => {
+                return Err(Error::Unavailable(voice_control::NO_APPS.into()));
             }
             VoiceActionKind::Cancel | VoiceActionKind::None => {}
         }

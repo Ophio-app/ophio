@@ -329,6 +329,16 @@
 .segmented__opt:disabled {
   opacity: 0.45;
 }
+/* The recommended choice: a small dot after its label, in any state. */
+.segmented__mark {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin-inline-start: calc(-1 * var(--s1));
+  border-radius: 50%;
+  background: var(--accent-text);
+  opacity: 0.75;
+}
 /* Options as wide as their labels, so one long label keeps to one line while
    the row has room; when it hasn't, labels wrap inside their options. */
 .segmented--fit {
@@ -1232,6 +1242,13 @@
 .approval__actions > .btn {
   flex: 1 1 8rem;
 }
+/* What a button set's main choice does, or why it waits, under the buttons. */
+.approval__actions > .approval__way-note {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+}
 /* In a sheet on a short screen the decision stays pinned above the sheet's
    footer while the request scrolls, side by side where the words fit. */
 :root.app-tight .sheet__body .approval > .approval__actions {
@@ -1250,6 +1267,71 @@
 .approval__compose {
   display: grid;
   gap: var(--s3);
+}
+/* Read at a glance: the agent's account, what the computer found the request
+   would do, then the decision, with the request itself one tap below. */
+.approval--glance {
+  gap: var(--s2);
+}
+.approval--glance > .approval__actions {
+  margin-top: var(--s2);
+}
+/* Under a list row that already names the task and says when it asked. */
+.approval--embedded {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.approval__glance {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.approval__glance-icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.2em;
+  color: var(--warn-text);
+}
+/* What deletes, pushes, reaches outside the project or can't be checked:
+   the warning colours, with words that say so for a screen reader. */
+.approval__fact--risky {
+  border-radius: 0.2em;
+  background: var(--warn-soft);
+  /* Room around the words without moving the comma after them. */
+  box-shadow: 0 0 0 0.18em var(--warn-soft);
+  color: var(--warn-text);
+  font-weight: 700;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+/* A computer that doesn't work out what a request does: its start. */
+.approval__peek {
+  max-height: calc(3 * 1.5em + var(--s3));
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.approval__meta {
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+.approval__more-toggle {
+  display: flex;
+  align-items: center;
+  min-height: var(--target);
+  width: fit-content;
+}
+.approval__more-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s3);
+  padding-bottom: var(--s1);
 }
 /* The agent's multiple-choice questions: one group each, options as rows. */
 .approval__question {

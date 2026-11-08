@@ -101,7 +101,11 @@ class DevicePlugin(first: Activity) : Plugin(first) {
         AlertWatcher.screen =
             (activity as? AppCompatActivity)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true &&
                 !appLock.state().optBoolean("locked")
+        AlertWatcher.screenAlive = true
+        // Notifications come from the watcher whenever the app runs; the
+        // service keeps it running once the app closes.
         if (AlertService.wanted(activity)) AlertService.start(activity)
+        AlertWatcher.startHere(activity)
         AlertCheck.schedule(activity)
     }
 
@@ -174,6 +178,7 @@ class DevicePlugin(first: Activity) : Plugin(first) {
         // Without Unrestricted battery use, Android stops the service soon
         // after the app leaves the screen; it runs again while the app is open.
         if (AlertService.wanted(activity) && !AlertWatcher.running()) AlertService.start(activity)
+        if (!AlertWatcher.running()) AlertWatcher.startHere(activity)
         AlertWatcher.retry()
         shell?.apply()
         events?.send(JSObject().put("type", "foreground") as JSObject)
@@ -199,6 +204,7 @@ class DevicePlugin(first: Activity) : Plugin(first) {
         io.execute { clips.close() }
         appLock.destroy()
         microphone.shutdown()
+        AlertWatcher.screenAlive = false
         // The next screen's app registers its own listener.
         events = null
     }
@@ -378,18 +384,39 @@ class DevicePlugin(first: Activity) : Plugin(first) {
             null
         }
 
-    /** Which of a computer's offered apps this one can update to, if any. */
+    /**
+     * Which of a computer's offered apps this one can update to, if any, and
+     * what Android will ask first. With `openSettings`, a phone that doesn't
+     * yet let this app install apps opens Android's setting for it, so no
+     * install starts before the person has allowed it.
+     */
     @Command
     fun appUpdateCheck(invoke: Invoke) {
+        val args = invoke.getArgs()
+        if (args.optBoolean("openSettings", false) && !AppUpdate.allowed(activity)) {
+            if (!foreground) {
+                invoke.reject("Open the app before allowing it to install updates.")
+                return
+            }
+            try {
+                activity.startActivity(
+                    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                        .setData(Uri.parse("package:${activity.packageName}"))
+                )
+            } catch (_: Exception) {
+                invoke.reject("Android’s Install unknown apps setting could not be opened.")
+                return
+            }
+        }
         io.execute {
             try {
-                val offers = invoke.getArgs().optJSONArray("offers") ?: org.json.JSONArray()
+                val offers = args.optJSONArray("offers") ?: org.json.JSONArray()
                 invoke.resolve(
                     JSObject()
                         .put("offer", AppUpdate.matching(activity, offers) ?: org.json.JSONObject.NULL)
                         .put("version", AppUpdate.identity(activity).getString("version"))
-                        // Before Android 12 the person confirms each update.
-                        .put("asks", Build.VERSION.SDK_INT < 31) as JSObject
+                        .put("allowed", AppUpdate.allowed(activity))
+                        .put("asks", AppUpdate.confirms(activity)) as JSObject
                 )
             } catch (_: Exception) {
                 invoke.reject("The phone couldn’t check this app’s version.")
@@ -535,13 +562,16 @@ class DevicePlugin(first: Activity) : Plugin(first) {
                         a.opt("group") as? String,
                         a.opt("groupTitle") as? String,
                         since,
+                        silent = a.optBoolean("silent", false),
+                        alertType = (a.opt("alertType") as? String)?.takeIf { it.isNotEmpty() },
+                        want = (a.opt("want") as? String)?.takeIf { it.isNotEmpty() },
                     )
                 } catch (_: Exception) {
                     invoke.reject("The phone could not show this notification.")
                     return@execute
                 }
             when (posted) {
-                Notifications.Posted.SHOWN -> invoke.resolve()
+                Notifications.Posted.SHOWN, Notifications.Posted.SOUNDED, Notifications.Posted.OFF -> invoke.resolve()
                 Notifications.Posted.CLEARED -> invoke.resolveObject(mapOf("cleared" to true))
                 Notifications.Posted.FULL -> invoke.reject("Android has no room for more alerts.")
             }
@@ -559,6 +589,7 @@ class DevicePlugin(first: Activity) : Plugin(first) {
         AlertCheck.schedule(activity)
         if (!run) {
             activity.stopService(Intent(activity, AlertService::class.java))
+            AlertWatcher.startHere(activity)
         } else if (!AlertService.start(activity)) {
             invoke.reject("Android did not let alerts start. Open the app and try again.")
             return
@@ -573,9 +604,39 @@ class DevicePlugin(first: Activity) : Plugin(first) {
             JSObject()
                 .put("running", AlertWatcher.running())
                 .put("unrestricted", power.isIgnoringBatteryOptimizations(activity.packageName))
-                .put("needsYou", notifications.channelOn(Notifications.NEEDS_YOU))
-                .put("finished", notifications.channelOn(Notifications.FINISHED)) as JSObject
+                .put("tiers", Channels.tiers(activity)) as JSObject
         )
+    }
+
+    /** Sets this phone's choice for one notification type, at once. */
+    @Command
+    fun alertsTier(invoke: Invoke) {
+        val args = invoke.getArgs()
+        val type = args.optString("type")
+        val tier = args.optString("tier")
+        if (tier !in listOf("alert", "silent", "off") || Channels.types().none { it.id == type }) {
+            invoke.reject("Unknown notification type.")
+            return
+        }
+        io.execute {
+            try {
+                val showing = notifications.onChannel(Channels.id(activity, type))
+                val before = Channels.set(activity, type, tier)
+                val now = Channels.id(activity, type)
+                if (tier == "off") {
+                    // Off clears what shows of it, here only: each device's
+                    // choices are its own, and nobody handled them.
+                    if (before != null) notifications.cancelChannel(before)
+                } else if (before != null && before != now) {
+                    // Raised: the old category went, and its notifications
+                    // with it. They go back, silently, in the new one.
+                    notifications.repost(showing, now)
+                }
+                invoke.resolve()
+            } catch (_: Exception) {
+                invoke.reject("The phone could not change this notification setting.")
+            }
+        }
     }
 
     /** Asks Android to let alerts run without battery limits. */
@@ -604,10 +665,14 @@ class DevicePlugin(first: Activity) : Plugin(first) {
     /** Opens Android's settings for one of the app's notification categories. */
     @Command
     fun alertsChannel(invoke: Invoke) {
-        val channel = invoke.getArgs().optString("channel")
-        if (channel !in listOf(Notifications.NEEDS_YOU, Notifications.FINISHED)) {
-            invoke.reject("Unknown notification category.")
-            return
+        val asked = invoke.getArgs().optString("channel")
+        val channel = when {
+            asked == Channels.FOLLOW -> Channels.FOLLOW
+            Channels.types().any { it.id == asked } -> Channels.id(activity, asked)
+            else -> {
+                invoke.reject("Unknown notification category.")
+                return
+            }
         }
         if (!foreground) {
             invoke.reject("Open the app before changing notification settings.")

@@ -18,6 +18,7 @@ import { Screen } from "../../shell/Screen";
 import type { RouteProps } from "../types";
 import { useWarning } from "../../app/warnings";
 import { AddService } from "./AddService";
+import { SignInFlow, useSignInFlow } from "./SignInFlow";
 import { EVENT_WORDS, KIND_WORDS, MANAGERS, STATE_WORDS, confirmHere, finished, useAccounts, useConfirmable } from "./useAccounts";
 import "./accounts.css";
 
@@ -79,9 +80,9 @@ export default function Accounts(_: RouteProps<"accounts">) {
             </Button>
             <p className="settings-meta">{PAUSE_ALL_WORDS}</p>
             {view.store_note && <Notice tone="warn" title={`Keys are kept in ${view.store}`}>{view.store_note}</Notice>}
-            {confirmable === false && <Notice tone="unknown">Set a secure screen lock in Android settings to sign in, set keys or remove accounts from this phone. Each asks for it first.</Notice>}
+            {confirmable === false && <Notice tone="unknown">Set a secure screen lock in the phone’s settings to sign in, set keys or remove accounts from this phone. Each asks for it first.</Notice>}
             {view.sign_in && !finished(view.sign_in.stage) && (
-              <SignInNow signIn={view.sign_in} onOpen={target ? watch : undefined} />
+              <SignInNow signIn={view.sign_in} onOpen={view.sign_in.stage.stage === "on_phone" ? () => setOpen(view.sign_in!.account_id) : target ? watch : undefined} />
             )}
             <Section title="On this computer">
               <div className="group">
@@ -118,6 +119,12 @@ export default function Accounts(_: RouteProps<"accounts">) {
 }
 
 function SignInNow({ signIn, onOpen }: { signIn: SignIn; onOpen?: () => void }) {
+  if (signIn.stage.stage === "on_phone") return (
+    <Notice icon={ShieldCheck} title={`Signing in to ${signIn.service}`}
+      action={onOpen && <Button size="sm" onClick={onOpen}>Continue</Button>}>
+      It finishes in a phone’s browser.
+    </Notice>
+  );
   return (
     <Notice icon={Monitor} title={`Signing in to ${signIn.service}`}
       action={onOpen && <Button size="sm" onClick={onOpen}>Open Desktop control</Button>}>
@@ -131,10 +138,13 @@ function AccountSheet({ account: a, view, online, busy, act, onSignIn, onClose }
 }) {
   const { profile } = useApp();
   const tasks = useHost((s) => s.tasks);
+  // Where the computer can, Sign in finishes in this phone's browser, here in the sheet.
+  const flow = useSignInFlow(a.account_id);
+  const flowShown = flow.phase.phase !== "idle" && flow.phase.phase !== "other" && flow.phase.phase !== "on_computer";
   const [key, setKey] = useState("");
   const [keying, setKeying] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const close = () => { setKey(""); setKeying(false); setDeleting(false); onClose(); };
+  const close = () => { setKey(""); setKeying(false); setDeleting(false); if (["done", "failed", "timed_out", "cancelled"].includes(flow.phase.phase)) flow.unfollow(); onClose(); };
   const warn = useWarning("account.delete");
   const deleteNow = () => void act({ action: "delete", account_id: a.account_id }, `Deleting ${a.service}`, `Delete ${a.service}`)
     .then((ok) => { if (ok) { toast(`${a.service} deleted`); close(); } });
@@ -160,7 +170,7 @@ function AccountSheet({ account: a, view, online, busy, act, onSignIn, onClose }
       toast(`Key saved for ${a.service}`);
     }
   };
-  const footer = deleting ? <>
+  const footer = flowShown ? undefined : deleting ? <>
     <Button onClick={() => setDeleting(false)}>Keep it</Button>
     <Button variant="stop" disabled={disabled} pending={busy === `Deleting ${a.service}`}
       onClick={() => { warn.agreed(); deleteNow(); }}>
@@ -188,7 +198,9 @@ function AccountSheet({ account: a, view, online, busy, act, onSignIn, onClose }
             ? `${a.service} uses its own sign-in on ${profile.name}.`
             : a.variables.length ? `Tasks receive ${a.variables.join(", ")} while it is active.` : null}
         </p>
-        {deleting ? <>
+        {flowShown ? (
+          <SignInFlow flow={flow} onClose={onClose} onLeave={onClose} />
+        ) : deleting ? <>
           <Notice tone="warn" title={`Delete ${a.service}?`}>
             {a.builtin
               ? `This signs it out and removes its saved key from ${profile.name}, then checks again. ${a.service} stays in the list, signed out.`
@@ -220,7 +232,7 @@ function AccountSheet({ account: a, view, online, busy, act, onSignIn, onClose }
             </Button>
           ) : (
             <Button block variant={signedIn && !a.note ? "secondary" : "primary"} icon={ShieldCheck} disabled={disabled || signingIn}
-              pending={busy === `Signing in to ${a.service}`} onClick={onSignIn}>
+              pending={busy === `Signing in to ${a.service}`} onClick={flow.onPhone ? () => void flow.start() : onSignIn}>
               {signedIn ? "Sign in again" : "Sign in"}
             </Button>
           )}

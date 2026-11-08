@@ -396,6 +396,19 @@ impl AgentProcessTable for NativeProcesses {
     }
 }
 
+#[cfg(target_os = "macos")]
+#[path = "observed_macos.rs"]
+mod macos;
+#[cfg(target_os = "macos")]
+impl AgentProcessTable for NativeProcesses {
+    fn processes(&self) -> Result<Vec<AgentProcess>, HarnessError> {
+        macos::processes()
+    }
+    fn stop_group(&self, process: &AgentProcess) -> Result<ChildStopResult, HarnessError> {
+        macos::stop_group(process)
+    }
+}
+
 #[cfg(any(windows, test))]
 #[path = "observed_windows.rs"]
 mod windows;

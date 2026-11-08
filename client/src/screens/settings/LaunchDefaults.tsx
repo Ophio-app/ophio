@@ -9,6 +9,7 @@ import type { HarnessInfo, HarnessKind } from "../../protocol/types";
 import { useStore } from "../../state/store";
 import { canStart } from "../talk/intent";
 import { harnessLabel } from "../work/logic";
+import { SignedOut } from "./SignInAgain";
 
 /** Who new work goes to, and whether agents stop to ask before acting. */
 export function LaunchDefaults() {
@@ -34,6 +35,7 @@ function DefaultAgent() {
       {agents.map((h) => <ListRow key={h.kind} icon={Bot} title={h.display_name} subtitle={ready(h)} checked={chosen === h.kind} onClick={() => set(h.kind)} />)}
       {chosen && !named && <ListRow icon={Bot} title={harnessLabel(chosen)} subtitle={`Not available on ${profile.name}`} checked onClick={() => set(chosen)} />}
     </div>
+    {agents.filter((h) => h.account.state === "signed_out").map((h) => <SignedOut key={h.kind} harness={h.kind} fallback={null} />)}
     {chosen && (!named || !canStart(named) || named.account.state !== "signed_in") &&
       <Notice tone="unknown">{harnessLabel(chosen)} isn’t ready on {profile.name}, so new work there starts with the first ready agent.</Notice>}
   </div></Section>;

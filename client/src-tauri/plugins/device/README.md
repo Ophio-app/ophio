@@ -60,6 +60,7 @@ do not establish visibility. Android can close backgrounded apps for these reaso
 and reopening the app later must not offer to report a crash. `-e exits true`
 runs only these exit checks from `KeyChecks`. A committed preference timestamp
 prevents returning old failures again.
+out. A committed preference timestamp prevents returning old failures again.
 Android supplies no historical app version, so exit records use the installed
 version at collection. Descriptions are scrubbed and never include a trace.
 
@@ -104,3 +105,41 @@ client/src-tauri/gen/android/gradlew -p "$CARGO_TARGET_DIR/report-kotlin-check" 
 
 This compiles the plugin and its instrumentation checks; it does not run them or
 install anything. It creates only a local debug test APK, without release signing.
+
+### iPhone diagnostics
+
+Swift provides the same five command names and the same `screenshot` channel
+event. Screenshot detection observes `UIApplication.userDidTakeScreenshotNotification`.
+It emits only while the app is active, attached, and unlocked. Unsubscribe removes
+the observer; plugin teardown removes all remaining observers. Own-view capture
+uses `WKWebView.takeSnapshot`, then reduces JPEG quality and size to the same
+512 KiB limit. No picture is written to disk.
+
+MetricKit crash and hang diagnostics become `metric:crash` and `metric:hang`.
+Only the diagnostic's app version, type, and payload reporting time are kept;
+stacks, paths, and diagnostic text are never read. MetricKit's reporting time is
+an aggregation boundary, not the exact time of a crash. A private atomic file
+keeps at most 32 pending records and a timestamp with keys for the latest payload
+period, so replaying past payloads and restarting do not return records twice.
+Late payloads older than the saved timestamp are ignored. These APIs fit the
+plugin's iOS 16 minimum; simulator builds return empty results. The Rust panic
+hook is shared with Android and is enabled for iOS devices too.
+
+This iPhone line needs the shared `protocol::reports` contract before the Rust
+shell can compile, plus its generated `CrashRecord` and `ReportScreenshot`
+TypeScript bindings before typechecking. The bridge deliberately uses those
+shared types instead of a second wire definition.
+
+Linux checks Swift syntax only. With the Swift 6.1.2 Ubuntu 24.04 toolchain
+extracted under `$TMPDIR/swift-report-check`, the check is:
+
+```bash
+mkdir -p "$TMPDIR/swift-report-check/lib"
+ln -sf /usr/lib/libncursesw.so.6 "$TMPDIR/swift-report-check/lib/libncurses.so.6"
+LD_LIBRARY_PATH="$TMPDIR/swift-report-check/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+  "$TMPDIR/swift-report-check/swift-6.1.2-RELEASE-ubuntu24.04/usr/bin/swiftc" \
+  -parse client/src-tauri/plugins/device/ios/Sources/{DevicePlugin,Reports}.swift
+```
+
+This is parse-checked only. An Apple SDK build and device checks remain necessary
+for notification delivery, snapshot appearance, and MetricKit's delayed delivery.

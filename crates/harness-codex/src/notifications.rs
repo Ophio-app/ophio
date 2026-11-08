@@ -50,6 +50,7 @@ impl Actor {
                 self.turn = Some(turn.id);
                 self.turn_exit = None;
                 self.usage_limited = false;
+                self.signed_out = false;
                 self.emit(HarnessEvent::TurnStarted)?;
             }
             "turn/completed" => {
@@ -71,6 +72,7 @@ impl Actor {
                 self.file_changes.clear();
                 if turn.status == "failed" {
                     self.usage_limit(&params["turn"]["error"])?;
+                    self.sign_in(&params["turn"]["error"], false)?;
                 }
                 // Keep the in-flight start fenced until its response arrives.
                 self.starting = self
@@ -218,6 +220,7 @@ impl Actor {
                 }
             }
             "error" => {
+                self.sign_in(&params["error"], params["willRetry"] == true)?;
                 if !self.usage_limit(&params["error"])? {
                     // Keep Codex's own words; they usually say what went wrong.
                     let said = params["error"]["message"]
@@ -337,6 +340,17 @@ impl Actor {
         }
         Ok(true)
     }
+    /// Report a refusal for want of a sign-in once per turn.
+    fn sign_in(&mut self, error: &Value, will_retry: bool) -> Result<(), HarnessError> {
+        if crate::limits::sign_in_lost(error, will_retry)
+            && !std::mem::replace(&mut self.signed_out, true)
+        {
+            self.emit(HarnessEvent::SignedOut {
+                reason: "Codex's ChatGPT sign-in was refused".into(),
+            })?;
+        }
+        Ok(())
+    }
     fn activity(&self, item: &Value, kind: &str, completed: bool) -> Result<(), HarnessError> {
         let status = match item["status"].as_str() {
             Some("failed") | Some("declined") => ActivityStatus::Failed,
@@ -348,7 +362,7 @@ impl Actor {
         self.emit(HarnessEvent::Activity {
             key: text(item, "id"),
             tool: item["tool"].as_str().unwrap_or(kind).into(),
-            summary: kind.into(),
+            summary: step_summary(item, kind, completed),
             status,
             detail: item["command"]
                 .as_str()
@@ -366,5 +380,30 @@ impl Actor {
                     }
                 }),
         })
+    }
+}
+
+/// What a step is called where the person reads it, as Claude Code's are:
+/// its name while it runs, and "… finished" once it has. Codex's own names for
+/// its kinds of step, such as `commandExecution`, mean nothing to the person;
+/// a tool keeps the name it was given.
+fn step_summary(item: &Value, kind: &str, completed: bool) -> String {
+    let name = match kind {
+        "commandExecution" => "Command",
+        "fileChange" => "File change",
+        "webSearch" => "Web search",
+        "imageView" => "Image view",
+        "imageGeneration" => "Image generation",
+        "functionCallOutput" => "Tool result",
+        "collabAgentToolCall" => ports::HELPER_STEP,
+        _ => item["tool"]
+            .as_str()
+            .filter(|tool| !tool.is_empty())
+            .unwrap_or("Step"),
+    };
+    if completed {
+        format!("{name} finished")
+    } else {
+        name.to_owned()
     }
 }

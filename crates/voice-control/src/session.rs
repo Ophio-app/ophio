@@ -16,10 +16,16 @@ use std::{
 
 pub struct Session {
     pub view: VoiceSessionView,
+    /// Whether a command voice control can't do may be offered to an agent:
+    /// the computer can run computer use and this device may start it.
+    pub agents: bool,
     pub snapshot: Option<Snapshot>,
     pub pending: Option<VoiceAction>,
     pub answer: Option<VoiceAnswer>,
     pub utterance: String,
+    /// The words of the command being interpreted or acted on: its answer,
+    /// receipt and any hand-off use these, never the displayed transcript.
+    pub text: String,
     pub revision: u64,
     pub changed: Instant,
     clock: Arc<dyn Clock>,
@@ -40,10 +46,12 @@ impl Session {
         let now = clock.monotonic();
         Self {
             view,
+            agents: false,
             snapshot: None,
             pending: None,
             answer: None,
             utterance: String::new(),
+            text: String::new(),
             revision: 0,
             changed: now,
             clock,
@@ -69,6 +77,7 @@ impl Session {
             }.into();
             self.pending = None;
             self.view.choices.clear();
+            self.view.offer = None;
         }
     }
     pub fn stamp(&self) -> (String, u64, u64) {
@@ -111,13 +120,15 @@ impl Session {
         self.revision = revision;
         self.changed = self.clock.monotonic();
         self.last_activity = self.changed;
-        self.view.transcript = text;
+        self.view.transcript = text.clone();
+        self.text = text;
         self.view.phase = VoicePhase::Assessing;
         self.view.understood = "Understanding…".into();
         self.snapshot = Some(snapshot);
         self.answer = None;
         self.pending = None;
         self.view.choices.clear();
+        self.view.offer = None;
         Ok(())
     }
     pub fn assessed(&mut self, answer: VoiceAnswer, final_segment: bool) -> Decision {
@@ -132,7 +143,7 @@ impl Session {
     pub fn evaluate(&mut self, final_segment: bool) -> Decision {
         let decision = match (&self.answer, &self.snapshot) {
             (Some(a), Some(s)) => policy::evaluate(
-                &self.view.transcript,
+                &self.text,
                 s,
                 &a.answers,
                 final_segment,
@@ -147,6 +158,7 @@ impl Session {
     }
     pub fn present(&mut self, decision: &Decision) {
         self.view.choices.clear();
+        self.view.offer = None;
         match decision {
             Decision::Ignore => {
                 self.view.phase = VoicePhase::Ready;
@@ -186,6 +198,17 @@ impl Session {
                 self.view.understood = "Command cancelled".into();
                 self.record(VoiceOutcome::Cancelled, "Command cancelled".into(), None);
             }
+            Decision::HandOff(reason) => {
+                self.view.phase = VoicePhase::Refused;
+                self.view.understood = reason.clone();
+                self.record(VoiceOutcome::Refused, reason.clone(), None);
+                // Nothing is sent: the phone starts an agent only on a tap.
+                if self.agents {
+                    self.view.offer = Some(VoiceAgentOffer {
+                        instruction: self.text.clone(),
+                    });
+                }
+            }
         }
     }
     pub fn choose(&mut self, prompt: u64, id: &str) -> Result<Decision, Error> {
@@ -203,11 +226,31 @@ impl Session {
             .cloned()
             .ok_or(Error::StaleTarget)?;
         let mut action = self.pending.clone().ok_or(Error::StaleTarget)?;
-        action.target = Some(target);
+        let snapshot = self.snapshot.clone().ok_or(Error::StaleTarget)?;
+        if action.kind == VoiceActionKind::Launch {
+            // An app choice names an app from this command's own list.
+            let id = target
+                .id
+                .strip_prefix(policy::APP_CHOICE)
+                .ok_or(Error::StaleTarget)?;
+            let app = snapshot
+                .apps
+                .as_ref()
+                .ok()
+                .and_then(|apps| apps.iter().find(|a| a.id == id))
+                .ok_or(Error::StaleTarget)?;
+            action.app = Some(VoiceApp {
+                id: app.id.clone(),
+                name: app.name.clone(),
+            });
+        } else {
+            action.target = Some(target);
+        }
         let decision = policy::check_action(
             action,
             &self.answer.as_ref().ok_or(Error::StaleTarget)?.answers,
             false,
+            &snapshot,
         );
         self.present(&decision);
         Ok(decision)
@@ -223,6 +266,7 @@ impl Session {
             self.pending.clone().ok_or(Error::StaleTarget)?,
             &self.answer.as_ref().ok_or(Error::StaleTarget)?.answers,
             true,
+            self.snapshot.as_ref().ok_or(Error::StaleTarget)?,
         );
         self.present(&decision);
         Ok(decision)
@@ -289,8 +333,8 @@ impl Session {
                 "The computer confirmed the input".to_owned(),
             ),
             Err(Error::StaleTarget) => (VoiceOutcome::StaleTarget, Error::StaleTarget.to_string()),
-            Err(Error::OutcomeUnknown) => {
-                (VoiceOutcome::Unknown, Error::OutcomeUnknown.to_string())
+            Err(e @ (Error::OutcomeUnknown | Error::LaunchUnstopped)) => {
+                (VoiceOutcome::Unknown, e.to_string())
             }
             Err(e) => (VoiceOutcome::Failed, e.to_string()),
         };
@@ -306,9 +350,12 @@ impl Session {
         self.view.understood = format!("{} · {detail}", policy::describe(action));
         self.pending = None;
         self.view.choices.clear();
+        // Only an action aimed at a control can stall: opening an app, a key
+        // or a scroll needn't change any control Øphio can read.
         if !self.view.dry_run
             && result == VoiceOutcome::Applied
-            && fresh.as_ref() == self.snapshot.as_ref()
+            && action.target.is_some()
+            && fresh.as_ref().map(|s| &s.elements) == self.snapshot.as_ref().map(|s| &s.elements)
         {
             self.stalls += 1;
         } else {
@@ -333,6 +380,10 @@ impl Session {
         self.record(VoiceOutcome::Failed, e.to_string(), None);
     }
     fn record(&mut self, outcome: VoiceOutcome, detail: String, action: Option<VoiceAction>) {
+        // 0.1.1 can't read a step that opened an app, and a journal event it
+        // can't read stops a phone catching up after going back to it. The
+        // step's words still say what was asked; nothing reads the action back.
+        let action = action.filter(|a| a.kind != VoiceActionKind::Launch);
         if self.view.steps.last().is_some_and(|step| {
             outcome != VoiceOutcome::Assessed
                 && step.utterance_id == self.utterance
@@ -342,7 +393,7 @@ impl Session {
         }
         self.view.steps.push(VoiceStep {
             utterance_id: self.utterance.clone(),
-            transcript: self.view.transcript.clone(),
+            transcript: self.text.clone(),
             at: self.clock.now(),
             answers: self.answer.as_ref().map(|a| a.answers.clone()),
             action,

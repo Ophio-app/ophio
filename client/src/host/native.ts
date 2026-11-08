@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Platform backed by the app's native layer (src-tauri). The native side owns
-// TLS with certificate pinning, the device key in Android Keystore and the
-// authentication handshake, and hands this side authenticated frames only.
+// TLS with certificate pinning, the device key (kept in Android Keystore, or
+// sealed by the iPhone's Secure Enclave) and the authentication handshake,
+// and hands this side authenticated frames only.
 //
 // IPC contract (implemented in src-tauri/src/links.rs):
 //   profiles() -> HostProfile[]
@@ -24,6 +25,7 @@
 import { nativeLifecycle, type LifecycleEvent } from "../platform/nativeLifecycle";
 import { Channel, invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type {
+  AlertType,
   Authenticated,
   Challenge,
   ClientFrame,
@@ -33,13 +35,16 @@ import type {
   SpeechClientFrame,
   TerminalClientFrame,
   TransferClientFrame,
+  Tier,
 } from "../protocol/types";
 import { parsePairingLink } from "../protocol/pairing";
 import { ANDROID_SAVE_LIMIT } from "./transfer";
+import { onIPhone } from "../design/formFactor";
 import type {
   AlertChannel,
   AlertSettings,
   AlertsState,
+  ConnectAsk,
   ControlLink,
   HostProfile,
   LinkEvent,
@@ -234,7 +239,7 @@ class NativeLink<E> {
     return this.#state.state === "online";
   }
 
-  connect(): void {
+  connect(ask?: ConnectAsk): void {
     if (this.#closed) return;
     if (this.#refused) {
       this.#refused = false;
@@ -243,14 +248,14 @@ class NativeLink<E> {
         .catch(() => undefined);
       this.#id = this.#opening(ended);
     }
-    this.#start();
+    this.#start(ask);
   }
 
-  #start(): void {
+  #start(ask?: ConnectAsk): void {
     this.#started = true;
     const id = this.#id;
     void id
-      .then((linkId) => invoke("link_connect", { linkId }))
+      .then((linkId) => invoke("link_connect", { linkId, ...(ask ? { ask } : {}) }))
       .catch((error: unknown) => this.#refuse(id, error));
   }
 
@@ -348,8 +353,8 @@ class NativeControlLink implements ControlLink {
       }
     }, true);
   }
-  connect(): void {
-    this.#link.connect();
+  connect(ask?: ConnectAsk): void {
+    this.#link.connect(ask);
   }
   disconnect(): void {
     this.#link.close();
@@ -639,31 +644,12 @@ function nativeIntegrations() {
     attributeFilter: ["data-theme"],
   });
   syncTheme();
-  return {
-    ...lifecycle.capabilities,
-    report,
-    downloadLimit: ANDROID_SAVE_LIMIT,
-    async saveToPhone(blob: Blob, name: string): Promise<{ savedAs: string }> {
-      const { id } = await invoke<{ id: string }>("save_begin", {
-        name,
-        mime: blob.type || "application/octet-stream",
-        size: blob.size,
-      });
-      try {
-        for (let offset = 0; offset < blob.size; offset += 256 * 1024) {
-          const chunk = await blob
-            .slice(offset, offset + 256 * 1024)
-            .arrayBuffer();
-          await invoke("save_chunk", chunk, { headers: { "x-save-id": id } });
-        }
-        return await invoke<{ savedAs: string }>("save_finish", { id });
-      } catch (error) {
-        await invoke("save_cancel", { id }).catch(() => undefined);
-        throw error;
-      }
-    },
+  // Shared files, app updates and the alert service are Android's alone: the
+  // App Store updates the iPhone app, and iOS has no service to keep alerts
+  // coming while the app is closed.
+  const androidOnly = {
     appUpdate: {
-      check: (offers) => invoke("app_update_check", { offers }),
+      check: (offers, options) => invoke("app_update_check", { offers, openSettings: options?.openSettings ?? false }),
       async install(profileId: string, app: Blob, sha256: string) {
         await invoke("app_update_begin", { profileId, size: app.size, sha256 });
         try {
@@ -690,6 +676,41 @@ function nativeIntegrations() {
       return () => {
         sharedListeners.delete(listener);
       };
+    },
+    alerts: {
+      state: () => invoke<AlertsState>("alerts_state"),
+      configure: (settings: AlertSettings) => invoke<AlertsState>("alerts_configure", { settings }),
+      battery: () => invoke<void>("alerts_battery"),
+      channel: (channel: AlertChannel) => invoke<void>("alerts_channel", { channel }),
+      setTier: (alertType: AlertType, tier: Tier) => invoke<AlertsState>("alerts_set_tier", { alertType, tier }),
+      handled: (profileId: string, attentionIds: string[]) => invoke<void>("alerts_handled", { profileId, attentionIds }),
+      seen: (profileId: string, attentionIds: string[]) => invoke<void>("alerts_seen", { profileId, attentionIds }),
+      viewing: (profileId: string, on: boolean) => invoke<void>("alerts_viewing", { profileId, on }),
+    },
+  };
+  return {
+    ...lifecycle.capabilities,
+    ...(onIPhone() ? {} : androidOnly),
+    report,
+    downloadLimit: ANDROID_SAVE_LIMIT,
+    async saveToPhone(blob: Blob, name: string): Promise<{ savedAs: string }> {
+      const { id } = await invoke<{ id: string }>("save_begin", {
+        name,
+        mime: blob.type || "application/octet-stream",
+        size: blob.size,
+      });
+      try {
+        for (let offset = 0; offset < blob.size; offset += 256 * 1024) {
+          const chunk = await blob
+            .slice(offset, offset + 256 * 1024)
+            .arrayBuffer();
+          await invoke("save_chunk", chunk, { headers: { "x-save-id": id } });
+        }
+        return await invoke<{ savedAs: string }>("save_finish", { id });
+      } catch (error) {
+        await invoke("save_cancel", { id }).catch(() => undefined);
+        throw error;
+      }
     },
     requestNotifications: () => invoke<void>("request_notifications"),
     notify(notification: LocalNotification) {
@@ -720,14 +741,6 @@ function nativeIntegrations() {
     immersive(on: boolean) {
       // The bars only cost room; a failure leaves them showing.
       void invoke("shell_immersive", { on }).catch(() => undefined);
-    },
-    alerts: {
-      state: () => invoke<AlertsState>("alerts_state"),
-      configure: (settings: AlertSettings) => invoke<AlertsState>("alerts_configure", { settings }),
-      battery: () => invoke<void>("alerts_battery"),
-      channel: (channel: AlertChannel) => invoke<void>("alerts_channel", { channel }),
-      seen: (profileId: string, attentionIds: string[]) => invoke<void>("alerts_seen", { profileId, attentionIds }),
-      viewing: (profileId: string, on: boolean) => invoke<void>("alerts_viewing", { profileId, on }),
     },
     onPlatformError(
       listener: (error: { operation: string; message: string }) => void,

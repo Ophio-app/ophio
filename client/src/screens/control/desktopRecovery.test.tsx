@@ -88,6 +88,16 @@ vi.mock("./useMedia", async (importOriginal) => ({
   useMedia: () => ({ picture: picture.current, latest: picture, canvas: { current: null }, retry: vi.fn(), reopen }),
 }));
 const route = { screen: "desktop" as const, targetId: ids.tgHdmi };
+const liveField = () => screen.getByRole<HTMLTextAreaElement>("textbox", { name: "Type on the computer" });
+const typeLive = (value: string) => fireEvent.input(liveField(), { target: { value }, inputType: "insertText" });
+const openLive = async () => {
+  render(<Desktop route={route} />, { wrapper });
+  await advance(150);
+  fireEvent.click(screen.getByRole("button", { name: "Take over" }));
+  await advance(650);
+  fireEvent.click(screen.getByRole("button", { name: /^Keyboard$/ }));
+  expect(liveField()).toBeTruthy();
+};
 
 it("clears the navigation ownership dot and claim when access is revoked", async () => {
   render(<><Desktop route={route} /><BottomNav /></>, { wrapper });
@@ -145,6 +155,74 @@ it("fences a geometry hand-over until a frame at the new revision arrives, prese
   expect(Object.values(app.session.commands.get()).some(c => c.body.command === "release_lease")).toBe(false);
 });
 
+it("pauses refused geometry, refreshes state and resumes only on a newer fresh picture without replay", async () => {
+  let acknowledge: Parameters<HostSession["onInputAck"]>[0] = () => {};
+  vi.spyOn(app.session, "onInputAck").mockImplementation(listener => { acknowledge = listener; return () => {}; });
+  const { result, rerender } = renderHook(() => useControl(ids.tgHdmi, picture, true), { wrapper });
+  await advance(150);
+  act(() => result.current.arm());
+  const receipt = app.session.command({ command: "request_human_lease", target_id: ids.tgHdmi, geometry_revision: 1 }, { label: "Control" });
+  await advance(650);
+  await commandResult(app.session, await receipt);
+  const transmit = vi.spyOn(app.session, "sendInput").mockReturnValue(true);
+  const query = vi.spyOn(app.session, "query");
+  act(() => { expect(result.current.send({ action: "pointer_move", to: { x: 0.5, y: 0.2 } })).toBe(true); });
+  const envelope = transmit.mock.calls.at(-1)![0];
+  act(() => {
+    acknowledge({ lease_id: envelope.lease_id, seq: envelope.seq, outcome: "stale_geometry" });
+    // Refusal fences even a second event before React renders the pause.
+    expect(result.current.send({ action: "click", at: { x: 0.5, y: 0.2 }, button: "left", count: 1 })).toBe(false);
+  });
+  expect(query).toHaveBeenCalledWith({ kind: "snapshot" });
+  expect(result.current.enabled).toBe(false);
+  expect(result.current.error).toBeNull();
+  await advance(1_600);
+  expect(result.current.error).toContain("Screen changed");
+  // A fresh frame at the rejected revision is not recovery.
+  picture.current = { ...picture.current, at: Date.now() }; rerender();
+  expect(result.current.enabled).toBe(false);
+  act(() => window.__sim?.control.geometry(ids.tgHdmi));
+  await advance(150);
+  expect(result.current.enabled).toBe(false);
+  picture.current = { ...picture.current, at: Date.now(), revision: 2 }; rerender();
+  expect(result.current.enabled).toBe(true);
+  expect(result.current.error).toBeNull();
+  expect(transmit.mock.calls.map(([env]) => env.action).filter(action => action.action !== "release_all"))
+    .toEqual([envelope.action]);
+  // A delayed duplicate acknowledgment must not freeze the recovered screen.
+  act(() => acknowledge({ lease_id: envelope.lease_id, seq: envelope.seq, outcome: "stale_geometry" }));
+  expect(result.current.enabled).toBe(true);
+  expect(Object.values(app.session.commands.get()).some(c => c.body.command === "release_lease")).toBe(false);
+});
+
+it.each(["before", "after"])("drops a geometry-refresh failure delivered %s recovery", async (timing) => {
+  let acknowledge: Parameters<HostSession["onInputAck"]>[0] = () => {};
+  vi.spyOn(app.session, "onInputAck").mockImplementation(listener => { acknowledge = listener; return () => {}; });
+  const { result, rerender } = renderHook(() => useControl(ids.tgHdmi, picture, true), { wrapper });
+  await advance(150);
+  act(() => result.current.arm());
+  const receipt = app.session.command({ command: "request_human_lease", target_id: ids.tgHdmi, geometry_revision: 1 }, { label: "Control" });
+  await advance(650); await commandResult(app.session, await receipt);
+  let rejectRefresh: (error: Error) => void = () => {};
+  vi.spyOn(app.session, "query").mockReturnValueOnce(new Promise<never>((_resolve, reject) => { rejectRefresh = reject; }));
+  const transmit = vi.spyOn(app.session, "sendInput").mockReturnValue(true);
+  act(() => { result.current.send({ action: "pointer_move", to: { x: 0.5, y: 0.2 } }); });
+  const envelope = transmit.mock.calls.at(-1)![0];
+  act(() => acknowledge({ lease_id: envelope.lease_id, seq: envelope.seq, outcome: "stale_geometry" }));
+  if (timing === "before") {
+    await act(async () => { rejectRefresh(new Error("Refresh failed")); });
+    expect(result.current.error).not.toBeNull();
+  }
+  act(() => window.__sim?.control.geometry(ids.tgHdmi)); await advance(150);
+  picture.current = { ...picture.current, at: Date.now(), revision: 2 }; rerender();
+  if (timing === "after") await act(async () => { rejectRefresh(new Error("Refresh failed")); });
+  expect(result.current.enabled).toBe(true);
+  expect(result.current.error).toBeNull();
+  picture.current = { ...picture.current, connected: false }; rerender();
+  expect(result.current.enabled).toBe(false);
+  expect(result.current.error).toBeNull();
+});
+
 it("shows a locked computer with no input controls and pauses its picture", async () => {
   render(<Desktop route={route} />, { wrapper });
   await advance(150);
@@ -158,43 +236,50 @@ it("shows a locked computer with no input controls and pauses its picture", asyn
   expect(screen.queryByRole("button", { name: /^Keyboard$/ })).toBeNull();
 });
 
-it("retains refused text, names missing characters and pastes only after the explicit choice", async () => {
-  render(<Desktop route={route} />, { wrapper });
-  await advance(150);
-  fireEvent.click(screen.getByRole("button", { name: "Take over" }));
-  await advance(650);
-  fireEvent.click(screen.getByRole("button", { name: /^Keyboard$/ }));
-  fireEvent.change(screen.getByLabelText("Text for the computer"), { target: { value: "Café 日本語" } });
+it("stops on refused Unicode without replay or saved text and pastes only after an explicit choice", async () => {
+  await openLive();
+  const send = vi.spyOn(app.session, "sendInput");
   act(() => window.__sim?.control.refuseText("é日本語", true));
-  fireEvent.click(screen.getByRole("button", { name: "Send text" }));
+  typeLive("Café 日本語");
+  typeLive("Café 日本語!"); // Queued behind the refused edit; must be discarded.
   await advance(150);
   expect(screen.getByText(/Nothing was typed.*é日本語/)).toBeTruthy();
-  expect((screen.getByLabelText("Text for the computer") as HTMLTextAreaElement).value).toBe("Café 日本語");
-  expect(screen.getByRole("region", { name: "Saved text" }).textContent).toContain("Your text is kept here");
+  expect(screen.getByText(/Typing stopped.*Nothing will be sent again automatically/)).toBeTruthy();
+  expect(liveField().value).toBe("");
+  expect(localStorage.getItem(`control.pending.${app.profile.profileId}.${ids.tgHdmi}`)).toBeNull();
+  expect(send.mock.calls.filter(([env]) => env.action.action === "text").map(([env]) => env.action)).toEqual([{ action: "text", text: "Café 日本語" }]);
+  expect(window.__sim?.control.inputs().filter(e => e.action.action === "text")).toHaveLength(0);
   expect(window.__sim?.control.inputs().some(e => e.action.action === "paste")).toBe(false);
-  fireEvent.click(screen.getByRole("button", { name: "Paste instead" }));
+  expect(screen.queryByRole("region", { name: "Saved text" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Paste instead" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Paste" }));
+  expect(screen.getByRole("textbox", { name: "Text to paste" })).toBeTruthy();
+  expect(screen.getByText(/Replaces the computer’s clipboard/)).toBeTruthy();
+  fireEvent.change(screen.getByRole("textbox", { name: "Text to paste" }), { target: { value: "Café 日本語" } });
+  fireEvent.click(screen.getByRole("button", { name: "Paste on computer" }));
   await advance(150);
   expect(window.__sim?.control.inputs().at(-1)?.action).toEqual({ action: "paste", text: "Café 日本語" });
-  expect(screen.queryByRole("region", { name: "Saved text" })).toBeNull();
 });
 
-it("lets you revise refused text before sending a new action", async () => {
-  render(<Desktop route={route} />, { wrapper });
-  await advance(150);
-  fireEvent.click(screen.getByRole("button", { name: "Take over" }));
-  await advance(650);
-  fireEvent.click(screen.getByRole("button", { name: /^Keyboard$/ }));
-  fireEvent.change(screen.getByLabelText("Text for the computer"), { target: { value: "Café" } });
+it("does not reuse refused text; a later correction is a new live action", async () => {
+  await openLive();
+  const send = vi.spyOn(app.session, "sendInput");
   act(() => window.__sim?.control.refuseText("é", true));
-  fireEvent.click(screen.getByRole("button", { name: "Send text" }));
+  typeLive("Café");
   await advance(150);
-  expect(screen.getByRole("button", { name: "Paste instead" })).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("Text for the computer"), { target: { value: "Cafe" } });
+  expect(liveField().value).toBe("");
+  expect(send.mock.calls.map(([env]) => env.action).filter(a => a.action === "text")).toEqual([
+    { action: "text", text: "Café" },
+  ]);
+  expect(window.__sim?.control.inputs().filter(e => e.action.action === "text")).toHaveLength(0);
   expect(screen.queryByRole("button", { name: "Paste instead" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Send text" }));
+  typeLive("Cafe");
   await advance(150);
-  expect(window.__sim?.control.inputs().at(-1)?.action).toEqual({ action: "text", text: "Cafe" });
-  expect((screen.getByLabelText("Text for the computer") as HTMLTextAreaElement).value).toBe("");
+  expect(send.mock.calls.map(([env]) => env.action).filter(a => a.action === "text")).toEqual([
+    { action: "text", text: "Café" }, { action: "text", text: "Cafe" },
+  ]);
+  expect(window.__sim?.control.inputs().filter(e => e.action.action === "text").map(e => e.action)).toEqual([{ action: "text", text: "Cafe" }]);
+  expect(localStorage.getItem(`control.pending.${app.profile.profileId}.${ids.tgHdmi}`)).toBeNull();
 });
 
 it("requires an explicit action to reopen a removed portal source", async () => {
@@ -245,8 +330,10 @@ it("Leave has one pending state, disables repeated Leave and suppresses local in
   expect(Object.values(app.session.commands.get())).toHaveLength(before + 1);
   await advance(2_600);
   expect(screen.queryByRole("button", { name: "Leaving control…" })).toBeNull();
-  // As on the computer, input stays paused under the ended lease.
-  expect(screen.getByText("Agent paused", { selector: ".bar__subtitle" })).toBeTruthy();
+  // As on the computer, input stays paused under the ended lease, and the
+  // heading says it was this person's control that ended, not an agent's.
+  expect(screen.getByText("Your control ended", { selector: ".bar__subtitle" })).toBeTruthy();
+  expect(screen.queryByText("Agent paused")).toBeNull();
   expect((screen.getByRole("button", { name: "Take over" }) as HTMLButtonElement).disabled).toBe(false);
 });
 
@@ -380,22 +467,26 @@ it("stopped tasks keep an unresolved private-step warning with a review route", 
   expect(app.ui.route()).toEqual({ screen: "computer_use", taskId: task.task_id });
 });
 
-it("typing success requires an injected acknowledgement and is replaced by the next action", async () => {
-  render(<Desktop route={route} />, { wrapper });
+it("waits for the injected acknowledgement before sending the next live edit", async () => {
+  await openLive();
+  const transmit = vi.spyOn(app.session, "sendInput").mockReturnValue(true);
+  let acknowledge: Parameters<HostSession["onInputAck"]>[0] = () => {};
+  vi.spyOn(app.session, "onInputAck").mockImplementation(listener => { acknowledge = listener; return () => {}; });
+  typeLive("H");
+  typeLive("Hi");
+  expect(transmit.mock.calls.filter(([env]) => env.action.action === "text").map(([env]) => env.action)).toEqual([{ action: "text", text: "H" }]);
   await advance(150);
-  fireEvent.click(screen.getByRole("button", { name: "Take over" }));
-  await advance(650);
-  fireEvent.click(screen.getByRole("button", { name: /^Keyboard$/ }));
-  fireEvent.change(screen.getByLabelText("Text for the computer"), { target: { value: "Hello" } });
-  fireEvent.click(screen.getByRole("button", { name: "Send text" }));
+  expect(transmit.mock.calls.filter(([env]) => env.action.action === "text")).toHaveLength(1);
+  const first = transmit.mock.calls.find(([env]) => env.action.action === "text")![0];
+  await act(async () => {
+    acknowledge({ lease_id: first.lease_id, seq: first.seq, outcome: "injected" });
+    await Promise.resolve();
+  });
+  expect(transmit.mock.calls.filter(([env]) => env.action.action === "text").map(([env]) => env.action)).toEqual([
+    { action: "text", text: "H" }, { action: "text", text: "i" },
+  ]);
   expect(screen.queryByText(/^Typed ·/)).toBeNull();
-  expect((screen.getByLabelText("Text for the computer") as HTMLTextAreaElement).value).toBe("Hello");
-  await advance(150);
-  expect(screen.getByText(/^Typed ·/)).toBeTruthy();
-  expect((screen.getByLabelText("Text for the computer") as HTMLTextAreaElement).value).toBe("");
-  fireEvent.change(screen.getByLabelText("Text for the computer"), { target: { value: "Again" } });
-  fireEvent.click(screen.getByRole("button", { name: "Send text" }));
-  expect(screen.queryByText(/^Typed ·/)).toBeNull();
+  expect(localStorage.getItem(`control.pending.${app.profile.profileId}.${ids.tgHdmi}`)).toBeNull();
 });
 
 it("setup has one capture remedy and a code command, and nothing of computer use this device may not start", async () => {
@@ -412,7 +503,7 @@ it("setup has one capture remedy and a code command, and nothing of computer use
 });
 
 it("computer-use review renders plain actions without developer tool identifiers", async () => {
-  const { default: ComputerReview } = await import("./ComputerReview");
+  const { default: ComputerReview } = await import("./ComputerReviewScreen");
   render(<ComputerReview route={{ screen: "computer_use_review", projectId: ids.pNotes }} />, { wrapper });
   await advance(150);
   const actions = screen.getByText("What the agent can do").closest("section");
@@ -420,17 +511,18 @@ it("computer-use review renders plain actions without developer tool identifiers
   expect(document.body.textContent).not.toMatch(/observe_target|pointer_action|key_action|type_text|request_human/);
 });
 
-it("keeps ownership, Leave in the header, and the keyboard input together", async () => {
-  render(<Desktop route={route} />, { wrapper });
-  await advance(150);
-  fireEvent.click(screen.getByRole("button", { name: "Take over" }));
-  await advance(650);
-  fireEvent.click(screen.getByRole("button", { name: /^Keyboard$/ }));
-  expect(screen.getByText("This device holds input")).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Leave control" }).closest(".bar")).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Send text" }).closest(".screen__footer")).toBeNull();
+it("keeps ownership, Leave and the live typing overlay above the same picture", async () => {
+  await openLive();
+  expect(screen.getByText("You have control")).toBeTruthy();
+  expect(within(screen.getByRole("group", { name: "Desktop controls" })).getByRole("button", { name: "Leave control" })).toBeTruthy();
+  const canvas = screen.getByRole("img", { name: /current picture/ });
+  expect(canvas.closest(".picture-stage")).toBeTruthy();
+  expect(liveField()).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Send text" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Leave control" }));
   expect(screen.queryByRole("region", { name: "Remote keyboard" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Type on the computer" })).toBeNull();
+  expect(screen.getByRole("img", { name: /current picture/ })).toBe(canvas);
 });
 
 it("names the actual model and explains picture access in plain sentences", async () => {

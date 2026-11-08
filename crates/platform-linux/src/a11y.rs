@@ -54,7 +54,11 @@ impl AtSpi {
     }
     pub async fn connect() -> Result<Self, Error> {
         let session = Connection::session().await.map_err(failure)?;
-        let proxy = Proxy::new(&session, "org.a11y.Bus", "/org/a11y/bus", "org.a11y.Bus")
+        Self::on_session(&session).await
+    }
+    /// The accessibility bus announced on an explicit session bus.
+    pub async fn on_session(session: &Connection) -> Result<Self, Error> {
+        let proxy = Proxy::new(session, "org.a11y.Bus", "/org/a11y/bus", "org.a11y.Bus")
             .await
             .map_err(failure)?;
         let address: String = proxy.call("GetAddress", &()).await.map_err(failure)?;
@@ -64,6 +68,96 @@ impl AtSpi {
             .await
             .map_err(failure)?;
         Ok(Self::with_bus(Arc::new(NativeBus(connection))))
+    }
+}
+/// Apps whose paste shortcut is Ctrl+Shift+V, by their accessible name.
+const TERMINALS: &[&str] = &[
+    "alacritty",
+    "blackbox",
+    "contour",
+    "cool-retro-term",
+    "cosmic-term",
+    "deepin-terminal",
+    "foot",
+    "ghostty",
+    "gnome-console",
+    "gnome-terminal",
+    "gnome-terminal-server",
+    "guake",
+    "kgx",
+    "kitty",
+    "konsole",
+    "lxterminal",
+    "mate-terminal",
+    "ptyxis",
+    "qterminal",
+    "rio",
+    "terminator",
+    "terminology",
+    "tilix",
+    "wezterm",
+    "wezterm-gui",
+    "xfce4-terminal",
+    "xterm",
+    "yakuake",
+];
+impl AtSpi {
+    /// The active window, and the application that owns it.
+    async fn front(&self) -> Result<Option<(Object, Object)>, Error> {
+        let root = Object {
+            bus: "org.a11y.atspi.Registry".into(),
+            path: OwnedObjectPath::try_from("/org/a11y/atspi/accessible/root").map_err(failure)?,
+        };
+        for app in self.bus.children(&root).await?.into_iter().take(100) {
+            for window in self
+                .bus
+                .children(&app)
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .take(100)
+            {
+                if let Ok(m) = self.bus.metadata(&window).await
+                    && (state_has(&m.state, 1) || state_has(&m.state, 12))
+                {
+                    return Ok(Some((app, window)));
+                }
+            }
+        }
+        Ok(None)
+    }
+    /// Whether the app in front is a terminal, which pastes with
+    /// Ctrl+Shift+V: by its name, or by a terminal among the first few
+    /// hundred controls of its window. `None` when that cannot be told;
+    /// a failed registry call returns an error so the caller can reconnect.
+    pub async fn front_is_terminal(&self) -> Result<Option<bool>, Error> {
+        tokio::time::timeout(std::time::Duration::from_millis(500), async {
+            let Some((app, window)) = self.front().await? else {
+                return Ok(None);
+            };
+            if let Ok(m) = self.bus.metadata(&app).await
+                && TERMINALS.contains(&m.name.to_lowercase().as_str())
+            {
+                return Ok(Some(true));
+            }
+            let mut queue = VecDeque::from([window]);
+            let mut seen = 0;
+            while let Some(o) = queue.pop_front() {
+                seen += 1;
+                if seen > 300 {
+                    break;
+                }
+                if let Ok(m) = self.bus.metadata(&o).await {
+                    if m.role == "terminal" {
+                        return Ok(Some(true));
+                    }
+                    queue.extend(self.bus.children(&o).await.unwrap_or_default());
+                }
+            }
+            Ok(Some(false))
+        })
+        .await
+        .unwrap_or(Ok(None))
     }
 }
 fn failure(_: impl std::fmt::Display) -> Error {
@@ -318,6 +412,72 @@ mod tests {
         assert_eq!(p, protocol::control::TargetPoint { x: 0.5, y: 0.5 });
         assert!(map_point(100., 0., -100., 0., 100., 50., true).is_err());
         assert!(map_point(-50., 25., -100., 0., 100., 50., false).is_err());
+    }
+    #[derive(Debug)]
+    struct Front {
+        app: &'static str,
+        role: &'static str,
+    }
+    #[async_trait]
+    impl Bus for Front {
+        async fn children(&self, o: &Object) -> Result<Vec<Object>, Error> {
+            Ok(match o.path.as_str() {
+                "/org/a11y/atspi/accessible/root" => vec![object("/other"), object("/app")],
+                "/other" => vec![object("/other/window")],
+                "/app" => vec![object("/window")],
+                "/window" => vec![object("/pane")],
+                "/pane" => vec![object("/widget")],
+                _ => vec![],
+            })
+        }
+        async fn metadata(&self, o: &Object) -> Result<Metadata, Error> {
+            Ok(Metadata {
+                role: if o.path.as_str() == "/widget" {
+                    self.role
+                } else {
+                    "filler"
+                }
+                .into(),
+                name: match o.path.as_str() {
+                    "/app" => self.app,
+                    "/other" => "Konsole",
+                    _ => "",
+                }
+                .into(),
+                // Only the second app's window is active.
+                state: if o.path.as_str() == "/window" {
+                    vec![1 << 1]
+                } else {
+                    vec![0]
+                },
+                bounds: VoiceBounds {
+                    x: 0.,
+                    y: 0.,
+                    width: 1.,
+                    height: 1.,
+                },
+                actions: vec![],
+            })
+        }
+        async fn activate(&self, _: &Object, _: bool) -> Result<bool, Error> {
+            Ok(false)
+        }
+    }
+    #[tokio::test]
+    async fn a_terminal_in_front_is_told_by_name_or_by_a_terminal_control() {
+        for (app, role, terminal) in [
+            ("gnome-terminal-server", "filler", true),
+            ("Ptyxis", "filler", true),
+            ("some-app", "terminal", true),
+            ("gedit", "text", false),
+        ] {
+            let atspi = AtSpi::with_bus(Arc::new(Front { app, role }));
+            assert_eq!(
+                atspi.front_is_terminal().await.unwrap(),
+                Some(terminal),
+                "{app}"
+            );
+        }
     }
     #[derive(Debug, Default)]
     struct RecordedBus {

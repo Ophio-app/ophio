@@ -812,6 +812,7 @@ async fn a_linked_task_starts_from_its_issue_or_pull_request() {
     let issue = GithubLink::Issue {
         number: 12,
         review_with: None,
+        when_green: None,
     };
     let e = r.link(issue.clone(), "Fix it").await.unwrap_err();
     assert_eq!(e.code, ErrorCode::InvalidRequest);
@@ -883,6 +884,7 @@ async fn a_linked_task_starts_from_its_issue_or_pull_request() {
             GithubLink::Issue {
                 number: 9,
                 review_with: None,
+                when_green: None,
             },
             "x",
         )
@@ -898,6 +900,7 @@ async fn a_linked_task_starts_from_its_issue_or_pull_request() {
             GithubLink::Issue {
                 number: 10,
                 review_with: None,
+                when_green: None,
             },
             "x",
         )
@@ -948,6 +951,7 @@ async fn items_list_mine_first_and_show_what_the_agents_are_doing() {
             GithubLink::Issue {
                 number: 12,
                 review_with: None,
+                when_green: None,
             },
             "Fix it",
         )
@@ -1495,3 +1499,140 @@ mod review_loop_tests;
 
 #[path = "github_access_tests.rs"]
 mod access;
+
+#[tokio::test]
+async fn merging_by_itself_is_chosen_only_where_the_account_can_and_for_a_change() {
+    let issue = |when_green| GithubLink::Issue {
+        number: 12,
+        review_with: None,
+        when_green,
+    };
+    let answer_12 = |r: &Repo| {
+        r.gh.answer(
+            "GET /repos/octo/app/issues/12",
+            json!({ "number": 12, "state": "open", "title": "Crash on save", "user": { "login": "me" } }),
+        );
+    };
+    // Without an admin, a task can't be made to merge by itself, at its
+    // start or later; it can be left for the person.
+    let r = repo(false).await;
+    r.set(drafts()).await.unwrap();
+    answer_12(&r);
+    let e = (r.link(issue(Some(WhenGreen::Merge)), "Fix it").await).unwrap_err();
+    assert_eq!(e.code, ErrorCode::PermissionDenied);
+    assert!(e.message.contains("Only an admin of octo/app"), "{e:?}");
+    let task = r.link(issue(None), "Fix it").await.unwrap();
+    let choose = |when_green| GithubAction::SetWhenGreen {
+        task_id: task.task_id,
+        when_green,
+    };
+    let owner = Caller::local_owner();
+    let merge = r.act(&owner, choose(Some(WhenGreen::Merge))).await;
+    assert_eq!(merge, Err(ErrorCode::PermissionDenied));
+    r.act(&owner, choose(Some(WhenGreen::Leave))).await.unwrap();
+    let github = |r: &Repo, task_id| {
+        let task: Task = r.f.hub.read(|x| x.require("task", task_id)).unwrap();
+        task.github.unwrap()
+    };
+    assert_eq!(github(&r, task.task_id).when_green, Some(WhenGreen::Leave));
+    r.act(&owner, choose(None)).await.unwrap();
+    assert_eq!(github(&r, task.task_id).when_green, None);
+    r.f.close().await;
+
+    // With one, it is kept from the start.
+    let r = repo(true).await;
+    r.set(drafts()).await.unwrap();
+    answer_12(&r);
+    let task = r
+        .link(issue(Some(WhenGreen::Merge)), "Fix it")
+        .await
+        .unwrap();
+    assert_eq!(task.github.unwrap().when_green, Some(WhenGreen::Merge));
+    // A run that only reads makes no pull request to choose for.
+    let triage = r.link(GithubLink::Triage, "Sort them").await.unwrap();
+    let choose = GithubAction::SetWhenGreen {
+        task_id: triage.task_id,
+        when_green: Some(WhenGreen::Leave),
+    };
+    let refused = r.act(&Caller::local_owner(), choose).await;
+    assert_eq!(refused, Err(ErrorCode::InvalidRequest));
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn a_chat_cannot_choose_automatic_merging_at_creation_or_later() {
+    let r = repo(true).await;
+    r.set(drafts()).await.unwrap();
+    let identity_id = ChannelIdentityId::new();
+    r.f.hub
+        .write(|tx| {
+            tx.put(
+                "channel",
+                identity_id,
+                &ChannelIdentity {
+                    id: identity_id,
+                    channel: ChannelKind::Telegram,
+                    external_user: "1".into(),
+                    external_chat: "2".into(),
+                    display_name: "Synthetic channel".into(),
+                    linked_at: Timestamp(0),
+                    revoked_at: None,
+                    grants: Grants::owner(),
+                    project_id: Some(r.project_id),
+                },
+            )
+        })
+        .unwrap();
+    let chat = Caller {
+        principal: Principal::Channel { identity_id },
+        grants: Grants::owner(),
+    };
+    r.gh.answer(
+        "GET /repos/octo/app/issues/12",
+        json!({
+            "number": 12, "state": "open", "title": "Crash on save", "user": { "login": "me" }
+        }),
+    );
+    let task = r
+        .link(
+            GithubLink::Issue {
+                number: 12,
+                review_with: None,
+                when_green: None,
+            },
+            "Fix it",
+        )
+        .await
+        .unwrap();
+    let action = GithubAction::SetWhenGreen {
+        task_id: task.task_id,
+        when_green: Some(WhenGreen::Merge),
+    };
+    assert_eq!(r.act(&chat, action).await, Err(ErrorCode::PermissionDenied));
+    let mut command = crate::tests::conversation_access::create(r.project_id, Default::default());
+    if let Command::CreateTask {
+        github,
+        mode,
+        conversation,
+        access,
+        placement,
+        ..
+    } = &mut command.body
+    {
+        *github = Some(Box::new(GithubLink::Issue {
+            number: 12,
+            review_with: None,
+            when_green: Some(WhenGreen::Merge),
+        }));
+        *mode = None;
+        *conversation = None;
+        *access = None;
+        *placement = TaskPlacement::Queue {
+            position: None,
+            authorization: QueueAuthorization::AskBeforeStart,
+        };
+    }
+    let receipt = r.f.hub.submit(&chat, command).await;
+    assert_eq!(receipt.error.unwrap().code, ErrorCode::PermissionDenied);
+    r.f.close().await;
+}

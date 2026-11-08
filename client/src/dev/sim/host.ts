@@ -7,6 +7,7 @@
 
 import { ProblemReportsSim, SIM_APP_BYTES, SIM_APP_SHA } from "./problemReports";
 import { PRODUCT_NAME } from "../../brand";
+import { reportReference } from "../../diagnostics/reference";
 import { blockingAttentionCount } from "./attention";
 import { stopFrequency } from "../../screens/control/stops";
 import { isTerminalRunState, stillFinishing } from "../../state/projection";
@@ -61,6 +62,7 @@ import type {
   Grants,
   ConversationAccess,
   TransferRecord,
+  AccessNeed,
 } from "../../protocol/types";
 import { uuidv7 } from "../../protocol/ids";
 import * as fx from "./scenario";
@@ -93,6 +95,8 @@ import { GithubSim, githubTaskBranch } from "./github";
 import { SystemSim } from "./system";
 import { projectFolders } from "./projectFolders";
 import { catalog, chooseSetupSkillVersion, copySetupSkill, createAgent, oneOff, resolveStart, sameStart, setupCopyPath } from "./launchers";
+import { actions as approvalActions, asked as askedOf, refusal, runMode, switchRefusal, writesNothing, type Asked } from "./approvalRule";
+import { accessFacts, agentName, needsText, scope as accessScope, scriptedAsk, switchAgentText, switchNote, title as accessTitle, wanted, widen } from "./askForMore";
 
 type Frame = ServerFrame;
 type Listener = (f: Frame) => void;
@@ -185,6 +189,8 @@ export interface SimOptions {
 }
 
 export class SimHost {
+  /** The computer's own name, kept from before its first rename. */
+  hostname: string | undefined;
   readonly stages: StageSim;
   readonly contribution: ContributionSim;
   readonly accounts: AccountsSim;
@@ -205,6 +211,9 @@ export class SimHost {
   readonly agentUpdates = new AgentUpdatesSim();
   agentPreferences: AgentPreferences = { questions: true, revision: 0 };
   notificationSettings: NotificationSettings = { off: [], bundle: false, projects: [], revision: 0 };
+  /** The project the person chose for a report's agent; the simulated
+   * computer holds no copy of Ophio's source to find one by itself. */
+  reportTaskProject: string | null = null;
   readonly voice = new VoiceSim();
   readonly work: WorkSim;
   readonly children: ChildrenSim;
@@ -282,6 +291,7 @@ export class SimHost {
     this.tasks = fx.tasks(now);
     this.runs = fx.runs(now).map(run => ({ ...run, force_stoppable: true }));
     this.approvals = fx.approvals(now);
+    this.approvals = this.approvals.map((a) => this.#withActions(a));
     this.attention = fx.attention(now);
     this.targets = fx.targets();
     this.control = fx.control(now);
@@ -406,7 +416,7 @@ export class SimHost {
       case "contribution_policy": return { kind: "contribution_policy", document: this.contribution.policy(q.operation_id, q.path) };
       case "project_folders": return { kind: "project_folders", listing: projectFolders(q, this.projects) };
       case "project_stages": return this.stages.query(q);
-      case "accounts": return this.accounts.query();
+      case "accounts": return this.accounts.query(q.on_phone === true);
       case "checklists":
       case "checklist":
       case "file_delivery":
@@ -433,6 +443,8 @@ export class SimHost {
       case "report":
       case "report_preview":
         return this.reports.query(q);
+      case "report_task_project":
+        return { kind: "report_task_project", project_id: this.projects.some((p) => p.project_id === this.reportTaskProject && !p.one_off) ? this.reportTaskProject : null };
       case "disabled_in_ophio": return { kind: "disabled_in_ophio", items: this.disabled.list() };
       case "catalog":
         if (q.project_id && !this.projects.some((p) => p.project_id === q.project_id)) throw err("not_found", "That project is no longer on this computer");
@@ -446,7 +458,7 @@ export class SimHost {
           tasks: this.tasks,
           runs: this.runs,
           approvals: this.approvals,
-          attention: this.attention,
+          attention: q.account_items ? this.attention : this.attention.filter((a) => !a.account_id),
           targets: this.targets,
           control: this.control,
           library_roots: this.roots,
@@ -659,6 +671,12 @@ export class SimHost {
         receipt = { command_id: env.command_id, status: "accepted", seq: this.seq, result: null, error: null };
         const id = env.command_id;
         this.#later(working ? ACCESS_WORKING_MS : SETTLE_MS, () => this.#progress(id, "observed"));
+      } else if (env.body.command === "switch_to_work") {
+        // As the computer: the task shows Work on accepting; stopping its
+        // turn and starting the next one in Work settles it later.
+        const id = env.command_id;
+        this.#switchToWork(env.body.task_id, env.body.approval_id, env.body.text, (error) => this.#progress(id, error ? "failed" : "observed", undefined, error));
+        receipt = { command_id: env.command_id, status: "accepted", seq: this.seq, result: null, error: null };
       } else {
         const result = await this.#execute(env.body, env.expected_revision, grants, env.command_id);
         receipt = { command_id: env.command_id, status: "accepted", seq: this.seq, result, error: null };
@@ -715,6 +733,16 @@ export class SimHost {
       case "remove_checklist":
       case "set_file_delivery":
         return this.checklists.act(c, expectedRevision);
+      case "rename_computer": {
+        const name = c.name.trim();
+        if (!name || [...name].length > 60) throw err("invalid_request", "A computer's name must be 1 to 60 characters.");
+        if (/[\p{Cc}\u2028\u2029\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u.test(name)) throw err("invalid_request", "A computer's name can't contain line breaks, control characters or characters that change the direction of text.");
+        // Its own hostname puts it back on that, as a name nobody chose.
+        const hostname = this.hostname ??= this.host.name;
+        this.host = { ...this.host, name, renamed: name !== hostname };
+        this.emit({ type: "host_updated", host: structuredClone(this.host) });
+        return null;
+      }
       case "agent_login": return this.agentLogins.act(c.action);
       case "github": return this.github.act(c.action);
       case "check_helpers":
@@ -735,10 +763,14 @@ export class SimHost {
         if (expectedRevision !== this.agentPreferences.revision) throw err("stale_revision", "How agents work with you changed. Refresh before changing it.");
         this.agentPreferences = { ...this.agentPreferences, launch_defaults: c.defaults.map((d) => ({ ...d })), revision: this.agentPreferences.revision + 1 };
         return null;
+      case "set_task_notify":
+        this.#touchTask(c.task_id, { notify_done: c.on || undefined });
+        return null;
       case "set_notification_settings": {
         if (expectedRevision !== this.notificationSettings.revision) throw err("stale_revision", "Notification settings changed. Refresh before changing them.");
-        const projects = c.projects.filter((p) => p.mute || p.on.length || p.off.length || p.bundle !== undefined);
-        this.notificationSettings = { off: [...new Set(c.off)].sort(), bundle: c.bundle, projects: structuredClone(projects), revision: this.notificationSettings.revision + 1 };
+        const projects = c.projects.filter((p) => p.mute || p.on.length || p.off.length || p.bundle !== undefined || p.tiers?.length);
+        // The computer-wide choices by type aren't a phone's to set: kept.
+        this.notificationSettings = { off: [...new Set(c.off)].sort(), bundle: c.bundle, projects: structuredClone(projects), ...(this.notificationSettings.tiers ? { tiers: this.notificationSettings.tiers } : {}), revision: this.notificationSettings.revision + 1 };
         this.emit({ type: "notification_settings_changed" });
         return null;
       }
@@ -767,6 +799,8 @@ export class SimHost {
         this.emit({ type: "attention_upserted", item: { ...a } });
         return null;
       }
+      case "start_report_task":
+        return this.#startReportTask(c, grants());
       case "create_task":
         return this.#createTask(c);
       case "set_disabled_in_ophio":
@@ -929,6 +963,9 @@ export class SimHost {
       }
       case "resolve_approval":
         this.#resolveApproval(c.approval_id, c.decision, expectedRevision);
+        return null;
+      case "switch_to_work":
+        this.#switchToWork(c.task_id, c.approval_id, c.text);
         return null;
       case "acknowledge_attention": {
         const a = this.attention.find((x) => x.attention_id === c.attention_id);
@@ -1392,6 +1429,40 @@ export class SimHost {
     return { kind: "task_created", task_id: task.task_id, queue_item_id: queueItem };
   }
 
+  /** Mirrors StartReportTask: one Plan task for a report in the owner's
+   * inbox, whose prompt the computer writes; asking again while it is open
+   * answers with it. */
+  async #startReportTask(c: Extract<Command, { command: "start_report_task" }>, g: Grants): Promise<CommandResult> {
+    if (!g.admin || !g.tasks) throw err("permission_denied", "This device or chat wasn’t given permission for that");
+    if (this.host.capabilities.features.includes("report_look_into_v1")) throw err("unsupported", "This computer's fixer looks into reports. Choose Look into it instead.");
+    const item = this.attention.find((x) => x.report_id === c.report_id && x.task_id === null && x.kind === "waiting_for_you");
+    if (!item) throw err("not_found", "That report isn't in your inbox");
+    const open = this.tasks.filter((t) => t.report?.report_id === c.report_id && t.state !== "archived").sort((a, b) => b.created_at - a.created_at)[0];
+    if (open) return { kind: "task_created", task_id: open.task_id, queue_item_id: null };
+    if (c.project_id) {
+      if (!this.projects.some((p) => p.project_id === c.project_id && !p.one_off)) throw err("not_found", "That project isn't on this computer");
+      this.reportTaskProject = c.project_id;
+    }
+    const projectId = c.project_id ?? (await this.query({ kind: "report_task_project" }) as Extract<QueryData, { kind: "report_task_project" }>).project_id;
+    if (!projectId) throw err("invalid_request", "Choose the project that holds Ophio's source");
+    const project = this.projects.find((p) => p.project_id === projectId)!;
+    const plans = (h: HarnessInfo) => h.capabilities.start_run.state === "available" && h.modes?.some((m) => m.mode === "plan" && m.availability.state === "available");
+    const harness = this.harnesses.find((h) => h.kind === project.default_harness && plans(h)) ?? this.harnesses.find(plans);
+    if (!harness) throw err("temporarily_unavailable", "No agent on this computer can plan now. Check Agents in Settings.");
+    const reference = reportReference(c.report_id);
+    const made = await this.#createTask({
+      command: "create_task", project_id: projectId, kind: "coding", mode: "plan", title: `Problem report ${reference}`,
+      // As on the host: the chat shows one sentence; the agent's brief is kept apart.
+      prompt: `Find out what went wrong in problem report ${reference} and propose a fix. Ophio gives the agent the report's evidence with this message.`,
+      bundle: null, harness: harness.kind, model: null, effort: null, mission: null, target_id: null, placement: { mode: "start_now" }, browser: false,
+    });
+    if (made?.kind !== "task_created") throw err("internal", "The report's task wasn't made");
+    const task = { ...this.#task(made.task_id), report: { report_id: c.report_id, reference } };
+    this.tasks = this.tasks.map((t) => (t.task_id === task.task_id ? task : t));
+    this.emit({ type: "task_upserted", task }, DEVICE);
+    return { kind: "task_created", task_id: task.task_id, queue_item_id: null };
+  }
+
   /** Tasks answering a read-only question, and the state each goes back to. */
   #sideTurns = new Map<string, Task["state"]>();
   #ended(taskId: string, state: Task["state"]): Task["state"] {
@@ -1425,6 +1496,9 @@ export class SimHost {
       mode,
     };
     this.runs = [...this.runs, run];
+    // As on the computer: a run held to its task's access starts as Work
+    // inside the sandbox that holds it, whatever its mode.
+    this.#launched.set(run.run_id, task.access != null ? "work" : mode);
     this.emit({ type: "run_upserted", run });
     const messageSeq = this.#queuedStartMessages.get(task.task_id);
     if (messageSeq !== undefined) {
@@ -1447,7 +1521,18 @@ export class SimHost {
         native_session: run.run_id.slice(-8),
       });
       this.#append(task.task_id, run.run_id, { kind: "run_started", run_id: run.run_id });
-      this.#touchTask(task.task_id, { state: "working", status_line: "Reading the project" });
+      this.#touchTask(task.task_id, { state: "working", status_line: this.#kept.has(run.run_id) ? "Changing files" : "Reading the project" });
+      if (this.#kept.has(run.run_id)) return;
+      // A scripted agent that needs more than it has asks for it once.
+      const more = scriptedAsk(this.#task(task.task_id), prompt);
+      if (more && wanted(this.#task(task.task_id), mode, more.needs).length) {
+        this.#later(300, () => {
+          if (!this.#isLive(run.run_id)) return;
+          this.#append(task.task_id, run.run_id, { kind: "activity", tool: "Read", summary: "Read the build scripts", status: "succeeded", detail: null });
+        });
+        this.#later(1200, () => { if (this.#isLive(run.run_id)) this.askForMore(task.task_id, more.needs, more.reason); });
+        return;
+      }
       this.#script(task.task_id, run.run_id, mode === "work" ? replyFor(prompt) : mode !== (task.mode ?? "work") ? summaryReply() : readOnlyReply(mode));
     });
   }
@@ -1462,10 +1547,13 @@ export class SimHost {
 
   /** Stream a scripted reply: activity, streamed text, then completion. */
   #script(taskId: string, runId: string, reply: ScriptedReply, done: "complete" | "await" = "complete"): void {
+    // A turn that starts waiting on the person drops the rest of its script.
+    const gen = this.#scriptGen.get(runId) ?? 0;
+    const live = () => this.#isLive(runId) && (this.#scriptGen.get(runId) ?? 0) === gen;
     let t = 300;
     for (const a of reply.activity) {
       this.#later(t, () => {
-        if (!this.#isLive(runId)) return;
+        if (!live()) return;
         this.live({ kind: "activity_status", task_id: taskId, run_id: runId, text: a.summary });
         this.#append(taskId, runId, { kind: "activity", tool: a.tool, summary: a.summary, status: "succeeded", detail: a.detail ?? null });
       });
@@ -1477,14 +1565,14 @@ export class SimHost {
     for (let i = 0; i < words.length; i += 3) {
       const chunk = words.slice(i, i + 3).join("");
       this.#later(t, () => {
-        if (!this.#isLive(runId)) return;
+        if (!live()) return;
         acc += chunk;
         this.live({ kind: "agent_text_delta", task_id: taskId, run_id: runId, message_key: key, text: chunk });
       });
       t += 70;
     }
     this.#later(t + 200, () => {
-      if (!this.#isLive(runId)) return;
+      if (!live()) return;
       this.#append(taskId, runId, { kind: "agent_message", text: reply.text, partial: false });
       if (done === "await") return;
       this.#finishRun(taskId, runId, reply);
@@ -1724,12 +1812,40 @@ export class SimHost {
 
   /** An agent's run asks the owner: the request, its attention item and its line in the transcript. */
   ask(a: Approval, item: AttentionItem): void {
+    a = this.#withActions(a);
     this.approvals = [...this.approvals, a];
     this.emit({ type: "approval_upserted", approval: a });
     this.attention.push(item);
     this.emit({ type: "attention_upserted", item });
     this.emit({ type: "timeline_appended", task_id: a.task_id, item: { seq: this.seq + 1, at: a.requested_at, run_id: a.run_id, item: { kind: "approval", approval_id: a.approval_id } } });
     this.#recountAttention(a.task_id);
+  }
+
+  /**
+   * A task's agent asks to run a shell command, as the computer shows one:
+   * the agent's own account heads it and `facts` say what it would do (the
+   * computer works these out from the command; here they are given).
+   */
+  askToRun(taskId: string, command: string, headline: string | null, facts: Approval["facts"]): string {
+    const task = this.#task(taskId);
+    const run = this.runs.find((r) => r.task_id === taskId);
+    const id = uuidv7(Date.now());
+    const now = Date.now();
+    const approval: Approval = {
+      approval_id: id, run_id: run?.run_id ?? task.task_id, task_id: taskId, project_id: task.project_id,
+      native_request_id: `toolu_${id.slice(-6)}`, kind: "command", title: "Run a shell command",
+      ...(headline ? { headline } : {}), ...(facts?.length ? { facts } : {}),
+      detail: headline ? `${command}\n${headline}` : command,
+      detail_lines: [{ text: command, code: true }, ...(headline ? [{ text: headline }] : [])],
+      raw_request: JSON.stringify({ command, ...(headline ? { description: headline } : {}) }),
+      scope: "This request once", revision: 1, state: "pending",
+      requested_at: now, expires_at: now + 600_000, resolved_by: null, resolved_at: null,
+    };
+    this.ask(approval, {
+      attention_id: uuidv7(now), kind: "approval", title: task.title, body: command, task_id: taskId, run_id: approval.run_id,
+      approval_id: id, created_at: now, resolved_at: null, priority: 10,
+    });
+    return id;
   }
 
   /** Settles a request the computer answered itself, as a filled code does. */
@@ -1747,8 +1863,22 @@ export class SimHost {
     if (a.state !== "pending") throw { ...err("already_resolved", `Already ${a.state.replace("_", " ")}`), detail: { state: a.state } };
     if (expectedRevision !== a.revision)
       throw { ...err("stale_revision", "The request changed. Review it again."), detail: { revision: a.revision } };
-    // A code goes into the code prompt, which fills it.
-    if (a.kind === "login_code" && decision.decision !== "deny") throw err("invalid_request", "Type the code in the code prompt.");
+    // As on the host: the one rule that draws the card's buttons admits the
+    // decision (approvalRule.ts, from approval_rule.rs).
+    const rule = this.#asked(a);
+    const refused = refusal(rule, decision);
+    if (refused) throw refused;
+    if (a.access_request && decision.decision === "allow") {
+      const held = this.#task(a.task_id);
+      if (rule.held && held.access) {
+        // Exactly what it asked for, and nothing else, as the access bar would turn it on.
+        this.#touchTask(a.task_id, { access: widen(held.access, held.project_id, a.access_request?.needs ?? []), access_blocked: undefined });
+      } else if (rule.mode !== "work") {
+        // From a phone that predates Switch to Work: its Allow switches, as the card's actions say.
+        this.#switchToWork(a.task_id, a.approval_id);
+        return;
+      }
+    }
     if (this.failNextApprovalDelivery) {
       this.failNextApprovalDelivery = false;
       const error = err("native_failure", "The agent did not receive this. It may still be waiting.");
@@ -1766,9 +1896,12 @@ export class SimHost {
     });
     if (a.kind === "login_use" || a.kind === "login_code") this.agentLogins.decided(a, allowed);
     const task = this.#task(a.task_id);
+    const waited = this.#waiting.delete(a.approval_id);
     this.#touchRun(a.run_id, { state: "working" });
-    this.#touchTask(a.task_id, { state: "working", status_line: allowed ? "Running tests" : "Continuing without that" });
-    if (allowed && a.approval_id === fx.ids.aTest) {
+    this.#touchTask(a.task_id, { state: "working", status_line: waited && allowed ? "Carrying on" : allowed ? "Running tests" : "Continuing without that" });
+    if (waited) {
+      this.#later(300, () => this.#script(task.task_id, a.run_id, afterAsking(a, allowed, this.projects.find((p) => p.project_id === task.project_id)?.name ?? "the project")));
+    } else if (allowed && a.approval_id === fx.ids.aTest) {
       this.#later(400, () => {
         this.#append(a.task_id, a.run_id, {
           kind: "activity",
@@ -1809,6 +1942,257 @@ export class SimHost {
         ),
       );
     }
+  }
+
+  // ---- Asking for more, and switching to Work ---------------------------------
+
+  /** The mode each run's agent was really started in, kept as it starts. */
+  readonly #launched = new Map<string, TaskMode>();
+  /** Bumped when a turn starts waiting on the person, so the rest of its script is dropped. */
+  readonly #scriptGen = new Map<string, number>();
+  /** Runs kept working, without a script, until `finishTurn`. */
+  readonly #kept = new Set<string>();
+  /** Requests a turn waits on: answering one carries the turn on. */
+  readonly #waiting = new Set<string>();
+
+  /** What decides `a`'s ways forward, as `Asked::of`. */
+  #asked(a: Approval): Asked {
+    const task = this.#task(a.task_id);
+    const run = this.runs.find((r) => r.run_id === a.run_id);
+    const mode = run ? runMode(run, task) : task.mode ?? "work";
+    // Seeded runs weren't started here: held to access, they started as Work.
+    const launched = run ? this.#launched.get(run.run_id) ?? (task.access != null ? "work" : mode) : mode;
+    return askedOf(a.kind, mode, launched, task, !!a.access_request);
+  }
+
+  /** As put_approval: a pending request gets its ways forward as it is raised. */
+  #withActions(a: Approval): Approval {
+    return a.state === "pending" && !a.actions ? { ...a, actions: approvalActions(this.#asked(a)) } : a;
+  }
+
+  /** The live turn of `taskId`, which a helper below acts on. */
+  #liveTurn(taskId: string): Run {
+    const task = this.#task(taskId);
+    const run = task.current_run ? this.runs.find((r) => r.run_id === task.current_run) : undefined;
+    if (!run || !this.#isLive(run.run_id)) throw err("conflict", "This task has no running turn");
+    if (run.state === "dispatching") throw err("conflict", "The agent hasn’t started its turn yet. Try again in a moment.");
+    return run;
+  }
+
+  /** The turn asks `a` and waits on it: its script pauses until it is answered. */
+  #raiseWaiting(a: Approval): void {
+    this.#scriptGen.set(a.run_id, (this.#scriptGen.get(a.run_id) ?? 0) + 1);
+    this.#waiting.add(a.approval_id);
+    this.#touchRun(a.run_id, { state: "awaiting_approval" });
+    this.ask(a, {
+      attention_id: uuidv7(Date.now()), kind: "approval", title: a.title, body: a.detail, task_id: a.task_id, run_id: a.run_id,
+      approval_id: a.approval_id, created_at: a.requested_at, resolved_at: null, priority: 10,
+    });
+    this.#touchTask(a.task_id, { state: "awaiting_decision", status_line: "Waiting for you" });
+  }
+
+  /**
+   * Simulator helper: the running turn of `taskId` asks for more access, as an
+   * agent's `request_access` does, and waits on the answer. In a chat the card
+   * offers Allow, which turns on exactly what it asked for; in a Plan or Ask
+   * task it offers Switch to Work. Returns the request's id, or null when the
+   * computer wouldn't ask (it has it already, or the task only reads and
+   * reports).
+   */
+  askForMore(taskId: string, needs: AccessNeed[], reason: string): string | null {
+    const task = this.#task(taskId);
+    const run = this.#liveTurn(taskId);
+    const missingNeeds = wanted(task, runMode(run, task), needs);
+    if (!missingNeeds.length) return null;
+    const project = this.projects.find((p) => p.project_id === task.project_id)?.name ?? "the project";
+    const agent = agentName(task.harness);
+    const now = Date.now();
+    const id = uuidv7(now);
+    this.#raiseWaiting({
+      approval_id: id, run_id: run.run_id, task_id: task.task_id, project_id: task.project_id, native_request_id: `bridge:${id}`,
+      kind: "other", title: accessTitle(agent, missingNeeds, project, reason), detail: null, raw_request: null,
+      ...(accessFacts(task, missingNeeds).length ? { facts: accessFacts(task, missingNeeds) } : {}),
+      scope: accessScope(task, agent, missingNeeds, project), revision: 1, state: "pending",
+      access_request: { needs: missingNeeds, reason }, requested_at: now, expires_at: now + 600_000, resolved_by: null, resolved_at: null,
+    });
+    return id;
+  }
+
+  /**
+   * Simulator helper: the running turn of `taskId` asks to run `rawCommand`
+   * (kind "command") and waits on the answer. From a read-only Plan or Ask
+   * task the card offers Switch to Work; from a Work task, or a chat whose
+   * sandbox holds it, Allow. Returns the request's id.
+   */
+  askToRunAndWait(taskId: string, title: string, rawCommand: string): string {
+    const task = this.#task(taskId);
+    const run = this.#liveTurn(taskId);
+    const now = Date.now();
+    const id = uuidv7(now);
+    this.#raiseWaiting({
+      approval_id: id, run_id: run.run_id, task_id: task.task_id, project_id: task.project_id, native_request_id: `toolu_${id.slice(-8)}`,
+      kind: "command", title, detail: rawCommand, detail_lines: [{ text: rawCommand, code: true }],
+      raw_request: JSON.stringify({ command: rawCommand }), scope: "This request once", revision: 1, state: "pending",
+      requested_at: now, expires_at: null, resolved_by: null, resolved_at: null,
+    });
+    return id;
+  }
+
+  /** Simulator helper: the running turn of `taskId` keeps working, without
+   * finishing by itself, until `finishTurn`. */
+  keepWorking(taskId: string): void {
+    const task = this.#task(taskId);
+    const run = task.current_run ? this.runs.find((r) => r.run_id === task.current_run) : undefined;
+    if (!run || !this.#isLive(run.run_id)) throw err("conflict", "This task has no running turn");
+    this.#kept.add(run.run_id);
+    this.#scriptGen.set(run.run_id, (this.#scriptGen.get(run.run_id) ?? 0) + 1);
+    if (run.state === "working") this.#touchTask(taskId, { status_line: "Changing files" });
+  }
+
+  /** Simulator helper: a turn kept by `keepWorking` or `holdWriter` finishes. */
+  finishTurn(taskId: string): void {
+    const run = this.#liveTurn(taskId);
+    this.#kept.delete(run.run_id);
+    const reply: ScriptedReply = { activity: [], text: "Done. Everything I changed is listed below.", summary: "Finished the change" };
+    this.#append(taskId, run.run_id, { kind: "agent_message", text: reply.text, partial: false });
+    this.#finishRun(taskId, run.run_id, reply);
+  }
+
+  /**
+   * Simulator helper: another task's Work turn holds `projectId`'s writer and
+   * keeps it until `finishTurn(<its task id>)`, so a switch to Work in that
+   * project waits its turn in Next up. Returns the holding task's id.
+   */
+  holdWriter(projectId: string, title = "Update the release scripts"): string {
+    const project = this.projects.find((p) => p.project_id === projectId);
+    if (!project) throw err("not_found", "That project is no longer on this computer");
+    const holding = project.active_writer ? this.runs.find((r) => r.run_id === project.active_writer) : undefined;
+    if (holding) return holding.task_id;
+    const now = Date.now();
+    const task: Task = {
+      task_id: uuidv7(now), project_id: projectId, kind: "coding", mode: "work", title, state: "accepted", revision: 1,
+      harness: "codex", model: null, effort: null, launch_policy: "standard", created_by: { kind: "device", device_id: fx.ids.device },
+      created_at: now, updated_at: now, current_run: null, target_id: null, mission: null, attention_count: 0, status_line: null,
+    };
+    this.tasks = [task, ...this.tasks];
+    this.emit({ type: "task_upserted", task }, DEVICE);
+    this.#append(task.task_id, null, { kind: "user_message", text: title, bundle: null, delivery: "host_accepted" });
+    this.#startRun(this.#task(task.task_id), title);
+    this.#kept.add(this.#task(task.task_id).current_run!);
+    return task.task_id;
+  }
+
+  /**
+   * As switch_work.rs: a Plan or Ask task carries on in Work, or a chat
+   * becomes a task in Work, in one tap, whether or not its turn has ended.
+   * The task shows Work at once; a running turn is stopped, then the same
+   * session carries on in Work, or waits in Next up while another task
+   * changes the project. `approvalId`: a request it could only allow in Work,
+   * settled as allowed. `done` hears once that has happened.
+   */
+  #switchToWork(taskId: string, approvalId?: string, words?: string, done?: (error?: ProtocolError) => void): void {
+    const task = this.#task(taskId);
+    const mode = task.mode ?? "work";
+    if (!task.conversation && mode === "work") throw err("invalid_request", "This task is already in Work mode");
+    if (task.kind !== "coding" || writesNothing(task)) throw err("invalid_request", "This task only reads and reports, so it isn't carried out in Work mode");
+    const text = words?.trim() || undefined;
+    if (text && text.length > 32 * 1024) throw err("limit_exceeded", "The message is too long");
+    const current = task.current_run ? this.runs.find((r) => r.run_id === task.current_run) : undefined;
+    const running = current && !isTerminalRun(current.state) ? current : undefined;
+    if (running) {
+      // A read-only side question of the task finishes first.
+      if (runMode(running, task) !== mode || this.#sideTurns.has(taskId)) throw err("conflict", "Wait for the side question to finish, then switch to Work.");
+      if (running.state === "stopping") throw err("conflict", "This task is already stopping. Switch to Work once it has.");
+    } else if (task.state === "archived") {
+      throw err("conflict", "Bring the task back from the archive first");
+    } else if (!["interrupted", "completed", "failed"].includes(task.state)) {
+      throw err("conflict", "This task hasn't started yet, so it can't carry on in Work.");
+    }
+    if (this.talk.queue(task.project_id).items.some((i) => i.task_id === taskId && i.state.state !== "started"))
+      throw err("conflict", "This task is already waiting in Next up. Start or remove it there first.");
+    let approval: Approval | undefined;
+    if (approvalId) {
+      approval = this.approvals.find((x) => x.approval_id === approvalId);
+      if (!approval) throw err("not_found", "That request no longer exists");
+      if (approval.task_id !== taskId || running?.run_id !== approval.run_id) throw err("invalid_request", "That request isn't this task's turn's");
+      if (approval.state !== "pending" || (approval.expires_at !== null && approval.expires_at <= Date.now()))
+        throw err("already_resolved", "That request is no longer waiting");
+      const refused = switchRefusal(this.#asked(approval));
+      if (refused) throw refused;
+    }
+    const conversation = !!task.conversation;
+    // The turn it ends takes nothing new: its other requests are withdrawn.
+    // Unlike Stop, Next up isn't paused: the task carries on.
+    if (running) {
+      this.#scriptGen.set(running.run_id, (this.#scriptGen.get(running.run_id) ?? 0) + 1);
+      this.#kept.delete(running.run_id);
+      this.#withdrawHeldMessages(taskId, running.run_id);
+      this.#touchRun(running.run_id, { state: "stopping" });
+      for (const other of this.approvals.filter((x) => x.run_id === running.run_id && x.state === "pending" && x.approval_id !== approvalId)) {
+        this.#waiting.delete(other.approval_id);
+        this.#upsertApproval({ ...other, state: "cancelled", revision: other.revision + 1, resolved_at: Date.now() });
+      }
+    }
+    // Settled as allowed only once the read-only turn has stopped taking
+    // anything: it is never answered Allow.
+    if (approval) {
+      this.#waiting.delete(approval.approval_id);
+      const now = Date.now();
+      this.#upsertApproval({
+        ...approval, state: "allowed", revision: approval.revision + 1, resolved_by: { kind: "device", device_id: fx.ids.device }, resolved_at: now,
+        delivery: { decision: { decision: "allow" }, at: now, error: null },
+      });
+    }
+    // The task shows Work at once. A chat becomes a task that keeps its access
+    // and may now change its own project.
+    this.#touchTask(taskId, {
+      mode: "work",
+      wake: undefined,
+      ...(running ? { status_line: "Switching to Work" } : {}),
+      ...(conversation ? { conversation: false, access_blocked: undefined, ...(task.access ? { access: carriedAccess(task.access, task.project_id) } : {}) } : {}),
+    });
+    const carryOn = () => {
+      try {
+        this.#carryOnInWork(taskId, conversation, !!running, approval && this.approvals.find((x) => x.approval_id === approval.approval_id), text);
+        done?.();
+      } catch (e) {
+        done?.(isProtocolError(e) ? e : err("internal", String(e)));
+      }
+    };
+    if (!running) return carryOn();
+    this.#later(900, () => {
+      const run = this.#run(running.run_id);
+      if (!isTerminalRun(run.state)) {
+        this.#touchRun(run.run_id, { state: "interrupted", ended_at: Date.now(), holds_writer: false });
+        this.#failQueuedMessages(taskId, run.run_id);
+        this.#append(taskId, run.run_id, { kind: "run_ended", run_id: run.run_id, state: "interrupted" });
+        this.#touchTask(taskId, { state: this.#ended(taskId, "interrupted"), status_line: null });
+        this.#releaseWriter(task.project_id, run.run_id);
+      }
+      carryOn();
+    });
+  }
+
+  /** The switch's next turn: in Work, in the same session, or in Next up
+   * while another task's run holds the project's writer. */
+  #carryOnInWork(taskId: string, conversation: boolean, stopped: boolean, approval: Approval | undefined, words: string | undefined): void {
+    const task = this.#task(taskId);
+    if ((task.mode ?? "work") !== "work") return;
+    const project = this.projects.find((p) => p.project_id === task.project_id)!;
+    const agent = agentName(task.harness);
+    const writer = project.active_writer ? this.runs.find((r) => r.run_id === project.active_writer) : undefined;
+    const holder = writer && writer.task_id !== taskId ? this.tasks.find((t) => t.task_id === writer.task_id) : undefined;
+    if (holder) {
+      // It waits its turn, and starts by itself once the project is free. The
+      // note comes first: Next up's go-ahead names the task as it then is.
+      this.#append(taskId, null, { kind: "note", text: switchNote(conversation, agent, project.name, holder.title) });
+      this.talk.continueLater(this.#task(taskId), words ?? "Carry on in Work mode.", null, "auto_start");
+      return;
+    }
+    this.#startRun(task, switchAgentText(conversation, stopped, approval, project.name, words));
+    const runId = this.#task(taskId).current_run;
+    this.#append(taskId, runId, { kind: "note", text: switchNote(conversation, agent, project.name) });
+    if (words) this.#append(taskId, runId, { kind: "user_message", text: words, bundle: null, delivery: "host_accepted" });
   }
 
   // ---- Queue ---------------------------------------------------------------
@@ -2288,6 +2672,25 @@ function channelCheck(label: string, a: Availability): ReadinessCheck {
 function titleFrom(prompt: string): string {
   const first = prompt.trim().split(/\n|(?<=[.!?])\s/)[0] ?? prompt;
   return first.length > 72 ? `${first.slice(0, 69).trimEnd()}…` : first;
+}
+
+/** What a turn says once the person answered what it waited on. */
+function afterAsking(a: Approval, allowed: boolean, project: string): ScriptedReply {
+  if (!allowed) return {
+    activity: [],
+    text: "Understood, I won’t do that. I’ll finish what I can without it and say plainly what’s left.",
+    summary: "Finished without what it asked for",
+  };
+  if (a.access_request) return {
+    activity: [{ tool: "Bash", summary: "Carried on with the new access" }],
+    text: `Thanks. I can now ${needsText(a.access_request?.needs ?? [], project)}, so I carried on and finished.`,
+    summary: "Finished with the access it asked for",
+  };
+  return {
+    activity: [{ tool: "Bash", summary: a.title, detail: "Finished" }],
+    text: "Ran it, and it finished cleanly. Carrying on from there.",
+    summary: a.title,
+  };
 }
 
 function harnessLabel(kind: string): string {

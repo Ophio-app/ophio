@@ -64,11 +64,12 @@ impl CompanionHub {
             .as_ref()
             .ok_or_else(|| unsupported("Local tool bridge"))?;
         let token = random_secret()?;
-        let (task, github, answers) = self.write(|tx| {
+        let (task, github, answers, read_only) = self.write(|tx| {
             let run: Run = tx.read().require("run", run_id)?;
             let task: Task = tx.read().require("task", run.task_id)?;
             let github = self.githubs(&tx.read(), &task)?;
             let answers = crate::checklist::answers(&tx.read(), task.task_id)?;
+            let read_only = read_only(&run, &task, answers);
             if run.state != RunState::Dispatching {
                 return Err(error(
                     ErrorCode::Conflict,
@@ -92,7 +93,7 @@ impl CompanionHub {
                     epoch: self.inner.epoch,
                 },
             )?;
-            Ok((task, github, answers))
+            Ok((task, github, answers, read_only))
         })?;
         Ok(ports::ToolBridge {
             server_name: "computer".into(),
@@ -102,11 +103,12 @@ impl CompanionHub {
                 (RUN_TOKEN_ENV.into(), token),
                 (SOCKET_ENV.into(), config.socket.clone()),
             ],
-            permission_tool: Some("permission_prompt".into()),
-            computer_use: task.kind == TaskKind::ComputerUse && !answers,
-            browser: self.browses(&task) && !answers,
-            github: github && !answers,
+            permission_tool: (!read_only).then(|| "permission_prompt".into()),
+            computer_use: task.kind == TaskKind::ComputerUse && !answers && !read_only,
+            browser: self.browses(&task) && !answers && !read_only,
+            github: github && !answers && !read_only,
             checklist_answers: answers,
+            read_only,
         })
     }
     async fn broker_request(
@@ -123,9 +125,11 @@ impl CompanionHub {
             let task: Task = r.require("task", run.task_id)?;
             let answers = crate::checklist::answers(r, task.task_id)?;
             if task.target_id != binding.target_id
-                || (task.kind == TaskKind::ComputerUse && !answers) != binding.computer_use
+                || (task.kind == TaskKind::ComputerUse && !answers && !binding.read_only)
+                    != binding.computer_use
                 || (binding.browser && !self.browses(&task))
                 || answers != binding.checklist_answers
+                || read_only(&run, &task, answers) != binding.read_only
             {
                 return Err(error(ErrorCode::PermissionDenied, "Bridge binding mismatch").into());
             }
@@ -149,6 +153,13 @@ impl CompanionHub {
                 "This turn only reads the checklist and answers the person on it",
             ));
         }
+        // A read-only turn may only ask for more.
+        if binding.read_only && !matches!(request, BridgeRequest::RequestAccess { .. }) {
+            return Err(error(
+                ErrorCode::PermissionDenied,
+                "This turn only reads; ask for more with request_access",
+            ));
+        }
         let annotation = match &request {
             BridgeRequest::ObserveEvidence { annotation, .. } => Some(annotation.clone()),
             _ => None,
@@ -167,6 +178,29 @@ impl CompanionHub {
                 // What is shown is drawn from the input with keys hidden; the
                 // tool is answered from its own.
                 let shown = self.masked_input(binding.run_id, &input);
+                // What the person declined in this turn is declined again
+                // at once, without another card.
+                let asked = tool_approval(&tool_name, &shown);
+                let again = crate::more_access::Declined {
+                    kind: asked.kind,
+                    access: false,
+                    request: crate::more_access::Declined::request_of(
+                        &asked.title,
+                        Some(&raw_request(&shown)),
+                    ),
+                    needs: Vec::new(),
+                };
+                if asked.kind != ApprovalKind::Question
+                    && self
+                        .read(|r| crate::more_access::declined_before(r, binding.run_id, &again))?
+                {
+                    let deny = ApprovalDecision::Deny {
+                        reason: Some(crate::more_access::ASKED_AGAIN.into()),
+                    };
+                    return Ok(BridgeResponse::Permission {
+                        decision: permission_reply(&tool_name, input, deny),
+                    });
+                }
                 if tool_name == "AskUserQuestion"
                     && !binding.computer_use
                     && !self.questions_on()?
@@ -200,6 +234,8 @@ impl CompanionHub {
                         binding.run_id,
                         &task,
                         ToolApproval {
+                            headline: None,
+                            subject: Default::default(),
                             kind: ApprovalKind::Question,
                             title: reason,
                             detail: None,
@@ -259,7 +295,7 @@ impl CompanionHub {
                 if crate::access::held(&task).is_some_and(|a| !(a.internet && a.local_network)) {
                     return Err(error(
                         ErrorCode::PermissionDenied,
-                        "Your browser runs on the computer itself, outside this chat's sandbox, so it opens pages only while the person has given this chat both Internet and Local network. Ask them to turn those on in the chat's access, or fetch the page with curl, which stays inside it.",
+                        "Your browser runs on the computer itself, outside this chat's sandbox, so it opens pages only while the person has given this chat both Internet and Local network. Ask for both with request_access, or fetch the page with curl, which stays inside it.",
                     ));
                 }
                 self.browser_request(binding.run_id, &task, action).await
@@ -288,6 +324,21 @@ impl CompanionHub {
                     text: self.person_request(binding.run_id, &task, action).await?,
                 })
             }
+            BridgeRequest::RequestAccess { needs, reason } => {
+                // The specialist acts for another task, and a turn answering
+                // on the checklist only answers.
+                if binding.computer_use || binding.checklist_answers {
+                    return Err(error(
+                        ErrorCode::PermissionDenied,
+                        "This turn can't ask for more access",
+                    ));
+                }
+                Ok(BridgeResponse::AccessResult {
+                    text: self
+                        .access_request(binding.run_id, &task, needs, reason)
+                        .await?,
+                })
+            }
             BridgeRequest::Work { action } => {
                 // Computer specialists cannot plan or ask for help. Other
                 // runs reach the work handler, which lets GitHub tasks list
@@ -313,6 +364,12 @@ impl CompanionHub {
                     .target_id
                     .ok_or_else(|| error(ErrorCode::NotFound, "Target not bound"))?;
                 let target = self.target(id).await?;
+                // An app is chosen before the display is locked: reading the
+                // app list mustn't keep the display's renewals waiting.
+                let chosen = match &request {
+                    BridgeRequest::OpenApp { name } => Some(self.choose_app(name).await),
+                    _ => None,
+                };
                 let (mut target, resumed) =
                     self.agent_input(binding.run_id, &task, &target).await?;
                 if resumed {
@@ -335,6 +392,14 @@ impl CompanionHub {
                 if current.geometry != target.geometry {
                     self.revoke_locked(&mut target, false).await?;
                     return Err(error(ErrorCode::StaleRevision, "Target geometry changed"));
+                }
+                if let BridgeRequest::OpenApp { .. } = &request {
+                    let (launcher, app) = chosen.ok_or_else(|| {
+                        error(ErrorCode::InvalidRequest, "Invalid bridge request")
+                    })??;
+                    return self
+                        .open_app(binding.run_id, &mut target, launcher, app)
+                        .await;
                 }
                 let (action, revision) = match request {
                     BridgeRequest::Pointer {
@@ -425,6 +490,142 @@ impl CompanionHub {
                 }
                 Ok(BridgeResponse::Done)
             }
+        }
+    }
+    /// Opens the installed app `name` names, for a computer-use run holding
+    /// `target`'s agent lease: the same app list, matching and launcher as
+    /// voice control. The name only chooses among installed apps. Several
+    /// matches, none, or a power, session or removal tool are refused with
+    /// what to do instead; an unconfirmed launch ends the lease, as
+    /// unconfirmed input does.
+    /// The installed app `name` names, and the launcher to open it with:
+    /// the same app list and matching as voice control. Several matches,
+    /// none, or a power, session or removal tool are refused with what to do
+    /// instead.
+    async fn choose_app(
+        &self,
+        name: &str,
+    ) -> Result<
+        (
+            std::sync::Arc<dyn voice_control::Launcher>,
+            voice_control::apps::LaunchApp,
+        ),
+        ProtocolError,
+    > {
+        use voice_control::apps::{Resolution, label, resolve, risky};
+        let launcher = self
+            .voice_config()
+            .map_err(|_| unsupported("Opening apps"))?
+            .launcher
+            .clone();
+        let unavailable = |e: voice_control::Error| {
+            error(
+                ErrorCode::TemporarilyUnavailable,
+                format!("Not opened: {e}"),
+            )
+        };
+        let apps = launcher.apps().await.map_err(unavailable)?;
+        let app = match resolve(name, &apps) {
+            Resolution::One(app) => app,
+            Resolution::Several(several) => {
+                let names: Vec<String> = several.iter().map(|a| label(a, &several)).collect();
+                return Err(error(
+                    ErrorCode::InvalidRequest,
+                    format!(
+                        "Not opened: several apps match “{name}”: {}. Call open_app with one of these names.",
+                        names.join(", ")
+                    ),
+                ));
+            }
+            Resolution::None(reason) => {
+                return Err(error(ErrorCode::NotFound, format!("Not opened: {reason}.")));
+            }
+        };
+        if risky(&app) {
+            return Err(error(
+                ErrorCode::PermissionDenied,
+                format!(
+                    "Not opened: {} is a power, session or removal tool. Ask the person with request_human to open it themselves.",
+                    app.name
+                ),
+            ));
+        }
+        Ok((launcher, app))
+    }
+    async fn open_app(
+        &self,
+        run_id: RunId,
+        target: &mut crate::control::Target,
+        launcher: std::sync::Arc<dyn voice_control::Launcher>,
+        app: voice_control::apps::LaunchApp,
+    ) -> Result<BridgeResponse, ProtocolError> {
+        let unavailable = |e: voice_control::Error| {
+            error(
+                ErrorCode::TemporarilyUnavailable,
+                format!("Not opened: {e}"),
+            )
+        };
+        if self.run_stopped(run_id)? {
+            return Err(error(
+                ErrorCode::Expired,
+                "Run stopped before the app opened",
+            ));
+        }
+        let lease = target
+            .view
+            .lease
+            .as_ref()
+            .ok_or_else(|| error(ErrorCode::Expired, "Agent lease is no longer active"))?;
+        let authority = AgentAuthority {
+            hub: self.clone(),
+            run_id,
+            lease: target.live.clone(),
+            lease_id: lease.lease_id,
+            generation: lease.generation,
+        };
+        // The launch runs in a task of its own, so a call dropped when the
+        // agent's connection closes can't abandon it halfway: it finishes,
+        // and the display keeps it until it has, and keeps it if it
+        // couldn't be stopped.
+        let guard = target.launches.begin();
+        let chosen = protocol::voice::VoiceApp {
+            id: app.id.clone(),
+            name: app.name.clone(),
+        };
+        let launched = tokio::spawn(async move {
+            let authority = crate::launch_recheck::Recording::new(&authority);
+            let result = launcher.launch(&chosen, &authority).await;
+            // A panic never gets here: its guard then counts as unstopped.
+            guard.ended(
+                !matches!(result, Err(voice_control::Error::LaunchUnstopped)),
+                authority.take(),
+            );
+            result
+        })
+        .await
+        .unwrap_or(Err(voice_control::Error::LaunchUnstopped));
+        match launched {
+            Ok(()) => Ok(BridgeResponse::AppOpened {
+                text: format!(
+                    "Asked the desktop to open {}. Its window may take a moment to appear: call observe_target.",
+                    app.name
+                ),
+            }),
+            // Its processes may still open an app: the agent's control ends
+            // now, and no release of this display is confirmed from here on.
+            Err(voice_control::Error::LaunchUnstopped) => {
+                self.mark_launch(target);
+                let released = self.revoke_locked(target, false).await;
+                Err(crate::control::unresolved_release(released))
+            }
+            Err(voice_control::Error::OutcomeUnknown) => {
+                self.revoke_locked(target, false).await?;
+                Err(error(
+                    ErrorCode::OutcomeUnknown,
+                    "The desktop didn't confirm opening the app",
+                ))
+            }
+            Err(e) => Err(unavailable(e)),
         }
     }
     /// Captures `target` for `run_id`, while it may still look at it, and
@@ -532,14 +733,11 @@ impl CompanionHub {
         native_id: Option<String>,
         tool_call: Option<String>,
     ) -> Result<ApprovalDecision, ProtocolError> {
-        let (sender, receiver) = tokio::sync::oneshot::channel();
         let now = self.inner.clock.now();
-        // One that may be answered after its agent has moved on keeps no
-        // deadline; it goes back to the agent unanswered before this wait
-        // would end.
         let carries_on = crate::carry_on::carries_on(facts.kind);
-        let wait_for = std::time::Duration::from_secs(if carries_on { 900 } else { 600 });
-        let mut approval = Approval {
+        let project: Option<Project> = self.read(|r| r.get("project", task.project_id))?;
+        let facts_line = crate::glance::approval_facts(&facts.subject, project.as_ref());
+        let approval = Approval {
             approval_id: id,
             run_id,
             task_id: task.task_id,
@@ -547,6 +745,8 @@ impl CompanionHub {
             native_request_id: native_id.unwrap_or_else(|| format!("bridge:{id}")),
             kind: facts.kind,
             title: facts.title,
+            headline: facts.headline,
+            facts: facts_line,
             detail: facts.detail,
             detail_lines: facts.detail_lines,
             questions: facts.questions,
@@ -555,6 +755,8 @@ impl CompanionHub {
             shortened: facts.shortened,
             revision: 1,
             state: ApprovalState::Pending,
+            access_request: None,
+            actions: None,
             delivery: None,
             outcome: None,
             requested_at: now,
@@ -563,6 +765,25 @@ impl CompanionHub {
             resolved_by: None,
             resolved_at: None,
         };
+        self.bridge_wait_on(approval, tool_call).await
+    }
+    /// Raises `approval` for its run's agent, which waits on the bridge, and
+    /// waits for the person's decision.
+    pub(crate) async fn bridge_wait_on(
+        &self,
+        mut approval: Approval,
+        tool_call: Option<String>,
+    ) -> Result<ApprovalDecision, ProtocolError> {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let (id, run_id, now) = (approval.approval_id, approval.run_id, approval.requested_at);
+        let task: Task = self.read(|r| r.require("task", approval.task_id))?;
+        let task = &task;
+        // One that may be answered after its agent has moved on keeps no
+        // deadline; it goes back to the agent unanswered before this wait
+        // would end.
+        let carries_on =
+            crate::carry_on::carries_on(approval.kind) && approval.access_request.is_none();
+        let wait_for = std::time::Duration::from_secs(if carries_on { 900 } else { 600 });
         // The tool is answered from its own request; what is shown and kept
         // has the run's keys and tokens hidden.
         self.mask_approval(run_id, &mut approval);
@@ -584,7 +805,7 @@ impl CompanionHub {
             }
             waits.insert(id, sender);
         }
-        if let Err(e) =
+        let admitted =
             self.write(|tx| {
                 let run: Run = tx.read().require("run", run_id)?;
                 if !matches!(
@@ -636,11 +857,26 @@ impl CompanionHub {
                         item: TimelineBody::Approval { approval_id: id },
                     },
                 })?;
-                Ok(())
-            })
-        {
-            self.inner.waits.lock().await.remove(&id);
-            return Err(e);
+                // The same request a switch to Work allowed is allowed again,
+                // once, without asking.
+                crate::switch_work::take_preapproved(tx, &approval, now)
+            });
+        let preapproved = match admitted {
+            Ok(by) => by,
+            Err(e) => {
+                self.inner.waits.lock().await.remove(&id);
+                return Err(e);
+            }
+        };
+        if let Some(by) = preapproved {
+            let caller = crate::api::Caller {
+                principal: by,
+                grants: protocol::auth::Grants::owner(),
+            };
+            // A failure leaves it for the person, as any other request.
+            let _ = self
+                .resolve_approval(&caller, id, &ApprovalDecision::Allow)
+                .await;
         }
         let decision = tokio::time::timeout(wait_for, receiver).await;
         self.inner.waits.lock().await.remove(&id);
@@ -662,6 +898,15 @@ impl CompanionHub {
         }
     }
 }
+/// Whether `run` only reads (Plan, Ask, not a conversation's turn, which is
+/// held to its access and works), so its bridge offers only
+/// `request_access`. A turn answering on the checklist has its own tools.
+fn read_only(run: &Run, task: &Task, answers: bool) -> bool {
+    !answers
+        && crate::runs::run_mode(run, task) != TaskMode::Work
+        && !(task.conversation && task.access.is_some())
+}
+
 #[async_trait]
 impl BridgeHandler for CompanionHub {
     async fn bind(&self, token: &str) -> Option<BridgeBinding> {
@@ -702,8 +947,9 @@ impl BridgeHandler for CompanionHub {
                 let project: Project = tx.read().require("project", task.project_id)?;
                 tx.put("bridge_bound", run.run_id, &true)?;
                 let answers = crate::checklist::answers(&tx.read(), task.task_id)?;
-                let browser = self.browses(&task) && !answers;
-                let github = self.githubs(&tx.read(), &task)? && !answers;
+                let read_only = read_only(&run, &task, answers);
+                let browser = self.browses(&task) && !answers && !read_only;
+                let github = self.githubs(&tx.read(), &task)? && !answers && !read_only;
                 // Claimed while the run's credential is sure to stand, so
                 // its end, which withdraws that first, lets it go.
                 let previous = browser
@@ -713,10 +959,11 @@ impl BridgeHandler for CompanionHub {
                     BridgeBinding {
                         run_id: run.run_id,
                         target_id: task.target_id,
-                        computer_use: task.kind == TaskKind::ComputerUse && !answers,
+                        computer_use: task.kind == TaskKind::ComputerUse && !answers && !read_only,
                         browser,
                         github,
                         checklist_answers: answers,
+                        read_only,
                     },
                     task,
                     project,
@@ -766,5 +1013,34 @@ impl BridgeHandler for CompanionHub {
             }
             Ok(())
         });
+    }
+}
+
+/// Whether a computer-use run may still open an app, asked by the launcher
+/// just before the app starts: no Local Stop or shutdown has begun, its
+/// agent lease is the display's active one and the run hasn't stopped.
+struct AgentAuthority {
+    hub: CompanionHub,
+    run_id: RunId,
+    lease: std::sync::Arc<crate::control::LiveLease>,
+    lease_id: LeaseId,
+    generation: u64,
+}
+impl voice_control::Authority for AgentAuthority {
+    fn check(&self) -> Result<(), voice_control::Error> {
+        let inner = &self.hub.inner;
+        // A Local Stop or shutdown counts the moment it begins, before it
+        // reaches the display: it waits for the display's lock, which the
+        // launch holds, so the lease still looks active meanwhile.
+        if inner.local_stops.load(std::sync::atomic::Ordering::SeqCst) != 0
+            || *inner.shutdown.borrow()
+            || !self
+                .lease
+                .holds(self.lease_id, self.generation, inner.clock.monotonic())
+            || self.hub.run_stopped(self.run_id).unwrap_or(true)
+        {
+            return Err(voice_control::Error::Stopped);
+        }
+        Ok(())
     }
 }

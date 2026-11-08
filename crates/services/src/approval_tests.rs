@@ -12,6 +12,8 @@ async fn closed_permission_bridge_records_failed_delivery_and_keeps_attention_ac
     let run_id = run_started(&f, task_id).await;
     let approval_id = ApprovalId::new();
     let approval = Approval {
+        headline: None,
+        facts: Vec::new(),
         approval_id,
         task_id,
         run_id,
@@ -27,6 +29,8 @@ async fn closed_permission_bridge_records_failed_delivery_and_keeps_attention_ac
         shortened: false,
         revision: 1,
         state: ApprovalState::Pending,
+        access_request: None,
+        actions: None,
         delivery: None,
         outcome: None,
         requested_at: Timestamp(1_700_000_000_000),
@@ -146,6 +150,8 @@ async fn attention_dismissed_before_a_failed_hand_off_is_raised_again_as_new() {
     let run_id = run_started(&f, task_id).await;
     let approval_id = ApprovalId::new();
     let approval = Approval {
+        headline: None,
+        facts: Vec::new(),
         approval_id,
         task_id,
         run_id,
@@ -161,6 +167,8 @@ async fn attention_dismissed_before_a_failed_hand_off_is_raised_again_as_new() {
         shortened: false,
         revision: 1,
         state: ApprovalState::Pending,
+        access_request: None,
+        actions: None,
         delivery: None,
         outcome: None,
         requested_at: f.hub.inner.clock.now(),
@@ -183,6 +191,8 @@ async fn attention_dismissed_before_a_failed_hand_off_is_raised_again_as_new() {
             .collect::<Vec<_>>()
     };
     let first = items()[0].attention_id;
+    // Its notification was swiped away on the phone.
+    f.hub.mark_alerts_handled(&device, &[first]).unwrap();
     // A person dismisses it, then their Allow cannot be handed to the agent.
     let dismiss = CommandEnvelope::new(Command::AcknowledgeAttention {
         attention_id: first,
@@ -213,9 +223,16 @@ async fn attention_dismissed_before_a_failed_hand_off_is_raised_again_as_new() {
     assert_eq!(open[0].kind, AttentionKind::Approval);
     assert_eq!(open[0].title, "Permit one tool");
     // A watcher that showed the first, however it reconnects, sees a new alert.
-    let (alerts, _) = f.hub.open_alerts(&device).await.unwrap();
+    let (alerts, _) = f.hub.open_alerts(&device, false).await.unwrap();
     let ids: Vec<_> = alerts.iter().map(|a| a.attention_id).collect();
     assert_eq!(ids, vec![open[0].attention_id]);
+    // Not handled because the first was, and it says why it asks again.
+    assert_eq!(open[0].alert_handled_at, None);
+    assert!(!alerts[0].quiet);
+    assert_eq!(
+        alerts[0].headline.as_deref(),
+        Some("Your answer didn't reach the agent")
+    );
     // Failing again while it is still open raises nothing more.
     let (sender, receiver) = tokio::sync::oneshot::channel();
     f.hub.inner.waits.lock().await.insert(approval_id, sender);
@@ -246,6 +263,8 @@ async fn decision_overtaken_by_the_runs_end(
         .emit(
             run,
             ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "late-tool".into(),
                 kind: ApprovalKind::Command,
                 title: "Run test".into(),
@@ -388,7 +407,9 @@ async fn a_denied_or_stopped_tool_call_is_recorded_as_not_run() {
         let hub = f.hub.clone();
         let request = BridgeRequest::PermissionPrompt {
             tool_name: "Bash".into(),
-            input: serde_json::json!({"command":"rm -r build"}),
+            // Each its own command: one the person declined is declined
+            // again at once in the same turn.
+            input: serde_json::json!({"command":format!("rm -r build-{call}")}),
             tool_use_id: Some(call.into()),
             native_request_id: Some(request.into()),
         };
@@ -400,6 +421,7 @@ async fn a_denied_or_stopped_tool_call_is_recorded_as_not_run() {
                 browser: false,
                 github: false,
                 checklist_answers: false,
+                read_only: false,
             };
             hub.handle(&binding, request).await
         })
@@ -449,6 +471,8 @@ async fn a_denied_or_stopped_tool_call_is_recorded_as_not_run() {
         .emit(
             run,
             ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "3".into(),
                 kind: ApprovalKind::Command,
                 title: "Run a command".into(),
@@ -540,6 +564,8 @@ async fn a_step_whose_allow_may_have_reached_the_agent_is_not_called_stopped() {
             .emit(
                 run,
                 ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                    headline: None,
+                    subject: Default::default(),
                     native_request_id: "7".into(),
                     kind: ApprovalKind::Command,
                     title: "Run a command".into(),
@@ -673,6 +699,7 @@ async fn denied_native_and_bridge_permissions_resume_then_end_with_review_attent
                         browser: false,
                         github: false,
                         checklist_answers: false,
+                        read_only: false,
                     },
                     BridgeRequest::PermissionPrompt {
                         tool_name: "Bash".into(),
@@ -688,6 +715,8 @@ async fn denied_native_and_bridge_permissions_resume_then_end_with_review_attent
                 .emit(
                     run,
                     ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                        headline: None,
+                        subject: Default::default(),
                         native_request_id: "denied-tool".into(),
                         kind: ApprovalKind::Command,
                         title: "Run test".into(),
@@ -760,7 +789,11 @@ async fn denied_native_and_bridge_permissions_resume_then_end_with_review_attent
                 panic!("permission response")
             };
             assert_eq!(decision["behavior"], "deny");
-            assert_eq!(decision["message"], "Do not run it");
+            // Their reason, and not to ask again in this turn.
+            assert_eq!(
+                decision["message"],
+                crate::more_access::declined_text(Some("Do not run it"))
+            );
         } else {
             assert_eq!(f.harness.controls.resolutions.load(Ordering::SeqCst), 1);
         }
@@ -845,6 +878,7 @@ async fn bridge_tool_approval_facts_match_fixtures_and_bound_oversized_input() {
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     };
     let cases: serde_json::Value = serde_json::from_str(include_str!(
         "../../ports/test-fixtures/tool-approvals.json"
@@ -883,6 +917,14 @@ async fn bridge_tool_approval_facts_match_fixtures_and_bound_oversized_input() {
             let mut facts = serde_json::json!({"kind":approval.kind,"title":approval.title,"detail":approval.detail,"detail_lines":approval.detail_lines,"scope":approval.scope,"shortened":approval.shortened});
             if !approval.questions.is_empty() {
                 facts["questions"] = serde_json::json!(approval.questions);
+            }
+            // The fixtures name only paths inside the project, so what the
+            // computer says of them reads the same in any project.
+            if let Some(headline) = &approval.headline {
+                facts["headline"] = serde_json::json!(headline);
+            }
+            if !approval.facts.is_empty() {
+                facts["facts"] = serde_json::json!(approval.facts);
             }
             assert_eq!(facts, case["approval"]);
         } else {
@@ -1028,6 +1070,8 @@ async fn a_bridged_permission_has_one_record_whichever_copy_arrives_first() {
                     .emit(
                         run,
                         ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                            headline: None,
+                            subject: Default::default(),
                             native_request_id: "7".into(),
                             kind: ApprovalKind::Command,
                             title: "Run a shell command".into(),
@@ -1160,6 +1204,8 @@ async fn a_codex_question_is_recorded_when_its_computer_tools_are_bound() {
         .emit(
             run,
             ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "codex-question".into(),
                 kind: ApprovalKind::Question,
                 title: "The agent asked a question".into(),
@@ -1219,6 +1265,8 @@ async fn secret_answer_is_not_retained_after_failed_delivery() {
     let run_id = run_started(&f, task_id).await;
     let approval_id = ApprovalId::new();
     let approval = Approval {
+        headline: None,
+        facts: Vec::new(),
         approval_id,
         task_id,
         run_id,
@@ -1241,6 +1289,8 @@ async fn secret_answer_is_not_retained_after_failed_delivery() {
         shortened: false,
         revision: 1,
         state: ApprovalState::Pending,
+        access_request: None,
+        actions: None,
         delivery: None,
         outcome: None,
         requested_at: Timestamp(1_700_000_000_000),
@@ -1331,6 +1381,8 @@ async fn secret_answers_deliver_natively_but_never_replay_to_another_device() {
         let run_id = run_started(&f, task_id).await;
         let approval_id = ApprovalId::new();
         let approval = Approval {
+            headline: None,
+            facts: Vec::new(),
             approval_id,
             task_id,
             run_id,
@@ -1353,6 +1405,8 @@ async fn secret_answers_deliver_natively_but_never_replay_to_another_device() {
             shortened: false,
             revision: 1,
             state: ApprovalState::Pending,
+            access_request: None,
+            actions: None,
             delivery: None,
             outcome: None,
             requested_at: Timestamp(1_700_000_000_000),
@@ -1552,6 +1606,8 @@ async fn legacy_rejected_private_followup_commands_are_scrubbed_on_reopen() {
     let run_id = run_started(&f, task_id).await;
     let approval_id = ApprovalId::new();
     let approval = Approval {
+        headline: None,
+        facts: Vec::new(),
         approval_id,
         task_id,
         run_id,
@@ -1574,6 +1630,8 @@ async fn legacy_rejected_private_followup_commands_are_scrubbed_on_reopen() {
         shortened: false,
         revision: 1,
         state: ApprovalState::Pending,
+        access_request: None,
+        actions: None,
         delivery: None,
         outcome: None,
         requested_at: Timestamp(1_700_000_000_000),
@@ -1671,6 +1729,8 @@ async fn codex_question_fixtures_pass_through_approval_resolution() {
             .emit(
                 run,
                 ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                    headline: None,
+                    subject: Default::default(),
                     native_request_id: native_id.into(),
                     kind: ApprovalKind::Question,
                     title: case["approval"]["title"].as_str().unwrap().into(),
@@ -1769,4 +1829,131 @@ async fn codex_question_fixtures_pass_through_approval_resolution() {
         f.harness.controls.resolutions.load(Ordering::SeqCst),
         cases.as_array().unwrap().len() as u64
     );
+}
+
+// A card reads at a glance: the agent's own account of a request heads it,
+// and what the request does is worked out from the request itself, here and
+// for a native harness's own request alike.
+#[tokio::test]
+async fn an_approval_says_what_the_request_does() {
+    use ports::bridge::{BridgeBinding, BridgeHandler, BridgeRequest};
+    use ports::request_facts::Subject;
+    let f = Fixture::new().await;
+    let owner = Caller::local_owner();
+    let project = f.project().await;
+    let (task, _) = f
+        .task(project, TaskPlacement::StartNow, &owner, false)
+        .await;
+    let run = run_started(&f, task).await;
+    let hub = f.hub.clone();
+    let asked = tokio::spawn(async move {
+        let binding = BridgeBinding {
+            run_id: run,
+            target_id: None,
+            computer_use: false,
+            browser: false,
+            github: false,
+            checklist_answers: false,
+            read_only: false,
+        };
+        hub.handle(
+            &binding,
+            BridgeRequest::PermissionPrompt {
+                tool_name: "Bash".into(),
+                input: serde_json::json!({
+                    "command": "rm -r build && git push origin main",
+                    "description": "Clean the build\nand push",
+                }),
+                tool_use_id: Some("toolu_glance".into()),
+                native_request_id: Some("glance".into()),
+            },
+        )
+        .await
+    });
+    let approval = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if let Some(a) = f
+                .hub
+                .read(|r| r.list::<Approval>("approval"))
+                .unwrap()
+                .into_iter()
+                .find(|a| a.state == ApprovalState::Pending)
+            {
+                break a;
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(approval.title, "Run a shell command");
+    assert_eq!(
+        approval.headline.as_deref(),
+        Some("Clean the build and push")
+    );
+    let said: Vec<(&str, bool)> = approval
+        .facts
+        .iter()
+        .map(|f| (f.text.as_str(), f.risky))
+        .collect();
+    assert_eq!(said, [("deletes build", true), ("pushes to origin", true)]);
+    f.hub
+        .resolve_approval(
+            &owner,
+            approval.approval_id,
+            &ApprovalDecision::Deny { reason: None },
+        )
+        .await
+        .unwrap();
+    asked.await.unwrap();
+
+    f.harness
+        .emit(
+            run,
+            ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: Some("Look at the accounts".into()),
+                subject: Subject::Command {
+                    command: "cat /etc/passwd".into(),
+                    cwd: None,
+                },
+                native_request_id: "native-glance".into(),
+                kind: ApprovalKind::Command,
+                title: "Approve native command".into(),
+                detail: Some("cat /etc/passwd".into()),
+                detail_lines: Vec::new(),
+                questions: Vec::new(),
+                raw_request: Some("{\"command\":\"cat /etc/passwd\"}".into()),
+                scope: "this command once".into(),
+                shortened: false,
+                tool_call: None,
+            }),
+        )
+        .await;
+    let native = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if let Some(a) = f
+                .hub
+                .read(|r| r.list::<Approval>("approval"))
+                .unwrap()
+                .into_iter()
+                .find(|a| a.native_request_id == "native-glance")
+            {
+                break a;
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(native.headline.as_deref(), Some("Look at the accounts"));
+    assert_eq!(native.facts.len(), 1);
+    assert!(native.facts[0].risky);
+    assert!(
+        native.facts[0]
+            .text
+            .starts_with("reads /etc/passwd outside "),
+        "{:?}",
+        native.facts
+    );
+    f.close().await;
 }

@@ -8,9 +8,10 @@ import { TASK_BRANCH_FEATURE, TASK_BRANCH_UPDATE } from "../app/taskBranch";
 import { GITHUB_FEATURE, GITHUB_UPDATE } from "../app/githubFeature";
 import { LAUNCHERS_FEATURE, LAUNCHERS_UPDATE } from "../app/launchersFeature";
 import { QUEUE_MARKUP_FEATURE, QUEUE_MARKUP_UPDATE } from "../app/queueMarkupFeature";
+import { SIGN_IN_ON_PHONE_FEATURE, SIGN_IN_ON_PHONE_UPDATE } from "../app/signInFeature";
 import { HostStateStore } from "../app/screenNames";
 import { reconcileCachedHistory } from "./history";
-import { REPORT_INBOX_FEATURE, REPORT_LOOK_INTO_FEATURE, REPORTS_FEATURE } from "../diagnostics/constants";
+import { REPORT_INBOX_FEATURE, REPORT_LOOK_INTO_FEATURE, REPORT_TASK_FEATURE, REPORTS_FEATURE } from "../diagnostics/constants";
 import { instrumentSession } from "../diagnostics/instrumentation";
 import { uuidv7 } from "../protocol/ids";
 import type {
@@ -44,7 +45,7 @@ import {
 } from "../state/projection";
 import { Store } from "../state/store";
 import { retainedApproval, retainedDecision, retainedQuery } from "./secretAnswers";
-import type { ControlLink, LinkEvent, LinkState } from "./link";
+import type { ConnectAsk, ControlLink, LinkEvent, LinkState } from "./link";
 
 /** Phone-side delivery phase of one command. */
 export type CommandPhase =
@@ -230,7 +231,9 @@ export class HostSession {
     this.link.set({ state: "idle" });
   }
 
-  reconnect(): void {
+  /** Try now. `ask` says why, which the native link uses to tell the
+   * person's Retry from other reasons. */
+  reconnect(ask: ConnectAsk = "event"): void {
     // A refused query leaves the transport usable; native disconnect disposes it.
     if (this.#bootstrapError) {
       this.#bootstrapError = false;
@@ -238,7 +241,7 @@ export class HostSession {
       void this.#resume();
       return;
     }
-    this.control.connect();
+    this.control.connect(ask);
   }
 
   get online(): boolean {
@@ -278,6 +281,9 @@ export class HostSession {
     if (q.kind === "inbox_report_code" && !this.state.get().capabilities?.features.includes("report_inbox_code_v1")) {
       return Promise.reject(new CommandError({ code: "incompatible_version", message: "This computer needs an update to show report tests." }, null));
     }
+    if (q.kind === "report_task_project" && !this.state.get().capabilities?.features.includes(REPORT_TASK_FEATURE)) {
+      return Promise.reject(new CommandError({ code: "incompatible_version", message: "This computer needs an update to have an agent look into reports." }, null));
+    }
     if (["reports", "report", "report_preview"].includes(q.kind) && !this.state.get().capabilities?.features.includes(REPORTS_FEATURE)) {
       return Promise.reject(new CommandError({ code: "incompatible_version", message: "This computer needs an update to receive reports." }, null));
     }
@@ -288,7 +294,12 @@ export class HostSession {
     const query_id = uuidv7(this.#now());
     // A computer that reads history names the pending approvals a snapshot
     // leaves out only for a phone that says it reads them itself.
-    const query: Query = q.kind === "snapshot" && this.readsHistory ? { kind: "snapshot", reads_withheld: true } : q;
+    // This app shows the computer's notices about an account, so it asks
+    // for them (older computers ignore the word). It finishes sign-ins in
+    // its own browser, so it asks for their links where the computer can.
+    const query: Query = q.kind === "snapshot" ? { kind: "snapshot", account_items: true, ...(this.readsHistory ? { reads_withheld: true } : {}) }
+      : q.kind === "accounts" && this.state.get().capabilities?.features.includes(SIGN_IN_ON_PHONE_FEATURE) ? { kind: "accounts", on_phone: true }
+      : q;
     return new Promise((resolve, reject) => {
       if (!this.control.send({ type: "query", query_id, query })) {
         reject(new NotConnectedError());
@@ -425,6 +436,9 @@ export class HostSession {
     if (body.command === "set_report_verdict" && !this.state.get().capabilities?.features.includes(REPORT_INBOX_FEATURE)) {
       return Promise.reject(new CommandError({ code: "incompatible_version", message: "This computer needs an update to answer problem reports." }, null));
     }
+    if (body.command === "start_report_task" && !this.state.get().capabilities?.features.includes(REPORT_TASK_FEATURE)) {
+      return Promise.reject(new CommandError({ code: "incompatible_version", message: "This computer needs an update to have an agent look into reports." }, null));
+    }
     if (body.command === "look_into_report" && !this.state.get().capabilities?.features.includes(REPORT_LOOK_INTO_FEATURE)) {
       return Promise.reject(new CommandError({ code: "unsupported", message: "The report fixer isn't on for this computer." }, null));
     }
@@ -452,6 +466,11 @@ export class HostSession {
     if (body.command === "queue_continuation" && body.bundle != null
       && !this.state.get().capabilities?.features.includes(QUEUE_MARKUP_FEATURE)) {
       return Promise.reject(new CommandError({ code: "incompatible_version", message: QUEUE_MARKUP_UPDATE }, null));
+    }
+    // An older computer refuses what it doesn't know, and a code for it is a secret.
+    if (body.command === "account" && (body.action.action === "submit_sign_in_code" || (body.action.action === "sign_in" && body.action.on_phone !== undefined))
+      && !this.state.get().capabilities?.features.includes(SIGN_IN_ON_PHONE_FEATURE)) {
+      return Promise.reject(new CommandError({ code: "incompatible_version", message: SIGN_IN_ON_PHONE_UPDATE }, null));
     }
     // A caller that persisted its intent first passes that id, so a retry of
     // an unknown outcome is deduplicated by the host instead of repeated.
@@ -788,7 +807,7 @@ export class HostSession {
    * up; the replay is held until then. */
   #subscribe(afterSeq: number): boolean {
     this.#hold("caught_up");
-    return this.control.send({ type: "subscribe", after_seq: afterSeq });
+    return this.control.send({ type: "subscribe", after_seq: afterSeq, account_items: true });
   }
 
   #hold(key: string): void {
@@ -870,7 +889,7 @@ export class HostSession {
     this.#judge();
     const { state } = this.link.get();
     if (state === "online") this.#sendPing();
-    else if (state !== "idle" && state !== "failed") this.control.connect();
+    else if (state !== "idle" && state !== "failed") this.control.connect("event");
   };
 
   #stopPing(): void {
@@ -884,6 +903,7 @@ export class HostSession {
 export function withoutSecret(body: Command, approval?: Approval): Command {
   if (body.command === "resolve_approval") return { ...body, decision: retainedDecision(body.decision, approval) };
   if (body.command === "account" && body.action.action === "set_key") return { ...body, action: { ...body.action, key: "" } };
+  if (body.command === "account" && body.action.action === "submit_sign_in_code") return { ...body, action: { ...body.action, code: "" } };
   if (body.command === "unlock_desktop") return { ...body, password: "" };
   if (body.command !== "agent_login") return body;
   const a = body.action;

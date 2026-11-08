@@ -73,7 +73,11 @@ pub(crate) struct Inner {
     pub head: AtomicU64,
     pub host_id: HostId,
     pub epoch: BootEpoch,
-    pub name: String,
+    /// The computer's hostname, its name until the owner chooses another.
+    pub hostname: String,
+    /// The name phones are shown now: the last one published in a
+    /// `HostUpdated`, set while the store is held, so it follows the journal.
+    pub name: std::sync::RwLock<String>,
     pub started: Timestamp,
     pub clock: Arc<dyn ports::Clock>,
     pub data: PathBuf,
@@ -107,6 +111,9 @@ pub(crate) struct Inner {
     pub liveness: Mutex<HashMap<RunId, crate::watchdog::Liveness>>,
     pub protection: AsyncMutex<crate::runtime::ProtectionSlot>,
     pub local_stops: std::sync::atomic::AtomicUsize,
+    /// Asks to check the agents' sign-ins again since the check running now
+    /// began, if one is (`crate::sign_in_watch`).
+    pub sign_in_checks: std::sync::atomic::AtomicUsize,
     pub desktop_operation: tokio::sync::RwLock<()>,
     /// When recent tries to unlock the computer that didn't unlock it were
     /// made, read from the store on the first unlock.
@@ -124,6 +131,10 @@ pub(crate) struct Inner {
     pub runs: AsyncMutex<HashMap<RunId, Arc<dyn ports::RunControl>>>,
     pub message_locks: Mutex<HashMap<RunId, std::sync::Weak<AsyncMutex<()>>>>,
     pub controls: AsyncMutex<HashMap<TargetId, Arc<AsyncMutex<crate::control::Target>>>>,
+    /// Each display's live lease, readable without its lock: renewals and
+    /// input find their display here, and so never wait on another
+    /// display's lock (a release or a launch may hold one for seconds).
+    pub live_leases: std::sync::Mutex<HashMap<TargetId, crate::control::LeaseEntry>>,
     pub waits: AsyncMutex<HashMap<ApprovalId, tokio::sync::oneshot::Sender<ApprovalDecision>>>,
     pub transfer_locks: Mutex<HashMap<TransferId, std::sync::Weak<AsyncMutex<()>>>>,
     /// Held for reading while a blob is published, for writing while blobs are collected.
@@ -478,6 +489,8 @@ impl HubBuilder {
         let started = self.clock.now();
         let commit = db.write(started, |tx| {
             crate::contribution::recover(tx)?;
+            // Topic switches saved before notification types existed.
+            crate::notifications::bring_over_saved(tx)?;
             tx.put("meta", "host_id", &host_id)?; tx.put("meta", "epoch", &epoch)?;
             tx.emit(Event::BootEpochChanged { boot_epoch: epoch })?;
             // No terminal outlives the process that opened it.
@@ -637,7 +650,8 @@ impl HubBuilder {
                 head: AtomicU64::new(commit.head),
                 host_id,
                 epoch,
-                name: self.name,
+                name: std::sync::RwLock::new(self.name.clone()),
+                hostname: self.name,
                 started,
                 clock: self.clock,
                 data,
@@ -663,6 +677,7 @@ impl HubBuilder {
                 liveness: Mutex::new(HashMap::new()),
                 protection: AsyncMutex::new(crate::runtime::ProtectionSlot::default()),
                 local_stops: std::sync::atomic::AtomicUsize::new(0),
+                sign_in_checks: std::sync::atomic::AtomicUsize::new(0),
                 desktop_operation: tokio::sync::RwLock::new(()),
                 unlock_tries: AsyncMutex::new(None),
                 unlock_release: tokio::sync::RwLock::new(()),
@@ -679,6 +694,7 @@ impl HubBuilder {
                 runs: AsyncMutex::new(HashMap::new()),
                 message_locks: Mutex::new(HashMap::new()),
                 controls: AsyncMutex::new(HashMap::new()),
+                live_leases: Default::default(),
                 waits: AsyncMutex::new(HashMap::new()),
                 transfer_locks: Mutex::new(HashMap::new()),
                 blobs: Default::default(),
@@ -715,6 +731,14 @@ impl HubBuilder {
     }
 }
 impl CompanionHub {
+    /// The name phones are shown for this computer now.
+    pub(crate) fn current_name(&self) -> String {
+        self.inner
+            .name
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+    }
     pub(crate) fn spawn(&self, future: impl std::future::Future<Output = ()> + Send + 'static) {
         if let Ok(mut jobs) = self.inner.jobs.lock() {
             if *self.inner.shutdown.borrow() {
@@ -752,6 +776,17 @@ impl CompanionHub {
             })
             .map_err(stored)?;
         self.inner.head.store(commit.head, Ordering::Release);
+        // Read where no transaction is open, as by pairing and the server.
+        if let Some(name) = commit.events.iter().rev().find_map(|e| match &e.event {
+            Event::HostUpdated { host } => Some(&host.name),
+            _ => None,
+        }) {
+            *self
+                .inner
+                .name
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) = name.clone();
+        }
         if commit
             .events
             .iter()
@@ -910,6 +945,12 @@ impl CompanionHub {
             {
                 return Ok(false);
             }
+            // An agent's sign-in is for those who may manage accounts.
+            Event::AttentionUpserted { item }
+                if item.account_id.is_some() && !caller.grants.accounts =>
+            {
+                return Ok(false);
+            }
             Event::TransferUpserted { transfer } => {
                 return Self::sees_transfer(r, caller, transfer.transfer_id);
             }
@@ -934,6 +975,7 @@ impl CompanionHub {
         Ok(true)
     }
     pub async fn refresh_catalog(&self) -> Result<(), ProtocolError> {
+        let asked_at = self.inner.clock.now();
         let mut infos = Vec::new();
         for adapter in &self.inner.harnesses {
             let mut info = adapter.probe().await;
@@ -962,6 +1004,8 @@ impl CompanionHub {
         self.write(|tx| {
             let stored = tx.read().get::<Vec<HarnessInfo>>("meta", "harnesses")?;
             crate::usage_limits::carry(&mut infos, stored.as_deref().unwrap_or_default(), now);
+            let computer = self.computer_name(&tx.read())?;
+            crate::sign_in_watch::catalog_seen(tx, &infos, &computer, asked_at, now)?;
             if stored.as_ref() != Some(&infos) {
                 tx.put("meta", "harnesses", &infos)?;
                 tx.emit(Event::HarnessesChanged { harnesses: infos })?;
@@ -1102,14 +1146,17 @@ impl CompanionHub {
             let weak = Arc::downgrade(&self.inner);
             let mut shutdown = self.inner.shutdown.subscribe();
             self.spawn(async move {
+                let mut agents = crate::sign_in_watch::Agents::default();
                 loop {
                     tokio::select! {
                         _ = shutdown.changed() => break,
                         next = changed.changed() => {
                             let Some(inner) = weak.upgrade() else { break };
                             if next.is_err() { break }
+                            let hub = Self { inner };
                             // Devices with the grant read the new view themselves.
-                            let _ = (Self { inner }).write(|tx| { tx.emit(Event::AccountsChanged {})?; Ok(()) });
+                            let _ = hub.write(|tx| { tx.emit(Event::AccountsChanged {})?; Ok(()) });
+                            hub.agents_changed(&mut agents).await;
                         }
                     }
                 }
@@ -1310,7 +1357,7 @@ impl Hub for CompanionHub {
         self.inner.host_id
     }
     fn host_name(&self) -> String {
-        self.inner.name.clone()
+        self.current_name()
     }
     fn boot_epoch(&self) -> BootEpoch {
         self.inner.epoch
@@ -1454,15 +1501,24 @@ impl Hub for CompanionHub {
     async fn open_alerts(
         &self,
         caller: &Caller,
+        types: bool,
     ) -> Result<(Vec<protocol::alerts::Alert>, u64), ProtocolError> {
-        self.alerts_open(caller)
+        self.alerts_open(caller, types)
     }
     async fn alert(
         &self,
         caller: &Caller,
         attention_id: AttentionId,
+        types: bool,
     ) -> Result<Option<protocol::alerts::Alert>, ProtocolError> {
-        self.alert_for(caller, attention_id)
+        self.alert_for(caller, attention_id, types)
+    }
+    async fn alerts_handled(
+        &self,
+        caller: &Caller,
+        attention_ids: &[AttentionId],
+    ) -> Result<(), ProtocolError> {
+        self.mark_alerts_handled(caller, attention_ids)
     }
     async fn open_media(
         &self,

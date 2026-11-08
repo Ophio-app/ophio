@@ -33,6 +33,8 @@ const account = (id: string) => accounts().view.accounts.find((a) => a.account_i
 /** The sim's agents are signed in, as their agent apps say; a sign-in test
  * starts from one signed out. */
 const signedOut = (id: string) => Object.assign(account(id), { identity: null, state: { state: "signed_out" }, checked_at: null });
+/** A computer from before sign-in on the phone: Sign in goes to its own browser. */
+const olderComputer = () => app.session.state.set((s) => ({ ...s, capabilities: { ...s.capabilities!, features: s.capabilities!.features.filter((f) => f !== "sign_in_on_phone_v1") } }));
 const row = (name: string) => screen.getByRole("button", { name: new RegExp(`^${name}`) });
 const sheet = () => within(screen.getByRole("dialog"));
 
@@ -137,6 +139,7 @@ it("a refused key keeps the sheet open with the computer's words", async () => {
 });
 
 it("signing in follows the computer's browser in Desktop control", async () => {
+  olderComputer();
   signedOut("codex");
   render(<Accounts route={route} />, { wrapper });
   await advance(1000);
@@ -151,6 +154,10 @@ it("signing in follows the computer's browser in Desktop control", async () => {
   expect(screen.getByText("Signing in to Codex")).toBeTruthy();
   await advance(4000);
   expect(account("codex")).toMatchObject({ identity: "sam@example.com", state: { state: "active" } });
+  // Nothing an older computer would refuse was sent.
+  const bodies = JSON.stringify(Object.values(app.session.commands.get()).map((c) => c.body));
+  expect(bodies).toContain('"action":"sign_in"');
+  expect(bodies).not.toContain("on_phone");
 });
 
 it("an OAuth service without a client says how to give it one, instead of a sign-in", async () => {
@@ -334,6 +341,7 @@ it("the Desktop strip shows the code, types it when in control and returns to Ac
 });
 
 it("the strip follows this phone's own sign-in to its result", async () => {
+  olderComputer();
   signedOut("codex");
   render(<Accounts route={route} />, { wrapper });
   await advance(1000);

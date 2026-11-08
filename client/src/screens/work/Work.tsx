@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ChevronRight, Folder, Play, Workflow } from "lucide-react";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { shallowEqual, useApp, useCommand, useHost, useUi } from "../../app/context";
 import { Button } from "../../design/Button";
 import { Empty, ListRow } from "../../design/ListRow";
@@ -26,6 +26,10 @@ import { ContextHeader } from "../../shell/ContextHeader";
 import { ProjectSheet as Projects } from "../../shell/ProjectSheet";
 import { WorkRoot, type WorkView } from "./WorkRoot";
 import { WaitingHandoffs } from "../contribute/Waiting";
+import { SignInNeedsYou } from "../settings/SignInAgain";
+// All's list loads only when All is chosen, so a project's Tasks stays as quick to open.
+const AllWork = lazy(() => import("./AllWork").then((m) => ({ default: m.AllWork })));
+import { useEveryProject } from "../../app/everyProject";
 
 /** The runs of `tasks`, in the order the runs record lists them, found again
  * only when the runs or the tasks change rather than on every store update. */
@@ -40,7 +44,9 @@ function runsOf(tasks: Task[]): (s: HostState) => Run[] {
 
 export default function Work(_: RouteProps<"work">) {
   const id = useUi((s) => s.projectId);
-  return <ProjectWork key={id ?? "none"} projectId={id} />;
+  // With All computers, every project on every one, until one is chosen.
+  const everywhere = useEveryProject(useRoute().tab);
+  return everywhere ? <Suspense fallback={<Screen header={<ContextHeader heading inert />} className="work-screen work-root"><div className="screen__loading" aria-busy="true" /></Screen>}><AllWork /></Suspense> : <ProjectWork key={id ?? "none"} projectId={id} />;
 }
 function ProjectWork({ projectId }: { projectId: string | null }) {
   const { profile, session, ui } = useApp();
@@ -164,7 +170,7 @@ function ProjectWork({ projectId }: { projectId: string | null }) {
   return (
     <Screen header={<ContextHeader heading />} className="work-screen work-root">
       <ConnectionNote />
-      {view ? <WorkRoot v={view} /> : <><WaitingHandoffs />{noProject}</>}
+      {view ? <WorkRoot v={view} /> : <><WaitingHandoffs /><SignInNeedsYou />{noProject}</>}
       {settings && <ProjectSheet project={project} onClose={() => setSettings(false)} />}
       <Projects open={switcher} onClose={() => setSwitcher(false)} />
     </Screen>

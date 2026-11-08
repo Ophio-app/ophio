@@ -249,7 +249,25 @@ impl Drop for Stopping<'_> {
 struct Running {
     account_id: String,
     cancel: watch::Sender<bool>,
+    /// Where a code pasted on the phone goes, for a sign-in finished there
+    /// whose page shows one.
+    codes: Option<tokio::sync::mpsc::Sender<Secret>>,
 }
+
+/// A sign-in that stopped, as the phone shows it.
+fn sign_in_failed(reason: impl Into<String>) -> SignInStage {
+    SignInStage::Failed {
+        reason: reason.into(),
+        help_url: None,
+    }
+}
+
+/// Where a ChatGPT account turns on signing in to Codex with a code.
+pub const CODEX_DEVICE_CODE_SETTINGS: &str = "https://chatgpt.com/settings/security";
+
+/// The longest code the phone may paste back. Claude Code's is about 100
+/// characters.
+const MAX_PASTED_CODE: usize = 1024;
 
 /// An account's epoch and generation.
 type Fence = (u64, u64);
@@ -473,6 +491,7 @@ impl ComputerAccounts {
             manage_url: profile.manage_url.clone(),
             needs,
             browser_sign_in: profile.browser_sign_in(),
+            phone_sign_in: profile.phone_sign_in().is_some(),
             note,
             used_by: state
                 .used_by
@@ -815,8 +834,18 @@ impl ComputerAccounts {
 
     // ---- Sign-in ----------------------------------------------------------
 
-    async fn sign_in(&self, id: &str, by: &str) -> Result<(), AccountsError> {
+    async fn sign_in(&self, id: &str, by: &str, on_phone: bool) -> Result<(), AccountsError> {
         let profile = self.profile(id)?;
+        let phone = match profile.phone_sign_in() {
+            Some(phone) if on_phone => Some(phone.clone()),
+            None if on_phone => {
+                return Err(AccountsError::Invalid(format!(
+                    "{} can't be signed in from the phone. Finish it on the computer's screen.",
+                    profile.name
+                )));
+            }
+            _ => None,
+        };
         match &profile.method {
             Method::ApiKey { .. } => {
                 return Err(AccountsError::Invalid(format!(
@@ -832,7 +861,7 @@ impl ComputerAccounts {
             }
             _ => {}
         }
-        let (cancel, epoch) = {
+        let (cancel, epoch, phone_codes) = {
             let mut state = self.lock();
             if state.running.is_some() {
                 return Err(AccountsError::Busy(
@@ -844,9 +873,18 @@ impl ComputerAccounts {
             }
             let (cancel, watching) = watch::channel(false);
             let epoch = state.epoch(&profile.id);
+            // One code waits at most: the tool takes one at a time.
+            let (codes, pasted) = match &phone {
+                Some(p) if p.paste_code => {
+                    let (tx, rx) = tokio::sync::mpsc::channel(1);
+                    (Some(tx), Some(rx))
+                }
+                _ => (None, None),
+            };
             state.running = Some(Running {
                 account_id: profile.id.clone(),
                 cancel,
+                codes,
             });
             state.sign_in = Some(SignIn {
                 account_id: profile.id.clone(),
@@ -854,15 +892,89 @@ impl ComputerAccounts {
                 started_at: Timestamp::now(),
                 stage: SignInStage::Starting,
             });
-            (watching, epoch)
+            (watching, epoch, pasted)
         };
         self.bump();
         let this = self.clone();
         let by = by.to_owned();
+        let phone = phone.map(|p| {
+            let codes = phone_codes.unwrap_or_else(|| tokio::sync::mpsc::channel(1).1);
+            (
+                p.sign_in.clone(),
+                p.pty,
+                signin::Phone {
+                    paste_code: p.paste_code,
+                    codes,
+                },
+            )
+        });
         tokio::spawn(async move {
-            let ended = this.signing(&profile, cancel, epoch).await;
+            let ended = this.signing(&profile, cancel, epoch, phone).await;
             this.finish_sign_in(&profile, ended, &by, epoch);
         });
+        Ok(())
+    }
+
+    /// Hands the code the owner pasted on the phone to the sign-in waiting
+    /// for it. The code is never logged, kept or put in an error.
+    fn submit_code(
+        &self,
+        account_id: &str,
+        started_at: Timestamp,
+        code: &Secret,
+    ) -> Result<(), AccountsError> {
+        let code = code.expose().trim();
+        if code.is_empty() {
+            return Err(AccountsError::Invalid(
+                "Paste the code from the sign-in page first.".into(),
+            ));
+        }
+        if code.len() > MAX_PASTED_CODE || code.chars().any(char::is_control) {
+            return Err(AccountsError::Invalid(
+                "That isn't a sign-in code. Copy the whole code from the sign-in page and paste it again."
+                    .into(),
+            ));
+        }
+        let mut state = self.lock();
+        // Typed for the sign-in the phone showed, not one started since.
+        if state
+            .sign_in
+            .as_ref()
+            .is_some_and(|s| s.account_id != account_id || s.started_at != started_at)
+        {
+            return Err(AccountsError::Invalid(
+                "That code was for an earlier sign-in. Copy the code from the newest sign-in page and paste it again."
+                    .into(),
+            ));
+        }
+        let waiting = matches!(
+            state.sign_in.as_ref().map(|s| &s.stage),
+            Some(SignInStage::OnPhone {
+                paste_code: true,
+                ..
+            })
+        );
+        let Some(running) = state.running.as_ref() else {
+            return Err(AccountsError::NotFound(
+                "No sign-in is waiting for a code. Start it again.".into(),
+            ));
+        };
+        let Some(codes) = running.codes.as_ref().filter(|_| waiting) else {
+            return Err(AccountsError::Busy(
+                "This sign-in isn't waiting for a code now.".into(),
+            ));
+        };
+        if codes.try_send(Secret::new(code)).is_err() {
+            return Err(AccountsError::Busy(
+                "A code was just sent. Wait for it to be checked.".into(),
+            ));
+        }
+        // Shown at once; the sign-in says so too as it writes the code.
+        if let Some(sign_in) = state.sign_in.as_mut() {
+            sign_in.stage = SignInStage::Checking;
+        }
+        drop(state);
+        self.bump();
         Ok(())
     }
 
@@ -882,10 +994,20 @@ impl ComputerAccounts {
         profile: &Profile,
         cancel: watch::Receiver<bool>,
         epoch: u64,
+        phone: Option<(Vec<String>, bool, signin::Phone)>,
     ) -> SignInStage {
         let stage = |s: SignInStage| self.stage(&profile.id, s);
         let config = self.config();
+        let (phone_argv, phone) = match phone {
+            Some((argv, pty, phone)) => (Some((argv, pty)), Some(phone)),
+            None => (None, None),
+        };
+        let on_phone = phone.is_some();
         let (argv, pty, extra) = match &profile.method {
+            Method::Agent { .. } if phone_argv.is_some() => {
+                let (argv, pty) = phone_argv.as_ref().expect("checked");
+                (argv, *pty, Vec::new())
+            }
             Method::Agent { sign_in, pty, .. } => (sign_in, *pty, Vec::new()),
             Method::Cli {
                 sign_in,
@@ -894,9 +1016,7 @@ impl ComputerAccounts {
             } => {
                 let dir = self.config_dir(&profile.id);
                 if let Err(e) = files::private_dir(&dir) {
-                    return SignInStage::Failed {
-                        reason: format!("Ophio could not prepare the sign-in: {e}"),
-                    };
+                    return sign_in_failed(format!("Ophio could not prepare the sign-in: {e}"));
                 }
                 (
                     sign_in,
@@ -931,16 +1051,17 @@ impl ComputerAccounts {
                 opener: config.opener.as_ref(),
                 scratch: config.dir.join("signin"),
                 limit: config.sign_in_limit,
+                phone,
             },
             &stage,
             cancel,
         )
         .await;
-        let success = match ended {
-            signin::Ended::Exited { success } => success,
+        let (success, refused) = match ended {
+            signin::Ended::Exited { success, refused } => (success, refused),
             signin::Ended::Cancelled => return SignInStage::Cancelled,
             signin::Ended::TimedOut => return SignInStage::TimedOut,
-            signin::Ended::Failed(reason) => return SignInStage::Failed { reason },
+            signin::Ended::Failed(reason) => return sign_in_failed(reason),
         };
         stage(SignInStage::Checking);
         // Checked either way, so Accounts shows the login there is now; kept
@@ -954,19 +1075,41 @@ impl ComputerAccounts {
         let checked = self.check_at(profile, fence).await;
         if !success {
             // A login from before isn't this sign-in succeeding.
-            return SignInStage::Failed {
-                reason: format!(
+            return match refused.filter(|_| on_phone) {
+                Some(signin::Refused::SaidNo) => SignInStage::Failed {
+                    reason: "OpenAI refused the sign-in. If device code sign-in for Codex is off \
+                             in ChatGPT's security settings, turn it on, then try again."
+                        .into(),
+                    help_url: Some(CODEX_DEVICE_CODE_SETTINGS.into()),
+                },
+                Some(signin::Refused::NoCode) => sign_in_failed(
+                    "OpenAI didn't give Codex a sign-in code. Try again later, or finish on the \
+                     computer's screen instead.",
+                ),
+                Some(signin::Refused::Unreachable) => sign_in_failed(
+                    "Codex couldn't reach OpenAI to sign in. Check the computer's internet \
+                     connection, then try again.",
+                ),
+                Some(signin::Refused::CodeExpired) => {
+                    sign_in_failed("The code expired before the sign-in finished. Try again.")
+                }
+                Some(signin::Refused::LoginFailed) => sign_in_failed(format!(
+                    "{} didn't accept that code. Try again, and paste the whole code from the page.",
+                    profile.name
+                )),
+                None => sign_in_failed(format!(
                     "{}'s sign-in stopped before it finished. Try again.",
                     profile.name
-                ),
+                )),
             };
         }
         match checked {
             Checked::In { identity, .. } => SignInStage::Done { identity },
-            Checked::Attention(reason) | Checked::Missing(reason) => SignInStage::Failed { reason },
-            Checked::Out | Checked::Unknown(_) => SignInStage::Failed {
-                reason: format!("{} did not report a sign-in. Try again.", profile.name),
-            },
+            Checked::Attention(reason) | Checked::Missing(reason) => sign_in_failed(reason),
+            Checked::Out | Checked::Unknown(_) => sign_in_failed(format!(
+                "{} did not report a sign-in. Try again.",
+                profile.name
+            )),
         }
     }
 
@@ -978,7 +1121,7 @@ impl ComputerAccounts {
         mut cancel: watch::Receiver<bool>,
         epoch: u64,
     ) -> SignInStage {
-        let fail = |reason: String| SignInStage::Failed { reason };
+        let fail = sign_in_failed;
         // Replacing the client moves this on: tokens from the old one are
         // no use with the new.
         let generation = self.lock().generation(&profile.id);
@@ -1076,8 +1219,9 @@ impl ComputerAccounts {
             SignInStage::Cancelled
         };
         let ended = match ended {
-            SignInStage::Failed { reason } => SignInStage::Failed {
+            SignInStage::Failed { reason, help_url } => SignInStage::Failed {
                 reason: state.masked(&reason),
+                help_url,
             },
             SignInStage::Done { identity } => SignInStage::Done {
                 identity: identity.as_deref().map(|i| state.masked(i)),
@@ -1086,7 +1230,9 @@ impl ComputerAccounts {
         };
         let (event, detail) = match &ended {
             SignInStage::Done { identity } => (AccountEvent::SignedIn, identity.clone()),
-            SignInStage::Failed { reason } => (AccountEvent::SignInFailed, Some(reason.clone())),
+            SignInStage::Failed { reason, .. } => {
+                (AccountEvent::SignInFailed, Some(reason.clone()))
+            }
             SignInStage::Cancelled => (AccountEvent::SignInFailed, Some("Cancelled".into())),
             SignInStage::TimedOut => (
                 AccountEvent::SignInFailed,
@@ -1649,12 +1795,56 @@ impl Accounts for ComputerAccounts {
 
     async fn act(&self, action: AccountAction, by: &str) -> Result<(), AccountsError> {
         match action {
-            AccountAction::SignIn { account_id } => self.sign_in(&account_id, by).await,
+            AccountAction::SignIn {
+                account_id,
+                on_phone,
+            } => self.sign_in(&account_id, by, on_phone).await,
+            AccountAction::SubmitSignInCode {
+                account_id,
+                started_at,
+                code,
+            } => self.submit_code(&account_id, started_at, &code),
+            // The computer's notice, which the hub keeps, not an account.
+            AccountAction::DismissSignInNotice { .. } => Err(AccountsError::Invalid(
+                "Accounts doesn't keep sign-in notices.".into(),
+            )),
             AccountAction::CancelSignIn => {
-                if let Some(running) = self.lock().running.as_ref() {
-                    let _ = running.cancel.send(true);
+                // Answered once the sign-in has stopped, so another can
+                // start straight after, as Finish on the computer's screen
+                // instead does.
+                let mut changed = self.shared.changed.subscribe();
+                let deadline = tokio::time::Instant::now() + CANCEL_LIMIT;
+                // The sign-in running when asked, by account and start: one
+                // another device starts meanwhile is left alone.
+                let target = {
+                    let state = self.lock();
+                    match (&state.running, &state.sign_in) {
+                        (Some(_), Some(s)) => (s.account_id.clone(), s.started_at),
+                        _ => return Ok(()),
+                    }
+                };
+                loop {
+                    {
+                        let state = self.lock();
+                        let same = state.sign_in.as_ref().is_some_and(|s| {
+                            (&s.account_id, s.started_at) == (&target.0, target.1)
+                        });
+                        match state.running.as_ref() {
+                            Some(running) if same => {
+                                let _ = running.cancel.send(true);
+                            }
+                            _ => return Ok(()),
+                        }
+                    }
+                    if tokio::time::timeout_at(deadline, changed.changed())
+                        .await
+                        .is_err()
+                    {
+                        return Err(AccountsError::Busy(
+                            "The sign-in is still stopping. Try again in a moment.".into(),
+                        ));
+                    }
                 }
-                Ok(())
             }
             AccountAction::Pause { account_id } => self.set_paused(&[account_id], true, by),
             AccountAction::Resume { account_id } => self.set_paused(&[account_id], false, by),

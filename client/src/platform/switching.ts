@@ -76,7 +76,9 @@ export class Handoffs extends Store<RetainedControl[]> {
   readonly sessions = new Map<string, HostSession>();
   #offs = new Map<string, () => void>();
   activeProfileId: string | null = null;
-  constructor(readonly platform: Platform, public profiles: HostProfile[]) {
+  /** `source` hands out the session the app keeps for each computer; without
+   * it, sessions made here are this store's to stop. */
+  constructor(readonly platform: Platform, public profiles: HostProfile[], readonly source?: (profileId: string) => HostSession) {
     super(read().filter((r) => profiles.some((p) => p.profileId === r.profileId)));
     this.subscribe(() => {
       try { localStorage.setItem(KEY, JSON.stringify(this.get().map((r) => ({ ...r, busy: false })))); }
@@ -88,6 +90,7 @@ export class Handoffs extends Store<RetainedControl[]> {
       // The computer in use already has its connection; a second one to the
       // same computer is refused by the native layer.
       if (this.sessions.has(r.profileId)) continue;
+      if (this.source) { this.attach(r.profileId, this.source(r.profileId)); continue; }
       const session = new HostSession(r.profileId, this.platform.control(r.profileId));
       this.attach(r.profileId, session); session.start();
     }
@@ -103,6 +106,8 @@ export class Handoffs extends Store<RetainedControl[]> {
     };
     const off = session.link.subscribe(check), offState = session.state.subscribe(check);
     this.#offs.set(profileId, () => { off(); offState(); });
+    // A session the app already keeps may have caught up before this.
+    check();
   }
   retain(profile: HostProfile, session: HostSession, risk: SwitchRisk): void {
     // What was already kept for this computer may be known only here (a Stop
@@ -197,9 +202,9 @@ export class Handoffs extends Store<RetainedControl[]> {
   dismiss(id: string, stop = true): void {
     this.set((rows) => rows.filter((r) => r.profileId !== id));
     this.#offs.get(id)?.(); this.#offs.delete(id);
-    if (stop) this.sessions.get(id)?.stop();
+    if (stop && !this.source) this.sessions.get(id)?.stop();
     this.sessions.delete(id);
   }
   owns(session: HostSession): boolean { return this.get().some((r) => r.profileId === session.profileId) && this.sessions.get(session.profileId) === session; }
-  dispose(): void { for (const off of this.#offs.values()) off(); for (const s of this.sessions.values()) s.stop(); this.#offs.clear(); this.sessions.clear(); }
+  dispose(): void { for (const off of this.#offs.values()) off(); if (!this.source) for (const s of this.sessions.values()) s.stop(); this.#offs.clear(); this.sessions.clear(); }
 }

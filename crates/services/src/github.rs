@@ -1635,6 +1635,35 @@ impl CompanionHub {
             GithubAction::StopTogether { project_id } => {
                 self.stop_together(*project_id).await?;
             }
+            GithubAction::SetWhenGreen {
+                task_id,
+                when_green,
+            } => {
+                let task: Task = self.read(|r| r.require("task", *task_id))?;
+                let github = (task.github.as_deref())
+                    .filter(|g| !g.link.read_only())
+                    .ok_or_else(|| {
+                        error(
+                            ErrorCode::InvalidRequest,
+                            "This task doesn't make a pull request",
+                        )
+                    })?;
+                // Merging is asked of the account as it is now, on the
+                // repository the task was linked on.
+                if *when_green == Some(WhenGreen::Merge) {
+                    unlocked(caller)?;
+                    let (owner, name) = self.on_github(task.project_id).await?;
+                    same_repo(github, &owner, &name)?;
+                    let repo = self.github_repo(task.project_id).await?;
+                    merges_itself_allowed(&repo)?;
+                }
+                let now = self.inner.clock.now();
+                self.write(|tx| {
+                    crate::github_watch::change_link(tx, *task_id, now, |g| {
+                        g.when_green = *when_green;
+                    })
+                })?;
+            }
         }
         Ok(None)
     }
@@ -1729,6 +1758,7 @@ impl CompanionHub {
                 already_fixed: false,
                 approval: None,
                 review: None,
+                when_green: None,
             },
             title: None,
             branch: None,
@@ -1739,11 +1769,17 @@ impl CompanionHub {
             GithubLink::Issue {
                 number,
                 review_with,
+                when_green,
             } => {
                 if let Some(by) = review_with {
                     valid_choice(by, "review with")?;
                 }
                 prepared.github.check_with = review_with.clone();
+                if *when_green == Some(WhenGreen::Merge) {
+                    let repo = self.github_repo(project_id).await?;
+                    merges_itself_allowed(&repo)?;
+                }
+                prepared.github.when_green = *when_green;
                 let issue = gh
                     .rest(Method::Get, &format!("{base}/issues/{number}"), None)
                     .await
@@ -1934,6 +1970,21 @@ fn review_folder(project: &Path, path: &str) -> Result<(), ProtocolError> {
 }
 
 /// Through merge only where the account administers the repository.
+/// Whether one task's pull request may merge by itself once it is green,
+/// as Through merge's are: the account must administer the repository.
+pub(crate) fn merges_itself_allowed(repo: &GithubRepo) -> Result<(), ProtocolError> {
+    if !repo.admin {
+        return Err(error(
+            ErrorCode::PermissionDenied,
+            format!(
+                "Only an admin of {}/{} can have a pull request merge by itself, so leave it for yourself to merge.",
+                repo.owner, repo.name
+            ),
+        ));
+    }
+    through_merge_allowed(GithubMode::ThroughMerge, repo)
+}
+
 pub(crate) fn through_merge_allowed(
     mode: GithubMode,
     repo: &GithubRepo,
@@ -1961,7 +2012,7 @@ pub(crate) fn through_merge_allowed(
 
 /// Ready and Merge act as the person, so they come from the phone with its
 /// unlock, not from a chat.
-fn unlocked(caller: &Caller) -> Result<(), ProtocolError> {
+pub(crate) fn unlocked(caller: &Caller) -> Result<(), ProtocolError> {
     if !matches!(
         caller.principal,
         Principal::Device { .. } | Principal::LocalOwner

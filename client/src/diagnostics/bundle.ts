@@ -32,7 +32,10 @@ export function checkedScreenshot(value: ReportScreenshot | undefined): ReportSc
   return structuredClone(value);
 }
 
-export type ReportContextInput = ReportContext & { errorSide?: ReportSide };
+/** `profileId` names the computer the report is about, as an error from one
+ * of All's rows: it is filed through and describes that computer, not the
+ * one on screen. It never goes into the report itself. */
+export type ReportContextInput = ReportContext & { errorSide?: ReportSide; profileId?: string };
 export interface BuildReport {
   id?: string;
   now?: number;

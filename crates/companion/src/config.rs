@@ -9,6 +9,16 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// The file this program runs from. A Mac gives the path it was started by,
+/// which may be the link from the folder on PATH, not where it is installed.
+pub(crate) fn running_program() -> std::io::Result<PathBuf> {
+    let program = std::env::current_exe()?;
+    // Moved aside by another launch, it has only the path it had.
+    #[cfg(target_os = "macos")]
+    let program = program.canonicalize().unwrap_or(program);
+    Ok(program)
+}
+
 /// Names the command, the login service and the settings and data directories.
 pub const APP_NAME: &str = ports::PROGRAM_NAME;
 pub const EARLIER_APP_NAME: &str = ports::EARLIER_PROGRAM_NAME;

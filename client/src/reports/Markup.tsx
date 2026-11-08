@@ -6,7 +6,7 @@ import { MAX_SCREENSHOT_BYTES } from "../diagnostics/constants";
 import { uuidv7 } from "../protocol/ids";
 import type { Mark, ReportScreenshot } from "../protocol/types";
 import type { SourceDraft } from "../state/annotations";
-import { Canvas } from "../screens/annotate/Canvas";
+import { Canvas } from "../screens/annotate/CanvasView";
 import { SHAPE_WORD, type Tool } from "../screens/annotate/canvas";
 import "../screens/annotate/annotate.css";
 

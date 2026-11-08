@@ -61,6 +61,7 @@ fn fixture() -> (tempfile::TempDir, CodexAdapter, RunSpec) {
             browser: false,
             github: false,
             checklist_answers: false,
+            read_only: false,
         }),
         project_settings: false,
         env: Default::default(),
@@ -102,6 +103,7 @@ async fn replay_approvals_exact_bytes_steering_resume_and_usage() {
     let mut ids = vec![];
     let mut streaming = false;
     let mut activity = false;
+    let mut steps = vec![];
     let mut warnings = vec![];
     let mut file_detail = None;
     while ids.len() < 2 {
@@ -118,13 +120,27 @@ async fn replay_approvals_exact_bytes_steering_resume_and_usage() {
             }
             HarnessEvent::Activity {
                 status: ActivityStatus::Running,
+                tool,
+                summary,
                 ..
-            } => activity = true,
+            } => {
+                activity = true;
+                steps.push((tool, summary));
+            }
             HarnessEvent::Warning { text } => warnings.push(text),
             _ => {}
         }
     }
     assert!(streaming && activity);
+    // Steps are named in plain words where the person reads them; the tool
+    // keeps Codex's own name, which is what lays out its detail.
+    assert_eq!(
+        steps,
+        [
+            ("commandExecution".to_owned(), "Command".to_owned()),
+            ("fileChange".to_owned(), "File change".to_owned()),
+        ]
+    );
     // The approval names the file its change was announced for.
     assert!(
         file_detail
@@ -1987,4 +2003,33 @@ async fn known_quiet_updates_and_the_feature_warning_ophio_causes_say_nothing() 
     assert_eq!(warns.len(), 2, "{notes:?}");
     assert!(warns[0].contains("default_mode_request_user_input, foo_bar"));
     assert!(warns[1].contains("Something else is wrong."));
+}
+
+/// A request the person declined is the same request when Codex asks it
+/// again with new ids, and another command is another request.
+#[test]
+fn a_repeated_request_is_known_by_what_it_asks_not_its_ids() {
+    let request = |id: i64, item: &str, command: &str| approval::PendingApproval {
+        id: wire::Id::Number(id),
+        method: "item/commandExecution/requestApproval".into(),
+        params: serde_json::json!({"threadId":"t","turnId":"u","itemId":item,"command":command,"cwd":"/repo"}),
+    };
+    assert_eq!(
+        declined_key(&request(1, "a", "curl https://example.com"), &[]),
+        declined_key(&request(2, "b", "curl https://example.com"), &[])
+    );
+    assert_ne!(
+        declined_key(&request(1, "a", "curl https://example.com"), &[]),
+        declined_key(&request(1, "a", "curl https://example.org"), &[])
+    );
+    // Only the person's decline counts, never Ophio's own.
+    assert!(ports::harness::declined_by_person(
+        &ApprovalDecision::Deny {
+            reason: Some(ports::harness::declined_text(None)),
+        }
+    ));
+    assert!(!ports::harness::declined_by_person(
+        &ApprovalDecision::Deny { reason: None }
+    ));
+    assert!(asks_the_person("item/tool/requestUserInput"));
 }

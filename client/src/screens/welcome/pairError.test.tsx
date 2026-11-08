@@ -34,3 +34,10 @@ it.each([
   expect(text).toBe(`Not paired${message} Nothing was changed on this phone.Report`);
   expect(text).not.toContain("..");
 });
+
+// client/src-tauri/src/error.rs: Error::NoTailscale, when the computer's
+// Tailscale addresses would be reached from outside Tailscale.
+it("says the phone is off Tailscale rather than that the computer can't be reached", async () => {
+  const text = await refusal("This phone isn’t connected to Tailscale. Turn Tailscale on to reach the computer.");
+  expect(text).toBe("Not pairedThis phone isn’t connected to Tailscale. Turn Tailscale on, then try again.Report");
+});

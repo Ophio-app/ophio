@@ -7,11 +7,13 @@
 import { PRODUCT_NAME, PROGRAM_NAME } from "../brand";
 import { RefreshCw } from "lucide-react";
 import { useApp, useHost, useLink } from "../app/context";
+import { useLastHeard } from "../app/lastHeard";
 import { Button } from "../design/Button";
 import { EvidenceRow, type EvidenceStatus } from "../design/Evidence";
 import { Section } from "../design/ListRow";
 import { remedyText } from "../design/remedy";
-import { Remedy } from "../design/Remedy";
+import { HARNESS_ACCOUNT, signedOutLine, startWhenShown, usePhoneSignIn } from "../screens/settings/signIn";
+import { Remedy } from "../design/RemedyNotice";
 import { Notice } from "../design/Notice";
 import { Sheet } from "../design/Sheet";
 import { deviceKind } from "../design/formFactor";
@@ -19,6 +21,7 @@ import { clockTime, useNow } from "../design/time";
 import type { AccountReadiness, Availability, InputScope, ReadinessCheck as Check, UsageLimit } from "../protocol/types";
 import { freshness } from "./freshness";
 import { useStore } from "../state/store";
+import type { Route } from "../app/ui";
 import { ReadinessCheck } from "../screens/work/ReadinessCheck";
 import "./StatusSheet.css";
 
@@ -101,26 +104,30 @@ export function fingerprint(sha: string, whole = false): string {
   return groups.length > 6 && !whole ? `${groups.slice(0, 3).join(" ")} … ${groups.slice(-3).join(" ")}` : groups.join(" ");
 }
 
-export function StatusSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** `onOpenRoute` opens what the details lead to, on this screen's stack
+ * unless given, as for another computer's details. */
+export function StatusSheet({ open, onClose, onOpenRoute }: { open: boolean; onClose: () => void; onOpenRoute?: (route: Route) => void }) {
   const { profile } = useApp();
   const host = useHost((s) => s.host);
   // The details follow the clock and every word the computer sends; a
   // closed sheet shows none of them, so they exist only while it is open.
   return (
     <Sheet open={open} onClose={onClose} title={profile.name} subtitle={host ? `${host.os_label} · ${PRODUCT_NAME} ${host.companion_version}` : undefined} size="tall">
-      <ConnectionDetails onClose={onClose} />
+      <ConnectionDetails onClose={onClose} onOpenRoute={onOpenRoute} />
     </Sheet>
   );
 }
 
-function ConnectionDetails({ onClose }: { onClose: () => void }) {
+function ConnectionDetails({ onClose, onOpenRoute }: { onClose: () => void; onOpenRoute?: (route: Route) => void }) {
   const { profile, session, ui, forget } = useApp();
+  const go = onOpenRoute ?? ((route: Route) => { onClose(); ui.push(route); });
   const link = useLink();
   const caughtUp = useHost((s) => s.caughtUp);
-  const lastHeardAt = useHost((s) => s.lastHeardAt);
+  const lastHeardAt = useLastHeard();
   const caps = useHost((s) => s.capabilities);
   const harnesses = useHost((s) => s.harnesses);
   const readiness = useHost((s) => s.readiness);
+  const phoneSignIn = usePhoneSignIn();
   const now = useNow();
   const unanswered = useStore(session.unanswered, (s) => s);
   const f = freshness(link, caughtUp, lastHeardAt, now, profile.name, unanswered);
@@ -153,7 +160,7 @@ function ConnectionDetails({ onClose }: { onClose: () => void }) {
           <EvidenceRow status="info" claim="Private address" detail={profile.addresses.join(", ")} />
         </div>
         {link.state === "offline" && (
-          <Button variant="secondary" block icon={RefreshCw} onClick={() => session.reconnect()}>
+          <Button variant="secondary" block icon={RefreshCw} onClick={() => session.reconnect("person")}>
             Try again now
           </Button>
         )}
@@ -229,18 +236,21 @@ function ConnectionDetails({ onClose }: { onClose: () => void }) {
           <p className="fine">This version supports Claude Code and Codex.</p>
           <div className="group">
             {harnesses.filter(h => h.kind === "claude_code" || h.kind === "codex").map((h) => {
-              const acct = account(h.account);
+              // Signed out, where this phone can sign it in: the row opens that.
+              const signIn = phoneSignIn && h.account.state === "signed_out" ? HARNESS_ACCOUNT[h.kind] : undefined;
+              const acct = signIn ? { status: "failed" as const, text: `${signedOutLine(signIn, profile.name)}. Tap to sign in again.` } : account(h.account);
               const ready = h.capabilities.start_run;
               const plain = plainAvailability(ready);
               const limit = usageLimitNow(h.usage_limit, now);
               return (
                 <EvidenceRow
                   key={h.kind}
-                  status={ready.state === "available" && limit ? "failed" : availabilityStatus(ready)}
+                  status={signIn ? "failed" : ready.state === "available" && limit ? "failed" : availabilityStatus(ready)}
                   claim={h.display_name}
-                  detail={ready.state !== "available" ? plain.text : limit ? usageLimitText(limit, now) : checkText("Ready to start tasks", acct.text)}
-                  reason={plain.reason}
+                  detail={signIn ? acct.text : ready.state !== "available" ? plain.text : limit ? usageLimitText(limit, now) : checkText("Ready to start tasks", acct.text)}
+                  reason={signIn ? null : plain.reason}
                   source={h.native_version ?? undefined}
+                  {...(signIn ? { onOpen: () => { startWhenShown(profile.profileId, signIn); go({ screen: "sign_in", accountId: signIn }); }, openLabel: `${h.display_name}: sign in again` } : {})}
                 />
               );
             })}
@@ -283,15 +293,12 @@ function ConnectionDetails({ onClose }: { onClose: () => void }) {
 
       <Section>
         <div className="group">
-          <EvidenceRow status="info" claim="Settings" detail="Agents, accounts, this computer and this device" onOpen={() => { onClose(); ui.push({ screen: "settings" }); }} />
+          <EvidenceRow status="info" claim="Settings" detail="Agents, accounts, this computer and this device" onOpen={() => go({ screen: "settings" })} />
           <EvidenceRow
             status="info"
             claim="Connections and readiness"
             detail="Paired devices, chat links and what’s ready to use"
-            onOpen={() => {
-              onClose();
-              ui.push({ screen: "connections" });
-            }}
+            onOpen={() => go({ screen: "connections" })}
           />
         </div>
       </Section>

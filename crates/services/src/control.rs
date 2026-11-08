@@ -10,16 +10,237 @@ use tokio::sync::Mutex;
 pub(crate) struct Target {
     pub view: TargetControlView,
     pub removed: bool,
+    /// Being let go of with every other display (sharing turned off,
+    /// shutdown, capture reopening): fenced, and about to be removed. An
+    /// action on it meanwhile is answered as one on a removed display is,
+    /// never as a pause for the person to hand back.
+    pub leaving: bool,
     pub geometry: TargetGeometry,
     pub sink: Box<dyn ports::InputSink>,
     pub generation: u64,
     pub last_seq: u64,
     pub deadline: Option<Instant>,
+    /// The active lease as an action about to be sent sees it, without the
+    /// display's lock: kept current by every grant, renewal and revocation.
+    pub live: Arc<LiveLease>,
+    /// An app launch on this display couldn't be confirmed stopped: an app
+    /// may still open. No release of the display is confirmed while it
+    /// stands: until the computer proves nothing of the launch is left
+    /// (see `launch_recheck`), or Ophio restarts. Set only through
+    /// [`CompanionHub::mark_launch`].
+    pub unresolved_launch: bool,
+    /// App launches on this display still running, even ones whose caller
+    /// went away. A revocation waits for them before saying it let go.
+    pub launches: Arc<Launches>,
     pub supervisor: Option<DeviceId>,
     pub observed_generation: Option<u64>,
     /// The last save of `view` failed; the next desktop observation saves it
     /// again, whole.
     pub unsaved: bool,
+}
+/// How a launch that couldn't be confirmed stopped can be checked again:
+/// none when nothing can prove it stopped (no scope, a task that panicked).
+pub(crate) type Unconfirmed = Option<Arc<dyn ports::LaunchCheck>>;
+/// App launches in flight on a display, and those that couldn't be stopped.
+/// Kept apart from the display's lock, which a launch's caller may hold or
+/// may have dropped.
+#[derive(Debug, Default)]
+pub(crate) struct Launches {
+    pending: std::sync::atomic::AtomicUsize,
+    /// Launches that couldn't be confirmed stopped since the display's mark
+    /// was last cleared.
+    pub(crate) unconfirmed: std::sync::Mutex<Vec<Unconfirmed>>,
+    settled: tokio::sync::Notify,
+    /// The display's mark is being checked again.
+    pub(crate) rechecking: std::sync::atomic::AtomicBool,
+    /// How often the mark was cleared, each time with every launch that
+    /// had ended before then proven stopped.
+    pub(crate) cleared: std::sync::atomic::AtomicU64,
+}
+impl Launches {
+    /// Counts a launch as running until the returned guard is dropped.
+    pub(crate) fn begin(self: &Arc<Self>) -> LaunchGuard {
+        self.pending
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        LaunchGuard(self.clone(), Ended::Dropped)
+    }
+    /// Keeps a launch that couldn't be confirmed stopped.
+    pub(crate) fn unstopped(&self, launch: Unconfirmed) {
+        if let Ok(mut unconfirmed) = self.unconfirmed.lock() {
+            unconfirmed.push(launch);
+        }
+    }
+    /// Launches still running.
+    pub(crate) fn pending(&self) -> usize {
+        self.pending.load(std::sync::atomic::Ordering::SeqCst)
+    }
+    /// Waits, at most `limit`, for every launch to settle: true when none
+    /// is left running and none couldn't be stopped.
+    async fn settled_within(&self, limit: Duration) -> bool {
+        self.settle(limit).await && self.unconfirmed.lock().is_ok_and(|u| u.is_empty())
+    }
+    /// Waits, at most `limit`, for every launch to settle: true when none
+    /// is left running.
+    async fn settle(&self, limit: Duration) -> bool {
+        tokio::time::timeout(limit, async {
+            loop {
+                let settled = self.settled.notified();
+                if self.pending.load(std::sync::atomic::Ordering::SeqCst) == 0 {
+                    return;
+                }
+                settled.await;
+            }
+        })
+        .await
+        .is_ok()
+    }
+}
+/// The start of every release: nothing holding `target` may act from here.
+fn fence(target: &mut Target) {
+    target.view.input_state = InputState::Revoking;
+    target.deadline = None;
+    target.live.set(None);
+    if let Some(lease) = &mut target.view.lease {
+        lease.state = LeaseState::Revoking;
+    }
+}
+/// Fences, all at once, each display in `targets` that `which` picks, and
+/// says which it fenced. Each is locked only for its own fence, so one
+/// whose lock is held meanwhile (by a launch, or a release waiting for one)
+/// keeps none of the others open. A path that lets go of several displays
+/// calls this first: no input or grant lands on any of them while it then
+/// waits for each one's launches and releases it.
+pub(crate) async fn fence_where(
+    targets: &[Arc<Mutex<Target>>],
+    which: impl Fn(&mut Target) -> bool + Sync,
+) -> Vec<bool> {
+    use std::{future::Future, pin::Pin, task::Poll};
+    let which = &which;
+    let mut fencing: Vec<Pin<Box<dyn Future<Output = bool> + Send + '_>>> = targets
+        .iter()
+        .map(|target| {
+            Box::pin(async move {
+                let mut target = target.lock().await;
+                let picked = which(&mut target);
+                if picked {
+                    fence(&mut target);
+                }
+                picked
+            }) as Pin<Box<dyn Future<Output = bool> + Send + '_>>
+        })
+        .collect();
+    let mut fenced = vec![None; fencing.len()];
+    std::future::poll_fn(|cx| {
+        let mut done = true;
+        for (future, fenced) in fencing.iter_mut().zip(fenced.iter_mut()) {
+            if fenced.is_none() {
+                match future.as_mut().poll(cx) {
+                    Poll::Ready(picked) => *fenced = Some(picked),
+                    Poll::Pending => done = false,
+                }
+            }
+        }
+        if done { Poll::Ready(()) } else { Poll::Pending }
+    })
+    .await;
+    fenced.into_iter().map(|f| f == Some(true)).collect()
+}
+/// How long letting go of a display waits for launches still running on it,
+/// an agent's or voice control's. A release fences the display before it
+/// waits, so a launch not yet past its final authority check never starts,
+/// and one already past it ends within the launcher's limit for that.
+const LAUNCH_SETTLE: Duration =
+    voice_control::LAUNCH_AFTER_CHECK.saturating_add(Duration::from_millis(500));
+impl CompanionHub {
+    /// Waits for launches still running on `targets`, holding no lock but
+    /// each display's own, briefly, and marks a display whose launch didn't
+    /// settle. Paths that hold the table of all displays while letting go
+    /// of them call this first, so they never wait on a launch with the
+    /// table held, which renewals on every display need.
+    pub(crate) async fn settle_launches(&self, targets: Vec<Arc<Mutex<Target>>>) {
+        for target in targets {
+            let launches = {
+                let mut target = target.lock().await;
+                // Fenced first, as a release begins: no lease on it can act,
+                // renew or start a launch from here on, so none can begin
+                // after this wait has passed it.
+                fence(&mut target);
+                target.leaving = true;
+                if target.unresolved_launch {
+                    continue;
+                }
+                target.launches.clone()
+            };
+            if !launches.settled_within(LAUNCH_SETTLE).await {
+                self.mark_launch(&mut *target.lock().await);
+            }
+        }
+    }
+}
+/// A launch in flight; dropping it records that it settled. One dropped
+/// without [`LaunchGuard::ended`] (its task panicked or was cancelled) may
+/// have left its helper running, so it counts as unstopped, for good.
+pub(crate) struct LaunchGuard(Arc<Launches>, Ended);
+enum Ended {
+    Dropped,
+    Stopped,
+    Unstopped(Unconfirmed),
+}
+impl LaunchGuard {
+    /// The launch ended; `stopped` says whether nothing of it is left, and
+    /// `check` how one that couldn't be stopped can be checked again.
+    pub(crate) fn ended(mut self, stopped: bool, check: Unconfirmed) {
+        self.1 = if stopped {
+            Ended::Stopped
+        } else {
+            Ended::Unstopped(check)
+        };
+    }
+}
+impl Drop for LaunchGuard {
+    fn drop(&mut self) {
+        match std::mem::replace(&mut self.1, Ended::Stopped) {
+            Ended::Stopped => {}
+            Ended::Dropped => self.0.unstopped(None),
+            Ended::Unstopped(check) => self.0.unstopped(check),
+        }
+        self.0
+            .pending
+            .fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+        self.0.settled.notify_waiters();
+    }
+}
+/// A display's live lease and the display itself, in the lock-free index.
+pub(crate) type LeaseEntry = (Arc<LiveLease>, Arc<Mutex<Target>>);
+/// The active lease (identity, generation, deadline), and the identity of
+/// the last one granted.
+type Active = (Option<(LeaseId, u64, Instant)>, Option<LeaseId>);
+/// The active lease's identity and deadline, readable at once by an action
+/// about to send input, never waiting on the display's lock. A revocation
+/// clears it before it does anything else.
+#[derive(Debug, Default)]
+pub(crate) struct LiveLease(std::sync::Mutex<Active>);
+impl LiveLease {
+    fn set(&self, lease: Option<(LeaseId, u64, Instant)>) {
+        if let Ok(mut live) = self.0.lock() {
+            if let Some((id, _, _)) = lease {
+                live.1 = Some(id);
+            }
+            live.0 = lease;
+        }
+    }
+    /// The lease last granted on the display, active or not: the one its
+    /// renewals and input name.
+    pub(crate) fn lease(&self) -> Option<LeaseId> {
+        self.0.lock().ok().and_then(|live| live.1)
+    }
+    /// Whether `lease` at `generation` is still active at `now`.
+    pub(crate) fn holds(&self, lease: LeaseId, generation: u64, now: Instant) -> bool {
+        self.0.lock().is_ok_and(|live| {
+            live.0
+                .is_some_and(|(id, g, deadline)| id == lease && g == generation && now < deadline)
+        })
+    }
 }
 impl CompanionHub {
     /// Publish the catalog and its initial read-only control projections in one
@@ -102,19 +323,28 @@ impl CompanionHub {
             desktop_lock: None,
         };
         self.save_control(&view)?;
+        let live: Arc<LiveLease> = Default::default();
         let state = Arc::new(Mutex::new(Target {
             removed: false,
+            leaving: false,
             view,
             geometry: target.geometry,
             sink,
             generation: 0,
             last_seq: 0,
             deadline: None,
+            live: live.clone(),
+            unresolved_launch: false,
+            launches: Default::default(),
             supervisor: None,
             observed_generation: None,
             unsaved: false,
         }));
         controls.insert(id, state.clone());
+        if let Ok(mut index) = self.inner.live_leases.lock() {
+            index.retain(|id, _| controls.contains_key(id));
+            index.insert(id, (live, state.clone()));
+        }
         Ok(state)
     }
     /// Saves a live screen's whole projection, remembering a save that failed
@@ -186,6 +416,9 @@ impl CompanionHub {
         owner: LeaseOwner,
         supervisor: Option<DeviceId>,
     ) -> Result<LeaseView, ProtocolError> {
+        if target.unresolved_launch {
+            return Err(launch_unresolved());
+        }
         if target.view.input_state == InputState::Unknown {
             return Err(barrier_required());
         }
@@ -255,6 +488,11 @@ impl CompanionHub {
         };
         target.view.lease = Some(lease.clone());
         target.deadline = Some(self.inner.clock.monotonic() + self.inner.renewal);
+        target.live.set(
+            target
+                .deadline
+                .map(|deadline| (lease.lease_id, lease.generation, deadline)),
+        );
         self.inner.expiry.notify_one();
         target.last_seq = 0;
         target.supervisor = supervisor;
@@ -273,8 +511,14 @@ impl CompanionHub {
         target: &mut Target,
         expired: bool,
     ) -> Result<(), ProtocolError> {
-        target.view.input_state = InputState::Revoking;
-        target.deadline = None;
+        fence(target);
+        // A launch still running, even one whose caller went away, may yet
+        // open an app: wait for it, and keep what it left. A display marked
+        // already stays so until its launch is confirmed stopped, so it
+        // waits no more.
+        if !target.unresolved_launch && !target.launches.settled_within(LAUNCH_SETTLE).await {
+            self.mark_launch(target);
+        }
         target.observed_generation = None;
         if let Some(lease) = &mut target.view.lease {
             lease.state = LeaseState::Revoking;
@@ -287,7 +531,19 @@ impl CompanionHub {
         let (voice_released, voice_recorded) = self
             .voice_fence_target(target.view.target_id, expired)
             .await;
-        let acknowledged = matches!(released, Ok(Ok(()))) && voice_released.is_ok();
+        // A voice launch that couldn't be stopped leaves the display as
+        // unresolved as an agent's does. Its driver let go of input first,
+        // so that is the only thing unresolved about it.
+        let voice_launch = voice_released
+            .as_ref()
+            .is_err_and(|e| e.message == voice_control::Error::LaunchUnstopped.to_string());
+        if voice_launch {
+            self.mark_launch(target);
+        }
+        // Input surely let go, whatever is left of a launch.
+        let input_released =
+            matches!(released, Ok(Ok(()))) && (voice_released.is_ok() || voice_launch);
+        let acknowledged = input_released && !target.unresolved_launch;
         target.view.input_state = if acknowledged {
             InputState::Paused
         } else {
@@ -308,9 +564,35 @@ impl CompanionHub {
         let indicated = self.refresh_local_indicator().await;
         // Input that may still be held matters more than what went unrecorded.
         if !acknowledged {
-            return Err(release_unconfirmed());
+            return Err(match (input_released, target.unresolved_launch) {
+                (true, _) => launch_unresolved(),
+                (false, true) => release_and_launch_unresolved(),
+                (false, false) => release_unconfirmed(),
+            });
         }
         saved.and(persisted).and(voice_recorded).and(indicated)
+    }
+    /// The displays whose live lease is `lease`, found without locking any
+    /// display; only those still in the table.
+    pub(crate) async fn lease_displays(&self, lease: LeaseId) -> Vec<Arc<Mutex<Target>>> {
+        let found: Vec<(TargetId, Arc<Mutex<Target>>)> = self
+            .inner
+            .live_leases
+            .lock()
+            .map(|index| {
+                index
+                    .iter()
+                    .filter(|(_, (live, _))| live.lease() == Some(lease))
+                    .map(|(id, (_, target))| (*id, target.clone()))
+                    .collect()
+            })
+            .unwrap_or_default();
+        let controls = self.inner.controls.lock().await;
+        found
+            .into_iter()
+            .filter(|(id, target)| controls.get(id).is_some_and(|t| Arc::ptr_eq(t, target)))
+            .map(|(_, target)| target)
+            .collect()
     }
     pub(crate) async fn revoke_target(
         &self,
@@ -407,6 +689,23 @@ impl CompanionHub {
         });
         self.save_target(&mut target)
     }
+    /// Whether a display `run_id`'s agent held carries an unresolved launch.
+    pub(crate) async fn run_launch_unresolved(&self, run_id: RunId) -> bool {
+        let targets: Vec<_> = self.inner.controls.lock().await.values().cloned().collect();
+        for target in targets {
+            let target = target.lock().await;
+            if target.unresolved_launch
+                && target
+                    .view
+                    .lease
+                    .as_ref()
+                    .is_some_and(|l| l.owner == LeaseOwner::Agent { run_id })
+            {
+                return true;
+            }
+        }
+        false
+    }
     pub(crate) async fn revoke_run(&self, run_id: RunId) -> Result<(), ProtocolError> {
         let mut failure = None;
         // A credential that cannot be withdrawn is no reason to leave the
@@ -443,7 +742,15 @@ impl CompanionHub {
                 .as_ref()
                 .is_some_and(|l| l.owner == LeaseOwner::Agent { run_id })
             {
-                keep_worse(&mut failure, self.revoke_locked(&mut target, false).await);
+                // Once its input is let go, a display left with only an
+                // unresolved launch is as released as it will be until the
+                // launch is confirmed stopped: the run ends and its queue moves on, and the mark
+                // stays. Input not let go is still retried.
+                let released = self.revoke_locked(&mut target, false).await;
+                if released.as_ref().is_err_and(|e| *e == launch_unresolved()) {
+                    continue;
+                }
+                keep_worse(&mut failure, released);
             }
             // Once its input is surely let go, nobody waits for the screen
             // any more: it is free, not an agent paused.
@@ -532,8 +839,8 @@ impl CompanionHub {
         let Principal::Device { device_id } = caller.principal else {
             return Ok((InputOutcome::StaleLease, None));
         };
-        let targets: Vec<_> = self.inner.controls.lock().await.values().cloned().collect();
-        for target in targets {
+        // Only the display holding this lease is locked, never another.
+        for target in self.lease_displays(input.lease_id).await {
             let mut target = target.lock().await;
             let Some(lease) = target.view.lease.clone() else {
                 continue;
@@ -542,10 +849,17 @@ impl CompanionHub {
                 continue;
             }
             self.check_desktop_lock(&mut target).await?;
+            // A Local Stop refuses input from the moment it begins, before
+            // it has reached this display.
             if lease.owner != (LeaseOwner::Human { device_id })
                 || lease.generation != input.generation
                 || lease.boot_epoch != self.inner.epoch
                 || lease.state != LeaseState::Active
+                || self
+                    .inner
+                    .local_stops
+                    .load(std::sync::atomic::Ordering::SeqCst)
+                    != 0
             {
                 return Ok((InputOutcome::StaleLease, None));
             }
@@ -622,8 +936,9 @@ impl CompanionHub {
                 "Only a paired device can keep control",
             ));
         };
-        let targets: Vec<_> = self.inner.controls.lock().await.values().cloned().collect();
-        for target in targets {
+        // Only the display holding this lease is locked, never another: a
+        // release or a launch elsewhere may hold its display for seconds.
+        for target in self.lease_displays(id).await {
             let mut target = target.lock().await;
             if target.view.lease.as_ref().is_some_and(|l| {
                 l.lease_id == id
@@ -641,7 +956,9 @@ impl CompanionHub {
                     return Err(error(ErrorCode::Expired, "Lease expired"));
                 }
                 self.refresh_geometry(&mut target).await?;
-                target.deadline = Some(self.inner.clock.monotonic() + self.inner.renewal);
+                let deadline = self.inner.clock.monotonic() + self.inner.renewal;
+                target.deadline = Some(deadline);
+                target.live.set(Some((id, generation, deadline)));
                 self.inner.expiry.notify_one();
                 return Ok(());
             }
@@ -672,6 +989,9 @@ impl CompanionHub {
                 };
                 let target = self.target(*target_id).await?;
                 let mut target = target.lock().await;
+                if target.unresolved_launch {
+                    return Err(launch_unresolved());
+                }
                 if target.view.input_state == InputState::Unknown {
                     return Err(barrier_required());
                 }
@@ -777,8 +1097,16 @@ impl CompanionHub {
                     .await;
                 let targets: Vec<_> = self.inner.controls.lock().await.keys().copied().collect();
                 let mut failure = None;
+                let mut unresolved = false;
                 for id in targets {
-                    keep_worse(&mut failure, self.revoke_target(id, false).await);
+                    let result = self.revoke_target(id, false).await;
+                    // Input is let go; only a launch is unresolved. That
+                    // is no reason to leave the computer unlocked.
+                    if result.as_ref().is_err_and(|e| *e == launch_unresolved()) {
+                        unresolved = true;
+                        continue;
+                    }
+                    keep_worse(&mut failure, result);
                 }
                 if let Some(failure) = failure {
                     return Err(failure);
@@ -787,6 +1115,12 @@ impl CompanionHub {
                 let changes = desktop.lock_changes();
                 desktop.lock_session().await.map_err(platform)?;
                 self.confirm_locked(&desktop, changes).await?;
+                if unresolved {
+                    return Err(error(
+                        ErrorCode::OutcomeUnknown,
+                        "The computer is locked, but an app may still open on it: the computer couldn’t stop its launch. Check it when you unlock. Øphio allows control again once it confirms the launch stopped, or after a restart. If the app did open, closing it can let Øphio confirm that",
+                    ));
+                }
             }
             UnlockDesktop { password } => self.unlock_desktop(caller, password).await?,
             CaptureTarget {
@@ -978,21 +1312,94 @@ impl CompanionHub {
         })
     }
 }
+/// What the phone is told when the computer's screen or input failed. Most
+/// platform reasons are written for the code, not the person, so only one
+/// written for the person is passed on; the rest say what likely happened.
 pub(crate) fn platform(e: ports::PlatformError) -> ProtocolError {
-    error(e.code(), "Desktop backend operation failed")
+    use ports::PlatformError as P;
+    let said = match &e {
+        P::ScreenAsleep(reason) => reason.as_str(),
+        P::Locked => "The computer is locked. Unlock it there to see and control its screen.",
+        P::PermissionMissing(_) => {
+            "The computer hasn’t given Ophio permission for its screen or input. Check Ophio’s permissions there."
+        }
+        P::GeometryChanged => "Display changed, reopen sharing to continue.",
+        P::TargetNotFound => {
+            "That screen isn’t there any more. It may have been turned off or disconnected."
+        }
+        P::OutcomeUnknown(_) => {
+            "The computer didn’t confirm the input arrived. Check its screen before trying again."
+        }
+        P::TextUnavailable { .. } => {
+            "Some of this text can’t be typed with the computer’s keyboard layout."
+        }
+        P::LaunchUnstopped => {
+            "An app may still open: the computer couldn’t stop its launch. Check the computer before continuing."
+        }
+        P::Unsupported(_) => "This computer can’t do that.",
+        P::TemporarilyUnavailable(_) | P::Native(_) | P::Io(_) => {
+            "Ophio couldn’t reach the computer’s screen. It may be asleep or locked, or sharing may have stopped there."
+        }
+    };
+    error(e.code(), said)
 }
 
-/// Keeps whichever failure matters more: one whose outcome is unknown, such
-/// as input that may still be held, ahead of anything that merely went
-/// unrecorded; otherwise the first.
+/// Keeps whichever failure matters more: one whose outcome is unknown ahead
+/// of anything that merely went unrecorded, and among those the worst
+/// release, as [`release_rank`] orders them; otherwise the first. Releasing
+/// many displays then reports the same thing in any order of the displays.
 pub(crate) fn keep_worse(kept: &mut Option<ProtocolError>, result: Result<(), ProtocolError>) {
     let Err(error) = result else { return };
-    let worse = |e: &ProtocolError| e.code == ErrorCode::OutcomeUnknown;
-    if kept.as_ref().is_none_or(|k| worse(&error) && !worse(k)) {
+    let rank = |e: &ProtocolError| {
+        if e.code == ErrorCode::OutcomeUnknown {
+            release_rank(e)
+        } else {
+            0
+        }
+    };
+    if kept.as_ref().is_none_or(|k| rank(&error) > rank(k)) {
         *kept = Some(error);
     }
 }
 
+/// Why a display's release can't be confirmed after a launch that couldn't
+/// be stopped.
+pub(crate) fn launch_unresolved() -> ProtocolError {
+    error(
+        ErrorCode::OutcomeUnknown,
+        "An app may still open on this display: the computer couldn’t stop its launch. Check the computer before taking control. Øphio allows control again once it confirms the launch stopped, or after a restart. If the app did open, closing it can let Øphio confirm that",
+    )
+}
+/// What to answer after a launch that couldn't be stopped, from how the
+/// release that followed went: whether input was let go too.
+pub(crate) fn unresolved_release(released: Result<(), ProtocolError>) -> ProtocolError {
+    match released {
+        Err(e) if release_rank(&e) > release_rank(&launch_unresolved()) => {
+            release_and_launch_unresolved()
+        }
+        _ => launch_unresolved(),
+    }
+}
+/// How bad an unconfirmed release is, to report the worst: input that may
+/// still be held, with an app that may still open, then held input alone
+/// (or any other unknown outcome), then only an app that may still open.
+pub(crate) fn release_rank(e: &ProtocolError) -> u8 {
+    if *e == release_and_launch_unresolved() {
+        3
+    } else if *e == launch_unresolved() {
+        1
+    } else {
+        2
+    }
+}
+/// Why a display's release can't be confirmed when its input wasn't let go
+/// either, after a launch that couldn't be stopped.
+pub(crate) fn release_and_launch_unresolved() -> ProtocolError {
+    error(
+        ErrorCode::OutcomeUnknown,
+        "The computer hasn’t confirmed it let go of this display’s input, and an app may still open on it: the computer couldn’t stop its launch. Check the computer before taking control",
+    )
+}
 pub(crate) fn release_unconfirmed() -> ProtocolError {
     error(
         ErrorCode::OutcomeUnknown,

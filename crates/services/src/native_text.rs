@@ -28,6 +28,7 @@ pub(crate) fn approval_fits(record: &impl serde::Serialize) -> bool {
 pub(crate) fn native_approval_fits(native: &NativeApproval) -> bool {
     approval_fits(&(
         &native.title,
+        &native.headline,
         &native.detail,
         &native.detail_lines,
         &native.questions,

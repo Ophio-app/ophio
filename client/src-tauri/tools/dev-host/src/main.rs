@@ -105,6 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             &owner,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await?
@@ -189,7 +190,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 for run in harness.runs() {
                     if seen.insert(run) {
                         harness.emit(run, ports::HarnessEvent::SessionStarted { native_session: format!("synthetic-{run}"), actual_model: Some("synthetic".into()), actual_effort: None, account_label: None }).await;
-                        harness.emit(run, ports::HarnessEvent::ApprovalRequested(ports::NativeApproval { native_request_id: "test-approval".into(), kind: protocol::model::ApprovalKind::Question, title: "Review the connection check".into(), detail: Some("Synthetic request; no native agent was launched.".into()), detail_lines: Vec::new(), questions: Vec::new(), raw_request: None, scope: "Development fixture only".into(), shortened: false, tool_call: None })).await;
+                        harness.emit(run, ports::HarnessEvent::ApprovalRequested(ports::NativeApproval { native_request_id: "test-approval".into(), kind: protocol::model::ApprovalKind::Question, title: "Review the connection check".into(), headline: None, subject: Default::default(), detail: Some("Synthetic request; no native agent was launched.".into()), detail_lines: Vec::new(), questions: Vec::new(), raw_request: None, scope: "Development fixture only".into(), shortened: false, tool_call: None })).await;
                     }
                 }
             }

@@ -10,7 +10,7 @@ import { emptyHostState, type HostState } from "../../state/projection";
 import { annotationStore, blobs, toBundle } from "../../state/annotations";
 import { RouteProvider } from "../../shell/Screen";
 import { verifiedSource } from "../annotate/derivatives";
-import Inbox from "./Inbox";
+import Inbox from "./InboxScreen";
 import { inboxStore } from "./inbox";
 
 vi.mock("./pictures", async (original) => ({

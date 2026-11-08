@@ -27,7 +27,7 @@ fn request() -> VoiceRequest {
 fn good() -> serde_json::Value {
     let intent: BTreeMap<_, _> = ACTIONS
         .into_iter()
-        .map(|k| (k, if k == "click" { 1. } else { 0. }))
+        .map(|(k, _)| (k, if k == "click" { 1. } else { 0. }))
         .collect();
     let score =
         |n: f64| json!({"type":"score","score":n,"confidence":1,"probabilities":{"0":1.-n,"1":n}});
@@ -133,6 +133,26 @@ async fn loopback_rejects_another_model_malformed_answers_refusal_and_times_out(
             403,
             false,
             Error::Refused,
+        ),
+        (
+            serde_json::to_vec(&good()).unwrap(),
+            401,
+            false,
+            Error::Refused,
+        ),
+        // A busy or failing service isn't a refused key: the next command
+        // tries again, and the person need not link Jev again.
+        (
+            serde_json::to_vec(&good()).unwrap(),
+            429,
+            false,
+            Error::Unavailable,
+        ),
+        (
+            serde_json::to_vec(&good()).unwrap(),
+            503,
+            false,
+            Error::Unavailable,
         ),
         (Vec::new(), 200, true, Error::Timeout),
     ] {

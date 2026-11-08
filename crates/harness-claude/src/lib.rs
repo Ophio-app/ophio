@@ -164,7 +164,8 @@ impl HarnessAdapter for ClaudeAdapter {
             Availability::Available
         } else {
             Availability::Unsupported {
-                reason: "Install Claude Code on the computer or configure its executable path"
+                // There is no setting for where it is; these are where Øphio looks.
+                reason: "Install Claude Code on the computer, for example from Øphio’s setup. Øphio looks for it on its PATH and in the folders Claude Code’s installers use"
                     .into(),
             }
         };
@@ -498,6 +499,22 @@ struct Launch {
 }
 impl Launch {
     fn build(spec: &RunSpec) -> Result<Self, HarnessError> {
+        // Plan mode refuses every MCP tool, request_access too, and a Plan
+        // turn keeps Claude Code's own plan mode, whose plan Ophio reads: it
+        // gets no server, and asks to work by saying so.
+        let planning;
+        let plan_switch =
+            spec.mode == TaskMode::Plan && spec.bridge.as_ref().is_some_and(|b| b.read_only);
+        let spec = match &spec.bridge {
+            Some(_) if plan_switch => {
+                planning = RunSpec {
+                    bridge: None,
+                    ..spec.clone()
+                };
+                &planning
+            }
+            _ => spec,
+        };
         if spec
             .launch_policy
             .is_some_and(|p| !p.supports(HarnessKind::ClaudeCode))
@@ -516,6 +533,11 @@ impl Launch {
         // no prompts anything else is refused.
         let answering = spec.mode != TaskMode::Work
             && spec.bridge.as_ref().is_some_and(|b| b.checklist_answers);
+        // An Ask turn asks for more with request_access, the one tool of
+        // Ophio's it has, the same way: plan mode would refuse it.
+        let asking = spec.mode == TaskMode::Ask
+            && !answering
+            && spec.bridge.as_ref().is_some_and(|b| b.read_only);
         let mut args = vec![
             "--print",
             "--output-format",
@@ -526,7 +548,7 @@ impl Launch {
             "--include-partial-messages",
             "--replay-user-messages",
             "--permission-mode",
-            if answering {
+            if answering || asking {
                 "manual"
             } else if spec.mode != TaskMode::Work {
                 "plan"
@@ -630,8 +652,8 @@ impl Launch {
             // offers it only the checklist's read and reply tools. Safe mode
             // would turn the bridge off with every other server, so it reads
             // no settings files instead, which hold hooks and plugins.
-            let answering = (spec.bridge.as_ref()).filter(|_| answering);
-            let file = match answering {
+            let bridged = (spec.bridge.as_ref()).filter(|_| answering || asking);
+            let file = match bridged {
                 Some(bridge) => bridge_config(bridge)?,
                 None => {
                     let mut file = tempfile::Builder::new()
@@ -650,7 +672,7 @@ impl Launch {
                 "--tools".into(),
                 "Read,Glob,Grep".into(),
             ]);
-            match answering {
+            match bridged {
                 Some(_) => args.extend(["--setting-sources".into(), String::new()]),
                 None => args.push("--safe-mode".into()),
             }
@@ -661,14 +683,15 @@ impl Launch {
                 "--permission-prompts".into(),
                 "none".into(),
             ]);
-            if spec.mode == TaskMode::Ask && answering.is_none() {
+            if spec.mode == TaskMode::Ask && !answering {
                 args.extend(["--disallowedTools".into(), "ExitPlanMode".into()]);
             }
-            if let Some(bridge) = answering {
-                args.extend([
-                    "--allowedTools".into(),
-                    allowed_tools(bridge, ports::bridge::ANSWER_TOOLS),
-                ]);
+            if let Some(bridge) = bridged {
+                let tools = match answering {
+                    true => ports::bridge::ANSWER_TOOLS,
+                    false => &[ports::bridge::ACCESS_TOOL],
+                };
+                args.extend(["--allowedTools".into(), allowed_tools(bridge, tools)]);
             }
             config = Some(file);
         } else if spec.bridge.as_ref().is_some_and(|b| b.computer_use) {
@@ -701,6 +724,7 @@ impl Launch {
             // only where it belongs, and the owner is asked when the login
             // says so. The GitHub tools ask the owner where a post needs it.
             let mut allowed: Vec<&str> = ports::bridge::PERSON_TOOLS.to_vec();
+            allowed.push(ports::bridge::ACCESS_TOOL);
             if bridge.browser {
                 allowed.extend(ports::bridge::BROWSER_TOOLS);
                 allowed.push(ports::bridge::HUMAN_TOOL);
@@ -713,6 +737,8 @@ impl Launch {
             }
             if bridge.checklist_answers {
                 allowed = ports::bridge::ANSWER_TOOLS.to_vec();
+            } else if bridge.read_only {
+                allowed = vec![ports::bridge::ACCESS_TOOL];
             }
             args.extend(["--allowedTools".into(), allowed_tools(bridge, &allowed)]);
             config = Some(file);
@@ -768,6 +794,7 @@ impl Launch {
             spec.github.as_deref(),
             ports::harness::person_instruction(spec),
             ports::harness::conduct_instruction(spec),
+            plan_switch.then_some(ports::harness::PLAN_SWITCH),
             scratch.as_deref(),
         ]
         .into_iter()

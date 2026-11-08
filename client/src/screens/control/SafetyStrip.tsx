@@ -23,7 +23,7 @@ import { STOP_WAIT_MS, stopStore } from "./stops";
 import { useLeaving, type Leaving } from "./leaving";
 import { receiptWindow } from "./receiptWindow";
 import { holdsDisplay, taskDisplayId, taskDisplayLabel } from "./taskDisplay";
-import { handBackTarget } from "../../state/handBack";
+import { handBackTarget, releasedTakeover } from "../../state/handBack";
 import { GiveInputBack } from "../talk/HandBack";
 import { useOpenTask } from "../work/shared";
 import "./control.css";
@@ -387,5 +387,6 @@ export function inputState(view: TargetControlView, deviceId: string | null, lea
     : view.input_state === "agent" ? "Agent is in control"
     : view.input_state === "human" ? view.lease?.owner.kind === "human" && view.lease.owner.device_id === deviceId
       ? leaving ? "Leaving control…" : "This device has input" : "Another device has input"
-    : view.input_state === "paused" ? "Agent paused" : view.input_state === "ready" ? "No one has input" : "Input needs checking";
+    : view.input_state === "paused" ? releasedTakeover(view) ? "Control ended" : "Agent paused"
+    : view.input_state === "ready" ? "No one has input" : "Input needs checking";
 }

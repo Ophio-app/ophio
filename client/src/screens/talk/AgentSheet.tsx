@@ -23,6 +23,8 @@ import { Age } from "../../design/Age";
 import { Notice } from "../../design/Notice";
 import { modelChoiceValid, modelEfforts } from "./catalog";
 import { agentUnavailable } from "../control/computerReview";
+import { HARNESS_ACCOUNT, useSignInOn } from "../settings/signIn";
+import { SignInAgainButton } from "../settings/SignInAgain";
 import "./agentSheet.css";
 
 function whyNot(h: HarnessInfo): string {
@@ -32,12 +34,12 @@ function whyNot(h: HarnessInfo): string {
   return availabilityText(h.capabilities.start_run).detail ?? "Can’t start work right now.";
 }
 
-function account(h: HarnessInfo): string {
+function account(h: HarnessInfo, signInOn: string | null): string {
   switch (h.account.state) {
     case "signed_in":
       return ["Signed in", h.account.account_label, h.account.plan].filter(Boolean).join(" · ");
     case "signed_out":
-      return `Not signed in. ${h.account.remedy}`;
+      return signInOn && HARNESS_ACCOUNT[h.kind] ? `Not signed in on ${signInOn}` : `Not signed in. ${h.account.remedy}`;
     default:
       return `Sign-in unknown. ${h.account.reason}`;
   }
@@ -108,7 +110,9 @@ export function AgentSheet({
 
   const h = harnesses.find((x) => x.kind === pick.harness);
   const efforts = modelEfforts(h, pick.model);
-  const choiceBlocker = agentChoiceBlocker(h, pick) ?? (computerUse && h ? agentUnavailable(h) : null)
+  const signInOn = useSignInOn();
+  const signInFor = h?.account.state === "signed_out" && signInOn ? HARNESS_ACCOUNT[h.kind] : undefined;
+  const choiceBlocker = agentChoiceBlocker(h, pick, signInOn) ?? (computerUse && h ? agentUnavailable(h, signInOn) : null)
     ?? (pick.launchPolicy != null && !launchSupported ? LAUNCH_POLICY_UPDATE : null);
   const valid = !choiceBlocker && modelChoiceValid(h, pick.model, computerUse ? null : pick.effort);
   const flags = launchFlags && !computerUse ? launchChoices(pick.harness) : [];
@@ -162,7 +166,7 @@ export function AgentSheet({
       }
     >
       {note && <p className="fine">{note}</p>}
-      {choiceBlocker && <Notice tone="warn">{choiceBlocker}</Notice>}
+      {choiceBlocker && <Notice tone="warn" action={signInFor ? <SignInAgainButton accountId={signInFor} leave={onClose} /> : undefined}>{choiceBlocker}</Notice>}
       {!fixedAgent && <Section title="Agent">
         <div className="group" role="group" aria-label="Agent">
           {harnesses.filter((h) => h.integration === "managed").map((x) => {
@@ -179,7 +183,7 @@ export function AgentSheet({
                     {x.native_version && <span className="talk-agents__version"> {x.native_version}</span>}
                   </>
                 }
-                subtitle={ok ? account(x) : unable ?? (x.integration === "managed" && x.installed.state === "available" ? account(x) : whyNot(x))}
+                subtitle={ok ? account(x, signInOn) : unable ?? (x.integration === "managed" && x.installed.state === "available" ? account(x, signInOn) : whyNot(x))}
                 selected={selected}
                 className={ok ? undefined : "talk-agents__off"}
                 trailing={selected ? <Check className="row__check" aria-label="Chosen" /> : undefined}

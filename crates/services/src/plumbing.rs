@@ -11,13 +11,14 @@ use tokio::sync::{Mutex, mpsc};
 impl CompanionHub {
     pub(crate) async fn refresh_host(&self) -> Result<(), ProtocolError> {
         let capabilities = self.host_capabilities().await;
-        let host = HostInfo {
+        let mut host = HostInfo {
             inbox_path: self
                 .inbox_folder()
                 .ok()
                 .map(|p| p.to_string_lossy().into_owned()),
             host_id: self.inner.host_id,
-            name: self.inner.name.clone(),
+            name: String::new(),
+            renamed: false,
             os_label: std::env::consts::OS.into(),
             companion_version: env!("CARGO_PKG_VERSION").into(),
             boot_epoch: self.inner.epoch,
@@ -35,6 +36,9 @@ impl CompanionHub {
             Vec::new()
         };
         self.write(|tx| {
+            // Read here, so a rename committed meanwhile is never undone.
+            (host.name, host.renamed) =
+                crate::computer_name::effective(&tx.read(), &self.inner.hostname)?;
             // What the computer can do is announced as such whenever it
             // changes, as when desktop sharing is turned on or off.
             let changed = tx
@@ -67,7 +71,7 @@ impl CompanionHub {
             Query::ContributionOperation { operation_id } => Ok(QueryData::ContributionOperation { operation: self.contribution_view(&caller, &operation_id)? }),
             Query::ContributionPolicy { operation_id, path } => Ok(QueryData::ContributionPolicy { document: self.contribution_policy(&caller, &operation_id, &path).await? }),
             Query::ProjectFolders { path, after, show_hidden, search } => Ok(QueryData::ProjectFolders { listing: self.project_folders(&caller, path, after, show_hidden, search).await? }),
-            Query::Snapshot { reads_withheld } => self.read(|r| { let caller = Self::current_caller(r,&caller)?; let g = caller.grants; let mut snapshot = crate::history::always(r,&g)?; if matches!(caller.principal, Principal::Channel { .. }) { crate::history::fill_whole(r,&g,&mut snapshot)?; snapshot.attention.retain(|item| !crate::report_inbox::is_inbox(item)); } else { crate::history::fill(r,&g,&mut snapshot,reads_withheld == Some(true))?; } Ok(QueryData::Snapshot(Box::new(snapshot))) }),
+            Query::Snapshot { reads_withheld, account_items } => self.read(|r| { let caller = Self::current_caller(r,&caller)?; let g = caller.grants; let mut snapshot = crate::history::always(r,&g)?; if matches!(caller.principal, Principal::Channel { .. }) { crate::history::fill_whole(r,&g,&mut snapshot)?; snapshot.attention.retain(|item| !crate::report_inbox::is_inbox(item)); } else { crate::history::fill(r,&g,&mut snapshot,reads_withheld == Some(true),account_items)?; } Ok(QueryData::Snapshot(Box::new(snapshot))) }),
             Query::TaskHistory { project_id, from, limit } => self.read(|r| crate::history::page(r, &caller.grants, project_id, from, limit)),
             Query::Task { task_id } => self.read(|r| crate::history::task(r, &caller.grants, task_id)),
             Query::Run { run_id } => self.read(|r| crate::history::run(r, &caller.grants, run_id)),
@@ -127,10 +131,15 @@ impl CompanionHub {
             Query::NotificationSettings => Ok(QueryData::NotificationSettings { view: self.notification_settings_view()? }),
             Query::Reports => Ok(QueryData::Reports { view: self.reports_view()? }),
             Query::InboxReportCode { report_id } => Ok(QueryData::InboxReportCode { code: self.inbox_report_code(&caller, report_id)? }),
+            Query::ReportTaskProject => Ok(QueryData::ReportTaskProject { project_id: self.report_task_project(&caller).await? }),
             Query::Report { report_id } => self.read(|r| Ok(QueryData::Report { detail: r.report_detail(report_id)?.map(Box::new) })),
             Query::ReportPreview { salt, extras } => Ok(QueryData::ReportPreview { part: Box::new(self.report_preview(&salt, &extras).await?) }),
             Query::Windows { search } => Ok(QueryData::Windows { catalog: self.window_catalog(&search).await? }),
-            Query::Accounts => Ok(QueryData::Accounts { view: Box::new(self.accounts()?.view().await) }),
+            Query::Accounts { on_phone } => {
+                let view = self.accounts()?.view().await;
+                let current = self.read(|r| Ok(Self::current_caller(r, &caller)?))?;
+                Ok(QueryData::Accounts { view: Box::new(crate::accounts::view_for(view, &current, on_phone)) })
+            }
             Query::AgentLogins => Ok(QueryData::AgentLogins { view: Box::new(self.agent_logins()?.view().await) }),
             Query::AgentLoginPassword { login_id } => Ok(QueryData::AgentLoginPassword { password: self.agent_login_password(&caller, &login_id).await? }),
             Query::ReusableFormats { task_id, harness } => self.reusable_formats(task_id, harness),
@@ -691,6 +700,15 @@ impl CompanionHub {
                     }
                 }),
             });
+        }
+        // Only on Windows, where the program is wherever its archive was
+        // extracted; elsewhere it is installed outside the person's folders.
+        if cfg!(windows)
+            && let Some(library) = &self.inner.library
+            && let Some(program) = std::env::current_exe().ok()
+            && let Some(check) = program_in_library(&program, &library.roots().await)
+        {
+            checks.push(check);
         }
         let report = ReadinessReport {
             checked_at: self.inner.clock.now(),
@@ -1317,6 +1335,36 @@ fn validate_params(p: StreamParams) -> Result<(), ProtocolError> {
 }
 /// A capability check the person can read: the summary says what they can
 /// or cannot do; the tool's own reason stays in `detail`, shown on request.
+/// A check that fails when `program`'s folder is in one of the Library
+/// `roots` that devices may change files in: a device allowed to change
+/// Library files, but not to use the terminal, could replace Øphio's own
+/// program there. `None` when it isn't.
+fn program_in_library(
+    program: &std::path::Path,
+    roots: &[protocol::library::LibraryRoot],
+) -> Option<ReadinessCheck> {
+    let folder = program.parent()?;
+    let folder = ports::library::canonical(folder).unwrap_or_else(|_| folder.to_owned());
+    let root = roots.iter().filter(|root| root.writable).find(|root| {
+        let root = std::path::Path::new(&root.host_path);
+        folder.starts_with(ports::library::canonical(root).unwrap_or_else(|_| root.to_owned()))
+    })?;
+    Some(ReadinessCheck {
+        area: ReadinessArea::Storage,
+        label: "Program folder".into(),
+        status: CheckStatus::Failed,
+        detail: Some(format!(
+            "Øphio’s program is in {}, inside the Library folder “{}”. A paired device allowed to change Library files could change Øphio’s own program there.",
+            folder.display(),
+            root.label
+        )),
+        remedy: Some(
+            "Move Øphio’s folder out of Library, for example into AppData\\Local\\Programs in your user folder: run .\\ophio.exe service uninstall, move the folder, then run .\\ophio.exe service install from its new place.".into(),
+        ),
+        summary: Some("Øphio’s program is in a Library folder devices can change".into()),
+    })
+}
+
 fn readiness(
     area: ReadinessArea,
     label: &str,
@@ -1389,9 +1437,81 @@ fn wav(pcm: &[u8]) -> Vec<u8> {
     b
 }
 
+/// The computer's own agent program `name` for a terminal, found where its
+/// tasks find it (see [`ports::agent_program`]), with its folder on PATH when
+/// that is elsewhere. Not found, it is left to the terminal's PATH. Windows
+/// starts it as tasks do, with PATH as it is.
+#[allow(clippy::type_complexity)]
+fn installed_agent(
+    name: &str,
+    args: Vec<String>,
+) -> (Option<(PathBuf, Vec<String>)>, Vec<(String, String)>) {
+    #[cfg(not(windows))]
+    return agent_in_terminal(
+        name,
+        ports::agent_program::on_this_computer(name),
+        std::env::var_os("PATH").as_deref(),
+        args,
+    );
+    #[cfg(windows)]
+    {
+        let program =
+            ports::agent_program::on_this_windows(name).unwrap_or_else(|| PathBuf::from(name));
+        (Some((program, args)), Vec::new())
+    }
+}
+
+/// [`installed_agent`], given where the agent was found and the PATH the
+/// terminal starts with.
+#[cfg(not(windows))]
+#[allow(clippy::type_complexity)]
+fn agent_in_terminal(
+    name: &str,
+    found: Option<PathBuf>,
+    path: Option<&std::ffi::OsStr>,
+    args: Vec<String>,
+) -> (Option<(PathBuf, Vec<String>)>, Vec<(String, String)>) {
+    let Some(found) = found else {
+        return (Some((PathBuf::from(name), args)), Vec::new());
+    };
+    let env = ports::agent_program::path_for(&found, path)
+        .and_then(|path| path.into_string().ok())
+        .map(|path| vec![("PATH".to_owned(), path)])
+        .unwrap_or_default();
+    (Some((found, args)), env)
+}
+
 #[cfg(test)]
 mod readiness_tests {
     use super::*;
+
+    #[test]
+    fn a_program_in_a_library_folder_devices_can_change_is_named() {
+        let dir = tempfile::tempdir().unwrap();
+        let (notes, read_only) = (dir.path().join("Ophio"), dir.path().join("Shared"));
+        let program = notes.join("ophio-0.1.1").join("ophio.exe");
+        std::fs::create_dir_all(program.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(&read_only).unwrap();
+        let root = |label: &str, path: &std::path::Path, writable| protocol::library::LibraryRoot {
+            root_id: protocol::LibraryRootId(uuid::Uuid::new_v4()),
+            label: label.into(),
+            host_path: path.to_string_lossy().into_owned(),
+            kind: RootKind::Notes,
+            writable,
+            project_id: None,
+            harness: None,
+            only: None,
+        };
+        let check = program_in_library(&program, &[root("Ophio", &notes, true)]).unwrap();
+        assert_eq!(check.status, CheckStatus::Failed);
+        assert_eq!(check.area, ReadinessArea::Storage);
+        assert!(check.detail.unwrap().contains("“Ophio”"));
+        // Not in it, or only shown and not changed there.
+        let elsewhere = dir.path().join("Programs").join("ophio.exe");
+        assert!(program_in_library(&elsewhere, &[root("Ophio", &notes, true)]).is_none());
+        assert!(program_in_library(&program, &[root("Ophio", &notes, false)]).is_none());
+        assert!(program_in_library(&program, &[root("Shared", &read_only, true)]).is_none());
+    }
 
     #[test]
     fn setup_and_unsupported_checks_are_neutral_and_do_not_repeat_remedies() {
@@ -1555,40 +1675,6 @@ mod readiness_tests {
         drop(hub);
         std::fs::remove_dir_all(path).unwrap();
     }
-}
-
-/// The computer's own agent program `name` for a terminal, found where its
-/// tasks find it (see [`ports::agent_program`]), with its folder on PATH when
-/// that is elsewhere. Not found, it is left to the terminal's PATH.
-#[allow(clippy::type_complexity)]
-fn installed_agent(
-    name: &str,
-    args: Vec<String>,
-) -> (Option<(PathBuf, Vec<String>)>, Vec<(String, String)>) {
-    #[cfg(not(windows))]
-    let found = ports::agent_program::on_this_computer(name);
-    #[cfg(windows)]
-    let found = None;
-    agent_in_terminal(name, found, std::env::var_os("PATH").as_deref(), args)
-}
-
-/// [`installed_agent`], given where the agent was found and the PATH the
-/// terminal starts with.
-#[allow(clippy::type_complexity)]
-fn agent_in_terminal(
-    name: &str,
-    found: Option<PathBuf>,
-    path: Option<&std::ffi::OsStr>,
-    args: Vec<String>,
-) -> (Option<(PathBuf, Vec<String>)>, Vec<(String, String)>) {
-    let Some(found) = found else {
-        return (Some((PathBuf::from(name), args)), Vec::new());
-    };
-    let env = ports::agent_program::path_for(&found, path)
-        .and_then(|path| path.into_string().ok())
-        .map(|path| vec![("PATH".to_owned(), path)])
-        .unwrap_or_default();
-    (Some((found, args)), env)
 }
 
 #[cfg(all(test, unix))]

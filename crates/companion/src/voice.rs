@@ -119,10 +119,31 @@ impl Accessibility for DesktopAccessibility {
         }
     }
 }
+/// What opens apps by voice on this computer.
+fn launcher(
+    environment: &std::collections::BTreeMap<String, String>,
+) -> Arc<dyn voice_control::Launcher> {
+    #[cfg(target_os = "linux")]
+    {
+        Arc::new(platform_linux::launch::LinuxLauncher::from_environment(
+            environment,
+        ))
+    }
+    // Owed: Windows (Start menu shortcuts and AppsFolder ids) and macOS
+    // (application bundles through Launch Services).
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = environment;
+        Arc::new(voice_control::NoLauncher(
+            "Opening apps by voice isn’t available on this computer yet. Shortcuts, typing and scrolling work",
+        ))
+    }
+}
 pub(crate) async fn configure(
     hub: &services::CompanionHub,
     data: PathBuf,
     assessor: Arc<::jev::Jev>,
+    environment: &std::collections::BTreeMap<String, String>,
 ) -> Result<(), protocol::ProtocolError> {
     // Windows closed while Ophio was not running leave their profiles behind.
     browser::sweep(&data).await;
@@ -132,6 +153,7 @@ pub(crate) async fn configure(
             retained: Default::default(),
         }),
         desktop: Arc::new(DesktopAccessibility),
+        launcher: launcher(environment),
         assessor,
     })
 }

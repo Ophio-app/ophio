@@ -23,6 +23,7 @@ const FOCUSED: ReadonlySet<Route["screen"]> = new Set<Route["screen"]>([
   "settings",
   "accounts",
   "agent_logins",
+  "sign_in",
   "connections",
   "github",
   "github_list",

@@ -10,15 +10,15 @@
 
 use crate::{
     CompanionHub,
-    github_watch::{as_creator, headline_item, raise_headline, raise_item},
+    github_watch::{as_creator, headline_item, raise_item},
 };
 use ports::{HarnessEvent, MessageRef, PromptInput};
 use protocol::{
     CommandId, ErrorCode, Event, ProtocolError, RunId,
     command::{Command, CommandEnvelope, MessageDelivery},
     model::{
-        ActivityStatus, AttentionKind, ChildState, Project, Run, RunState, Task, TaskKind,
-        TimelineBody, TimelineItem,
+        ActivityStatus, AttentionItem, AttentionKind, ChildState, Project, Run, RunState, Task,
+        TaskKind, TimelineBody, TimelineItem,
     },
 };
 use std::{
@@ -65,7 +65,9 @@ pub(crate) struct Liveness {
 #[derive(Debug)]
 struct Step {
     since: Instant,
-    tool: String,
+    /// What the person reads it as: Claude Code's tool name, or Codex's step
+    /// in plain words.
+    name: String,
     kind: StepKind,
 }
 
@@ -120,18 +122,17 @@ impl Liveness {
                 status: ActivityStatus::Running,
                 detail,
             } => {
-                let kind = if matches!(tool.as_str(), "Task" | "Agent")
-                    || summary == "collabAgentToolCall"
-                {
-                    StepKind::Helper
-                } else if waits(detail.as_deref()) {
-                    StepKind::Wait
-                } else {
-                    StepKind::Work
-                };
+                let kind =
+                    if matches!(tool.as_str(), "Task" | "Agent") || summary == ports::HELPER_STEP {
+                        StepKind::Helper
+                    } else if waits(detail.as_deref()) {
+                        StepKind::Wait
+                    } else {
+                        StepKind::Work
+                    };
                 self.steps.entry(key.clone()).or_insert(Step {
                     since: now,
-                    tool: tool.clone(),
+                    name: summary.clone(),
                     kind,
                 });
             }
@@ -224,7 +225,7 @@ impl Liveness {
             && age >= STEP_ALERT
             && !self.alerted
         {
-            return Verdict::Alert(step.tool.clone());
+            return Verdict::Alert(step.name.clone());
         }
         Verdict::Fine
     }
@@ -348,7 +349,7 @@ impl CompanionHub {
             let acted = match verdict {
                 Verdict::Fine => Ok(()),
                 Verdict::Remind(why) => self.remind(&task, run_id, why).await,
-                Verdict::Alert(tool) => self.alert_step(&task, run_id, &tool),
+                Verdict::Alert(step) => self.alert_step(&task, run_id, &step),
                 Verdict::Stop(why) => self.guard_stop(&task, run_id, why, false).await,
                 Verdict::Force => self.guard_stop(&task, run_id, Why::Quiet, true).await,
             };
@@ -400,11 +401,11 @@ impl CompanionHub {
         &self,
         task: &Task,
         run_id: RunId,
-        tool: &str,
+        step: &str,
     ) -> Result<(), ProtocolError> {
         let now = self.inner.clock.now();
         let body = format!(
-            "One step ({tool}) has been running for {} minutes while it holds the project. Ophio stops it at {} minutes; stop it sooner if it's stuck.",
+            "One step ({step}) has been running for {} minutes while it holds the project. Ophio stops it at {} minutes; stop it sooner if it's stuck.",
             STEP_ALERT.as_secs() / 60,
             STEP_STOP.as_secs() / 60
         );
@@ -466,9 +467,10 @@ impl CompanionHub {
             ),
         };
         let at = self.inner.clock.now();
-        self.write(|tx| {
-            raise_headline(
-                tx,
+        let item = AttentionItem {
+            // Slow work by its topic, but the work stopped: a problem.
+            alert: Some(protocol::notifications::AlertType::Failed),
+            ..headline_item(
                 task.task_id,
                 AttentionKind::WaitingForYou,
                 protocol::notifications::AlertTopic::SlowWork,
@@ -476,7 +478,8 @@ impl CompanionHub {
                 Some(body.into()),
                 at,
             )
-        })?;
+        };
+        self.write(|tx| raise_item(tx, item))?;
         self.note(task, Some(run_id), body)
     }
 
@@ -522,4 +525,40 @@ fn guarded(r: &store::Read<'_>, run_id: RunId) -> store::Result<Option<(Task, bo
         return Ok(None);
     }
     Ok(Some((task, stopping)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn running(tool: &str, summary: &str) -> HarnessEvent {
+        HarnessEvent::Activity {
+            key: "step".into(),
+            tool: tool.into(),
+            summary: summary.into(),
+            status: ActivityStatus::Running,
+            detail: Some("cargo build".into()),
+        }
+    }
+
+    /// A long step is named as the person reads it, not by Codex's own name
+    /// for its kind of step.
+    #[test]
+    fn a_long_step_is_named_in_plain_words() {
+        let start = Instant::now();
+        let mut live = Liveness::new(start);
+        live.saw(&running("commandExecution", "Command"), start);
+        let later = start + STEP_ALERT;
+        assert_eq!(live.verdict(later, false), Verdict::Alert("Command".into()));
+    }
+
+    /// Codex waiting on its helper agents is helpers at work, not one step
+    /// that has run long.
+    #[test]
+    fn codex_waiting_on_helpers_is_not_a_long_step() {
+        let start = Instant::now();
+        let mut live = Liveness::new(start);
+        live.saw(&running("wait", ports::HELPER_STEP), start);
+        assert_eq!(live.verdict(start + STEP_ALERT, false), Verdict::Fine);
+    }
 }

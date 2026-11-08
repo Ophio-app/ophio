@@ -34,6 +34,9 @@ import type { Picture } from "./useMedia";
 import { useVoiceHold, voiceHoldsLease } from "./voiceHold";
 
 const textActions = new WeakMap<HostSession, Map<string, InputAction>>();
+// Remember the revision of recent input, so a late refusal for an old frame
+// cannot pause a screen that has already recovered to a newer one.
+const inputRevisions = new WeakMap<HostSession, Map<string, number>>();
 const senders = new WeakMap<HostSession, InputSender>();
 const releasedTargets = new WeakMap<HostSession, Map<string, string>>();
 // Views that asked to control each display. A lease this phone holds is left
@@ -63,9 +66,16 @@ export function inputSender(session: HostSession): InputSender {
   if (!sender) {
     const actions = new Map<string, InputAction>();
     textActions.set(session, actions);
-    sender = new InputSender((env) => {
+    const revisions = new Map<string, number>();
+    inputRevisions.set(session, revisions);
+    sender = new InputSender((env, live = false) => {
       const key = `${env.lease_id}/${env.seq}`;
-      if (env.action.action === "text" || env.action.action === "paste") actions.set(key, env.action);
+      revisions.set(key, env.geometry_revision);
+      // Bound memory even when acknowledgements are lost or no view is mounted.
+      if (revisions.size > 512) revisions.delete(revisions.keys().next().value!);
+      // Live input may include passwords: it must not enter the composer draft
+      // or recovery store, even when delivery is refused.
+      if (!live && (env.action.action === "text" || env.action.action === "paste")) actions.set(key, env.action);
       const sent = session.sendInput(env);
       if (!sent) actions.delete(key);
       return sent;
@@ -210,6 +220,9 @@ export function useControl(
   const [confirmedText, setConfirmedText] = useState<{ text: string; at: number } | null>(null);
   const [textPending, setTextPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [geometryPause, setGeometryPause] = useState<{ revision: number; at: number; leaseId: string; error?: string } | null>(null);
+  const geometryPauseNow = useRef(geometryPause);
+  geometryPauseNow.current = geometryPause;
   const lease = view?.lease;
   const leaving = useLeaving(session, lease);
   const hold = useVoiceHold(session, profile.profileId, targetId);
@@ -227,7 +240,17 @@ export function useControl(
     picture.current.connected &&
     frameFresh(picture.current.at, now) &&
     picture.current.revision === target?.geometry.revision;
+  const geometryWaiting = !!geometryPause && geometryPause.leaseId === lease?.lease_id &&
+    (!isFresh || (target?.geometry.revision ?? 0) <= geometryPause.revision);
+  useEffect(() => {
+    if (!geometryPause || geometryWaiting) return;
+    // Completing recovery retires its error and any pending refresh request.
+    // A later, unrelated picture interruption must not resurrect this pause.
+    geometryPauseNow.current = null;
+    setGeometryPause(null);
+  }, [geometryPause, geometryWaiting]);
   const enabled =
+    !geometryWaiting &&
     visible &&
     online &&
     reconciled &&
@@ -423,6 +446,39 @@ export function useControl(
           queueMicrotask(() => textActions.get(session)?.delete(key));
         }
         if (ack.outcome === "injected") return;
+        if (ack.outcome === "stale_geometry") {
+          const revision = inputRevisions.get(session)?.get(key);
+          const latest = targetId ? session.state.get().targets.find(t => t.target_id === targetId) : undefined;
+          // A newer picture already resolved an old refusal. Never replay it.
+          if (revision !== undefined && latest && latest.geometry.revision > revision &&
+              picture.current.revision === latest.geometry.revision &&
+              picture.current.connected && frameFresh(picture.current.at, Date.now())) return;
+          const rejected = revision ?? latest?.geometry.revision ?? 0;
+          const previous = geometryPauseNow.current;
+          if (previous?.leaseId === ack.lease_id && previous.revision >= rejected) return;
+          const pause = { revision: rejected, leaseId: ack.lease_id, at: Date.now() };
+          geometryPauseNow.current = pause;
+          setGeometryPause(pause);
+          // Refresh immediately rather than waiting for the next display event.
+          // The media stream supplies the new frame; neither input nor a drag
+          // is replayed when its geometry matches again.
+          void session.query({ kind: "snapshot" }).then(snapshot => {
+            session.state.set(state => refreshFromSnapshot(state, snapshot, Date.now()));
+          }).catch((e: unknown) => {
+            const state = session.state.get();
+            const current = state.targets.find(t => t.target_id === targetId);
+            if (geometryPauseNow.current !== pause || !intentRef.current ||
+                !targetId || state.control[targetId]?.lease?.lease_id !== pause.leaseId ||
+                (current && current.geometry.revision > pause.revision &&
+                  picture.current.revision === current.geometry.revision &&
+                  picture.current.connected && frameFresh(picture.current.at, Date.now()))) return;
+            // This error belongs only to this pause, never to a recovered screen.
+            const failed = { ...pause, error: describeError(e, profile.name) };
+            geometryPauseNow.current = failed;
+            setGeometryPause(failed);
+          });
+          return;
+        }
         const messages = {
           stale_lease:
             "Control ended on the computer. Enable control again after reviewing its state.",
@@ -448,8 +504,31 @@ export function useControl(
         )
           leave();
       }),
-    [session, lease?.lease_id, leave],
+    [session, lease?.lease_id, leave, targetId, picture, profile.name],
   );
+
+  const liveInputLease = (action: InputAction): LeaseView | null => {
+    const state = session.state.get(),
+      current = targetId ? state.control[targetId] : undefined,
+      liveLease = current?.lease;
+    if (
+      !enabled ||
+      (geometryPauseNow.current && geometryPauseNow.current.leaseId === liveLease?.lease_id &&
+        (state.targets.find(t => t.target_id === targetId)?.geometry.revision ?? 0) <= geometryPauseNow.current.revision) ||
+      !liveLease ||
+      liveLease.lease_id !== lease?.lease_id ||
+      liveLease.state !== "active" ||
+      current?.input_state !== "human" ||
+      inputBlocker(state.capabilities, state.targets.find((t) => t.target_id === targetId), current, state.grants) ||
+      !state.grants?.control_input || !state.grants.view ||
+      picture.current.revision !== state.targets.find((t) => t.target_id === targetId)?.geometry.revision ||
+      !picture.current.connected || !intentRef.current ||
+      document.visibilityState === "hidden" ||
+      !frameFresh(picture.current.at, Date.now()) ||
+      ((action.action === "text" || action.action === "paste") && textPending)
+    ) return null;
+    return liveLease;
+  };
 
   return {
     view,
@@ -460,7 +539,9 @@ export function useControl(
     isFresh,
     reconciled,
     leaving,
-    error,
+    error: error ?? (geometryWaiting && geometryPause
+      ? geometryPause.error ?? (now - geometryPause.at >= 1_000 ? "Screen changed. Waiting for the new picture…" : null)
+      : null),
     savedText,
     pasteOffered,
     textPending,
@@ -478,35 +559,61 @@ export function useControl(
       if (lease && !intentRef.current && !voiceHoldsLease(session, lease)) releaseHuman(session, lease);
     },
     send: (action: InputAction): boolean => {
-      const state = session.state.get(),
-        current = targetId ? state.control[targetId] : undefined,
-        liveLease = current?.lease;
-      if (
-        !enabled ||
-        !liveLease ||
-        liveLease.lease_id !== lease?.lease_id ||
-        liveLease.state !== "active" ||
-        current?.input_state !== "human" ||
-        inputBlocker(state.capabilities, state.targets.find((t) => t.target_id === targetId), current, state.grants) ||
-        !state.grants?.control_input || !state.grants.view ||
-        picture.current.revision !==
-          state.targets.find((t) => t.target_id === targetId)?.geometry
-            .revision ||
-        !picture.current.connected ||
-        !intentRef.current ||
-        document.visibilityState === "hidden" ||
-        !frameFresh(picture.current.at, Date.now())
-      )
-        return false;
+      const liveLease = liveInputLease(action);
+      if (!liveLease) return false;
       setConfirmedText(null);
       if (action.action === "text" || action.action === "paste") {
-        if (textPending) return false;
         setSavedText(action.text);
         setTextPending(true);
       }
       const sent = inputSender(session).send(liveLease, target?.geometry.revision ?? 0, action);
       if (!sent) setTextPending(false);
       return sent;
+    },
+    /** One live action, never kept in the phone's drafts or retried. */
+    sendLive: (action: InputAction, signal: AbortSignal): Promise<boolean> => {
+      if (signal.aborted) return Promise.resolve(false);
+      const liveLease = liveInputLease(action);
+      if (!liveLease) return Promise.resolve(false);
+      return new Promise<boolean>((resolve) => {
+        let key: string | null = null;
+        let transmitted = false;
+        let early: boolean | null = null;
+        let finished = false;
+        let timer: ReturnType<typeof setTimeout>;
+        const done = (ok: boolean) => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          unsubscribe();
+          signal.removeEventListener("abort", abort);
+          resolve(ok);
+        };
+        const abort = () => done(false);
+        const unsubscribe = session.onInputAck((ack) => {
+          if (`${ack.lease_id}/${ack.seq}` !== key) return;
+          const ok = ack.outcome === "injected";
+          if (!transmitted) early = ok;
+          else done(ok && !signal.aborted);
+        });
+        signal.addEventListener("abort", abort, { once: true });
+        timer = setTimeout(() => {
+          setError("The computer did not confirm the key. Check the screen before trying again.");
+          done(false);
+        }, 3_000);
+        if (signal.aborted) { done(false); return; }
+        try {
+          const sent = inputSender(session).send(liveLease, target?.geometry.revision ?? 0, action,
+            env => { key = `${env.lease_id}/${env.seq}`; }, true);
+          transmitted = true;
+          if (!sent) done(false);
+          else if (early !== null) done(early && !signal.aborted);
+        } catch {
+          // A transport exception is as uncertain as a failed acknowledgement.
+          // Retire the listener and timer; never leave a delayed failure behind.
+          done(false);
+        }
+      });
     },
   };
 }

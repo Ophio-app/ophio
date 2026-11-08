@@ -92,6 +92,8 @@ pub fn run() {
             ipc::alerts_state,
             ipc::alerts_configure,
             ipc::alerts_seen,
+            ipc::alerts_handled,
+            ipc::alerts_set_tier,
             ipc::alerts_viewing,
             ipc::alerts_battery,
             ipc::alerts_channel,
@@ -125,14 +127,33 @@ pub fn run() {
         ])
         .build(tauri::generate_context!())
         .expect("start app")
-        .run(|_, event| {
+        .run(|_app, event| {
             #[cfg(target_os = "android")]
             if let tauri::RunEvent::Exit = event {
                 exit_now();
             }
-            #[cfg(not(target_os = "android"))]
+            #[cfg(target_os = "ios")]
+            if let tauri::RunEvent::Opened { urls } = event {
+                opened(_app, urls);
+            }
+            #[cfg(not(mobile))]
             let _ = event;
         });
+}
+
+/// Hands links the iPhone opened the app with to the plugin, which gives them
+/// to the app as Android's do: Tauri, not the plugin, hears of them on iOS.
+#[cfg(target_os = "ios")]
+fn opened(app: &tauri::AppHandle, urls: Vec<url::Url>) {
+    use tauri_plugin_device::DeviceExt;
+    let app = app.clone();
+    let urls: Vec<String> = urls.into_iter().map(String::from).collect();
+    tauri::async_runtime::spawn(async move {
+        let _ = app
+            .device()
+            .call::<()>("appLinks", serde_json::json!({ "urls": urls }))
+            .await;
+    });
 }
 
 /// Ends the process once the app's window has closed, as when it is swiped

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { flushSync } from "react-dom";
 import { AppWindow, Hand, Hourglass, Keyboard as KeyboardIcon, Lock, Mic, MoreHorizontal, Pencil, Square } from "lucide-react";
 import { useImmersive } from "../../shell/focus";
 import { describeError, useApp, useCommand, useHost, useLink } from "../../app/context";
@@ -22,7 +23,7 @@ import type { RouteProps } from "../types";
 import { useMedia } from "./useMedia";
 import { useControl, useVisible } from "./useControl";
 import { LivePicture } from "./LivePicture";
-import { Keyboard } from "./Keyboard";
+import { LiveKeyboard, type LiveKeyboardHandle } from "./LiveKeyboard";
 import { SafetyActions } from "./SafetyStrip";
 import {
   CommandFeedback,
@@ -73,6 +74,7 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
   const waiting = useHost((s) => Object.values(s.tasks).some((t) => t.target_id === route.targetId && !!handBackTarget(s, t)));
   const run = useCommand();
   const [keyboard, setKeyboard] = useState(false);
+  const liveKeyboard = useRef<LiveKeyboardHandle>(null);
   const [requesting, setRequesting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   // Take over asked for on AI Computer Use is finished here, where input works.
@@ -300,8 +302,8 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
               {control.pasteOffered && !locked && (
                 <>
                   <p className="fine">
-                    Paste replaces the computer’s clipboard and sends Ctrl+V
-                    to the focused app.
+                    Paste replaces the computer’s clipboard and sends its
+                    paste shortcut to the focused app.
                   </p>
                   <Button
                     disabled={!control.enabled || control.textPending}
@@ -317,12 +319,6 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
             </section>
           )}
   </>;
-  const typingFeedback = control.pasteOffered ? <section aria-label="Saved text" className="typing-recovery">
-    <p className="fine" role="status">Nothing was typed. Your text is kept here.</p>
-    <Button disabled={!control.enabled || control.textPending} onClick={() => control.send({ action: "paste", text: control.savedText })}>Paste instead</Button>
-    <p className="fine">Replaces the computer’s clipboard and sends Ctrl+V to the focused app.</p>
-    <details><summary>Why typing was refused</summary><p className="fine">{control.error}</p></details>
-  </section> : control.error ? <Notice tone="warn">{control.error}</Notice> : null;
   const typing = keyboard && control.mine && visible && !locked && !accessUnavailable && !control.leaving;
   // While this device controls a display, or with the phone on its side, the
   // picture fills the screen and its controls lie over it (FullControl.tsx).
@@ -330,7 +326,7 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
   const landscape = useLandscape();
   const { active } = useRoute();
   const full = !!target && !accessUnavailable && !locked && !displayChanged &&
-    target.capture.state !== "revoked" && grants?.view !== false && !typing && (control.mine || landscape);
+    target.capture.state !== "revoked" && grants?.view !== false && (control.mine || landscape);
   useImmersive(full && active);
   const actualNote = !locked && !accessUnavailable && <p className="fine">
       This is the computer’s actual desktop. Someone at the computer can
@@ -381,7 +377,7 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
         {(voice.heard || voice.value.transcript) && <p className="voice-transcript" aria-label="Live transcript">{voice.heard || voice.value.transcript}</p>}
         {!brief && <>
           {voice.view && <CapabilityNote what="Speech" availability={voice.view.speech} action={<Button onClick={() => ui.push({ screen: "settings", section: "settings-voice" })}>Set up local speech</Button>} />}
-          <TextArea label="Typed command" value={voice.text} onChange={voice.save} placeholder="Click Sign in, or type “hello”" rows={2} />
+          <TextArea label="Typed command" value={voice.text} onChange={voice.save} placeholder="Open the browser, or press Super Enter" rows={2} />
           <Button variant="primary" disabled={!voice.usable || !voice.text.trim()} pending={voice.busy} onClick={() => void voice.sendTyped()}>Send command</Button>
           {voice.value.steps.length > 0 && <VoiceSteps value={voice.value} last={3} />}
         </>}
@@ -419,7 +415,7 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
   );
   if (full && target)
     return (
-      <Screen bare fixed title={target.label} className="control-screen desktop-screen desktop-screen--full">
+      <Screen bare fixed title={target.label} className={`control-screen desktop-screen desktop-screen--full${typing ? " desktop-screen--keyboard" : ""}`}>
         <LivePicture
           full
           tilt={tilt}
@@ -439,7 +435,7 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
             owner={ownerInfo}
             task={task}
             canInput={control.mine}
-            safety={voiceOn ? voiceStop : control.mine ? (
+            safety={voiceOn && !typing ? voiceStop : control.mine ? (
               <SafetyActions target={target} human onLeave={leave} leaving={control.leaving} />
             ) : task || waiting || owner?.input_state === "unknown" ? (
               <SafetyActions
@@ -461,7 +457,8 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
                 {requesting || handoff ? "Taking over…" : "Take over"}
               </Button>
             )}
-            onKeyboard={control.mine && !control.leaving ? () => setKeyboard(true) : undefined}
+            onKeyboard={control.mine && !control.leaving ? () => flushSync(() => setKeyboard(v => !v)) : undefined}
+            keyboard={typing && <LiveKeyboard bridge={liveKeyboard} targetId={target.target_id} enabled={control.enabled} send={control.sendLive} onClose={() => setKeyboard(false)} />}
             onJev={voiceOffered ? openVoice : undefined}
             voice={voiceOn && <button type="button" className={`full-tool${voice.listening ? " is-pressed" : ""}`} {...talk}>
               <Mic aria-hidden /><span className="full-tool__label" aria-hidden>{voice.listening ? "Listening" : "Talk"}</span>
@@ -470,6 +467,7 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
             onTilt={() => prefs.set((p) => ({ ...p, tiltPan: !p.tiltPan }))}
             notices={<>
               <ConnectionNote />
+              {typing && <SignInStrip send={action => liveKeyboard.current?.insert(action) ?? false} canType={control.enabled} />}
               {voicePanel(true)}
               {requestError && <Notice tone="unknown">{requestError}</Notice>}
               {inputReason && !control.mine && <p className="fine full-reason"><Remedy text={inputReason} /></p>}
@@ -497,20 +495,7 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
       footer={typing ? undefined : footer}
       bodyRef={body}
     >
-      {typing && target ? (
-        <div className="desktop-typing">
-          <SignInStrip send={control.send} canType={control.mine && control.enabled} />
-          <LivePicture compact target={target} canvas={media.canvas} backdrop={media.backdrop} onRegion={media.setRegion} picture={media.picture} retry={media.retry} />
-          <div className="desktop-typing__composer">
-            <p className="fine desktop-typing__status" role="status">
-              {!online || !control.reconciled ? "Input state unknown · input from this device is off"
-                : control.enabled ? "This device holds input"
-                : "This device holds input · sending paused"}
-            </p>
-            <Keyboard targetId={target.target_id} enabled={control.enabled} send={control.send} onClose={() => setKeyboard(false)} feedback={typingFeedback} pasteOffered={control.pasteOffered} onEdit={control.editText} confirmedText={control.confirmedText} pending={control.textPending} />
-          </div>
-        </div>
-      ) : !target ? (
+      {!target ? (
         <Empty title="Display unavailable">
           The computer no longer lists this display. Return to Control to choose
           a current target.
@@ -518,7 +503,7 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
       ) : (
         <>
           <ConnectionNote />
-          <SignInStrip send={control.send} canType={control.mine && control.enabled} />
+          <SignInStrip send={action => liveKeyboard.current ? liveKeyboard.current.insert(action) : control.send(action)} canType={control.mine && control.enabled} />
           <OwnershipStrip info={ownerInfo} className={notable ? undefined : "visually-hidden"} />
           <PrivateStepWarning targetId={target.target_id} />
           {grants?.view === false && (
@@ -588,12 +573,11 @@ export default function Desktop({ route }: RouteProps<"desktop">) {
             </Button>
           )}
           {keyboard && control.mine && visible && !accessUnavailable && !locked && (
-            <Keyboard
+            <LiveKeyboard
+              bridge={liveKeyboard}
               targetId={target.target_id}
               enabled={control.enabled}
-              confirmedText={control.confirmedText}
-              pending={control.textPending}
-              send={control.send}
+              send={control.sendLive}
               onClose={() => setKeyboard(false)}
             />
           )}

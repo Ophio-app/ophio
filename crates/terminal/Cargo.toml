@@ -24,6 +24,9 @@ nix = { version = "0.29.0", features = ["fs", "signal", "user"] }
 containment.workspace = true
 libc = "0.2"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+platform-macos = { path = "../platform-macos" }
+
 [lints]
 workspace = true
 

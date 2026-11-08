@@ -15,6 +15,10 @@ import { PRODUCT_NAME } from "../brand";
 import { Age } from "../design/Age";
 import { isTaskRunning, openAttention, reviewAttention, tasksMovedAt } from "../state/projection";
 import type { HostState } from "../state/projection";
+import type { LinkState } from "../host/link";
+import { useComputerEntries, useEveryComputer, type ComputerEntry } from "../app/fleet";
+import { showEveryProject, useEveryProject } from "../app/everyProject";
+import { useRouteTab } from "./Screen";
 import { PathText } from "../design/PathText";
 import type { Project } from "../protocol/types";
 import { DeleteOneOff, useDeleteOneOff } from "../screens/work/DeleteOneOff";
@@ -89,7 +93,7 @@ export function matchingProjects(projects: Project[], query: string): Project[] 
 /** Drops from the header as a search field over the list. The field isn't
  * focused on opening, so the keyboard comes up only when it's tapped. */
 export function ProjectSheet({ open, onClose, allowAll = false }: { open: boolean; onClose: () => void; allowAll?: boolean }) {
-  const { profile } = useApp();
+  const { profile, all: allComputers } = useApp();
   // Adding a project replaces the list with the add sheet, which closes both.
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
@@ -97,9 +101,11 @@ export function ProjectSheet({ open, onClose, allowAll = false }: { open: boolea
   if (open && adding) return <ProjectSettingsSheet project={undefined} onClose={() => { setAdding(false); onClose(); }} />;
   // Counting every project's tasks on each store update is work only an open sheet shows.
   return (
-    <Sheet open={open} onClose={onClose} title="Projects" subtitle={`On ${profile.name}`} size="drop" closeLabel="Close projects"
+    <Sheet open={open} onClose={onClose} title="Projects" subtitle={allComputers ? "On every computer" : `On ${profile.name}`} size="drop" closeLabel="Close projects"
       head={<TextField label="Search projects" hideLabel placeholder="Search projects" type="search" value={query} onChange={setQuery} enterKeyHint="search" />}>
-      <ProjectList onClose={onClose} onAdd={() => setAdding(true)} query={query} allowAll={allowAll} />
+      {allComputers
+        ? <AllProjectList onClose={onClose} onAdd={() => setAdding(true)} query={query} allowAll={allowAll} />
+        : <ProjectList onClose={onClose} onAdd={() => setAdding(true)} query={query} allowAll={allowAll} />}
     </Sheet>
   );
 }
@@ -238,6 +244,165 @@ function ProjectList({ onClose, onAdd, query, allowAll }: { onClose: () => void;
               ui.push({ screen: "connections" });
             }}
           />
+        </div>
+      </Section>}
+    </>
+  );
+}
+
+/** What All's list needs of one computer: its projects with their counts,
+ * and how current they are. */
+interface ComputerProjects {
+  entry: ComputerEntry;
+  projects: Project[];
+  counts: ReturnType<typeof projectCounts>;
+  online: boolean;
+  /** Not given up on: connecting, or connected. */
+  reachable: boolean;
+  heard: number | null;
+  caughtUp: boolean;
+}
+const NO_COUNTS: ReturnType<typeof projectCounts> = {};
+const countsMemo = new WeakMap<HostState, ReturnType<typeof projectCounts>>();
+function projectsOf(entry: ComputerEntry, state: HostState | null, link: LinkState): ComputerProjects {
+  let counts = state ? countsMemo.get(state) : NO_COUNTS;
+  if (state && !counts) { counts = projectCounts(state); countsMemo.set(state, counts); }
+  return {
+    entry, projects: state ? Object.values(state.projects) : [], counts: counts ?? NO_COUNTS,
+    online: link.state === "online", reachable: link.state !== "offline" && link.state !== "failed", heard: state?.lastHeardAt ?? null, caughtUp: state?.caughtUp ?? false,
+  };
+}
+const sameComputerProjects = (a: ComputerProjects[], b: ComputerProjects[]) => a.length === b.length && a.every((x, i) => {
+  const y = b[i]!;
+  return x.entry === y.entry && x.online === y.online && x.reachable === y.reachable && x.heard === y.heard && x.caughtUp === y.caughtUp
+    && x.projects.length === y.projects.length && x.projects.every((p, j) => p === y.projects[j])
+    && JSON.stringify(x.counts) === JSON.stringify(y.counts);
+});
+
+/** A project on one of the computers, in All's list. */
+interface Placed { at: ComputerProjects; project: Project }
+
+/** All's projects: every computer's, each row naming its computer. Homes
+ * lead, the one on screen first; then the projects by when their work last
+ * moved; then one-offs. The same project on two computers is two rows. */
+export function combinedProjects(computers: ComputerProjects[], query: string): { homes: Placed[]; places: Placed[]; oneOffs: Placed[] } {
+  const q = query.trim().toLowerCase();
+  const all: Placed[] = computers.flatMap((at) => at.projects.map((project) => ({ at, project })))
+    .filter(({ at, project }) => !q || project.name.toLowerCase().includes(q) || project.host_path.toLowerCase().includes(q) || at.entry.profile.name.toLowerCase().includes(q));
+  const moved = (p: Placed) => p.at.counts[p.project.project_id]?.moved ?? 0;
+  const byMoved = (a: Placed, b: Placed) => moved(b) - moved(a);
+  const order = (p: Placed) => (p.at.entry.current ? -1 : computers.indexOf(p.at));
+  return {
+    homes: all.filter((p) => p.project.home).sort((a, b) => order(a) - order(b)),
+    places: all.filter((p) => !p.project.home && !p.project.one_off).sort(byMoved),
+    oneOffs: all.filter((p) => p.project.one_off).sort(byMoved),
+  };
+}
+
+function AllProjectList({ onClose, onAdd, query, allowAll }: { onClose: () => void; onAdd: () => void; query: string; allowAll: boolean }) {
+  const app = useApp();
+  const { profile, ui } = app;
+  const entries = useComputerEntries();
+  const computers = useEveryComputer(entries, projectsOf, sameComputerProjects);
+  const currentProject = useUi((s) => s.projectId);
+  const shownTab = useUi((s) => s.tab);
+  const onTodo = (useRouteTab() ?? shownTab) === "todo";
+  // Every project on every computer, as Tasks and To-Do show them in All.
+  const todoAll = useEveryProject(useRouteTab()) && allowAll;
+  const drafts = useUi((s) => s.drafts);
+  const admin = useHost((s) => s.grants?.admin === true);
+  const [deleting, setDeleting] = useState<Project | null>(null);
+  const warn = useWarning("project.delete");
+  const remove = useDeleteOneOff();
+  const { homes, places, oneOffs } = combinedProjects(computers, query);
+  const searching = !!query.trim();
+  const waiting = computers.filter((c) => c.projects.length === 0);
+
+  const deleted = (gone: Project) => {
+    if (currentProject === gone.project_id) {
+      const here = computers.find((c) => c.entry.current);
+      const next = here?.projects.find((p) => p.home) ?? here?.projects.find((p) => !p.one_off && p.project_id !== gone.project_id)
+        ?? here?.projects.find((p) => p.project_id !== gone.project_id);
+      if (next) ui.selectProject(next.project_id);
+    }
+    setDeleting(null);
+  };
+  if (deleting)
+    return (
+      <Section title="Delete one-off">
+        <DeleteOneOff project={deleting} onCancel={() => setDeleting(null)} onDeleted={() => deleted(deleting)} />
+      </Section>
+    );
+
+  const row = ({ at, project: p }: Placed) => {
+    const c = at.counts[p.project_id];
+    const here = at.entry.current;
+    const selected = here && p.project_id === currentProject && (!allowAll || !todoAll);
+    const hasDraft = here && Object.values(drafts).some((d) => d.projectId === p.project_id);
+    return (
+      <ListRow
+        key={`${at.entry.profile.profileId}/${p.project_id}`}
+        icon={p.home ? House : p.one_off ? FolderPlus : FolderGit2}
+        title={<>{p.name}<Unread count={c?.unread ?? 0} /></>}
+        subtitle={
+          <>
+            {/* Isolated, so no name can turn the path beside it around. */}
+            <bdi className="all-projects__computer">{at.entry.profile.name}</bdi>
+            {" · "}<PathText path={p.host_path} />
+            {p.vcs?.branch ? ` · ${p.vcs.branch}` : ""}
+            {!at.online && <><br />Last reported {at.heard === null ? "at an unknown time" : <Age at={at.heard} suffix=" ago" />}</>}
+          </>
+        }
+        selected={selected}
+        trailing={
+          <span className="row__pills">
+            {c && c.attention > 0 && <Pill tone="warn">{c.attention} {c.attention === 1 ? "needs" : "need"} you</Pill>}
+            {c && c.active > 0 && <Pill tone={at.online ? "accent" : "neutral"}>{c.active} working</Pill>}
+            {c && c.queued > 0 && <Pill>{c.queued} queued</Pill>}
+            {hasDraft && <Pill>Draft</Pill>}
+            {selected && <Check className="row__check" aria-label="Current" />}
+          </span>
+        }
+        // Leaving All projects counts only once the project is shown, not if
+        // the person stays put at the leave-control question.
+        onClick={() => { app.openProject?.(at.entry.profile.profileId, p.project_id, () => showEveryProject(false)); onClose(); }}
+      />
+    );
+  };
+
+  return (
+    <>
+      {allowAll && !searching && <Section><div className="group"><ListRow icon={ListChecks} title="All projects"
+        subtitle={onTodo ? "To-dos from every project on every computer" : "Tasks and requests from every project on every computer"} selected={todoAll} trailing={todoAll && <Check className="row__check" aria-label="Current" />}
+        onClick={() => { showEveryProject(true); onClose(); }} /></div></Section>}
+      {(homes.length > 0 || places.length > 0) && <Section><div className="group">{homes.map(row)}{places.map(row)}</div></Section>}
+      {searching && !homes.length && !places.length && !oneOffs.length && <p className="fine">No project matches “{query.trim()}”.</p>}
+      {oneOffs.length > 0 && (
+        <Section title="One-offs">
+          <div className="group">
+            {oneOffs.map((placed) => (
+              <div key={`${placed.at.entry.profile.profileId}/${placed.project.project_id}`} className="project-row">
+                {row(placed)}
+                {placed.at.entry.current && admin && <IconButton icon={Trash2} label={`Delete ${placed.project.name}`} disabled={remove.pending}
+                  onClick={() => warn.ask(() => setDeleting(placed.project), () => void remove.run(placed.project, () => deleted(placed.project)))} />}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+      {!searching && waiting.length > 0 && (
+        <Section>
+          <div className="group">
+            {waiting.map((c) => (
+              <ListRow key={c.entry.profile.profileId} icon={MonitorSmartphone} disabled title={c.entry.profile.name}
+                subtitle={c.caughtUp ? "No projects yet" : c.reachable ? `Waiting for ${c.entry.profile.name}. Its projects appear once it answers.` : `${c.entry.profile.name} isn’t connected. Its projects appear once it answers.`} />
+            ))}
+          </div>
+        </Section>
+      )}
+      {!searching && <Section>
+        <div className="group">
+          <ListRow icon={FolderPlus} title={`Add project on ${profile.name}`} subtitle={`Choose a folder on ${profile.name}`} chevron onClick={onAdd} />
         </div>
       </Section>}
     </>

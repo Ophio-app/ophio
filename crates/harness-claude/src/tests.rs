@@ -30,14 +30,52 @@ fn told(spec: &RunSpec, before: Option<&str>) -> String {
 /// them rides on every request it makes, so what grows here is paid again
 /// on every turn of every task. Questions off is the longest it gets. The
 /// line sending what the person has to do to the checklist took it past
-/// 5,000, and the one on running checks so their exit status says whether
-/// they passed past 5,200.
+/// 5,000, the one on running checks so their exit status says whether
+/// they passed past 5,200, and how to word a question, naming the choices
+/// and the one it would pick, past 5,700. Asking for more access with
+/// request_access, and not again once declined, past 6,100.
 #[test]
 fn what_a_run_is_told_stays_within_its_budget() {
     let (_dir, _adapter, mut spec) = fixture();
     spec.questions = false;
     let told = told(&spec, None);
-    assert!(told.len() <= 5_300, "{} characters", told.len());
+    assert!(told.len() <= 6_150, "{} characters", told.len());
+}
+
+/// Every run asks the person the way the Sort writes its notes: plain
+/// words, the choices named and the one it would pick, with or without
+/// the bridge's tools, questions on or off, and on the computer too; and
+/// the outcome's example question does what it says.
+#[test]
+fn every_run_names_the_choices_and_the_one_it_would_pick() {
+    let (_dir, _adapter, spec) = fixture();
+    let mut runs = Vec::new();
+    for questions in [true, false] {
+        let mut s = spec.clone();
+        s.questions = questions;
+        runs.push(s.clone());
+        s.bridge.as_mut().unwrap().checklist_answers = true;
+        runs.push(s.clone());
+        s.bridge = None;
+        runs.push(s);
+    }
+    let mut computer = spec.clone();
+    computer.bridge.as_mut().unwrap().computer_use = true;
+    runs.push(computer);
+    for s in &runs {
+        let told = ports::harness::conduct_instruction(s).unwrap();
+        assert!(
+            told.contains("Where there are choices, name each in a few words and say which you would pick and why."),
+            "{told}"
+        );
+        assert!(
+            told.contains("without file names, internal names, ticket numbers or jargon"),
+            "{told}"
+        );
+        assert!(told.contains("each asked as above"), "{told}");
+        assert!(told.contains("or remove it? I'd remove it:"), "{told}");
+        assert!(told.contains("and the one you'd pick, pointing"), "{told}");
+    }
 }
 pub(super) fn fixture() -> (tempfile::TempDir, ClaudeAdapter, RunSpec) {
     let dir = tempfile::tempdir().unwrap();
@@ -73,6 +111,7 @@ pub(super) fn fixture() -> (tempfile::TempDir, ClaudeAdapter, RunSpec) {
             browser: false,
             github: false,
             checklist_answers: false,
+            read_only: false,
         }),
         project_settings: false,
         env: Default::default(),
@@ -539,6 +578,7 @@ async fn modes_probe_and_launch_enforce_read_tools_on_start_and_resume() {
                     .map(str::to_owned),
                 );
                 let allowed: Vec<_> = (ports::bridge::PERSON_TOOLS.iter())
+                    .chain([&ports::bridge::ACCESS_TOOL])
                     .chain(ports::bridge::WORK_TOOLS)
                     .map(|tool| format!("mcp__computer__{tool}"))
                     .collect();
@@ -1429,6 +1469,7 @@ fn a_browsing_work_run_may_use_the_browser_tools_without_asking() {
     };
     // A Work run may always show the person things, and plan their work.
     let person: Vec<_> = (ports::bridge::PERSON_TOOLS.iter())
+        .chain([&ports::bridge::ACCESS_TOOL])
         .chain(ports::bridge::WORK_TOOLS)
         .map(|tool| format!("mcp__computer__{tool}"))
         .collect();
@@ -1444,7 +1485,7 @@ fn a_browsing_work_run_may_use_the_browser_tools_without_asking() {
         ports::bridge::PERSON_TOOLS.len()
             + ports::bridge::WORK_TOOLS.len()
             + ports::bridge::BROWSER_TOOLS.len()
-            + 1
+            + 2
     );
     // The tool answering permission prompts stays out of the model's reach.
     assert!(!tools.contains(&"mcp__computer__permission_prompt"));
@@ -1470,7 +1511,9 @@ fn a_run_linked_to_github_gets_its_tools_and_instructions_once() {
         ports::bridge::PERSON_TOOLS.len()
             + ports::bridge::GITHUB_TOOLS.len()
             + ports::bridge::ASK_TOOLS.len()
+            + 1
     );
+    assert!(tools.contains(&"mcp__computer__request_access"));
     assert!(tools.contains(&"mcp__computer__github_pr"));
     assert!(tools.contains(&"mcp__computer__ask_agent"));
     assert!(!tools.contains(&"mcp__computer__github_start_issue"));
@@ -1489,6 +1532,7 @@ fn a_run_linked_to_github_gets_its_tools_and_instructions_once() {
         ports::bridge::PERSON_TOOLS.len()
             + ports::bridge::GITHUB_TOOLS.len()
             + ports::bridge::ASK_TOOLS.len()
+            + 1
             + ports::bridge::BROWSER_TOOLS.len()
             + 1
     );
@@ -1691,4 +1735,51 @@ fn a_read_only_turn_answering_on_the_checklist_gets_the_disabled_block() {
     let settings: Value =
         serde_json::from_slice(&std::fs::read(args.last().unwrap()).unwrap()).unwrap();
     assert_eq!(settings["skillOverrides"]["hidden-skill"], "off");
+}
+
+/// A read-only Ask turn asks for more with request_access, its one tool of
+/// Ophio's, and is told when to. A Plan turn keeps Claude Code's plan mode,
+/// which refuses every MCP tool, so it gets no server and is told to say in
+/// one line that the work needs Work mode.
+#[test]
+fn a_read_only_turn_has_request_access_alone_or_is_told_to_ask_to_switch() {
+    let (_dir, _adapter, mut spec) = fixture();
+    spec.bridge.as_mut().unwrap().read_only = true;
+    let values = |args: &[String], name: &str| -> Vec<String> {
+        (args.windows(2))
+            .filter(|pair| pair[0] == name)
+            .map(|pair| pair[1].clone())
+            .collect()
+    };
+    spec.mode = TaskMode::Ask;
+    let launch = Launch::build(&spec).unwrap();
+    let args = launch.args.clone();
+    assert_eq!(
+        values(&args, "--allowedTools"),
+        ["mcp__computer__request_access"]
+    );
+    assert_eq!(values(&args, "--permission-mode"), ["manual"]);
+    assert_eq!(values(&args, "--permission-prompts"), ["none"]);
+    assert_eq!(values(&args, "--tools"), ["Read,Glob,Grep"]);
+    assert!(values(&args, "--permission-prompt-tool").is_empty());
+    assert!(!args.contains(&"--safe-mode".to_owned()));
+    let config = std::fs::read_to_string(&values(&args, "--mcp-config")[0]).unwrap();
+    assert!(config.contains("/fixture/computer-mcp"), "{config}");
+    let told = values(&args, "--append-system-prompt").join("\n");
+    assert!(told.contains("call request_access at once"), "{told}");
+    assert!(
+        !told.contains("wake_me") && !told.contains("can_ask"),
+        "{told}"
+    );
+
+    spec.mode = TaskMode::Plan;
+    let launch = Launch::build(&spec).unwrap();
+    let args = launch.args.clone();
+    assert_eq!(values(&args, "--permission-mode"), ["plan"]);
+    assert!(values(&args, "--allowedTools").is_empty());
+    let config = std::fs::read_to_string(&values(&args, "--mcp-config")[0]).unwrap();
+    assert_eq!(config, "{\"mcpServers\":{}}");
+    let told = values(&args, "--append-system-prompt").join("\n");
+    assert!(told.contains(ports::harness::PLAN_SWITCH), "{told}");
+    assert!(!told.contains("request_access"), "{told}");
 }

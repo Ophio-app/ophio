@@ -29,23 +29,15 @@ internal class Notifications(
     private val routes = Routes(context.getSharedPreferences("notification-routes", Context.MODE_PRIVATE))
 
     init {
-        // One channel each, so a person can silence finished tasks and keep
-        // questions. The ones before them are gone, as is the background
+        // One category for each notification type, as Settings lists them;
+        // the two broad ones from before are gone, as is the background
         // service's notice: the service no longer shows one.
-        manager.deleteNotificationChannel("attention")
-        manager.deleteNotificationChannel("connection")
-        manager.deleteNotificationChannel("background")
-        manager.createNotificationChannel(
-            NotificationChannel(NEEDS_YOU, "Needs you", NotificationManager.IMPORTANCE_HIGH)
-        )
-        manager.createNotificationChannel(
-            NotificationChannel(FINISHED, "Finished tasks", NotificationManager.IMPORTANCE_DEFAULT)
-        )
+        Channels.ensure(context)
     }
 
     companion object {
-        const val NEEDS_YOU = "needs-you"
-        const val FINISHED = "finished"
+        /** The type an alert from an older page, which names only its category, shows as. */
+        private fun typeOf(category: String?): String = if (category == "finished") "finished" else "decision"
         /** As the watcher's MAX_SHOWN: the most alerts kept in the shade. */
         const val MAX_SHOWN = 24
         /** The watcher's note of how many alerts wait for room, which takes none. */
@@ -62,6 +54,8 @@ internal class Notifications(
         internal const val REPLY = "app.ophio.reply"
         /** The alert an answer is to, and the answer, in an answer's intent. */
         internal const val TAG = "tag"
+        /** The alerts a swipe of a notification handles, one tag per line. */
+        internal const val HANDLES = "handles"
         internal const val ANSWER = "answer"
         /** The most choices offered as buttons: with Answer, all Android shows. */
         private const val BUTTONS = 2
@@ -101,15 +95,18 @@ internal class Notifications(
             Notification.Builder.recoverBuilder(context, note.clone().apply { if (bare) actions = null })
     }
 
-    enum class Posted { SHOWN, FULL, CLEARED }
+    enum class Posted {
+        SHOWN,
+        /** Shown with a sound or a pop-up. */
+        SOUNDED,
+        FULL,
+        CLEARED,
+        /** Not shown: its type is off on this phone, or for its project. */
+        OFF,
+    }
 
     fun enabled(): Boolean = manager.areNotificationsEnabled()
 
-    /** Whether alerts in a category can show: the app's and the category's switch. */
-    fun channelOn(id: String): Boolean =
-        manager.areNotificationsEnabled() &&
-            (manager.getNotificationChannel(id)?.importance ?: NotificationManager.IMPORTANCE_NONE) !=
-                NotificationManager.IMPORTANCE_NONE
 
     private fun locked(): Boolean =
         context.getSharedPreferences("app-lock", Context.MODE_PRIVATE).getBoolean("enabled", false)
@@ -135,12 +132,20 @@ internal class Notifications(
         groupTitle: String? = null,
         since: Long? = null,
         asking: Asking? = null,
+        silent: Boolean = false,
+        alertType: String? = null,
+        want: String? = null,
+        handles: List<String>? = null,
     ): Posted {
         require(id.length <= 256 && title.length <= 256 && body.length <= 2048)
         require((group?.length ?: 0) <= 256 && (groupTitle?.length ?: 0) <= 256)
         require(asking == null || asking.text.length <= 2048 && asking.reply.length <= 4096)
         require(asking == null || asking.choices.size <= 8 && asking.choices.all { it.length <= 64 })
-        val channel = if (category == "finished") FINISHED else NEEDS_YOU
+        // Its type's category, as this phone chose for the type, unless a
+        // project or the task chose otherwise: quieter shows quieter there,
+        // louder shows in the category of what the person follows.
+        val (channel, routedQuiet) = route(category, alertType, want) ?: return Posted.OFF
+        val quiet = silent || routedQuiet
         val note =
             Notification.Builder(context, channel)
                 .setSmallIcon(R.drawable.ic_stat_ophio)
@@ -150,11 +155,22 @@ internal class Notifications(
                 // The app and the watcher can each raise the same alert.
                 .setOnlyAlertOnce(true)
                 .apply { if (group != null) setGroup(group) }
+        // No sound, vibration or pop-up: a note in a group that alerts only
+        // for its summary, which this one is not, makes none, as AndroidX's
+        // setSilent does it.
+        if (quiet) {
+            note.setGroup(group ?: "$id:silent")
+                .setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
+        }
+        // A swipe is the person's word that they've seen it: it never
+        // comes back for the same thing.
+        if ('/' in id) note.setDeleteIntent(dismisser(id, handles ?: listOf(id)))
         // Posting and clearing take turns, from the app and the watcher
         // alike, so a clear is never overtaken by the post it answers.
         synchronized(posting) {
             if (since != null && clearing.refuses(id, since)) return Posted.CLEARED
             val shown = showing().keys
+            val replacing = id in shown
             if (id != MORE && id !in shown && shown.count { it != MORE } >= MAX_SHOWN) return Posted.FULL
             // Read in turn with redact(): app lock turned on before this
             // hides the text here, and after it, there.
@@ -176,9 +192,93 @@ internal class Notifications(
             notes.keys.retainAll(shown)
             notes[id] = built
             manager.notify(id, ALERT, built)
-            if (group != null) summarize(group, groupTitle, grouped(group))
+            if (group != null) summarize(group, groupTitle, grouped(group), channel)
+            val loud = (manager.getNotificationChannel(channel)?.importance ?: 0) >= NotificationManager.IMPORTANCE_DEFAULT
+            return if (!quiet && loud && !replacing) Posted.SOUNDED else Posted.SHOWN
         }
-        return Posted.SHOWN
+    }
+
+    /**
+     * The category a notification shows in, and whether it shows silently
+     * there; null when it doesn't show at all: its type is off on this
+     * phone, or for its project, or Android's settings switched off its
+     * category or that category's group.
+     */
+    private fun route(category: String?, alertType: String?, want: String?): Pair<String, Boolean>? {
+        if (category == "notice") return open(Channels.NOTICES)?.let { it to false }
+        val type = alertType ?: typeOf(category)
+        val device = Channels.tier(context, type)
+        val wanted = want ?: device
+        if (wanted == "off") return null
+        return if (Channels.rank(wanted) <= Channels.rank(device)) {
+            open(Channels.id(context, type))?.let { it to (wanted == "silent" && device == "alert") }
+        } else {
+            open(Channels.FOLLOW)?.let { it to (wanted == "silent") }
+        }
+    }
+
+    /** `channel`, unless Android's settings switched it or its group off. */
+    private fun open(channel: String): String? {
+        val found = manager.getNotificationChannel(channel) ?: return null
+        if (found.importance == NotificationManager.IMPORTANCE_NONE) return null
+        val group = found.group?.let { manager.getNotificationChannelGroup(it) }
+        if (group?.isBlocked == true) return null
+        return channel
+    }
+
+    /** How a notification would show now, without posting it: `alert`, `silent` or `off`. */
+    fun effective(category: String?, alertType: String?, want: String?, silent: Boolean): String {
+        if (!manager.areNotificationsEnabled()) return "off"
+        val (channel, quiet) = route(category, alertType, want) ?: return "off"
+        val loud = (manager.getNotificationChannel(channel)?.importance ?: 0) >= NotificationManager.IMPORTANCE_DEFAULT
+        return if (silent || quiet || !loud) "silent" else "alert"
+    }
+
+    /** The alerts showing in category `channel`, to put back in another. */
+    fun onChannel(channel: String): List<android.service.notification.StatusBarNotification> =
+        manager.activeNotifications.filter { it.notification.channelId == channel }
+
+    /**
+     * Puts `alerts` back, silently, in category `channel`: their type's
+     * category was replaced to raise it, which took them with it. Nobody
+     * handled them.
+     */
+    fun repost(alerts: List<android.service.notification.StatusBarNotification>, channel: String) {
+        synchronized(posting) {
+            // Each group's summary went with the old category: its title,
+            // to post it again.
+            val titles = alerts
+                .filter { it.id == SUMMARY }
+                .associate { it.notification.group to it.notification.extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString() }
+            val groups = mutableSetOf<String>()
+            for (sbn in alerts.filter { it.id == ALERT }) {
+                val tag = sbn.tag ?: continue
+                val n = sbn.notification
+                val again = rebuild(context, n)
+                    .setChannelId(channel)
+                    .setOnlyAlertOnce(true)
+                    .setGroup(n.group ?: "$tag:silent")
+                    .setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
+                    .build()
+                notes[tag] = again
+                posting.post(tag, n.group, SystemClock.elapsedRealtime())
+                manager.notify(tag, ALERT, again)
+                n.group?.let(groups::add)
+            }
+            for (group in groups) summarize(group, titles[group], grouped(group), channel)
+        }
+    }
+
+    /** What a swipe of alert `id` tells: [AlertDismissed] takes it. */
+    private fun dismisser(id: String, handles: List<String>): PendingIntent {
+        val intent = Intent(context, AlertDismissed::class.java)
+            .setData(Uri.fromParts("ophio-alert", id, null))
+            .putExtra(TAG, id)
+            // What it stood for as posted; a later post replaces this.
+            .putExtra(HANDLES, handles.joinToString("\n"))
+        return PendingIntent.getBroadcast(
+            context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
     /**
@@ -276,18 +376,26 @@ internal class Notifications(
             null
         }
 
-    /** Several finished tasks from one computer stack under its name, with their count. */
-    private fun summarize(group: String, groupTitle: String?, children: Int) {
-        if (children < 2) {
+    /** Several alerts from one project on one computer stack under its name, with their count. */
+    private fun summarize(group: String, groupTitle: String?, children: Int, channel: String? = null) {
+        // Android clears what is left of a group with its summary, so the
+        // summary goes only once none of the group is left; with one left,
+        // it stays as it is.
+        if (children == 0) {
             manager.cancel("summary:$group", SUMMARY)
             return
         }
+        // A lone alert needs no summary, but one already showing stays,
+        // with its count and, under app lock, its hidden title.
+        val showing = manager.activeNotifications.any { it.id == SUMMARY && it.tag == "summary:$group" }
+        if (children < 2 && !showing) return
         val title = if (locked()) "Øphio" else groupTitle ?: "Øphio"
         val summary =
-            Notification.Builder(context, FINISHED)
+            Notification.Builder(context, channel ?: childChannel(group))
                 .setSmallIcon(R.drawable.ic_stat_ophio)
                 .setContentTitle(title)
-                .setContentText("$children tasks finished")
+                .setContentText(if (children == 1) "1 notification" else "$children notifications")
+                .setOnlyAlertOnce(true)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .setGroup(group)
                 .setGroupSummary(true)
@@ -296,6 +404,12 @@ internal class Notifications(
                 .build()
         manager.notify("summary:$group", SUMMARY, summary)
     }
+
+    /** The category one of a group's alerts shows in, for its summary. */
+    private fun childChannel(group: String): String =
+        manager.activeNotifications
+            .firstOrNull { it.id == ALERT && it.notification.group == group }
+            ?.notification?.channelId ?: Channels.NOTICES
 
     private fun grouped(group: String): Int = showing().values.count { it == group }
 
@@ -343,7 +457,12 @@ internal class Notifications(
             if (!locked()) return
             val (alerts, groups) = detailed()
             for (tag in alerts) cancel(tag)
-            for (group in groups) manager.cancel("summary:$group", SUMMARY)
+            // A summary goes only with the last of its group; one with a
+            // child left is posted again, its title hidden.
+            for (group in groups) {
+                if (grouped(group) == 0) manager.cancel("summary:$group", SUMMARY)
+                else summarize(group, null, grouped(group))
+            }
         }
     }
 
@@ -369,6 +488,14 @@ internal class Notifications(
         val groups = listed.filter { it.id == SUMMARY && text(it.notification, Notification.EXTRA_TITLE) != "Øphio" }
             .mapNotNull { it.tag?.removePrefix("summary:") }
         return alerts to groups
+    }
+
+    /** Clears every alert posted to category `channel`, as its type was turned off. */
+    fun cancelChannel(channel: String) {
+        val tags = manager.activeNotifications
+            .filter { it.id == ALERT && it.notification.channelId == channel }
+            .mapNotNull { it.tag }
+        tags.forEach(::cancel)
     }
 
     fun cancel(tag: String) {
@@ -426,7 +553,12 @@ internal class Notifications(
     fun accept(intent: Intent) {
         val token = intent.getStringExtra("notificationToken") ?: return
         intent.removeExtra("notificationToken")
-        routes.open(token)
+        val opened = routes.open(token)
+        // Opened is handled, as a swipe is.
+        if (opened != null && '/' in opened) {
+            val data = context.dataDir.absolutePath
+            Thread { runCatching { AlertWatcher.dismissed(data, opened) } }.start()
+        }
     }
 
     fun takeOpen(): JSONObject? = routes.takeOpen()
@@ -580,11 +712,12 @@ internal class Routes(private val store: SharedPreferences, private val keep: In
         return token
     }
 
-    /** The alert with `token` was tapped: its route waits for the app. */
-    fun open(token: String) {
+    /** The alert with `token` was tapped: its route waits for the app. Returns its tag. */
+    fun open(token: String): String? {
         synchronized(store) {
-            val payload = store.getString(token, null) ?: return
+            val payload = store.getString(token, null) ?: return null
             store.edit().remove(token).putString(OPENED, payload).commit()
+            return runCatching { JSONObject(payload).optString("id") }.getOrNull()
         }
     }
 

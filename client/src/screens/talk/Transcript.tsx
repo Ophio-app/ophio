@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { carriedPlan, sentPlan, useCarryPlan, type CarryPlan } from "./carryPlan";
 import { continuationSelection, planReviewSelection } from "./continuationSelection";
-import { ToolInput, toolInput } from "./toolInput";
+import { ToolInput, toolInput, toolLabel } from "./toolInput";
 import { unstartedQueueItem } from "../work/queueStatus";
 import { taskActivity, taskStatus } from "../work/taskActivity";
 import { awaitingInputBack } from "../../state/handBack";
@@ -355,7 +355,7 @@ export function Steps({ steps, ended, shownPlans = [] }: { steps: Step[]; ended:
               <div className="talk-steps__body">
                 <p className="talk-steps__summary">{stepSummary(st, ended)}</p>
                 <p className="talk-steps__tool">
-                  {st.item.tool === "ExitPlanMode" ? "Plan" : st.item.tool} · {clockTime(st.at)}
+                  {toolLabel(st.item.tool)} · {clockTime(st.at)}
                 </p>
                 {st.item.detail && (planAlreadyShown(st, shownPlans)
                   ? <p className="talk-steps__detail">Plan shown above.</p>

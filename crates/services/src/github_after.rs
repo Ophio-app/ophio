@@ -17,8 +17,7 @@ use crate::github::{
 };
 use crate::github_tools::{DUPLICATE_WINDOW_MS, Filed, listed};
 use crate::github_watch::{
-    FOUND_AT, as_creator, change_link, headline_item, hold, raise_headline, raise_item, reported,
-    speaking,
+    FOUND_AT, as_creator, change_link, headline_item, hold, raise_item, reported, speaking,
 };
 use crate::review_loop::{Batch, Candidate};
 use crate::runs::{QueuePermit, bump_queue_revision, sync_queue_attention};
@@ -31,7 +30,8 @@ use protocol::{
     BootEpoch, ErrorCode, Event, ProtocolError, QueueItemId, RunId, TaskId,
     capability::HarnessKind,
     command::{Command, CommandEnvelope, CommandResult, TaskPlacement},
-    model::{AttentionKind, Project, Run, RunState, Task, TimelineBody},
+    model::{AttentionItem, AttentionKind, Project, Run, RunState, Task, TimelineBody},
+    notifications::AlertType,
     queue::{QueueAuthorization, QueueView},
     time::Timestamp,
 };
@@ -282,8 +282,8 @@ pub(crate) fn read_only_framing(
         GithubLink::Check { number } if role == Some(ReviewRole::Recheck) => format!(
             "{read}\n\n\
              ## The recheck\n\n\
-             Øphio reviewed pull request #{number} before and handed what it found back to be corrected, and more was pushed since. Øphio has another agent check any new problem you report, hands what it confirms to the agent that wrote the change to fix, and comments it on the pull request; it never approves.\n\n\
-             1. For each earlier finding given with the task, check whether the change now corrects it, in the code and not only in a commit message: name the lines that correct it, or the test that covers it now. When it isn't corrected, or only in part, say what is still wrong.\n\
+             Øphio reviewed pull request #{number} before and handed what it found back to be corrected. Recheck the earlier findings and any changes pushed since, including answers that made no code changes. Øphio has another agent check any new problem you report, hands what it confirms to the agent that wrote the change to fix, and comments it on the pull request; it never approves.\n\n\
+             1. For each earlier finding given with the task, check whether the change now corrects it, in the code and not only in a commit message: name the lines that correct it, or the test that covers it now. When it isn't corrected, or only in part, say what is still wrong. The agent that wrote the change answers a finding it thinks is wrong in a comment, given with the task, instead of changing the code. Where its reason holds up against the source, count the finding as corrected and say why it isn't a problem; where it doesn't, say what is still wrong.\n\
              2. Review what changed since the last round, given with the task, and only that: read each change in its context, its callers and what it calls, and check it as the first round did, for bugs, security problems, missing tests and anything a correction broke. Don't go back over code this round didn't change; earlier rounds covered it. Work brought in by merging the base branch isn't part of this change.\n\
              3. For each new problem, work out the case where it goes wrong. Leave out what you can't show.\n\n\
              Don't report style, naming or preferences, or problems that were there before this change unless it makes them worse. Each title says the problem plainly; each body says what goes wrong, how to see it and what to change.\n\n\
@@ -886,10 +886,12 @@ impl CompanionHub {
             .map(|message| self.redacted_after(message))
             .collect();
         let now = self.inner.clock.now();
-        let fail = |headline: &str, e: ProtocolError| {
-            self.write(|tx| {
-                raise_headline(
-                    tx,
+        // About issues by its topic, but nothing came of the work: a
+        // problem, or the report to look at before anything does.
+        let fail = |alert_type: AlertType, headline: &str, e: ProtocolError| {
+            let item = AttentionItem {
+                alert: Some(alert_type),
+                ..headline_item(
                     task.task_id,
                     AttentionKind::WaitingForYou,
                     protocol::notifications::AlertTopic::Issues,
@@ -897,7 +899,8 @@ impl CompanionHub {
                     Some(e.message),
                     now,
                 )
-            })
+            };
+            self.write(|tx| raise_item(tx, item))
         };
         match self.not_now(&task).await? {
             Some((false, e)) => {
@@ -906,11 +909,11 @@ impl CompanionHub {
                     GithubLink::Triage => "How it sorted the issues wasn't kept",
                     _ => "The check wasn't acted on",
                 };
-                fail(headline, e)?;
+                fail(AlertType::Failed, headline, e)?;
                 return Ok(());
             }
             Some((true, e)) => {
-                fail("Review the agent's report", e)?;
+                fail(AlertType::Decision, "Review the agent's report", e)?;
                 return Ok(());
             }
             None => {}
@@ -918,12 +921,12 @@ impl CompanionHub {
         match link {
             GithubLink::Find { .. } => {
                 if let Err(e) = self.after_find(&run, &task, &reply).await {
-                    fail("The finder's findings weren't filed", e)?;
+                    fail(AlertType::Failed, "The finder's findings weren't filed", e)?;
                 }
             }
             GithubLink::Triage => {
                 if let Err(e) = self.after_triage(&run, &task, &reply).await {
-                    fail("How it sorted the issues wasn't kept", e)?;
+                    fail(AlertType::Failed, "How it sorted the issues wasn't kept", e)?;
                 }
             }
             GithubLink::Check { number } => self.after_check(&run, &task, number, &reply).await?,
@@ -1290,6 +1293,7 @@ impl CompanionHub {
                 github: Some(Box::new(GithubLink::Issue {
                     number,
                     review_with: None,
+                    when_green: None,
                 })),
                 mission: None,
                 target_id: None,

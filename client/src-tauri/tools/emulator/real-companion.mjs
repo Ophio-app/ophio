@@ -1047,15 +1047,15 @@ try {
         if (before) {
           raised = await waitShade(fresh, seconds + 60);
           result = await events[event](seconds);
-          // A restart or an update clears Android's shade; the watcher shows
-          // it again. Until Android clears it after an update, the one from
-          // before is still there.
+          // A restart or an update clears Android's shade, and the watcher
+          // raises nothing again: the alert stays gone, and the approval
+          // waits in the app. Long enough for the watcher to be back.
           const again = await waitShade(
             (n) => n.tag === raised.tag && n.created > raised.created,
             90,
           ).catch(() => null);
           result.showingAfter = !!again;
-          if (!again) throw new Error("The alert showing before was not raised again");
+          if (again) throw new Error("The alert showing before was raised again");
         } else {
           result = await events[event](seconds);
           raised = await waitShade(fresh, seconds + 120);

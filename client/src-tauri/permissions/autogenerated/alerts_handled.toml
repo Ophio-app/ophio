@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-alerts-handled"
+description = "Enables the alerts_handled command without any pre-configured scope."
+commands.allow = ["alerts_handled"]
+
+[[permission]]
+identifier = "deny-alerts-handled"
+description = "Denies the alerts_handled command without any pre-configured scope."
+commands.deny = ["alerts_handled"]

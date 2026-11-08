@@ -55,6 +55,8 @@ struct Fixture {
     deps: ServerDeps,
     terminal: Arc<FakeTerminal>,
     record: Record,
+    /// What the computer allowed the phone when it paired.
+    grants: Grants,
     vault: Vault,
     stop: CancellationToken,
     server: tokio::task::JoinHandle<companion::Result<()>>,
@@ -131,6 +133,7 @@ impl Fixture {
             deps,
             terminal,
             record,
+            grants: response.grants,
             vault,
             stop,
             server,
@@ -194,6 +197,7 @@ async fn authenticates_all_five_channels_pin_and_device_are_required() {
             query_id: QueryId::new(),
             query: Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         }),
     )

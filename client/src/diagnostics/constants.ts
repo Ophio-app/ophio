@@ -14,3 +14,6 @@ export const REPORTS_FEATURE = "reports_v1";
 export const REPORT_INBOX_FEATURE = "report_inbox_v1";
 /** A computer whose report fixer runs, taking only what the owner chooses. */
 export const REPORT_LOOK_INTO_FEATURE = "report_look_into_v1";
+/** A computer without that fixer, where an ordinary agent can plan a fix for
+ * a report in the owner's inbox. */
+export const REPORT_TASK_FEATURE = "report_task_v1";

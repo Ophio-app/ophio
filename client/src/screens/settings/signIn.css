@@ -1,0 +1,81 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.sign-in-flow {
+  display: grid;
+  gap: var(--s4);
+  min-width: 0;
+}
+.sign-in-step {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+.sign-in-step__lead {
+  margin: 0;
+  font-weight: 600;
+}
+.sign-in-step__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+.sign-in-step__row > .btn--primary {
+  flex: 1 1 10rem;
+}
+.sign-in-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+}
+.sign-in-code__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.sign-in-flow__more {
+  display: grid;
+  gap: var(--s1);
+}
+.sign-in-flow__status {
+  margin: 0;
+  padding-block: var(--s4);
+  color: var(--ink-2);
+}
+.sign-in-flow__done {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sign-in-flow__done-icon {
+  flex: none;
+  width: 1.4em;
+  height: 1.4em;
+  color: var(--ok);
+}
+.sign-in-help {
+  display: grid;
+  justify-items: start;
+  gap: var(--s1);
+}
+.sign-in-help > p {
+  margin: 0;
+}
+.sign-in-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}

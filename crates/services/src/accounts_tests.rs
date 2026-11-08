@@ -12,7 +12,7 @@ const KEY: &str = "sk-or-v1-synthetic0123456789";
 const RENEWED: &str = "ghp_renewed0123456789";
 
 #[derive(Debug)]
-struct FakeAccounts {
+pub(super) struct FakeAccounts {
     acted: Mutex<Vec<(AccountAction, String)>>,
     /// Why the next action fails, as a pause that can't be saved.
     fail: Mutex<Option<String>>,
@@ -122,7 +122,11 @@ async fn a_phone_reaches_accounts_only_once_the_computer_allows_it() {
             .features
             .contains(&"accounts_v1".to_string())
     );
-    let refused = f.hub.query(&phone, Query::Accounts).await.unwrap_err();
+    let refused = f
+        .hub
+        .query(&phone, Query::Accounts { on_phone: false })
+        .await
+        .unwrap_err();
     assert_eq!(refused.code, ErrorCode::PermissionDenied);
     let r = f.hub.submit(&phone, account(AccountAction::PauseAll)).await;
     assert_eq!(r.error.unwrap().code, ErrorCode::PermissionDenied);
@@ -149,7 +153,12 @@ async fn a_phone_reaches_accounts_only_once_the_computer_allows_it() {
     assert_eq!(r.status, ReceiptStatus::Accepted, "{r:?}");
     settle(&f.hub, r.command_id).await;
     phone.grants = wider;
-    let QueryData::Accounts { view } = f.hub.query(&phone, Query::Accounts).await.unwrap() else {
+    let QueryData::Accounts { view } = f
+        .hub
+        .query(&phone, Query::Accounts { on_phone: false })
+        .await
+        .unwrap()
+    else {
         panic!("accounts")
     };
     assert_eq!(view.store, "Synthetic vault");
@@ -188,7 +197,7 @@ async fn a_computer_without_accounts_says_so_and_does_not_advertise_them() {
     );
     let refused = f
         .hub
-        .query(&Caller::local_owner(), Query::Accounts)
+        .query(&Caller::local_owner(), Query::Accounts { on_phone: false })
         .await
         .unwrap_err();
     assert_eq!(refused.code, ErrorCode::Unsupported);
@@ -619,6 +628,7 @@ async fn a_tool_asking_approval_shows_no_value_but_gets_its_own_input_back() {
                 browser: false,
                 github: false,
                 checklist_answers: false,
+                read_only: false,
             };
             hub.handle(&binding, request).await
         })

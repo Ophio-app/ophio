@@ -22,6 +22,8 @@ struct Prepared {
     disable: Option<crate::disabled::Stored>,
     /// The project's review rules, for a review task.
     review_rules: Option<crate::review_rules::LoadedRules>,
+    /// The task looking into a report, made or found already.
+    report_task: Option<TaskId>,
 }
 
 impl CompanionHub {
@@ -337,6 +339,15 @@ impl CompanionHub {
             Command::DeleteOneOff { project_id } => {
                 result.delete_folder = self.one_off_to_delete(*project_id).await?;
             }
+            Command::StartReportTask {
+                report_id,
+                project_id,
+            } => {
+                result.report_task = Some(
+                    self.prepare_report_task(caller, *report_id, *project_id)
+                        .await?,
+                );
+            }
             Command::CreateDownload { source, .. } => {
                 result.download = Some(self.prepare_download(caller, source).await?)
             }
@@ -400,9 +411,17 @@ impl CompanionHub {
                 domain::task_mode(info, mode.unwrap_or_default())?;
                 if let protocol::capability::AccountReadiness::SignedOut { remedy } = &info.account
                 {
+                    // It may have been signed in since the last check: the
+                    // next try then goes ahead, and the notice clears.
+                    self.check_sign_ins_soon();
                     return Err(error(
                         ErrorCode::AccountNotReady,
-                        signed_out_message(info.kind, &info.display_name, remedy),
+                        signed_out_message(
+                            info.kind,
+                            &info.display_name,
+                            remedy,
+                            self.inner.accounts.is_some(),
+                        ),
                     ));
                 }
                 if *kind == TaskKind::ComputerUse
@@ -562,6 +581,15 @@ impl CompanionHub {
             let catalog: Vec<protocol::capability::HarnessInfo> =
                 self.read(|r| Ok(r.get("meta", "harnesses")?.unwrap_or_default()))?;
             let info = catalog.iter().find(|info| info.kind == *harness);
+            if matches!(
+                link.as_ref(),
+                protocol::github::GithubLink::Issue {
+                    when_green: Some(protocol::github::WhenGreen::Merge),
+                    ..
+                }
+            ) {
+                crate::github::unlocked(caller)?;
+            }
             result.github = Some(self.prepare_link(*project_id, *kind, info, link).await?);
         }
         // Last, once nothing else can refuse the task, as it may make a folder.
@@ -726,7 +754,8 @@ impl CompanionHub {
                 off,
                 bundle,
                 projects,
-            } => self.set_notification_settings(tx, off, *bundle, projects, expected)?,
+                types,
+            } => self.set_notification_settings(tx, off, *bundle, projects, *types, expected)?,
             SubmitReport { bundle } => self.submit_report(tx, bundle)?,
             AnswerReportQuestion {
                 report_id,
@@ -738,6 +767,15 @@ impl CompanionHub {
                 self.set_report_verdict(tx, caller, *report_id, verdict)?
             }
             LookIntoReport { report_id } => self.look_into_report(tx, caller, *report_id)?,
+            StartReportTask { .. } => {
+                let task_id = prepared
+                    .report_task
+                    .ok_or_else(|| error(ErrorCode::Internal, "The report's task wasn't made"))?;
+                result = Some(CommandResult::TaskCreated {
+                    task_id,
+                    queue_item_id: None,
+                });
+            }
             SetReportSettings { sending, ring } => {
                 self.set_report_settings(tx, *sending, *ring, expected)?
             }
@@ -984,12 +1022,14 @@ impl CompanionHub {
                     status_line: None,
                     wake: None,
                     asked_by: None,
+                    report: None,
                     start: None,
                     browser: *kind == TaskKind::Coding && browser.unwrap_or(true),
                     conversation: conversation.unwrap_or(false),
                     access: (access.clone()).map(protocol::access::ConversationAccess::normalized),
                     access_blocked: None,
                     review: None,
+                    notify_done: false,
                 };
                 // Its part in a review, with the rules it is given. Only the
                 // first prompt of each new session carries them.
@@ -1093,6 +1133,7 @@ impl CompanionHub {
                 if let Some(reviewed) = bundle.as_deref() {
                     crate::results::link_bundle(tx, task.task_id, task.current_run, reviewed)?;
                 }
+                crate::report_task::made(tx, envelope.command_id, &mut task)?;
                 tx.put("task", task.task_id, &task)?;
                 tx.emit(Event::TaskUpserted { task: task.clone() })?;
                 crate::checklist::made(tx, envelope.command_id, task.task_id)?;
@@ -1135,6 +1176,21 @@ impl CompanionHub {
                 t.updated_at = now;
                 tx.put("task", t.task_id, &t)?;
                 tx.emit(Event::TaskUpserted { task: t })?;
+            }
+            SwitchToWork {
+                task_id,
+                approval_id,
+                text,
+            } => {
+                self.admit_switch(
+                    tx,
+                    caller,
+                    envelope.command_id,
+                    *task_id,
+                    *approval_id,
+                    text.clone(),
+                )?;
+                pending = true;
             }
             RenameTask { task_id, .. } | ArchiveTask { task_id } => {
                 let mut t: Task = tx.read().require("task", task_id)?;
@@ -1265,6 +1321,19 @@ impl CompanionHub {
                 t.attention_count = crate::runs::blocking_attention_count(&tx.read(), *task_id)?;
                 tx.put("task", task_id, &t)?;
                 tx.emit(Event::TaskUpserted { task: t })?;
+            }
+            SetTaskNotify { task_id, on } => {
+                let mut t: Task = tx.read().require("task", task_id)?;
+                // Asking twice changes nothing, so nothing is sent again.
+                if t.notify_done != *on {
+                    t.notify_done = *on;
+                    t.revision += 1;
+                    t.updated_at = now;
+                    tx.put("task", task_id, &t)?;
+                    // The bell changes nothing the person let start in Next up.
+                    crate::runs::carry_permits(tx, &t, t.revision - 1)?;
+                    tx.emit(Event::TaskUpserted { task: t })?;
+                }
             }
             ResumeTask {
                 task_id,
@@ -1672,6 +1741,9 @@ impl CompanionHub {
                 // The message goes to the turn it was accepted for. A turn
                 // started after that one ended never receives it.
                 tx.put("message_run", envelope.command_id, &run_id)?;
+                // The person may have changed their mind: what they declined
+                // in this turn may be asked for again.
+                tx.delete(crate::more_access::DECLINED, run_id)?;
                 self.admit_followup(tx, envelope.command_id, &task, text, bundle.as_deref())?;
                 pending = true;
             }
@@ -1692,48 +1764,8 @@ impl CompanionHub {
                     );
                 }
                 domain::revision(expected, a.revision.into())?;
-                // A code goes into the code prompt, which fills it.
-                if a.kind == ApprovalKind::LoginCode
-                    && !matches!(decision, ApprovalDecision::Deny { .. })
-                {
-                    return Err(error(
-                        ErrorCode::InvalidRequest,
-                        "Type the code in the code prompt.",
-                    )
-                    .into());
-                }
-                // A login, and a post on GitHub as the person, are allowed
-                // from the phone.
-                if let Some(what) = match a.kind {
-                    ApprovalKind::LoginUse => Some("a login"),
-                    ApprovalKind::GithubPost => Some("a post on GitHub"),
-                    _ => None,
-                } {
-                    match decision {
-                        ApprovalDecision::Deny { .. } => {}
-                        ApprovalDecision::Allow
-                            if !matches!(caller.principal, Principal::Channel { .. }) => {}
-                        ApprovalDecision::Allow => {
-                            return Err(error(
-                                ErrorCode::PermissionDenied,
-                                format!("Allow {what} on your phone, not in a chat."),
-                            )
-                            .into());
-                        }
-                        ApprovalDecision::Answer { .. } => {
-                            return Err(error(
-                                ErrorCode::InvalidRequest,
-                                format!("Allow or decline {what}."),
-                            )
-                            .into());
-                        }
-                    }
-                }
+                let mut switched = false;
                 let task: Task = tx.read().require("task", a.task_id)?;
-                let mode = match tx.read().get::<Run>("run", a.run_id)? {
-                    Some(run) => crate::runs::run_mode(&run, &task),
-                    None => task.mode,
-                };
                 // Denying only stops an effect; anything else directs the desktop agent.
                 if task.kind == TaskKind::ComputerUse
                     && !caller.grants.computer_use
@@ -1745,13 +1777,48 @@ impl CompanionHub {
                     )
                     .into());
                 }
-                if mode != TaskMode::Work
-                    && !matches!(decision, ApprovalDecision::Deny { .. })
-                    && !(a.kind == ApprovalKind::Question
-                        && matches!(decision, ApprovalDecision::Answer { .. }))
-                {
-                    return Err(error(ErrorCode::Unsupported,
-                        "Ask and Plan cannot approve writes or expanded permissions; start a Work task instead").into());
+                // The same rule draws the phone's buttons (`Approval::actions`).
+                let asked = crate::approval_rule::Asked::of(&tx.read(), &a)?;
+                let channel = matches!(caller.principal, Principal::Channel { .. });
+                if let Some(refusal) = asked.refusal(decision, channel) {
+                    return Err(refusal.into());
+                }
+                if asked.access && matches!(decision, ApprovalDecision::Allow) {
+                    // It widens what a chat may reach, or switches a task to
+                    // Work: what changing the task itself needs.
+                    if (asked.held || asked.mode != TaskMode::Work) && !caller.grants.tasks {
+                        return Err(error(
+                            ErrorCode::PermissionDenied,
+                            "This device isn’t allowed to change tasks, so it can’t give one more access.",
+                        )
+                        .into());
+                    }
+                    if asked.held {
+                        // Exactly what it asked for, and nothing else, as the
+                        // access bar would turn it on.
+                        let mut t = task.clone();
+                        let needs = a
+                            .access_request
+                            .as_ref()
+                            .map(|r| r.needs.as_slice())
+                            .unwrap_or_default();
+                        let access = crate::more_access::widen(
+                            t.access.as_ref().expect("held"),
+                            t.project_id,
+                            needs,
+                        );
+                        self.access_reach(&tx.read(), &access)?;
+                        t.access = Some(access);
+                        t.access_blocked = None;
+                        t.revision += 1;
+                        t.updated_at = now;
+                        tx.put("task", t.task_id, &t)?;
+                        tx.emit(Event::TaskUpserted { task: t })?;
+                    } else if asked.mode != TaskMode::Work {
+                        // From a phone that predates Switch to Work: its
+                        // Allow switches, as the card's actions say.
+                        switched = true;
+                    }
                 }
                 if let ApprovalDecision::Answer { answers, .. } = decision
                     && !answers.is_empty()
@@ -1784,6 +1851,16 @@ impl CompanionHub {
                 }
                 tx.put("approval_claim", approval_id, &envelope.command_id)?;
                 pending = true;
+                if switched {
+                    self.admit_switch(
+                        tx,
+                        caller,
+                        envelope.command_id,
+                        a.task_id,
+                        Some(*approval_id),
+                        None,
+                    )?;
+                }
             }
             AcknowledgeAttention { attention_id } => {
                 let mut a: AttentionItem = tx.read().require("attention", attention_id)?;
@@ -2134,6 +2211,9 @@ impl CompanionHub {
                 d.record.name = name.clone();
                 tx.put("device", device_id, &d)?;
                 crate::identity::emit_devices(tx)?;
+            }
+            RenameComputer { name } => {
+                crate::computer_name::rename(tx, &self.inner.hostname, name)?
             }
             RevokeDevice { device_id } => {
                 let mut d: crate::identity::Device = tx.read().require("device", device_id)?;
@@ -2568,9 +2648,19 @@ impl CompanionHub {
                 approval_id,
                 decision,
             } => {
-                self.resolve_approval(caller, *approval_id, decision)
-                    .await?
+                let a: Approval = self.read(|r| r.require("approval", approval_id))?;
+                match a.access_request {
+                    Some(_) => {
+                        self.resolve_access(caller, *approval_id, decision, envelope.command_id)
+                            .await?
+                    }
+                    None => {
+                        self.resolve_approval(caller, *approval_id, decision)
+                            .await?
+                    }
+                }
             }
+            SwitchToWork { .. } => self.switch_effect(envelope.command_id).await?,
             QueueResume { .. } | QueueSetAuthorization { .. } | QueueContinuation { .. } => {
                 self.advance_queues().await?
             }
@@ -3163,8 +3253,14 @@ fn verified_review(r: &store::Read<'_>, command_id: CommandId) -> store::Result<
 
 /// What to tell the person when an agent they asked for is signed out. The
 /// phone shows this as it is and may add a sentence after it ("Your text is
-/// still here."), so it is whole sentences that end with a full stop.
-fn signed_out_message(kind: protocol::capability::HarnessKind, name: &str, remedy: &str) -> String {
+/// still here."), so it is whole sentences that end with a full stop. Where
+/// the computer manages accounts, the phone can sign it in again itself.
+fn signed_out_message(
+    kind: protocol::capability::HarnessKind,
+    name: &str,
+    remedy: &str,
+    from_phone: bool,
+) -> String {
     let remedy = remedy.trim().trim_end_matches('.').trim();
     let how = match remedy.chars().next() {
         Some(first) => format!("{}{}", first.to_lowercase(), &remedy[first.len_utf8()..]),
@@ -3175,6 +3271,11 @@ fn signed_out_message(kind: protocol::capability::HarnessKind, name: &str, remed
             _ => "run claude auth login on the computer".to_owned(),
         },
     };
+    if from_phone {
+        return format!(
+            "{name} isn't signed in on this computer. Sign it in again from your phone, in Settings › Accounts, or {how}."
+        );
+    }
     format!(
         "{name} isn't signed in on this computer. To sign in, {how}. You can also run {program} setup on the computer and choose Sign in to {name}.",
         program = ports::PROGRAM_NAME
@@ -3191,15 +3292,26 @@ mod signed_out_tests {
             signed_out_message(
                 protocol::capability::HarnessKind::ClaudeCode,
                 "Claude Code",
-                "Run claude auth login on the computer"
+                "Run claude auth login on the computer",
+                false
             ),
             "Claude Code isn't signed in on this computer. To sign in, run claude auth login on the computer. You can also run ophio setup on the computer and choose Sign in to Claude Code."
         );
         assert_eq!(
             signed_out_message(
+                protocol::capability::HarnessKind::ClaudeCode,
+                "Claude Code",
+                "Run claude auth login on the computer",
+                true
+            ),
+            "Claude Code isn't signed in on this computer. Sign it in again from your phone, in Settings › Accounts, or run claude auth login on the computer."
+        );
+        assert_eq!(
+            signed_out_message(
                 protocol::capability::HarnessKind::Codex,
                 "Codex",
-                "Run codex login on the computer."
+                "Run codex login on the computer.",
+                false
             ),
             "Codex isn't signed in on this computer. To sign in, run codex login on the computer. You can also run ophio setup on the computer and choose Sign in to Codex."
         );
@@ -3208,14 +3320,20 @@ mod signed_out_tests {
     #[test]
     fn a_missing_remedy_falls_back_to_the_agents_own_command() {
         assert!(
-            signed_out_message(protocol::capability::HarnessKind::Codex, "Codex", " ")
-                .contains("run codex login on")
+            signed_out_message(
+                protocol::capability::HarnessKind::Codex,
+                "Codex",
+                " ",
+                false
+            )
+            .contains("run codex login on")
         );
         assert!(
             signed_out_message(
                 protocol::capability::HarnessKind::ClaudeCode,
                 "Claude Code",
-                ""
+                "",
+                false
             )
             .contains("run claude auth login on")
         );

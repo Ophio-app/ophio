@@ -24,10 +24,25 @@ impl Output {
 
 /// Native events deliberately have no Debug implementation containing typed text.
 pub enum Event {
-    Motion { x: f64, y: f64 },
-    Button { code: u32, pressed: bool },
-    Key { keysym: u32, pressed: bool },
-    Axis { dx: f64, dy: f64 },
+    Motion {
+        x: f64,
+        y: f64,
+    },
+    Button {
+        code: u32,
+        pressed: bool,
+    },
+    /// `text` asks for exactly this character, as typed text, rather than
+    /// the key it names in a shortcut.
+    Key {
+        keysym: u32,
+        pressed: bool,
+        text: bool,
+    },
+    Axis {
+        dx: f64,
+        dy: f64,
+    },
 }
 impl std::fmt::Debug for Event {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -73,6 +88,19 @@ pub trait NativeInput: Send {
     /// supply their own keymap can represent every validated Unicode keysym.
     async fn validate_text(&mut self, _text: &str) -> Result<(), PlatformError> {
         Ok(())
+    }
+    /// Control has ended for now: after `barrier`, nothing is held. Drivers
+    /// that add input devices to the desktop remove them here, so they stop
+    /// standing beside the person's own keyboard and pointer. The next event
+    /// adds them again.
+    async fn idle(&mut self) -> Result<(), PlatformError> {
+        Ok(())
+    }
+    /// The keysyms of the shortcut that pastes into the app in front:
+    /// Ctrl+V, or Ctrl+Shift+V where a driver can tell it is a terminal,
+    /// in which Ctrl+V is a control character.
+    async fn paste_keys(&mut self) -> Vec<u32> {
+        vec![0xffe3, u32::from('v')]
     }
 }
 

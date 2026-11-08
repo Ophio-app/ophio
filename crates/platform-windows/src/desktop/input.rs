@@ -12,7 +12,15 @@ use std::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Key {
+    /// A named key, as a Windows virtual-key code.
     Virtual { code: u16, extended: bool },
+    /// The key that types this character in the computer's current layout,
+    /// as named in a shortcut. The injector finds it in that layout and adds
+    /// Shift (or what else the layout needs) unless it is already held.
+    /// In a shortcut with Ctrl, Alt or Win, letter case does not imply Shift;
+    /// symbols still use the modifiers their layout requires.
+    Character(char),
+    /// One UTF-16 code unit of typed text.
     Unicode(u16),
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -235,17 +243,51 @@ impl ManagedInput {
                         }
                     }
                 }
-                InputAction::KeyPress { key, pressed } => self.key(key_code(key)?, *pressed)?,
+                InputAction::KeyPress { key, pressed } => {
+                    let original = key_code(key)?;
+                    let normalized = normalize_shortcut_letter(
+                        original,
+                        self.keys.iter().copied().chain(std::iter::once(original)),
+                    );
+                    // A modifier may be released before the matching key-up.
+                    let lowercase = match original {
+                        Key::Character(c) if c.is_ascii_uppercase() => {
+                            Key::Character(c.to_ascii_lowercase())
+                        }
+                        _ => original,
+                    };
+                    // The exact key first: "w" and "W" may both be held.
+                    let key = if !pressed && self.keys.contains(&original) {
+                        original
+                    } else if !pressed && self.keys.contains(&lowercase) {
+                        lowercase
+                    } else if *pressed {
+                        normalized
+                    } else {
+                        original
+                    };
+                    self.key(key, *pressed)?;
+                }
                 InputAction::KeyChord { keys } => {
                     if keys.is_empty() || keys.len() > 16 {
                         return Err(invalid());
                     }
                     let keys: Vec<_> =
                         keys.iter().map(|k| key_code(k)).collect::<Result<_, _>>()?;
-                    if keys.iter().collect::<BTreeSet<_>>().len() != keys.len() {
+                    let chord_keys: Vec<_> = keys
+                        .iter()
+                        .copied()
+                        .map(|key| {
+                            normalize_shortcut_letter(
+                                key,
+                                keys.iter().copied().chain(self.keys.iter().copied()),
+                            )
+                        })
+                        .collect();
+                    if chord_keys.iter().collect::<BTreeSet<_>>().len() != chord_keys.len() {
                         return Err(invalid());
                     }
-                    let newly_pressed: Vec<_> = keys
+                    let newly_pressed: Vec<_> = chord_keys
                         .into_iter()
                         .filter(|k| !self.keys.contains(k))
                         .collect();
@@ -329,51 +371,172 @@ impl Drop for ManagedInput {
         let _ = self.release_all();
     }
 }
-fn key_code(name: &str) -> Result<Key, PlatformError> {
-    let (code, extended) = match name {
-        "ctrl" | "control" => (0x11, false),
-        "shift" => (0x10, false),
-        "alt" => (0x12, false),
-        "meta" | "super" => (0x5b, true),
-        "Enter" | "enter" => (0x0d, false),
-        "Tab" | "tab" => (9, false),
-        "Escape" | "escape" => (0x1b, false),
-        "Backspace" | "backspace" => (8, false),
-        "Delete" | "delete" => (0x2e, true),
-        "Insert" | "insert" => (0x2d, true),
-        "Home" | "home" => (0x24, true),
-        "End" | "end" => (0x23, true),
-        "PageUp" | "pageup" => (0x21, true),
-        "PageDown" | "pagedown" => (0x22, true),
-        "ArrowLeft" | "arrowleft" => (0x25, true),
-        "ArrowUp" | "arrowup" => (0x26, true),
-        "ArrowRight" | "arrowright" => (0x27, true),
-        "ArrowDown" | "arrowdown" => (0x28, true),
-        " " | "space" => (0x20, false),
-        "CapsLock" | "capslock" => (0x14, false),
-        "NumLock" | "numlock" => (0x90, true),
-        "ScrollLock" | "scrolllock" => (0x91, false),
-        "PrintScreen" | "printscreen" => (0x2c, true),
-        "Pause" | "pause" => (0x13, false),
-        _ if name.len() == 1 && name.as_bytes()[0].is_ascii_alphanumeric() => {
-            (u16::from(name.as_bytes()[0].to_ascii_uppercase()), false)
+/// A key name: the W3C `KeyboardEvent.key` vocabulary the phone uses, in any
+/// case, with the aliases agents use (Return, Esc, cmd, win, PgDn, Super_L,
+/// Page_Down...). The same vocabulary as on Linux. A single character names
+/// the key that types it.
+pub fn key_code(name: &str) -> Result<Key, PlatformError> {
+    let mut chars = name.chars();
+    if let (Some(c), None) = (chars.next(), chars.next()) {
+        if c.is_control() {
+            return Err(unknown_key());
         }
-        _ => {
-            let f = name
-                .strip_prefix('F')
-                .or_else(|| name.strip_prefix('f'))
-                .and_then(|v| v.parse::<u16>().ok())
-                .filter(|n| (1..=24).contains(n));
-            if let Some(n) = f {
-                (0x70 + n - 1, false)
-            } else {
-                return Err(PlatformError::Unsupported(
-                    "unsupported key name; use text input for characters".into(),
-                ));
+        return Ok(Key::Character(c));
+    }
+    let lower = name.to_ascii_lowercase();
+    let punctuation = match lower.as_str() {
+        "plus" => Some('+'),
+        "minus" => Some('-'),
+        "equal" => Some('='),
+        "comma" => Some(','),
+        "period" => Some('.'),
+        "slash" => Some('/'),
+        "backslash" => Some('\\'),
+        "semicolon" => Some(';'),
+        "colon" => Some(':'),
+        "apostrophe" => Some('\''),
+        "quotedbl" => Some('"'),
+        "grave" => Some('`'),
+        "asciitilde" => Some('~'),
+        "bracketleft" => Some('['),
+        "bracketright" => Some(']'),
+        "braceleft" => Some('{'),
+        "braceright" => Some('}'),
+        "parenleft" => Some('('),
+        "parenright" => Some(')'),
+        "less" => Some('<'),
+        "greater" => Some('>'),
+        "question" => Some('?'),
+        "exclam" => Some('!'),
+        "at" => Some('@'),
+        "numbersign" => Some('#'),
+        "dollar" => Some('$'),
+        "percent" => Some('%'),
+        "asciicircum" => Some('^'),
+        "ampersand" => Some('&'),
+        "asterisk" => Some('*'),
+        "underscore" => Some('_'),
+        "bar" => Some('|'),
+        _ => None,
+    };
+    if let Some(c) = punctuation {
+        return Ok(Key::Character(c));
+    }
+    let (code, extended) = match lower.as_str() {
+        "ctrl" | "control" | "ctl" | "control_l" | "ctrl_l" | "lctrl" => (0xa2, false),
+        "control_r" | "ctrl_r" | "rctrl" => (0xa3, true),
+        "shift" | "shift_l" | "lshift" => (0xa0, false),
+        "shift_r" | "rshift" => (0xa1, false),
+        "alt" | "alt_l" | "lalt" | "option" | "opt" => (0xa4, false),
+        "alt_r" | "ralt" | "altgr" | "altgraph" | "iso_level3_shift" => (0xa5, true),
+        "meta" | "meta_l" | "super" | "super_l" | "lsuper" | "win" | "windows" | "lwin" | "cmd"
+        | "command" | "os" | "logo" => (0x5b, true),
+        "super_r" | "meta_r" | "rsuper" | "rwin" => (0x5c, true),
+        "enter" | "return" => (0x0d, false),
+        "tab" => (0x09, false),
+        "escape" | "esc" => (0x1b, false),
+        "backspace" | "back_space" => (0x08, false),
+        "delete" | "del" => (0x2e, true),
+        "insert" | "ins" => (0x2d, true),
+        "home" => (0x24, true),
+        "end" => (0x23, true),
+        "pageup" | "page_up" | "pgup" | "prior" => (0x21, true),
+        "pagedown" | "page_down" | "pgdn" | "next" => (0x22, true),
+        "arrowleft" | "left" => (0x25, true),
+        "arrowup" | "up" => (0x26, true),
+        "arrowright" | "right" => (0x27, true),
+        "arrowdown" | "down" => (0x28, true),
+        "space" | "spacebar" => (0x20, false),
+        "capslock" | "caps_lock" => (0x14, false),
+        "numlock" | "num_lock" => (0x90, true),
+        "scrolllock" | "scroll_lock" => (0x91, false),
+        "printscreen" | "print" | "prtsc" => (0x2c, true),
+        "pause" => (0x13, false),
+        "contextmenu" | "menu" | "apps" => (0x5d, true),
+        "audiovolumemute" | "volumemute" | "mute" | "xf86audiomute" => (0xad, true),
+        "audiovolumedown" | "volumedown" | "xf86audiolowervolume" => (0xae, true),
+        "audiovolumeup" | "volumeup" | "xf86audioraisevolume" => (0xaf, true),
+        "mediatracknext" | "xf86audionext" => (0xb0, true),
+        "mediatrackprevious" | "xf86audioprev" => (0xb1, true),
+        "mediastop" | "xf86audiostop" => (0xb2, true),
+        "mediaplaypause" | "playpause" | "xf86audioplay" => (0xb3, true),
+        name if name.starts_with('f') && name[1..].chars().all(|c| c.is_ascii_digit()) => {
+            match name[1..].parse::<u16>() {
+                Ok(n) if (1..=24).contains(&n) => (0x70 + n - 1, false),
+                _ => return Err(unknown_key()),
             }
         }
+        _ => return Err(unknown_key()),
     };
     Ok(Key::Virtual { code, extended })
+}
+/// VkKeyScanExW's modifier mask, reduced to the keys this injector must
+/// add. Explicitly held left or right modifiers, and modifiers already added
+/// for another character, satisfy the requirement without another key-down.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn character_modifiers(mask: u16, held: impl Fn(u16) -> bool) -> Option<Vec<u16>> {
+    if mask & !7 != 0 {
+        return None;
+    }
+    Some(
+        [(2, 0xa2, 0xa3), (4, 0xa4, 0xa5), (1, 0xa0, 0xa1)]
+            .into_iter()
+            .filter(|(bit, _, _)| mask & bit != 0)
+            .filter(|(_, left, right)| !held(*left) && !held(*right))
+            .map(|(_, left, _)| left)
+            .collect(),
+    )
+}
+
+/// Keyboard state for verifying how a console layout types a character.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn console_keyboard_state(mask: u16, caps_toggle: bool) -> [u8; 256] {
+    let mut state = [0u8; 256];
+    state[0x14] = u8::from(caps_toggle);
+    for (bit, generic, left) in [(2, 0x11, 0xa2), (4, 0x12, 0xa4), (1, 0x10, 0xa0)] {
+        let pressed = if mask & bit == 0 { 0 } else { 0x80 };
+        state[generic] = pressed;
+        state[left] = pressed;
+    }
+    state
+}
+
+/// Convert MapVirtualKeyExW's E0/E1-prefixed scan result to SendInput fields.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn mapped_scan(vk: u16, mapped: u32, extended: bool) -> (u16, bool) {
+    if vk == 0x13 {
+        // Pause is E1 1D 45 in hardware; E1 1D is not a standalone
+        // SendInput scan (0x1D is Control). Use VK_PAUSE and scan 0x45
+        // without KEYEVENTF_SCANCODE or KEYEVENTF_EXTENDEDKEY.
+        return (0x45, false);
+    }
+    (
+        (mapped & 0xff) as u16,
+        extended || mapped & 0xff00 == 0xe000,
+    )
+}
+
+/// Letter case is not an implicit Shift in shortcuts with another modifier.
+fn normalize_shortcut_letter(key: Key, keys: impl Iterator<Item = Key>) -> Key {
+    if let Key::Character(c) = key
+        && c.is_ascii_uppercase()
+        && keys.into_iter().any(|key| {
+            matches!(
+                key,
+                Key::Virtual {
+                    code: 0xa2 | 0xa3 | 0xa4 | 0xa5 | 0x5b | 0x5c,
+                    ..
+                }
+            )
+        })
+    {
+        return Key::Character(c.to_ascii_lowercase());
+    }
+    key
+}
+
+fn unknown_key() -> PlatformError {
+    PlatformError::Unsupported("unsupported key name; use text input for characters".into())
 }
 
 #[cfg(test)]
@@ -429,6 +592,217 @@ mod tests {
             rotation: 0,
         }])
         .unwrap()
+    }
+    #[test]
+    fn x_keysym_punctuation_names_are_case_insensitive_characters() {
+        for (name, character) in [
+            ("plus", '+'),
+            ("minus", '-'),
+            ("equal", '='),
+            ("comma", ','),
+            ("period", '.'),
+            ("slash", '/'),
+            ("backslash", '\\'),
+            ("semicolon", ';'),
+            ("colon", ':'),
+            ("apostrophe", '\''),
+            ("quotedbl", '"'),
+            ("grave", '`'),
+            ("asciitilde", '~'),
+            ("bracketleft", '['),
+            ("bracketright", ']'),
+            ("braceleft", '{'),
+            ("braceright", '}'),
+            ("parenleft", '('),
+            ("parenright", ')'),
+            ("less", '<'),
+            ("greater", '>'),
+            ("question", '?'),
+            ("exclam", '!'),
+            ("at", '@'),
+            ("numbersign", '#'),
+            ("dollar", '$'),
+            ("percent", '%'),
+            ("asciicircum", '^'),
+            ("ampersand", '&'),
+            ("asterisk", '*'),
+            ("underscore", '_'),
+            ("bar", '|'),
+        ] {
+            assert_eq!(key_code(name).unwrap(), Key::Character(character), "{name}");
+            assert_eq!(
+                key_code(&name.to_ascii_uppercase()).unwrap(),
+                Key::Character(character),
+                "{name}"
+            );
+        }
+    }
+    #[test]
+    fn shortcut_names_and_refusals() {
+        for name in [
+            "ctrl",
+            "alt",
+            "super",
+            "shift",
+            "Escape",
+            "Tab",
+            "Enter",
+            "Backspace",
+            "ArrowLeft",
+            "ArrowUp",
+            "ArrowRight",
+            "ArrowDown",
+            "Return",
+            "cmd",
+            "win",
+            "Control",
+            "Meta",
+            "space",
+            "Space",
+            "Page_Down",
+            "PgDn",
+            "Super_L",
+        ] {
+            assert!(key_code(name).is_ok(), "{name}");
+        }
+        for n in 1..=12 {
+            assert!(key_code(&format!("F{n}")).is_ok());
+        }
+        for c in 'a'..='z' {
+            assert_eq!(key_code(&c.to_string()).unwrap(), Key::Character(c));
+        }
+        for name in ["", "F0", "F25", "nonsense", "ctrl+c"] {
+            assert!(key_code(name).is_err(), "{name}");
+        }
+    }
+    #[test]
+    fn letter_chords_ignore_case_only_with_non_shift_modifiers() {
+        let l = layout();
+        for (names, expected) in [
+            (vec!["ctrl", "W"], 'w'),
+            (vec!["ctrl", "shift", "W"], 'w'),
+            (vec!["altgr", "W"], 'w'),
+            (vec!["super", "W"], 'w'),
+            (vec!["W"], 'W'),
+            (vec!["shift", "W"], 'W'),
+            (vec!["ctrl", "!"], '!'),
+        ] {
+            let log = Arc::new(Mutex::new(Log::default()));
+            let mut sink = ManagedInput::new(Box::new(Fake(log.clone())));
+            sink.inject(
+                &InputAction::KeyChord {
+                    keys: names.iter().map(|s| (*s).into()).collect(),
+                },
+                &l,
+                &l.monitors[0],
+            )
+            .unwrap();
+            assert!(
+                log.lock().unwrap().events.contains(&Event::Key {
+                    key: Key::Character(expected),
+                    down: true,
+                }),
+                "{names:?}"
+            );
+        }
+    }
+    #[test]
+    fn releasing_a_capital_releases_the_capital_not_its_small_letter() {
+        let l = layout();
+        let log = Arc::new(Mutex::new(Log::default()));
+        let mut sink = ManagedInput::new(Box::new(Fake(log.clone())));
+        for (key, pressed) in [("w", true), ("W", true), ("W", false)] {
+            sink.inject(
+                &InputAction::KeyPress {
+                    key: key.into(),
+                    pressed,
+                },
+                &l,
+                &l.monitors[0],
+            )
+            .unwrap();
+        }
+        let events = &log.lock().unwrap().events;
+        assert_eq!(
+            events.last(),
+            Some(&Event::Key {
+                key: Key::Character('W'),
+                down: false
+            })
+        );
+        assert!(sink.keys.contains(&Key::Character('w')));
+        assert!(!sink.keys.contains(&Key::Character('W')));
+    }
+    #[test]
+    fn held_control_normalizes_letter_keypress_even_if_released_first() {
+        let l = layout();
+        let log = Arc::new(Mutex::new(Log::default()));
+        let mut sink = ManagedInput::new(Box::new(Fake(log.clone())));
+        for (key, pressed) in [("ctrl", true), ("W", true), ("ctrl", false), ("W", false)] {
+            sink.inject(
+                &InputAction::KeyPress {
+                    key: key.into(),
+                    pressed,
+                },
+                &l,
+                &l.monitors[0],
+            )
+            .unwrap();
+        }
+        let events = &log.lock().unwrap().events;
+        assert!(events.contains(&Event::Key {
+            key: Key::Character('w'),
+            down: true
+        }));
+        assert!(events.contains(&Event::Key {
+            key: Key::Character('w'),
+            down: false
+        }));
+        assert!(!events.contains(&Event::Key {
+            key: Key::Character('W'),
+            down: true
+        }));
+        assert!(sink.keys.is_empty());
+    }
+    #[test]
+    fn pause_uses_its_sendinput_scan_not_the_e1_ctrl_scan() {
+        assert_eq!(mapped_scan(0x13, 0xe11d, false), (0x45, false));
+        assert_eq!(mapped_scan(0x13, 0xe11d, true), (0x45, false));
+        assert_eq!(mapped_scan(0x2e, 0xe053, true), (0x53, true));
+        assert_eq!(mapped_scan(0x41, 0x001e, false), (0x1e, false));
+    }
+    #[test]
+    fn console_state_sets_generic_and_side_modifiers_and_caps_toggle() {
+        for mask in 0..=7 {
+            for caps in [false, true] {
+                let state = console_keyboard_state(mask, caps);
+                assert_eq!(state[0x14], u8::from(caps));
+                for (bit, generic, left, right) in [
+                    (1, 0x10, 0xa0, 0xa1),
+                    (2, 0x11, 0xa2, 0xa3),
+                    (4, 0x12, 0xa4, 0xa5),
+                ] {
+                    let expected = if mask & bit == 0 { 0 } else { 0x80 };
+                    assert_eq!(state[generic], expected, "generic mask {mask}");
+                    assert_eq!(state[left], expected, "left mask {mask}");
+                    assert_eq!(state[right], 0, "right mask {mask}");
+                }
+            }
+        }
+    }
+    #[test]
+    fn character_modifiers_respect_both_sides_and_existing_shift() {
+        assert_eq!(
+            character_modifiers(7, |_| false),
+            Some(vec![0xa2, 0xa4, 0xa0])
+        );
+        assert_eq!(
+            character_modifiers(7, |vk| [0xa3, 0xa0].contains(&vk)),
+            Some(vec![0xa4])
+        );
+        assert_eq!(character_modifiers(1, |vk| vk == 0xa1), Some(vec![]));
+        assert_eq!(character_modifiers(0, |_| false), Some(vec![]));
+        assert_eq!(character_modifiers(8, |_| false), None);
     }
     #[test]
     fn releases_every_key_and_button_on_drop() {

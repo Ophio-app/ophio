@@ -267,3 +267,17 @@ fn contribution_recovery_fields_accept_older_receipts_and_commands() {
     assert!(workspace_choice.is_none());
     assert!(approval.display_name.is_none());
 }
+
+#[test]
+fn renaming_the_computer_is_one_plain_command_and_an_optional_flag() {
+    let command = Command::RenameComputer {
+        name: "Studio Mac".into(),
+    };
+    let wire = json!({"command": "rename_computer", "name": "Studio Mac"});
+    assert_eq!(serde_json::to_value(&command).unwrap(), wire);
+    assert_eq!(serde_json::from_value::<Command>(wire).unwrap(), command);
+    // Older computers and phones leave it out; the name stays the one shown.
+    let host = protocol::model::HostInfo::decl(&ts_rs::Config::default());
+    assert!(host.contains("renamed?: boolean"), "{host}");
+    assert!(host.contains("name: string"), "{host}");
+}

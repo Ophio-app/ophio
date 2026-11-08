@@ -320,6 +320,9 @@ impl Driver for NativeDriver {
             layout: None,
             deadline: None,
             typing: Default::default(),
+            shortcuts: Default::default(),
+            virtual_keys: Default::default(),
+            added_modifiers: Default::default(),
         }))
     }
     fn lock(&self) -> Result<(), PlatformError> {
@@ -331,12 +334,21 @@ impl Driver for NativeDriver {
         lock_state()
     }
 }
+struct ShortcutHold {
+    key: (u16, u16, KEYBD_EVENT_FLAGS),
+    key_down: bool,
+    modifiers: Vec<u16>,
+}
 struct NativeInjector {
     integrity: u32,
     layout: Option<Layout>,
     deadline: Option<Instant>,
     /// Keys still down for a character typed as keys, in press order.
     typing: std::collections::BTreeMap<u16, Vec<(u16, u16)>>,
+    /// The physical key and borrowed layout modifiers for each shortcut character.
+    shortcuts: std::collections::BTreeMap<char, ShortcutHold>,
+    virtual_keys: std::collections::BTreeMap<u16, (u16, KEYBD_EVENT_FLAGS)>,
+    added_modifiers: std::collections::BTreeMap<u16, usize>,
 }
 impl Injector for NativeInjector {
     fn check_layout(&mut self, layout: &Layout, deadline: Instant) -> Result<(), PlatformError> {
@@ -377,17 +389,13 @@ impl Injector for NativeInjector {
                 down,
             } => return self.character(unit, down),
             Event::Key {
+                key: Key::Character(ch),
+                down,
+            } => return self.shortcut(ch, down),
+            Event::Key {
                 key: Key::Virtual { code, extended },
                 down,
-            } => keyboard(
-                (code, 0),
-                if extended {
-                    KEYEVENTF_EXTENDEDKEY
-                } else {
-                    KEYBD_EVENT_FLAGS(0)
-                },
-                down,
-            ),
+            } => return self.virtual_key(code, extended, down),
             _ => {
                 let (dx, dy, data, flags) = match event {
                     Event::Move { absolute, .. } => (
@@ -439,6 +447,106 @@ impl Injector for NativeInjector {
     }
 }
 impl NativeInjector {
+    fn virtual_key(&mut self, code: u16, extended: bool, down: bool) -> Result<(), PlatformError> {
+        if down {
+            let (scan, flags) = mapped_key(code, extended);
+            // A character may already be holding this exact physical modifier.
+            if !self.added_modifiers.contains_key(&code) {
+                insert(keyboard((code, scan), flags, true), false, self.deadline)?;
+            }
+            self.virtual_keys.insert(code, (scan, flags));
+        } else if let Some(&(scan, flags)) = self.virtual_keys.get(&code) {
+            if !self.added_modifiers.contains_key(&code) {
+                insert(keyboard((code, scan), flags, false), true, self.deadline)?;
+            }
+            self.virtual_keys.remove(&code);
+        }
+        Ok(())
+    }
+
+    fn shortcut(&mut self, ch: char, down: bool) -> Result<(), PlatformError> {
+        if !down {
+            let Some(hold) = self.shortcuts.get(&ch) else {
+                return Ok(());
+            };
+            if hold.key_down {
+                let key = hold.key;
+                insert(keyboard((key.0, key.1), key.2, false), true, self.deadline)?;
+                self.shortcuts.get_mut(&ch).unwrap().key_down = false;
+            }
+            // Retain the entry until the final release succeeds so ReleaseAll
+            // can retry a refused modifier release.
+            let modifiers = self.shortcuts[&ch].modifiers.clone();
+            for modifier in modifiers.into_iter().rev() {
+                let count = self.added_modifiers[&modifier];
+                if count == 1 {
+                    let (scan, flags) = mapped_key(modifier, false);
+                    if !self.virtual_keys.contains_key(&modifier) {
+                        insert(
+                            keyboard((modifier, scan), flags, false),
+                            true,
+                            self.deadline,
+                        )?;
+                    }
+                    self.added_modifiers.remove(&modifier);
+                } else {
+                    self.added_modifiers.insert(modifier, count - 1);
+                }
+                self.shortcuts
+                    .get_mut(&ch)
+                    .unwrap()
+                    .modifiers
+                    .retain(|&vk| vk != modifier);
+            }
+            self.shortcuts.remove(&ch);
+            return Ok(());
+        }
+        if self.shortcuts.contains_key(&ch) {
+            return Ok(());
+        }
+        let unit = u16::try_from(ch as u32).map_err(|_| unsupported_shortcut())?;
+        // SAFETY: read-only queries of the validated foreground window.
+        let layout =
+            unsafe { GetKeyboardLayout(GetWindowThreadProcessId(GetForegroundWindow(), None)) };
+        let found = unsafe { VkKeyScanExW(unit, layout) };
+        if found == -1 {
+            return Err(unsupported_shortcut());
+        }
+        let mask = (found as u16) >> 8;
+        let modifiers = input::character_modifiers(mask, |vk| {
+            self.virtual_keys.contains_key(&vk) || self.added_modifiers.contains_key(&vk)
+        })
+        .ok_or_else(unsupported_shortcut)?;
+        let key = found as u16 & 0xff;
+        let (scan, flags) = mapped_key_in_layout(key, false, layout);
+        self.shortcuts.insert(
+            ch,
+            ShortcutHold {
+                key: (key, scan, flags),
+                key_down: false,
+                modifiers: Vec::new(),
+            },
+        );
+        // Borrow modifiers already held for another character, so its release
+        // cannot lift them before this character's key comes up.
+        for (bit, left, right) in [(2, 0xa2, 0xa3), (4, 0xa4, 0xa5), (1, 0xa0, 0xa1)] {
+            if mask & bit == 0 {
+                continue;
+            }
+            if self.virtual_keys.contains_key(&left) || self.virtual_keys.contains_key(&right) {
+                continue;
+            }
+            if modifiers.contains(&left) {
+                let (scan, flags) = mapped_key_in_layout(left, false, layout);
+                insert(keyboard((left, scan), flags, true), false, self.deadline)?;
+            }
+            *self.added_modifiers.entry(left).or_default() += 1;
+            self.shortcuts.get_mut(&ch).unwrap().modifiers.push(left);
+        }
+        insert(keyboard((key, scan), flags, true), false, self.deadline)?;
+        self.shortcuts.get_mut(&ch).unwrap().key_down = true;
+        Ok(())
+    }
     /// Text goes in as characters, except where they would be lost: a console
     /// drops a character that arrives without its key, and PowerShell's line
     /// editor reads keys. There a character the layout types is pressed as
@@ -500,6 +608,28 @@ impl NativeInjector {
         Ok(())
     }
 }
+fn unsupported_shortcut() -> PlatformError {
+    PlatformError::Unsupported("the current keyboard layout cannot type this shortcut key".into())
+}
+fn mapped_key(vk: u16, extended: bool) -> (u16, KEYBD_EVENT_FLAGS) {
+    // SAFETY: read-only layout query for the current foreground thread.
+    let layout =
+        unsafe { GetKeyboardLayout(GetWindowThreadProcessId(GetForegroundWindow(), None)) };
+    mapped_key_in_layout(vk, extended, layout)
+}
+fn mapped_key_in_layout(vk: u16, extended: bool, layout: HKL) -> (u16, KEYBD_EVENT_FLAGS) {
+    // SAFETY: read-only virtual-key mapping in the selected keyboard layout.
+    let mapped = unsafe { MapVirtualKeyExW(vk.into(), MAPVK_VK_TO_VSC_EX, Some(layout)) };
+    let (scan, extended) = input::mapped_scan(vk, mapped, extended);
+    (
+        scan,
+        if extended {
+            KEYEVENTF_EXTENDEDKEY
+        } else {
+            KEYBD_EVENT_FLAGS(0)
+        },
+    )
+}
 fn keyboard((vk, scan): (u16, u16), flags: KEYBD_EVENT_FLAGS, down: bool) -> INPUT {
     INPUT {
         r#type: INPUT_KEYBOARD,
@@ -536,7 +666,7 @@ fn insert(native: INPUT, release: bool, deadline: Option<Instant>) -> Result<(),
     Ok(())
 }
 /// The modifiers a layout key may need, in press order, by VkKeyScan bit.
-const MODIFIERS: [(u16, VIRTUAL_KEY); 3] = [(2, VK_CONTROL), (4, VK_MENU), (1, VK_SHIFT)];
+const MODIFIERS: [(u16, VIRTUAL_KEY); 3] = [(2, VK_LCONTROL), (4, VK_LMENU), (1, VK_LSHIFT)];
 /// Whether a key that changes what a layout key types, or turns it into a
 /// shortcut, is down other than as one of `typing`'s own.
 fn held_at_the_computer(typing: &std::collections::BTreeMap<u16, Vec<(u16, u16)>>) -> bool {
@@ -544,7 +674,14 @@ fn held_at_the_computer(typing: &std::collections::BTreeMap<u16, Vec<(u16, u16)>
         .into_iter()
         // SAFETY: a read-only query of the keyboard's current state.
         .filter(|vk| unsafe { GetAsyncKeyState(vk.0.into()) } < 0)
-        .any(|vk| !typing.values().flatten().any(|&(own, _)| own == vk.0))
+        .any(|vk| {
+            !typing.values().flatten().any(|&(own, _)| match vk {
+                VK_SHIFT => [VK_LSHIFT.0, VK_RSHIFT.0].contains(&own),
+                VK_CONTROL => [VK_LCONTROL.0, VK_RCONTROL.0].contains(&own),
+                VK_MENU => [VK_LMENU.0, VK_RMENU.0].contains(&own),
+                _ => own == vk.0,
+            })
+        })
 }
 /// The keys, with their scan codes, that type `unit` in the foreground
 /// console on that console's layout and CapsLock: plain, shifted, or AltGr
@@ -585,13 +722,10 @@ fn console_keys(unit: u16) -> Option<(Vec<(u16, u16)>, bool)> {
             let scan = MapVirtualKeyExW(vk.0.into(), MAPVK_VK_TO_VSC, Some(layout));
             (vk.0, scan as u16)
         };
-        let mut state = [0u8; 256];
-        state[usize::from(VK_CAPITAL.0)] = (GetKeyState(VK_CAPITAL.0.into()) & 1) as u8;
+        let caps_toggle = GetKeyState(VK_CAPITAL.0.into()) & 1 != 0;
         // CapsLock turns some keys' case over, and Shift turns it back.
         for mask in [mask, mask ^ 1] {
-            for (bit, modifier) in MODIFIERS {
-                state[usize::from(modifier.0)] = if mask & bit == 0 { 0 } else { 0x80 };
-            }
+            let state = input::console_keyboard_state(mask, caps_toggle);
             let mut typed = [0; 4];
             // Flag 4 leaves the keyboard state, a pending dead key included, alone.
             let count = ToUnicodeEx(

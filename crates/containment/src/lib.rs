@@ -174,6 +174,8 @@ impl Container {
     /// leads the group that is ended.
     #[cfg(unix)]
     pub fn prepare_session(&self, command: &mut std::process::Command) -> Result<(), HarnessError> {
+        #[cfg(not(target_os = "linux"))]
+        let _ = command;
         match &self.inner {
             #[cfg(target_os = "linux")]
             Inner::Cgroup(cgroup) => cgroup

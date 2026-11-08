@@ -15,11 +15,14 @@ export function signInWords(s: SignIn): { title: string; detail: string | null }
     case "starting": return { title: `Signing in to ${s.service}`, detail: "Opening the sign-in on the computer…" };
     case "browser": return { title: `Signing in to ${s.service}`, detail: `Finish on ${stage.url_host} in the computer’s browser.` };
     case "code": return { title: `Signing in to ${s.service}`, detail: `Enter this code on ${stage.url_host}.` };
+    case "on_phone": return { title: `Signing in to ${s.service}`, detail: `Finishing on ${stage.url_host} in a phone’s browser.` };
     case "checking": return { title: `Checking with ${s.service}…`, detail: null };
     case "done": return { title: stage.identity ? `Signed in as ${stage.identity}` : `Signed in to ${s.service}`, detail: null };
     case "failed": return { title: `${s.service} sign-in failed`, detail: stage.reason };
     case "cancelled": return { title: `${s.service} sign-in cancelled`, detail: null };
     case "timed_out": return { title: `${s.service} sign-in timed out`, detail: "It waited too long and was stopped. Nothing was saved." };
+    // A stage from a newer computer: never a crash, only the sign-in's name.
+    default: return { title: `Signing in to ${s.service}`, detail: null };
   }
 }
 

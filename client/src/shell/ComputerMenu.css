@@ -1,0 +1,177 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* ---- The header's computer pill ------------------------------------------- */
+
+.computer-pill {
+  gap: var(--s1);
+  /* The project's name keeps most of the bar; a long computer name ends in
+     an ellipsis rather than pushing Settings off it. */
+  max-width: min(12rem, 46cqi);
+  min-width: 0;
+  padding: 0 var(--s2) 0 var(--s3);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+}
+.computer-pill .status__dot {
+  margin-inline-end: 2px;
+}
+.computer-pill__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.computer-pill__word {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 640;
+  white-space: nowrap;
+}
+.computer-pill__word::before {
+  content: "·";
+  content: "·" / "";
+  margin-inline-end: var(--s1);
+  color: var(--ink-3);
+}
+.computer-pill__chevron {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: var(--ink-3);
+}
+/* A narrow bar (a small phone, or large text) keeps the name, shorter. */
+.computer-pill--compact {
+  max-width: min(9rem, 46cqi);
+  padding-inline: var(--s2) var(--s1);
+}
+.computer-pill--compact .computer-pill__chevron {
+  display: none;
+}
+.computer-pill--dot {
+  padding: 0;
+  border-color: transparent;
+  background: none;
+}
+
+/* ---- A dot for each computer, joined by a thread -------------------------- */
+
+.computer-dots {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  isolation: isolate;
+}
+.computer-dots::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0.2rem;
+  top: 50%;
+  height: 1.5px;
+  margin-top: -0.75px;
+  border-radius: 1px;
+  background: var(--filament);
+  z-index: -1;
+}
+.computer-dots__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ink-3);
+  box-shadow: 0 0 0 1.5px var(--bg);
+}
+.computer-dots__dot + .computer-dots__dot {
+  margin-inline-start: 0.2rem;
+}
+.computer-dots__dot--ok { background: var(--ok); }
+.computer-dots__dot--warn { background: var(--warn); }
+.computer-dots__dot--stop { background: var(--stop); }
+.computer-dots__dot--neutral {
+  background: var(--bg);
+  box-shadow: 0 0 0 1.5px var(--bg), inset 0 0 0 1.5px var(--ink-3);
+}
+/* All's mark in the menu: the dots threaded together. */
+.computer-cluster {
+  width: 1.5rem;
+  height: 1.5rem;
+  overflow: visible;
+}
+.computer-cluster__thread {
+  fill: none;
+  stroke: var(--filament);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.computer-cluster__dot {
+  fill: var(--ink-3);
+  stroke: var(--surface);
+  stroke-width: 1.5;
+}
+.computer-cluster__dot--ok { fill: var(--ok); }
+.computer-cluster__dot--warn { fill: var(--warn); }
+.computer-cluster__dot--stop { fill: var(--stop); }
+.computer-cluster__dot--neutral { fill: var(--surface); stroke: var(--ink-3); }
+
+/* Opening the menu draws the threads between them, once. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-reduce-motion="true"]) .computer-cluster__thread {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: computer-thread calc(var(--dur-3) * 1.5) var(--ease) both;
+  }
+}
+@keyframes computer-thread {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ---- The menu -------------------------------------------------------------- */
+
+.computer-menu__dot .status__dot,
+.computer-menu .computer-menu__dot .status__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+.computer-menu__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.computer-menu__dot .status__dot {
+  border-radius: 50%;
+  background: var(--dot);
+}
+.computer-menu__dot.status--ok { --dot: var(--ok); }
+.computer-menu__dot.status--warn { --dot: var(--warn); }
+.computer-menu__dot.status--stop { --dot: var(--stop); }
+.computer-menu__dot.status--neutral .status__dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+
+/* ---- A pushed screen's pill, naming its computer --------------------------- */
+
+.status--named {
+  gap: var(--s1);
+  max-width: min(9rem, 32vw);
+  min-width: 0;
+  padding-inline: var(--s2);
+}
+.status__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* All's project rows name their computer first. */
+.all-projects__computer {
+  font-weight: 620;
+  color: var(--ink-2);
+}
+.computer-pill--all .computer-pill__name {
+  flex: none;
+}

@@ -41,15 +41,37 @@ Installing an update stops the app, so the next start is no time to ask
 about a crash. The native provider also says when the app was installed or
 last updated (Android's `lastUpdateTime`), and `crashes.forgetBefore(at)`
 drops everything recorded before then, kept or still to come from the phone.
-The offer says "Ophio closed unexpectedly" only for an exit or a panic; a
-script or render error left the app running, so it says "Ophio ran into a
-problem".
+The offer says "Ophio closed unexpectedly" only for the phone's own exit or
+panic; a script or render error left the app running, so it says "Ophio ran
+into a problem". A stop the computer recorded may be long past and isn't the
+screen's doing, so the offer says where and when instead: "Ophio on your
+computer stopped unexpectedly at 08:45", or "yesterday at …", or the date.
 
 Phone versions use the existing app-info build and protocol, plus the OS
 version when the WebView reports it. The model is empty because the current
 app-info API exposes a device name that may be personal. A link defaults to
 direct; transports that can identify relay connections can set the optional
 `route: "relay"` on the existing online link state.
+
+The trail keeps one line per change of the link's state, not one per update
+of the same state, and, at most every ten seconds for the same reason, an
+`error` line with code `link_offline` (with the computer's error code when
+it sent one, such as `link_offline:unauthenticated`) or
+`link_failed:<reason>` and the scrubbed reason. A notice shown again within
+ten seconds of the last time, with the same words, is not recorded again;
+the words only tell notices apart and are never recorded. One report's trail had
+hundreds of "offline" lines and an offline notice for every reconnect, and
+no reason for any of them.
+
+Reconnecting backs off in the native link: 3.2 to 4.8 seconds after the
+first failure, doubling up to 30 seconds. Only a connection that lasted 10
+seconds starts the waits over, so one the computer accepts and ends at once
+counts as a failure. The page may ask to try now, and says who asked. The
+person's Retry always ends the wait at once. The app coming back to the
+screen or the network coming back ends it unless a request did within the
+last second, and any other request unless one did within the last five
+seconds. A request that can't end the wait is dropped, not held, so the wait
+runs its course and keeps doubling.
 
 State redaction preserves numeric and boolean values, structure, known wire
 enums, logical screen names and recognized model names. Unknown strings

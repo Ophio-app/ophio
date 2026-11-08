@@ -29,6 +29,8 @@ struct FakeWindows {
     delay: AtomicBool,
     entered: tokio::sync::Notify,
     proceed: tokio::sync::Notify,
+    /// An app launch hangs and can't be confirmed stopped.
+    unstoppable: AtomicBool,
 }
 #[async_trait]
 impl WindowActions for FakeWindows {
@@ -58,6 +60,9 @@ impl WindowActions for FakeWindows {
             self.proceed.notified().await;
         }
         authority.check()?;
+        if self.unstoppable.load(Ordering::SeqCst) {
+            return Err(PlatformError::LaunchUnstopped);
+        }
         self.effects.fetch_add(1, Ordering::SeqCst);
         Ok((
             WindowOutcome::CloseRequested,
@@ -307,4 +312,502 @@ async fn the_window_list_is_refused_while_an_observed_lock_state_is_unknown() {
     hub.shutdown().await.unwrap();
     drop(hub);
     std::fs::remove_dir_all(path).unwrap();
+}
+
+/// Opening an app from the phone whose launch couldn't be confirmed stopped
+/// is kept, like the agent's and voice's: the person's control ends, and no
+/// later Stop or shutdown claims a clean release while an app may still open.
+#[tokio::test]
+async fn an_app_whose_launch_could_not_be_stopped_is_never_reported_as_released() {
+    let path = std::env::temp_dir().join(format!("window-service-test-{}", CommandId::new()));
+    let desktop = Arc::new(FakeDesktop::default());
+    let windows = Arc::new(FakeWindows::default());
+    windows.unstoppable.store(true, Ordering::SeqCst);
+    let hub = CompanionHub::builder()
+        .data_dir(&path)
+        .clock(Arc::new(FakeClock::default()))
+        .desktop(desktop.clone())
+        .window_actions(windows.clone())
+        .build()
+        .await
+        .unwrap();
+    let ticket = hub.open_pairing(&Caller::local_owner()).await.unwrap();
+    let paired = crate::testing::pair_confirmed(
+        &hub,
+        PairRequest {
+            pairing_secret: ticket.secret,
+            device_public_key: URL_SAFE_NO_PAD.encode([7; 32]),
+            device_name: "Fixture phone".into(),
+            device_platform: "test".into(),
+            client_version: "test".into(),
+            protocol: ProtocolVersion::CURRENT,
+            shows_code: true,
+            replaces: None,
+        },
+    )
+    .await
+    .unwrap();
+    let caller = Caller {
+        principal: Principal::Device {
+            device_id: paired.device_id,
+        },
+        grants: paired.grants,
+    };
+    let target_id = desktop.target.lock().unwrap().target_id;
+    let c = settled(
+        &hub,
+        CommandEnvelope::new(Command::RequestHumanLease {
+            target_id,
+            geometry_revision: 1,
+        }),
+        &caller,
+    )
+    .await;
+    let Some(CommandResult::LeaseGranted { lease }) = c.result else {
+        panic!("lease: {:?}", c.error)
+    };
+    let control = WindowControl {
+        target_id,
+        lease_id: lease.lease_id,
+        boot_epoch: lease.boot_epoch,
+        generation: lease.generation,
+        geometry_revision: 1,
+    };
+    let open = WindowAction::OpenApp {
+        app_id: "fixture".into(),
+    };
+    let failed = hub
+        .window_action(&caller, &control, &open)
+        .await
+        .unwrap_err();
+    assert_eq!(failed.code, ErrorCode::OutcomeUnknown);
+    assert!(failed.message.contains("may still open"), "{failed:?}");
+    for _ in 0..2 {
+        let stop = hub.revoke_target(target_id, false).await.unwrap_err();
+        assert!(stop.message.contains("may still open"), "{stop:?}");
+    }
+    // Locking the computer is exactly what the person may want now: it
+    // locks, and says an app may still open.
+    let locked = hub
+        .control_command(&Caller::local_owner(), &Command::LockDesktop)
+        .await
+        .unwrap_err();
+    assert!(locked.message.contains("may still open"), "{locked:?}");
+    assert!(
+        locked.message.starts_with("The computer is locked"),
+        "{locked:?}"
+    );
+    assert_eq!(desktop.locks.load(Ordering::SeqCst), 1);
+    let shutdown = hub.shutdown().await.unwrap_err();
+    assert!(shutdown.message.contains("may still open"), "{shutdown:?}");
+    drop(hub);
+    let _ = std::fs::remove_dir_all(path);
+}
+
+/// The same launch while its receipt can't be written still leaves the
+/// mark, and says an app may still open rather than that it finished.
+#[tokio::test]
+async fn an_unstoppable_launch_is_kept_when_its_receipt_cannot_be_written() {
+    let path = std::env::temp_dir().join(format!("window-service-test-{}", CommandId::new()));
+    let desktop = Arc::new(FakeDesktop::default());
+    let windows = Arc::new(FakeWindows::default());
+    windows.unstoppable.store(true, Ordering::SeqCst);
+    let hub = CompanionHub::builder()
+        .data_dir(&path)
+        .clock(Arc::new(FakeClock::default()))
+        .desktop(desktop.clone())
+        .window_actions(windows.clone())
+        .build()
+        .await
+        .unwrap();
+    let ticket = hub.open_pairing(&Caller::local_owner()).await.unwrap();
+    let paired = crate::testing::pair_confirmed(
+        &hub,
+        PairRequest {
+            pairing_secret: ticket.secret,
+            device_public_key: URL_SAFE_NO_PAD.encode([7; 32]),
+            device_name: "Fixture phone".into(),
+            device_platform: "test".into(),
+            client_version: "test".into(),
+            protocol: ProtocolVersion::CURRENT,
+            shows_code: true,
+            replaces: None,
+        },
+    )
+    .await
+    .unwrap();
+    let caller = Caller {
+        principal: Principal::Device {
+            device_id: paired.device_id,
+        },
+        grants: paired.grants,
+    };
+    let target_id = desktop.target.lock().unwrap().target_id;
+    let c = settled(
+        &hub,
+        CommandEnvelope::new(Command::RequestHumanLease {
+            target_id,
+            geometry_revision: 1,
+        }),
+        &caller,
+    )
+    .await;
+    let Some(CommandResult::LeaseGranted { lease }) = c.result else {
+        panic!("lease: {:?}", c.error)
+    };
+    let control = WindowControl {
+        target_id,
+        lease_id: lease.lease_id,
+        boot_epoch: lease.boot_epoch,
+        generation: lease.generation,
+        geometry_revision: 1,
+    };
+    let db = rusqlite::Connection::open(path.join("companion.sqlite")).unwrap();
+    db.execute_batch(
+        "CREATE TRIGGER refuse_journal BEFORE INSERT ON journal BEGIN SELECT RAISE(ABORT, 'disk full'); END;",
+    )
+    .unwrap();
+    let failed = hub
+        .window_action(
+            &caller,
+            &control,
+            &WindowAction::OpenApp {
+                app_id: "fixture".into(),
+            },
+        )
+        .await
+        .unwrap_err();
+    assert!(failed.message.contains("may still open"), "{failed:?}");
+    db.execute_batch("DROP TRIGGER refuse_journal;").unwrap();
+    let stop = hub.revoke_target(target_id, false).await.unwrap_err();
+    assert!(stop.message.contains("may still open"), "{stop:?}");
+    let _ = hub.shutdown().await;
+    drop(hub);
+    let _ = std::fs::remove_dir_all(path);
+}
+
+/// A phone holding a display, with `windows` as its window adapter.
+async fn leased(
+    windows: Arc<FakeWindows>,
+) -> (
+    CompanionHub,
+    Caller,
+    WindowControl,
+    Arc<FakeDesktop>,
+    std::path::PathBuf,
+) {
+    let path = std::env::temp_dir().join(format!("window-service-test-{}", CommandId::new()));
+    let desktop = Arc::new(FakeDesktop::default());
+    let hub = CompanionHub::builder()
+        .data_dir(&path)
+        .clock(Arc::new(FakeClock::default()))
+        .desktop(desktop.clone())
+        .window_actions(windows)
+        .build()
+        .await
+        .unwrap();
+    let ticket = hub.open_pairing(&Caller::local_owner()).await.unwrap();
+    let paired = crate::testing::pair_confirmed(
+        &hub,
+        PairRequest {
+            pairing_secret: ticket.secret,
+            device_public_key: URL_SAFE_NO_PAD.encode([7; 32]),
+            device_name: "Fixture phone".into(),
+            device_platform: "test".into(),
+            client_version: "test".into(),
+            protocol: ProtocolVersion::CURRENT,
+            shows_code: true,
+            replaces: None,
+        },
+    )
+    .await
+    .unwrap();
+    let caller = Caller {
+        principal: Principal::Device {
+            device_id: paired.device_id,
+        },
+        grants: paired.grants,
+    };
+    let target_id = desktop.target.lock().unwrap().target_id;
+    let c = settled(
+        &hub,
+        CommandEnvelope::new(Command::RequestHumanLease {
+            target_id,
+            geometry_revision: 1,
+        }),
+        &caller,
+    )
+    .await;
+    let Some(CommandResult::LeaseGranted { lease }) = c.result else {
+        panic!("lease: {:?}", c.error)
+    };
+    let control = WindowControl {
+        target_id,
+        lease_id: lease.lease_id,
+        boot_epoch: lease.boot_epoch,
+        generation: lease.generation,
+        geometry_revision: 1,
+    };
+    (hub, caller, control, desktop, path)
+}
+
+/// On a display with an unresolved launch whose input also couldn't be let
+/// go, Lock behaves as on any display with input held: it doesn't lock,
+/// and says both things plainly.
+#[tokio::test]
+async fn lock_refuses_when_input_also_failed_to_release_on_a_marked_display() {
+    let windows = Arc::new(FakeWindows::default());
+    windows.unstoppable.store(true, Ordering::SeqCst);
+    let (hub, caller, control, desktop, path) = leased(windows).await;
+    desktop.input.fail_release.store(true, Ordering::SeqCst);
+    let failed = hub
+        .window_action(
+            &caller,
+            &control,
+            &WindowAction::OpenApp {
+                app_id: "fixture".into(),
+            },
+        )
+        .await
+        .unwrap_err();
+    assert!(failed.message.contains("may still open"), "{failed:?}");
+    // Its answer says input wasn't let go too.
+    assert_eq!(failed, crate::control::release_and_launch_unresolved());
+    let refused = hub
+        .control_command(&Caller::local_owner(), &Command::LockDesktop)
+        .await
+        .unwrap_err();
+    assert_eq!(desktop.locks.load(Ordering::SeqCst), 0, "{refused:?}");
+    assert!(refused.message.contains("may still open"), "{refused:?}");
+    assert!(refused.message.contains("input"), "{refused:?}");
+    let _ = hub.shutdown().await;
+    drop(hub);
+    let _ = std::fs::remove_dir_all(path);
+}
+
+/// Once a display is marked, letting go of it doesn't wait for launches
+/// again; and turning sharing off waits for launches without holding the
+/// table of all displays, which renewals on other displays need.
+#[tokio::test]
+async fn waiting_for_launches_never_stalls_a_marked_display_or_the_other_displays() {
+    let windows = Arc::new(FakeWindows::default());
+    windows.unstoppable.store(true, Ordering::SeqCst);
+    let (hub, caller, control, _desktop, path) = leased(windows).await;
+    hub.window_action(
+        &caller,
+        &control,
+        &WindowAction::OpenApp {
+            app_id: "fixture".into(),
+        },
+    )
+    .await
+    .unwrap_err();
+    // A launch that never settles, on the marked display.
+    let target = hub.target(control.target_id).await.unwrap();
+    let launches = target.lock().await.launches.clone();
+    let _running = launches.begin();
+    let began = tokio::time::Instant::now();
+    assert!(hub.revoke_target(control.target_id, false).await.is_err());
+    assert!(
+        began.elapsed() < Duration::from_secs(1),
+        "{:?}",
+        began.elapsed()
+    );
+    // Unmarked, a sharing change waits for it, but not with the table held.
+    target.lock().await.unresolved_launch = false;
+    let off = {
+        let hub = hub.clone();
+        tokio::spawn(async move {
+            hub.set_desktop(
+                None,
+                Availability::TemporarilyUnavailable {
+                    reason: "test".into(),
+                },
+            )
+            .await
+        })
+    };
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert!(
+        tokio::time::timeout(Duration::from_millis(500), hub.inner.controls.lock())
+            .await
+            .is_ok(),
+        "the table of displays is held while launches settle"
+    );
+    let _ = off.await;
+    let _ = hub.shutdown().await;
+    drop(hub);
+    let _ = std::fs::remove_dir_all(path);
+}
+
+/// Renewing the phone's lease on one display never waits on another
+/// display's lock, which a release or a launch may hold for seconds.
+#[tokio::test]
+async fn a_renewal_never_waits_on_another_displays_lock() {
+    let (hub, caller, control, desktop, path) = leased(Arc::new(FakeWindows::default())).await;
+    let template = desktop.target.lock().unwrap().clone();
+    let others: Vec<TargetId> = (0..32)
+        .map(|_| {
+            let mut other = template.clone();
+            other.target_id = TargetId::new();
+            desktop.extra.lock().unwrap().push(other.clone());
+            other.target_id
+        })
+        .collect();
+    // Every other display is busy: its lock is held.
+    let mut held = Vec::new();
+    let mut guards = Vec::new();
+    for id in &others {
+        held.push(hub.target(*id).await.unwrap());
+    }
+    for target in &held {
+        guards.push(target.lock().await);
+    }
+    let renewed = tokio::time::timeout(
+        Duration::from_millis(500),
+        hub.renew(&caller, control.lease_id, control.generation),
+    )
+    .await;
+    assert!(matches!(renewed, Ok(Ok(()))), "{renewed:?}");
+    drop(guards);
+    let _ = hub.shutdown().await;
+    drop(hub);
+    let _ = std::fs::remove_dir_all(path);
+}
+
+/// Before waiting for launches, a display about to be released is fenced:
+/// no lease on it can act or start a launch any more, so none can begin
+/// after the wait has passed it.
+#[tokio::test]
+async fn displays_are_fenced_before_their_launches_are_waited_for() {
+    let (hub, caller, control, _desktop, path) = leased(Arc::new(FakeWindows::default())).await;
+    let target = hub.target(control.target_id).await.unwrap();
+    hub.settle_launches(vec![target.clone()]).await;
+    let live = target.lock().await.live.clone();
+    assert!(!live.holds(
+        control.lease_id,
+        control.generation,
+        hub.inner.clock.monotonic()
+    ));
+    assert!(
+        hub.renew(&caller, control.lease_id, control.generation)
+            .await
+            .is_err()
+    );
+    let _ = hub.shutdown().await;
+    drop(hub);
+    let _ = std::fs::remove_dir_all(path);
+}
+
+/// Turning sharing off reports the worst of what it couldn't let go, in any
+/// order of the displays: held input before an app that may still open.
+#[tokio::test]
+async fn sharing_off_reports_held_input_before_an_unresolved_launch_in_any_order() {
+    let (hub, _caller, control, desktop, path) = leased(Arc::new(FakeWindows::default())).await;
+    let template = desktop.target.lock().unwrap().clone();
+    let mut ids = vec![control.target_id];
+    for _ in 0..16 {
+        let mut other = template.clone();
+        other.target_id = TargetId::new();
+        desktop.extra.lock().unwrap().push(other.clone());
+        ids.push(other.target_id);
+    }
+    // One display can't let go of its input; every other has only an
+    // unresolved launch.
+    let held = ids[1];
+    desktop.input.fail_release_on.lock().unwrap().push(held);
+    for id in &ids {
+        let target = hub.target(*id).await.unwrap();
+        if *id != held {
+            target.lock().await.unresolved_launch = true;
+        }
+    }
+    let off = hub
+        .set_desktop(
+            None,
+            Availability::TemporarilyUnavailable {
+                reason: "test".into(),
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(off, crate::control::release_unconfirmed(), "{off:?}");
+    let _ = hub.shutdown().await;
+    drop(hub);
+    let _ = std::fs::remove_dir_all(path);
+}
+
+/// Local Stop reports the worst of what it couldn't let go, in any order
+/// of the displays: input that may still be held on one display is never
+/// hidden behind another's app that may still open.
+#[tokio::test]
+async fn local_stop_reports_held_input_before_an_unresolved_launch_in_any_order() {
+    let (hub, _caller, control, desktop, path) = leased(Arc::new(FakeWindows::default())).await;
+    let template = desktop.target.lock().unwrap().clone();
+    let mut ids = vec![control.target_id];
+    for _ in 0..16 {
+        let mut other = template.clone();
+        other.target_id = TargetId::new();
+        desktop.extra.lock().unwrap().push(other.clone());
+        ids.push(other.target_id);
+    }
+    // One display can't let go of its input; every other has only an
+    // unresolved launch.
+    let held = ids[1];
+    desktop.input.fail_release_on.lock().unwrap().push(held);
+    for id in &ids {
+        let target = hub.target(*id).await.unwrap();
+        if *id != held {
+            target.lock().await.unresolved_launch = true;
+        }
+    }
+    let stopped = hub.stop_all_control().await.unwrap_err();
+    assert_eq!(
+        stopped,
+        crate::control::release_unconfirmed(),
+        "{stopped:?}"
+    );
+    let _ = hub.shutdown().await;
+    drop(hub);
+    let _ = std::fs::remove_dir_all(path);
+}
+
+/// Every path that lets go of several displays keeps the worst release,
+/// whichever order the failures come in, and the first of equals.
+#[test]
+fn the_worst_release_is_kept_in_any_order() {
+    use crate::control::{
+        keep_worse, launch_unresolved, release_and_launch_unresolved, release_unconfirmed,
+    };
+    let unrecorded = crate::error(ErrorCode::Internal, "unrecorded");
+    let failures = [
+        unrecorded.clone(),
+        launch_unresolved(),
+        release_unconfirmed(),
+        release_and_launch_unresolved(),
+    ];
+    for worst in 0..failures.len() {
+        // Every order of these four.
+        let mut order: Vec<usize> = (0..failures.len()).collect();
+        for rotation in 0..failures.len() {
+            order.rotate_left(1);
+            for reversed in [false, true] {
+                let mut seen = order.clone();
+                if reversed {
+                    seen.reverse();
+                }
+                let mut kept = None;
+                for i in seen.iter().filter(|i| **i <= worst) {
+                    keep_worse(&mut kept, Err(failures[*i].clone()));
+                    keep_worse(&mut kept, Ok(()));
+                }
+                assert_eq!(kept.as_ref(), Some(&failures[worst]), "{rotation} {seen:?}");
+            }
+        }
+    }
+    // Equals keep the first.
+    let mut kept = None;
+    keep_worse(&mut kept, Err(crate::error(ErrorCode::Internal, "first")));
+    keep_worse(&mut kept, Err(unrecorded));
+    assert_eq!(kept.unwrap().message, "first");
 }

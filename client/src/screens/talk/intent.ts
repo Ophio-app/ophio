@@ -14,6 +14,7 @@ import type { AgentChoice } from "../../app/ui";
 import { awaitingInputBack } from "../../state/handBack";
 import { accessChanges } from "./access";
 import { helpersFinishing, type HostState } from "../../state/projection";
+import { signedOutWords } from "../../app/signInFeature";
 import type {
   Availability,
   Command,
@@ -173,7 +174,8 @@ export function composerMode(task: Task | null, run: Run | null, harness: Harnes
   const name = harness?.display_name ?? "The agent";
   // A new task from one that only reads starts in Work (Review), but a
   // stranger's work in Next up stays read-only.
-  const reads = (task.mode ?? "work") !== "work" ? task.mode === "plan" ? "Plan" : "Ask" : null;
+  // A chat is never called Ask: only its access decides what it may do.
+  const reads = task.conversation ? null : (task.mode ?? "work") !== "work" ? task.mode === "plan" ? "Plan" : "Ask" : null;
   switch (task.state) {
     case "working":
     case "awaiting_decision": {
@@ -191,7 +193,7 @@ export function composerMode(task: Task | null, run: Run | null, harness: Harnes
           detail: "Ends what it’s doing now, then sends this.",
           unavailable: interrupt,
         },
-        { intent: { kind: "next_up" }, label: "Add to Next up", detail: reads && !task.github?.from_stranger ? `Saved as a new task that waits its turn, in Work mode so it can change files. This task stays in ${reads}.` : "Saved as a new task that waits its turn. This task isn’t changed.", unavailable: null },
+        { intent: { kind: "next_up" }, label: "Add to Next up", detail: reads && !task.github?.from_stranger ? `Saved as a new task that waits its turn, in Work mode so it can change files. This task stays in ${reads}.` : `Saved as a new task that waits its turn. This ${task.conversation ? "chat" : "task"} isn’t changed.`, unavailable: null },
       ];
       // A conversation's messages stay in it; work for later is a task in Work.
       return { mode: "running", options: task.conversation ? options.filter((o) => o.intent.kind !== "next_up") : options };
@@ -302,14 +304,15 @@ export function resolveAgent(project: Project | undefined, harnesses: HarnessInf
   return h ? { harness: h.kind, model: null, effort: null, launchPolicy: defaultLaunchPolicy(h.kind) } : null;
 }
 
-/** Validate without changing who receives the request. */
-export function agentChoiceBlocker(h: HarnessInfo | undefined, choice: AgentChoice): string | null {
+/** Validate without changing who receives the request. `signInOn` names
+ * the computer where this phone can sign a signed-out agent in itself. */
+export function agentChoiceBlocker(h: HarnessInfo | undefined, choice: AgentChoice, signInOn?: string | null): string | null {
   if (choice.launchPolicy && !launchChoices(choice.harness).some(c => c.value === choice.launchPolicy)) return "That permission setting is unavailable for the selected agent. Choose one before starting.";
   if (!h) return "The selected agent is no longer reported by this computer. Choose an agent before starting.";
   if (!canStart(h)) return reason(h.capabilities.start_run, `${h.display_name} can’t start tasks.`) ?? `${h.display_name} can’t start managed tasks.`;
   const installed = reason(h.installed, `${h.display_name} isn’t installed.`);
   if (installed) return installed;
-  if (h.account.state !== "signed_in") return h.account.state === "signed_out" ? h.account.remedy : h.account.reason;
+  if (h.account.state !== "signed_in") return h.account.state === "signed_out" ? signedOutWords(h, signInOn) : h.account.reason;
   if (choice.model && (h.capabilities.model_selection.state !== "available" || !h.models.some(m => m.id === choice.model)))
     return `The selected model (${choice.model}) is unavailable. Choose a model; it won’t be replaced with the agent’s default.`;
   if (choice.effort && (h.capabilities.effort_selection.state !== "available" || !(h.models.some(m => m.details) ? modelEfforts(h, choice.model).some(e => e.id === choice.effort) : h.efforts.includes(choice.effort))))

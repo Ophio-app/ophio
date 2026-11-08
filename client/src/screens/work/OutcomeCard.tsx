@@ -91,7 +91,9 @@ export function OutcomeCard({ task, run, project, outcome, plan, writing, compac
     sendOnOpen(task.project_id, null);
     try {
       draftNewTask(ui, task.project_id, {
-        text: w.brief || w.title, title: w.title, mode: w.mode, from: task.mode ?? "work",
+        text: w.brief || w.title, title: w.title, mode: w.mode,
+        // A chat's mode is not what it may do, so Review doesn't call it Ask.
+        ...(task.conversation ? {} : { from: task.mode ?? "work" }),
         // The issue it filed is linked where the project uses GitHub.
         link: w.issue && github ? { type: "issue", number: w.issue } : undefined,
         agent: { harness: run.harness, model: run.requested_model, effort: run.requested_effort },
@@ -198,7 +200,7 @@ export function OutcomeCard({ task, run, project, outcome, plan, writing, compac
             <Pill>{newWorkMeta(w)}</Pill>
           </div>
           {w.brief && w.brief !== w.title && <p className="receipt-new-work__brief">{w.brief}</p>}
-          <ModeSwitch from={task.mode ?? "work"} to={w.mode} flags={{ harness: run.harness, launchPolicy: defaultLaunchPolicy(run.harness) }} />
+          <ModeSwitch from={task.mode ?? "work"} chat={!!task.conversation} to={w.mode} flags={{ harness: run.harness, launchPolicy: defaultLaunchPolicy(run.harness) }} />
           <Button variant={!result && i === 0 ? "primary" : "secondary"} size="sm" icon={Play} onClick={() => start(w)}>Start</Button>
         </div>)}
       </div>}

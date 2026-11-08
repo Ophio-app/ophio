@@ -6,7 +6,7 @@ import type { HostState } from "../../state/projection";
 import { emptyHostState } from "../../state/projection";
 import { AnnotationStore, markLabel, nextMarkIndex } from "../../state/annotations";
 import type { SpeechSegment } from "../../protocol/types";
-import { Speech } from "./Speech";
+import { Speech } from "./SpeechView";
 
 let listener: ((event: SpeechEvent) => void) | undefined;
 const platform = {

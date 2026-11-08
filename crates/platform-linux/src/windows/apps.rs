@@ -6,12 +6,12 @@ use std::{
     path::{Path, PathBuf},
 };
 #[derive(Clone, Debug)]
-pub(super) struct Entry {
+pub(crate) struct Entry {
     pub path: PathBuf,
     pub name: String,
     pub fingerprint: u64,
 }
-pub(super) fn roots(environment: &BTreeMap<String, String>) -> Vec<PathBuf> {
+pub(crate) fn roots(environment: &BTreeMap<String, String>) -> Vec<PathBuf> {
     let mut roots = Vec::new();
     if let Some(home) = environment
         .get("XDG_DATA_HOME")
@@ -38,7 +38,7 @@ pub(super) fn roots(environment: &BTreeMap<String, String>) -> Vec<PathBuf> {
     }
     roots
 }
-pub(super) fn program(environment: &BTreeMap<String, String>, name: &str) -> Option<PathBuf> {
+pub(crate) fn program_path(environment: &BTreeMap<String, String>, name: &str) -> Option<PathBuf> {
     if name.contains('/') {
         let path = PathBuf::from(name);
         return (path.is_absolute() && executable(&path)).then_some(path);
@@ -90,10 +90,65 @@ fn read(path: &Path) -> Result<String, PlatformError> {
     }
     Ok(text)
 }
-pub(super) fn discover(
+/// One desktop entry, as much of it as choosing and opening an app needs.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Desktop {
+    /// Its desktop file id, such as `org.gnome.Nautilus.desktop`.
+    pub id: String,
+    pub path: PathBuf,
+    pub name: String,
+    pub generic_name: Option<String>,
+    pub keywords: Vec<String>,
+    pub categories: Vec<String>,
+    pub mime_types: Vec<String>,
+    /// The program its Exec line starts, without its directory.
+    pub program: Option<String>,
+    /// Shown in app lists (not NoDisplay).
+    pub listed: bool,
+    pub fingerprint: u64,
+}
+fn unescape(value: &str) -> String {
+    value
+        .replace("\\s", " ")
+        .replace("\\n", " ")
+        .replace("\\t", " ")
+        .replace("\\\\", "\\")
+}
+fn list(value: Option<&&str>) -> Vec<String> {
+    value
+        .map(|v| {
+            v.split(';')
+                .map(|s| unescape(s.trim()))
+                .filter(|s| !s.is_empty())
+                .take(64)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+/// The program an Exec line runs: past `env VAR=…` and quotes, and for
+/// Flatpak the app id it runs.
+fn program(exec: &str) -> Option<String> {
+    let mut words = exec.split_whitespace().map(|w| w.trim_matches('"'));
+    let mut word = words.next()?;
+    if word.ends_with("/env") || word == "env" {
+        word = words.find(|w| !w.contains('=') && !w.starts_with('-'))?;
+    }
+    let base = word.rsplit('/').next()?.to_owned();
+    if base == "flatpak" {
+        return exec
+            .split_whitespace()
+            .filter(|w| !w.starts_with('-') && !w.starts_with('%') && *w != "run")
+            .nth(1)
+            .map(str::to_owned);
+    }
+    (!base.is_empty() && !base.starts_with('%')).then_some(base)
+}
+/// Every desktop entry that may be opened here, including ones app lists
+/// hide, in data-directory precedence: an id met earlier hides later ones.
+pub(crate) fn desktops(
     roots: &[PathBuf],
     environment: &BTreeMap<String, String>,
-) -> Result<Vec<Entry>, PlatformError> {
+) -> Result<Vec<Desktop>, PlatformError> {
     let mut seen = BTreeSet::new();
     let mut entries = Vec::new();
     let mut examined = 0;
@@ -131,7 +186,7 @@ pub(super) fn discover(
                     .map_err(|_| PlatformError::TargetNotFound)?
                     .to_string_lossy()
                     .replace('/', "-");
-                if !seen.insert(id) {
+                if !seen.insert(id.clone()) {
                     continue;
                 }
                 let Ok(text) = read(&path) else { continue };
@@ -146,12 +201,11 @@ pub(super) fn discover(
                         && !line.starts_with('#')
                         && let Some((k, v)) = line.split_once('=')
                     {
-                        fields.insert(k, v);
+                        fields.insert(k.trim(), v.trim());
                     }
                 }
                 if fields.get("Type") != Some(&"Application")
                     || fields.get("Hidden") == Some(&"true")
-                    || fields.get("NoDisplay") == Some(&"true")
                 {
                     continue;
                 }
@@ -172,7 +226,7 @@ pub(super) fn discover(
                 }
                 if fields
                     .get("TryExec")
-                    .is_some_and(|v| program(environment, v).is_none())
+                    .is_some_and(|v| self::program_path(environment, v).is_none())
                 {
                     continue;
                 }
@@ -185,18 +239,43 @@ pub(super) fn discover(
                 else {
                     continue;
                 };
-                entries.push(Entry {
+                entries.push(Desktop {
+                    id,
                     path,
-                    name: name
-                        .replace("\\s", " ")
-                        .replace("\\n", " ")
-                        .replace("\\t", " ")
-                        .replace("\\\\", "\\"),
+                    name: unescape(name),
+                    generic_name: fields
+                        .get("GenericName")
+                        .filter(|s| !s.is_empty() && s.len() <= 1024)
+                        .map(|s| unescape(s)),
+                    keywords: list(fields.get("Keywords")),
+                    categories: list(fields.get("Categories")),
+                    mime_types: list(fields.get("MimeType")),
+                    program: fields.get("Exec").and_then(|e| program(e)),
+                    listed: fields.get("NoDisplay") != Some(&"true"),
                     fingerprint: fingerprint(&text),
                 });
             }
         }
     }
+    Ok(entries)
+}
+pub(super) fn discover(
+    roots: &[PathBuf],
+    environment: &BTreeMap<String, String>,
+) -> Result<Vec<Entry>, PlatformError> {
+    let mut entries: Vec<Entry> = desktops(roots, environment)?
+        .into_iter()
+        .filter(|d| d.listed)
+        .map(|d| Entry {
+            path: d.path,
+            name: d.name,
+            fingerprint: d.fingerprint,
+        })
+        .collect();
     entries.sort_by_key(|a| a.name.to_lowercase());
     Ok(entries)
+}
+/// Whether a desktop entry still reads as it did when it was listed.
+pub(crate) fn unchanged(path: &Path, fingerprint: u64) -> bool {
+    read(path).is_ok_and(|text| self::fingerprint(&text) == fingerprint)
 }

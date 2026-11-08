@@ -5,7 +5,7 @@ import type { SpeechEvent } from "../../host/link";
 import type { HostState } from "../../state/projection";
 import { emptyHostState } from "../../state/projection";
 import type { AnnotationDraft, AnnotationStore } from "../../state/annotations";
-import { Speech } from "./Speech";
+import { Speech } from "./SpeechView";
 let listener: ((event: SpeechEvent) => void) | undefined;
 const send = vi.fn(() => true);
 const platform = { speech: () => ({ send, close: vi.fn(), listen: (l: (event: SpeechEvent) => void) => { listener = l; return () => { listener = undefined; }; } }) };

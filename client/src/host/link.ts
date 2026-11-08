@@ -22,6 +22,8 @@ import type {
   TransferServerFrame,
   ProtocolVersion,
   AppOffer,
+  AlertType,
+  Tier,
 } from "../protocol/types";
 import type { ParsedPairingLink } from "../protocol/pairing";
 
@@ -35,6 +37,8 @@ export type LinkState =
       /** Another device answered at the computer's address: no address presented
        * the pinned certificate. The link keeps trying. */
       mismatch?: boolean;
+      /** The computer is reached over Tailscale and this phone is not on it. */
+      noTailscale?: boolean;
     }
   /** Will not retry without the person acting (revoked, incompatible). */
   | { state: "failed"; reason: LinkFailure; detail: string };
@@ -52,8 +56,14 @@ export type LinkEvent =
   | { type: "frame"; frame: ServerFrame };
 
 /** Control connection to one paired computer. */
+/** Who asks a link to try again now: the person tapping Retry, the app or
+ * network coming back, or the page for no reason it gives. The native link
+ * lets the person through at once and limits the others, so they can't
+ * turn its waits into a storm. */
+export type ConnectAsk = "person" | "event";
+
 export interface ControlLink {
-  connect(): void;
+  connect(ask?: ConnectAsk): void;
   disconnect(): void;
   /** Returns false when the link is not online; nothing is queued. */
   send(
@@ -160,6 +170,15 @@ export interface LocalNotification {
   /** Finished tasks from one computer stack under its name. */
   group?: string;
   groupTitle?: string;
+  /** What it is about, for the type's own category where the device has
+   * one per type. */
+  alertType?: AlertType;
+  /** The person chose Silent for its type: in the list, with no sound or
+   * banner. A build that doesn't know it shows it as usual. */
+  silent?: boolean;
+  /** How it shows after the project's choice and the task's bell are
+   * applied over this device's choice for its type. */
+  want?: Tier;
 }
 
 /** How the background watcher's connection to one computer is doing. */
@@ -169,21 +188,30 @@ export interface AlertSettings {
   detail: "minimal" | "task_title";
 }
 export interface AlertsState {
-  /** Null until the person has been asked. */
+  /** Null until the person has been asked. `enabled` is whether alerts keep
+   * coming once Øphio is closed; while it runs, the watcher always posts. */
   settings: AlertSettings | null;
   /** By profile id, while the watcher runs. */
   statuses: Record<string, AlertStatus>;
+  /** When the watcher last heard from each computer, ms by this phone's
+   * clock, by profile id. Absent from an app that predates it. */
+  heard?: Record<string, number>;
+  /** This phone's choice for each type, as Android's categories say: its
+   * own settings can change them too. Absent from an app that predates it. */
+  tiers?: Partial<Record<AlertType, Tier>>;
   android: {
     running: boolean;
     /** Android lets the watcher run without battery limits, which it needs
      * to keep running once the app leaves the screen. */
     unrestricted: boolean;
-    /** Whether each category of alert can show. */
-    needsYou: boolean;
-    finished: boolean;
+    /** The two categories of older builds, before one per type. */
+    needsYou?: boolean;
+    finished?: boolean;
   };
 }
-export type AlertChannel = "needs-you" | "finished";
+/** A type's Android category, or "follow": the one for a type a project or
+ * a task's bell raises above this phone's choice. */
+export type AlertChannel = AlertType | "follow";
 /** Alerts while the app is closed, from a watcher that runs without the screen. */
 export interface BackgroundAlerts {
   state(): Promise<AlertsState>;
@@ -193,6 +221,12 @@ export interface BackgroundAlerts {
   battery(): Promise<void>;
   /** Android's settings for one category of alert. */
   channel(channel: AlertChannel): Promise<void>;
+  /** Sets how one type shows on this phone, at once. Off also clears its
+   * notifications showing. Absent from an app that predates it. */
+  setTier?(alertType: AlertType, tier: Tier): Promise<AlertsState>;
+  /** The person saw these items on screen: their notifications go, from
+   * this phone and from the person's other devices. At most 200 a call. */
+  handled?(profileId: string, attentionIds: string[]): Promise<void>;
   /** Alerts the app showed on its screen, which the watcher then does not raise. */
   seen?(profileId: string, attentionIds: string[]): Promise<void>;
   /** The app's screen began or stopped showing a computer's alerts. Only
@@ -289,11 +323,21 @@ export interface AppUpdateResult {
   message: string | null;
 }
 export interface AppUpdater {
-  /** The offer this app can update to, if any, and the version it runs. */
-  check(offers: AppOffer[]): Promise<{
+  /**
+   * The offer this app can update to, if any, the version it runs, and what
+   * Android asks first. With `openSettings`, a phone that doesn't yet let the
+   * app install apps first opens Android's setting for that; the answer
+   * describes the phone before the person changes anything there.
+   */
+  check(offers: AppOffer[], options?: { openSettings?: boolean }): Promise<{
     offer: AppOffer | null;
     version: string;
-    /** Android asks the person to confirm each update (before Android 12). */
+    /** Android lets the app install apps (its Install unknown apps setting). */
+    allowed: boolean;
+    /**
+     * Android asks the person to confirm each update even once that is
+     * allowed: before Android 12, or when another app owns its updates.
+     */
     asks: boolean;
   }>;
   /** Hands Android the app, verified as `sha256`; the result follows by `onResult`. */

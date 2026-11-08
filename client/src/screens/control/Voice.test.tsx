@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { SpeechEvent } from "../../host/link";
 import type { ReactNode } from "react";
 import type { HostState } from "../../state/projection";
@@ -74,4 +74,23 @@ it("cancels the microphone when the app enters the background", () => {
   fireEvent(document, new Event("visibilitychange"));
   expect(speechSend).toHaveBeenLastCalledWith({ type: "cancel" }); expect(speechClose).toHaveBeenCalledOnce();
   if (original) Object.defineProperty(document, "hidden", original); else Reflect.deleteProperty(document, "hidden");
+});
+
+it("sends a spoken command once, when it is finished, and shows the computer's refusal", async () => {
+  view.speech = { state: "available" }; speechSend.mockClear(); command.mockClear();
+  render(<VoiceSession sessionId="session" />);
+  fireEvent.click(screen.getByRole("button", { name: "Hold to talk" }));
+  speechListener?.({ type: "state", state: { state: "online", since: 1 } });
+  const utterance = (speechSend.mock.calls[0]?.[0] as { session_id: string }).session_id;
+  act(() => speechListener?.({ type: "text", frame: { type: "segment", segment: { segment_id: "s:0", text: "Open the", start_ms: 0, end_ms: 400, is_final: false, revision: 0 } } as never }));
+  act(() => speechListener?.({ type: "text", frame: { type: "segment", segment: { segment_id: "s:0", text: "Open the browser.", start_ms: 0, end_ms: 900, is_final: true, revision: 1 } } as never }));
+  expect(screen.getByLabelText("Live transcript").textContent).toBe("Open the browser.");
+  // Words still being spoken go nowhere: no half-heard command, no Jev call.
+  expect(command).not.toHaveBeenCalled();
+  command.mockRejectedValueOnce(new Error("refused"));
+  fireEvent.click(screen.getByRole("button", { name: "Release to finish speaking" }));
+  act(() => speechListener?.({ type: "text", frame: { type: "finished", session_id: utterance } } as never));
+  await waitFor(() => expect(command).toHaveBeenCalledTimes(1));
+  expect(command.mock.calls[0]?.[0]).toMatchObject({ command: "voice", operation: { operation: "transcript", text: "Open the browser.", final_segment: true } });
+  await screen.findByText("Unavailable");
 });

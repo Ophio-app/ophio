@@ -83,6 +83,9 @@ impl Template {
             topic: None,
             quiet: false,
             report_id: None,
+            account_id: None,
+            alert: None,
+            alert_handled_at: None,
         };
         f.hub
             .write(|tx| {
@@ -130,6 +133,9 @@ impl Template {
                     topic: None,
                     quiet: false,
                     report_id: None,
+                    account_id: None,
+                    alert: None,
+                    alert_handled_at: None,
                 };
                 f.hub
                     .write(|tx| {
@@ -145,6 +151,8 @@ impl Template {
 
 fn approval(task: &Task, run: RunId, state: ApprovalState) -> Approval {
     Approval {
+        headline: None,
+        facts: Vec::new(),
         approval_id: ApprovalId::new(),
         run_id: run,
         task_id: task.task_id,
@@ -160,6 +168,8 @@ fn approval(task: &Task, run: RunId, state: ApprovalState) -> Approval {
         shortened: false,
         revision: 1,
         state,
+        access_request: None,
+        actions: None,
         delivery: None,
         outcome: None,
         requested_at: task.updated_at,
@@ -177,7 +187,15 @@ async fn snapshot(f: &Fixture) -> Snapshot {
     snapshot_for(f, Some(true)).await
 }
 async fn snapshot_for(f: &Fixture, reads_withheld: Option<bool>) -> Snapshot {
-    match query(f, Query::Snapshot { reads_withheld }).await {
+    match query(
+        f,
+        Query::Snapshot {
+            reads_withheld,
+            account_items: false,
+        },
+    )
+    .await
+    {
         QueryData::Snapshot(snapshot) => {
             assert!(serde_json::to_vec(&snapshot).unwrap().len() < FRAME);
             *snapshot
@@ -536,6 +554,7 @@ async fn a_chat_connector_reads_every_task_within_the_companion() {
             &chat,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -688,6 +707,7 @@ async fn a_phone_that_cannot_read_withheld_approvals_gets_every_one_or_a_reason(
             &Caller::local_owner(),
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -1370,6 +1390,8 @@ async fn a_dismissed_request_keeps_its_room_until_it_is_answered() {
         .emit(
             run,
             ports::HarnessEvent::ApprovalRequested(ports::NativeApproval {
+                headline: None,
+                subject: Default::default(),
                 native_request_id: "tool".into(),
                 kind: ApprovalKind::Command,
                 title: "Run test".into(),
@@ -1493,6 +1515,9 @@ async fn snapshot_preserves_live_reasons_and_grants() {
         child_id: None,
         quiet: false,
         report_id: None,
+        account_id: None,
+        alert: None,
+        alert_handled_at: None,
     };
     let orphan = AttentionItem {
         attention_id: AttentionId::new(),
@@ -1538,7 +1563,7 @@ async fn snapshot_preserves_live_reasons_and_grants() {
             .hub
             .read(|r| {
                 let mut snapshot = crate::history::always(r, &g)?;
-                crate::history::fill(r, &g, &mut snapshot, true)?;
+                crate::history::fill(r, &g, &mut snapshot, true, false)?;
                 Ok(snapshot)
             })
             .unwrap();
@@ -1618,7 +1643,7 @@ async fn snapshot_skips_finished_history_beyond_its_budget() {
                 store::take_read_cost();
                 RELATED_READS.with(|n| n.set(0));
                 let mut snapshot = crate::history::always(r, &g)?;
-                crate::history::fill(r, &g, &mut snapshot, true)?;
+                crate::history::fill(r, &g, &mut snapshot, true, false)?;
                 let cost = (RELATED_READS.with(|n| n.get()), store::take_read_cost());
                 eprintln!("snapshot read cost (related queries, (rows, bytes)): {cost:?}");
                 assert!(snapshot.tasks.contains(&template.task));

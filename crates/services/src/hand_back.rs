@@ -113,6 +113,18 @@ impl CompanionHub {
         if self.run_stopped(run_id)? || target.removed || target.view.private_step.is_some() {
             return Ok(Lease::Gone);
         }
+        // No one can hand this screen back until its launch is confirmed
+        // stopped or Ophio restarts: say so now, rather than ask the person
+        // for what can only fail.
+        if target.unresolved_launch {
+            return Err(crate::control::launch_unresolved());
+        }
+        // Fenced while sharing ends or capture reopens, before it is
+        // removed: nobody can hand it back, so it is no pause. The answer is
+        // the one it would get a moment later, or once it had been removed.
+        if target.leaving {
+            return Err(self.desktop().err().unwrap_or_else(gone));
+        }
         let ours = target.view.lease.as_ref().filter(|l| {
             l.owner == LeaseOwner::Agent { run_id } && l.boot_epoch == self.inner.epoch
         });

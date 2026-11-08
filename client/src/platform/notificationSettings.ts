@@ -8,6 +8,7 @@
 import type { HostSession } from "../host/session";
 import type { AlertTopic, AttentionItem, NotificationSettings, ProjectNotifications } from "../protocol/types";
 import { Store } from "../state/store";
+import { sameTiers } from "./alertTypes";
 
 /** The computer's word that it keeps which alerts reach the person. */
 export const NOTIFICATION_SETTINGS_FEATURE = "notification_settings_v1";
@@ -64,14 +65,14 @@ export function bundlesFor(settings: NotificationSettings, projectId: string): b
 /** The projects with `choice` in place of the project's own, leaving out one that says nothing. */
 export function withProject(settings: NotificationSettings, choice: ProjectNotifications): ProjectNotifications[] {
   const rest = settings.projects.filter((p) => p.project_id !== choice.project_id);
-  const empty = !choice.mute && !choice.on.length && !choice.off.length && choice.bundle === undefined;
+  const empty = !choice.mute && !choice.on.length && !choice.off.length && choice.bundle === undefined && !choice.tiers?.length;
   return empty ? rest : [...rest, choice];
 }
 
 export type NotificationChoices = Omit<NotificationSettings, "revision">;
 
 /** Whether two sets of choices say the same, as the computer keeps them:
- * each topic once and in its own order. */
+ * each topic and type once and in its own order. */
 export function sameChoices(a: NotificationChoices, b: NotificationChoices): boolean {
   const same = (x: readonly AlertTopic[], y: readonly AlertTopic[]) => {
     const ys = new Set(y);
@@ -80,7 +81,7 @@ export function sameChoices(a: NotificationChoices, b: NotificationChoices): boo
   if (a.bundle !== b.bundle || !same(a.off, b.off) || a.projects.length !== b.projects.length) return false;
   return a.projects.every((p) => {
     const q = b.projects.find((q) => q.project_id === p.project_id);
-    return !!q && p.mute === q.mute && (p.bundle ?? null) === (q.bundle ?? null) && same(p.on, q.on) && same(p.off, q.off);
+    return !!q && p.mute === q.mute && (p.bundle ?? null) === (q.bundle ?? null) && same(p.on, q.on) && same(p.off, q.off) && sameTiers(p, q);
   });
 }
 

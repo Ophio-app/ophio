@@ -86,6 +86,30 @@ impl RunSecrets {
     }
 }
 
+/// The accounts as `caller` may see them. A sign-in finished on the phone
+/// shows its page and code only to a paired device that may manage accounts
+/// and asked for them with `on_phone`, the app that can finish it there.
+/// Everyone else, a program Ophio started among them, or an older app that
+/// doesn't know the stage, sees the provider's host alone.
+pub(crate) fn view_for(
+    mut view: protocol::accounts::AccountsView,
+    caller: &Caller,
+    on_phone: bool,
+) -> protocol::accounts::AccountsView {
+    use protocol::accounts::SignInStage;
+    let shown =
+        on_phone && caller.grants.accounts && matches!(caller.principal, Principal::Device { .. });
+    if !shown
+        && let Some(sign_in) = view.sign_in.as_mut()
+        && let SignInStage::OnPhone { url_host, .. } = &sign_in.stage
+    {
+        sign_in.stage = SignInStage::Browser {
+            url_host: url_host.clone(),
+        };
+    }
+    view
+}
+
 impl CompanionHub {
     pub(crate) fn accounts(&self) -> Result<Arc<dyn Accounts>, ProtocolError> {
         self.inner
@@ -99,8 +123,28 @@ impl CompanionHub {
         caller: &Caller,
         action: &AccountAction,
     ) -> Result<Option<CommandResult>, ProtocolError> {
+        // The notice is the computer's own, kept here rather than in Accounts.
+        if let AccountAction::DismissSignInNotice { account_id } = action {
+            let now = self.inner.clock.now();
+            let found = self.write(|tx| crate::sign_in_watch::dismiss(tx, account_id, now))?;
+            return match found {
+                true => Ok(None),
+                false => Err(error(
+                    ErrorCode::NotFound,
+                    "That notice was already put away or is no longer needed.",
+                )),
+            };
+        }
         let accounts = self.accounts()?;
         let by = self.caller_name(caller)?;
+        // Signing an agent out on purpose is no lapse to alert on. Kept
+        // before the sign-out, so a check it sets off can't come first; a
+        // sign-out that fails leaves the agent to be seen signed in again.
+        if let AccountAction::SignOut { account_id } | AccountAction::Delete { account_id } = action
+            && let Some(harness) = crate::sign_in_watch::harness_of(account_id)
+        {
+            self.sign_in_seen(harness, crate::sign_in_watch::Seen::SignedOutOnPurpose)?;
+        }
         accounts
             .act(action.clone(), &by)
             .await
@@ -334,6 +378,10 @@ impl CompanionHub {
         }
         let f = &mut |text: &mut String| hide.cut(text);
         f(&mut approval.title);
+        approval.headline.iter_mut().for_each(&mut *f);
+        for fact in &mut approval.facts {
+            f(&mut fact.text);
+        }
         approval.detail.iter_mut().for_each(&mut *f);
         approval.raw_request.iter_mut().for_each(&mut *f);
         ports::harness::visit_serialized(&mut approval.detail_lines, f);

@@ -96,7 +96,13 @@ pub struct HostInfo {
     #[ts(optional)]
     pub inbox_path: Option<String>,
     pub host_id: HostId,
+    /// The name phones show: the one the owner chose, or the hostname.
     pub name: String,
+    /// The owner chose `name` (`Command::RenameComputer`); otherwise it is
+    /// the computer's hostname.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub renamed: bool,
     pub os_label: String,
     pub companion_version: String,
     pub boot_epoch: BootEpoch,
@@ -341,6 +347,11 @@ pub struct Task {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub asked_by: Option<TaskId>,
+    /// The problem report the person had this task look into, from the
+    /// report in their inbox. Advertised as `report_task_v1`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub report: Option<TaskReport>,
     pub created_by: Principal,
     pub created_at: Timestamp,
     pub updated_at: Timestamp,
@@ -354,6 +365,21 @@ pub struct Task {
     pub attention_count: u32,
     /// Most recent human-readable status line from the harness.
     pub status_line: Option<String>,
+    /// "Tell me when it's done": the task's finish, failure or reply alerts
+    /// on every phone, whatever their choice for those types. Advertised
+    /// as `alert_types_v1`.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub notify_done: bool,
+}
+
+/// The problem report a task looks into.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct TaskReport {
+    pub report_id: ReportId,
+    /// The report's short reference, as the person reads it: `A7K3QX`.
+    pub reference: String,
 }
 
 /// Bounded mission: goal, authorized scope, completion checks and stop point.
@@ -835,6 +861,23 @@ pub struct ApprovalDetailLine {
     pub change: Option<ApprovalLineChange>,
 }
 
+/// One thing an approval's request would do, worked out by the computer from
+/// the exact request (never from what the agent wrote about it), e.g.
+/// "makes a git commit". Read in order, joined with commas.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct ApprovalFact {
+    /// Reads as part of one sentence with the others ("makes a git commit"),
+    /// so only the first fact shown is capitalised.
+    pub text: String,
+    /// Worth a second look before allowing: it deletes, pushes, reaches
+    /// outside the project, needs administrator rights, installs software,
+    /// runs a downloaded script, or does something the computer can't check.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub risky: bool,
+}
+
 /// How a line of a proposed file change differs from the file as it is.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS,
@@ -896,6 +939,15 @@ pub struct Approval {
     pub kind: ApprovalKind,
     /// Human-readable description of the requested effect.
     pub title: String,
+    /// The agent's own one-line account of the request, e.g. a shell
+    /// command's description. Agent-written: `facts` say what it does.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub headline: Option<String>,
+    /// What the request would do, worked out from the exact request.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<Vec<ApprovalFact>>", optional)]
+    pub facts: Vec<ApprovalFact>,
     pub detail: Option<String>,
     /// `detail` line by line, when its source says which parts are code.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -916,6 +968,22 @@ pub struct Approval {
     pub shortened: bool,
     pub revision: u32,
     pub state: ApprovalState,
+    /// Set when the agent asks for more than it has with Ophio's
+    /// `request_access` tool, and says what; such a request has `kind:
+    /// other`, which every build reads, so a computer rolled back to an
+    /// older build still starts, and an older phone shows it as an approval
+    /// with its title. In a conversation, Allow turns exactly that on; in a
+    /// Plan or Ask task the way forward is [`ApprovalAction::SwitchToWork`],
+    /// and an older phone's Allow does the same.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub access_request: Option<AccessRequest>,
+    /// The ways forward the computer would accept while this is pending, in
+    /// the order to show them. Absent from older computers: a phone then
+    /// shows Allow and Deny as before. Advertised with `switch_to_work_v1`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub actions: Option<Vec<ApprovalAction>>,
     /// Last decision hand-off. A failed delivery leaves the request pending.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -961,6 +1029,72 @@ pub enum ApprovalKind {
     /// or to open a pull request past the project's limit.
     GithubPost,
     Other,
+}
+
+/// What an agent asks for more of with `request_access`.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    schemars::JsonSchema,
+    ts_rs::TS,
+)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum AccessNeed {
+    /// Change files and run commands in the task's own project.
+    ChangeFiles,
+    /// Reach the internet.
+    Internet,
+    /// Reach the person's own network (their LAN, tailnet), and the internet.
+    LocalNetwork,
+    /// Read and change anything on the computer.
+    WholeComputer,
+}
+
+/// An agent's request for more access, as the person is asked it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct AccessRequest {
+    /// What it lacks, of what it asked for: what Allow would turn on.
+    pub needs: Vec<AccessNeed>,
+    /// The agent's own one-line reason.
+    pub reason: String,
+}
+
+/// A way forward the computer offers for a pending approval, worked out by
+/// the same rule that admits the decision, so a phone never shows a button
+/// the computer would refuse. Newer computers send [`Approval::actions`].
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS,
+)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum ApprovalAction {
+    /// `ResolveApproval` with Allow. For an access request in a
+    /// conversation, that turns on exactly what it asked for.
+    Allow,
+    /// `ResolveApproval` with Deny ("Decline", or "Not now" for an access
+    /// request). The agent is told to finish without it.
+    Deny,
+    /// `ResolveApproval` with an answer.
+    Answer,
+    /// `SwitchToWork` with this approval: a Plan or Ask task carries on in
+    /// Work, in the same session, and the agent is told its request is
+    /// allowed. "Switch to Work" for an access request, otherwise "Switch to
+    /// Work and allow".
+    SwitchToWork,
+    /// `SwitchToWork` with this approval, from a conversation: it becomes a
+    /// task in Work, where this can be allowed, and the agent is told to
+    /// carry on with it.
+    TurnIntoTask,
 }
 
 #[derive(
@@ -1018,6 +1152,24 @@ pub struct AttentionItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub report_id: Option<ReportId>,
+    /// The computer's account the item is about, with no task: an agent
+    /// that isn't signed in (`claude` or `codex`). Only devices that may
+    /// manage accounts see it. Older computers send none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub account_id: Option<String>,
+    /// The notification type it was raised as, where its kind and topic
+    /// don't say (see [`crate::notifications::AlertType::of`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub alert: Option<crate::notifications::AlertType>,
+    /// When one of the person's devices handled its notification: swiped
+    /// it away, opened it, or showed the item on screen. Its notification
+    /// then goes from every device and never comes back; the item itself
+    /// stays as it is.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub alert_handled_at: Option<Timestamp>,
 }
 
 impl AttentionItem {

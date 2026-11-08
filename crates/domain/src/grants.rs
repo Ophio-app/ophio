@@ -19,6 +19,8 @@ pub fn command(g: &Grants, c: &Command) -> bool {
         | RegisterPreview { .. }
         | RemovePreview { .. }
         | RenameDevice { .. }
+        // Every phone paired to the computer shows the name it is given.
+        | RenameComputer { .. }
         | RevokeDevice { .. }
         | SetDeviceGrants { .. }
         | ChangeDeviceGrants { .. }
@@ -40,14 +42,23 @@ pub fn command(g: &Grants, c: &Command) -> bool {
         SubmitReport { .. } | AnswerReportQuestion { .. } | WithdrawReport { .. } => g.view,
         // Where reports go, and what their reporters hear, are the owner's.
         SetReportSettings { .. } | SetReportVerdict { .. } | LookIntoReport { .. } => g.admin,
+        // It starts a task, so it also needs what starting one does.
+        StartReportTask { .. } => g.admin && g.tasks,
         PrepareContribution { .. } | SetContributionRoot { .. } => g.admin && g.library_write,
-        CreateTask { kind, .. } => g.tasks && (*kind != TaskKind::ComputerUse || g.computer_use),
+        // A task whose pull request is to merge by itself is merged without
+        // the person later, so asking for it is a sign-off, as merging is.
+        CreateTask { kind, github, .. } => {
+            g.tasks
+                && (*kind != TaskKind::ComputerUse || g.computer_use)
+                && (!merges_by_itself(github.as_deref()) || g.approvals)
+        }
         SendMessage { .. }
         | StopTask { .. }
         | ResumeTask { .. }
         | RenameTask { .. }
         | ArchiveTask { .. }
         | UnarchiveTask { .. }
+        | SetTaskNotify { .. }
         // Tasks already run with the whole computer; a conversation is held to less.
         | SetConversationAccess { .. }
         | ReconcileTask { .. }
@@ -68,6 +79,8 @@ pub fn command(g: &Grants, c: &Command) -> bool {
         // Starting the server runs its command on the computer, as a terminal does.
         CheckPreview { start: true, .. } => g.tasks && g.terminal,
         ResolveApproval { .. } => g.approvals,
+        // Taking a request along allows it, as Allow does.
+        SwitchToWork { approval_id, .. } => g.tasks && (approval_id.is_none() || g.approvals),
         RequestHumanLease { .. }
         | ReleaseLease { .. }
         | PauseInput { .. }
@@ -158,7 +171,16 @@ pub fn command(g: &Grants, c: &Command) -> bool {
         // Merging is the person's sign-off, as an approval is; the rest
         // changes how the project's agents work with GitHub. Run all and
         // sorting by hand start and order tasks, as Next up does. Stopping
-        // Merge together merges nothing more.
+        // Merge together merges nothing more. Choosing that one task's pull
+        // request merges once it is green is a merge signed off ahead of
+        // time; leaving it for the person, or to the project, is not.
+        Github {
+            action:
+                protocol::github::GithubAction::SetWhenGreen {
+                    when_green: Some(protocol::github::WhenGreen::Merge),
+                    ..
+                },
+        } => g.tasks && g.approvals,
         Github {
             action:
                 protocol::github::GithubAction::MarkPrReady { .. }
@@ -166,7 +188,8 @@ pub fn command(g: &Grants, c: &Command) -> bool {
                 | protocol::github::GithubAction::CloseIssue { .. }
                 | protocol::github::GithubAction::RunIssues { .. }
                 | protocol::github::GithubAction::SetGroup { .. }
-                | protocol::github::GithubAction::StopTogether { .. },
+                | protocol::github::GithubAction::StopTogether { .. }
+                | protocol::github::GithubAction::SetWhenGreen { .. },
         } => g.tasks,
         Github {
             action:
@@ -175,6 +198,17 @@ pub fn command(g: &Grants, c: &Command) -> bool {
         } => g.tasks && g.approvals,
         Github { .. } => g.admin,
     }
+}
+
+/// Whether a new task's link asks for its pull request to merge by itself.
+fn merges_by_itself(github: Option<&protocol::github::GithubLink>) -> bool {
+    matches!(
+        github,
+        Some(protocol::github::GithubLink::Issue {
+            when_green: Some(protocol::github::WhenGreen::Merge),
+            ..
+        })
+    )
 }
 
 pub fn query(g: &Grants, q: &Query) -> bool {
@@ -197,7 +231,7 @@ pub fn query(g: &Grants, q: &Query) -> bool {
         Query::FileDelivery => g.tasks || g.admin,
         Query::AgentUpdates | Query::AgentPreferences | Query::NotificationSettings => g.view,
         Query::Reports | Query::Report { .. } | Query::ReportPreview { .. } => g.view,
-        Query::InboxReportCode { .. } => g.admin,
+        Query::InboxReportCode { .. } | Query::ReportTaskProject => g.admin,
         Query::ObservedSessions => g.tasks,
         Query::ProjectStages { .. } => g.tasks || g.admin,
         Query::TaskHistory { .. } | Query::Task { .. } | Query::Run { .. } => g.tasks,
@@ -217,7 +251,9 @@ pub fn query(g: &Grants, q: &Query) -> bool {
         | Query::ProjectFolders { .. } => g.admin,
         Query::TaskArtifacts { .. } | Query::ProjectShown { .. } => g.tasks && g.transfers,
         Query::Transfers | Query::Artifact { .. } => g.transfers,
-        Query::Accounts | Query::AgentLogins | Query::AgentLoginPassword { .. } => g.accounts,
+        Query::Accounts { .. } | Query::AgentLogins | Query::AgentLoginPassword { .. } => {
+            g.accounts
+        }
         Query::GithubProject { .. } | Query::GithubItems { .. } | Query::GithubPr { .. } => g.tasks,
         Query::LibraryTrash
         | Query::LibraryTrashRead { .. }
@@ -331,7 +367,7 @@ mod tests {
             action: AccountAction::PauseAll,
         };
         assert!(!command(&manager, &pause));
-        assert!(!query(&manager, &Query::Accounts));
+        assert!(!query(&manager, &Query::Accounts { on_phone: false }));
         assert!(!event(&manager, &Event::AccountsChanged {}));
         let accounts = Grants {
             accounts: true,
@@ -477,9 +513,70 @@ mod tests {
         };
         assert!(command(&tasks, &ready) && !command(&tasks, &merge));
         assert!(!command(&tasks, &together) && command(&tasks, &stop));
+        // Choosing that a task's pull request merges by itself signs off
+        // its merge; leaving it to the person or the project doesn't.
+        let when_green = |when_green| Command::Github {
+            action: GithubAction::SetWhenGreen {
+                task_id: TaskId::new(),
+                when_green,
+            },
+        };
+        let merges = when_green(Some(protocol::github::WhenGreen::Merge));
+        assert!(!command(&tasks, &merges) && command(&channel_defaults(), &merges));
+        assert!(command(
+            &tasks,
+            &when_green(Some(protocol::github::WhenGreen::Leave))
+        ));
+        assert!(command(&tasks, &when_green(None)));
         assert!(command(&channel_defaults(), &merge));
         assert!(!command(&channel_defaults(), &settings));
         assert!(command(&Grants::owner(), &settings));
+    }
+    #[test]
+    fn starting_a_task_that_merges_by_itself_is_a_sign_off() {
+        use protocol::github::{GithubLink, WhenGreen};
+        let start = |when_green| Command::CreateTask {
+            github: Some(Box::new(GithubLink::Issue {
+                number: 7,
+                review_with: None,
+                when_green,
+            })),
+            agent_chosen: None,
+            mode: None,
+            project_id: ProjectId::new(),
+            kind: TaskKind::Coding,
+            title: None,
+            prompt: "x".into(),
+            bundle: None,
+            harness: protocol::capability::HarnessKind::ClaudeCode,
+            model: None,
+            effort: None,
+            launch_policy: None,
+            branch: None,
+            mission: None,
+            target_id: None,
+            placement: TaskPlacement::StartNow,
+            start: None,
+            place: None,
+            browser: None,
+            conversation: None,
+            access: None,
+            review: None,
+        };
+        let tasks = Grants {
+            tasks: true,
+            ..Grants::default()
+        };
+        assert!(command(&tasks, &start(None)));
+        assert!(command(&tasks, &start(Some(WhenGreen::Leave))));
+        assert!(!command(&tasks, &start(Some(WhenGreen::Merge))));
+        assert!(command(
+            &Grants {
+                approvals: true,
+                ..tasks
+            },
+            &start(Some(WhenGreen::Merge))
+        ));
     }
     #[test]
     fn saving_over_a_file_needs_permission_to_read_it() {
@@ -528,6 +625,21 @@ mod tests {
             },
             &check(true)
         ));
+    }
+    #[test]
+    fn only_a_manager_renames_the_computer() {
+        let rename = Command::RenameComputer {
+            name: "Studio".into(),
+        };
+        assert!(command(&manager_defaults(), &rename));
+        assert!(!command(&device_defaults(), &rename));
+        // Everything but managing the computer is not enough.
+        let all_but_admin = Grants {
+            admin: false,
+            ..Grants::owner()
+        };
+        assert!(!command(&all_but_admin, &rename));
+        assert!(!command(&channel_defaults(), &rename));
     }
     #[test]
     fn every_command_requires_authority() {
@@ -629,6 +741,11 @@ mod tests {
                 task_id: t,
                 force: false,
             },
+            Command::SwitchToWork {
+                task_id: t,
+                approval_id: Some(a),
+                text: None,
+            },
             Command::ResumeTask {
                 mode: None,
                 bundle: None,
@@ -646,6 +763,10 @@ mod tests {
             },
             Command::ArchiveTask { task_id: t },
             Command::UnarchiveTask { task_id: t },
+            Command::SetTaskNotify {
+                task_id: t,
+                on: true,
+            },
             Command::SetConversationAccess {
                 task_id: t,
                 access: Default::default(),
@@ -795,6 +916,7 @@ mod tests {
                 device_id: device,
                 name: "x".into(),
             },
+            Command::RenameComputer { name: "x".into() },
             Command::RevokeDevice { device_id: device },
             Command::SetDeviceGrants {
                 expected: Some(Grants::owner()),
@@ -877,6 +999,7 @@ mod tests {
                 off: Vec::new(),
                 bundle: true,
                 projects: Vec::new(),
+                types: false,
             },
             Command::ChecklistTick {
                 project_id: p,
@@ -950,6 +1073,10 @@ mod tests {
             verdict: protocol::reports::ReportVerdict::Reproduced,
         });
         commands.push(Command::LookIntoReport { report_id });
+        commands.push(Command::StartReportTask {
+            report_id,
+            project_id: None,
+        });
         commands.push(Command::LibraryRecoveryDiscard {
             root_id: root,
             recovery_id: "snapshot".into(),
@@ -975,6 +1102,18 @@ mod tests {
                 sha256: "x".into(),
             },
         });
+        // Taking a request along allows it, so it needs approvals too.
+        let switch = |approval_id| Command::SwitchToWork {
+            task_id: t,
+            approval_id,
+            text: None,
+        };
+        let tasks_only = Grants {
+            tasks: true,
+            ..Grants::default()
+        };
+        assert!(command(&tasks_only, &switch(None)));
+        assert!(!command(&tasks_only, &switch(Some(a))));
         for c in commands {
             assert!(!command(&Grants::default(), &c), "{c:?}");
             assert!(command(&Grants::owner(), &c), "{c:?}");
@@ -1019,6 +1158,7 @@ mod tests {
             Query::ObservedSessions,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
             Query::CommandStatus {
                 command_id: CommandId::new(),
@@ -1111,7 +1251,7 @@ mod tests {
             Query::Approval {
                 approval_id: ApprovalId::new(),
             },
-            Query::Accounts,
+            Query::Accounts { on_phone: false },
             Query::AgentLogins,
             Query::AgentLoginPassword {
                 login_id: "l1".into(),
@@ -1139,6 +1279,7 @@ mod tests {
             Query::InboxReportCode {
                 report_id: protocol::ReportId::new(),
             },
+            Query::ReportTaskProject,
             Query::Report {
                 report_id: protocol::ReportId::new(),
             },

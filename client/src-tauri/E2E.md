@@ -234,10 +234,13 @@ were run again on the emulator after a fresh pairing, from a build whose Android
 and Rust code is that of `35747d17`, all seven cases in one run, and both steps
 left battery use as they found it. The two rows above give those results; the
 airplane case now fails if the alert comes more than 15 s after the network.
-The cases where an alert shows before a restart or an update now fail unless
-Android shows it anew afterwards: an update clears the app's alerts a moment
-after the install returns, and one run found the old alert still there while
-the app's process was between the old and the new. One run of the restart
+The cases where an alert shows before a restart or an update first failed
+unless Android showed it anew afterwards: an update clears the app's alerts a
+moment after the install returns, and one run found the old alert still there
+while the app's process was between the old and the new. Since alerts stopped
+coming back (2026-11-07), those cases fail if the alert is raised again
+within 90 seconds of the restart or update; they have not been run on the
+emulator in that form yet. One run of the restart
 cases failed when the emulator came back from its restart with Wi-Fi connected
 but no route, so nothing on it could reach the computer; turning Wi-Fi off and
 on restored it, the app reconnected at once, and both restart cases then

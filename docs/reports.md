@@ -74,3 +74,13 @@ back when a previous build is available.
 Problem reports in notification settings controls report alerts. Tapping an
 alert opens its report. Computers without report support receive no report
 queries or commands; the phone’s direct reports remain available.
+
+If you run your own intake, the reports it receives show on the computer
+that runs its inbox, and
+[running an intake](operations/intake.md#the-owners-report-inbox)
+describes them. Where that computer doesn't run the report fixer, a received
+report offers **Have an agent look into it**: one tap starts an ordinary task
+in Plan mode, in the project that holds Ophio's source, to find out what went
+wrong and propose a fix. The reporter's words reach the agent only in a
+block of their own, labelled as theirs. The agent reads and proposes but
+changes nothing until you read its plan and choose **Carry out this plan**.

@@ -2,15 +2,25 @@
 import { useState } from "react";
 import { ListRow } from "../../design/ListRow";
 import { Sheet } from "../../design/Sheet";
-import type { Run, Task } from "../../protocol/types";
+import type { Run, Task, TaskMode } from "../../protocol/types";
 import { decisionLabel, runMode } from "./logic";
 import { modeLabel } from "../talk/ModePicker";
 import { runEnd } from "../talk/timeline";
 
+/** What a run is called by its mode: a chat's turns are the chat's, never
+ * Ask, which is only how the computer runs them. A task a chat was turned
+ * into keeps its chat turns, which ran in Ask before it moved to Work. */
+function modeWord(task: Task, mode: TaskMode | null): string | null {
+  if (task.conversation) return null;
+  if (task.access && mode === "ask") return "Chat";
+  return mode ? modeLabel(mode) : null;
+}
+
 /** "Run 1 · Plan · Plan proposed" with its start, and the same facts as a spoken label. */
 function describe(task: Task, runs: Run[], run: Run, latest: Run | undefined) {
   const mode = runMode(task, run);
-  const facts = [`Run ${runs.length - runs.findIndex(r => r.run_id === run.run_id)}`, ...(mode ? [modeLabel(mode)] : []), decisionLabel(run) ?? runEnd(run.state, mode)];
+  const word = modeWord(task, mode);
+  const facts = [`Run ${runs.length - runs.findIndex(r => r.run_id === run.run_id)}`, ...(word ? [word] : []), decisionLabel(run) ?? runEnd(run.state, mode, !!task.conversation)];
   const at = new Date(run.admitted_at).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
   const isLatest = run.run_id === latest?.run_id;
   return {

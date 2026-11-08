@@ -4,6 +4,8 @@
 mod detect;
 mod input;
 #[cfg(target_os = "linux")]
+mod keymap;
+#[cfg(target_os = "linux")]
 pub mod lock;
 pub mod native;
 #[cfg(target_os = "linux")]
@@ -415,4 +417,5 @@ pub mod a11y;
 mod clipboard;
 #[cfg(test)]
 mod fake_portal;
+pub mod launch;
 pub mod windows;

@@ -61,6 +61,8 @@ export type Route =
   | { screen: "settings"; section?: string; projectId?: string; reportId?: string }
   | { screen: "accounts" }
   | { screen: "agent_logins" }
+  /** Sign an agent in again on this phone (`claude`, `codex`). */
+  | { screen: "sign_in"; accountId: string }
   | { screen: "voice"; sessionId?: string }
   | { screen: "windows"; targetId: string }
   | { screen: "library_recovery"; rootId: string; recoveryId: string }
@@ -90,7 +92,7 @@ export function homeTab(route: Route): Tab {
     case "control": case "desktop": case "computer_use": case "terminal": case "system": case "computer_use_review": case "windows": return "control";
     case "library": case "folder": case "agent_files": case "file": case "conflict": case "recently_deleted": case "instructions": case "reusable": case "library_recovery": case "transfers": return "library";
     case "todo": case "checklist": return "todo";
-    case "work": case "agents": case "receipt": case "next_up": case "inbox": case "attention": case "needs_you": case "connections": case "settings": case "accounts": case "agent_logins": case "stages": case "github": case "github_list": case "github_new": case "findings": case "findings_new": case "contribution": case "contribution_rules": return "work";
+    case "work": case "agents": case "receipt": case "next_up": case "inbox": case "attention": case "needs_you": case "connections": case "settings": case "accounts": case "agent_logins": case "sign_in": case "stages": case "github": case "github_list": case "github_new": case "findings": case "findings_new": case "contribution": case "contribution_rules": return "work";
   }
 }
 
@@ -115,7 +117,7 @@ const SCREENS: Record<Route["screen"], true> = {
   system: true, work: true, agents: true, receipt: true, next_up: true, inbox: true, attention: true,
   needs_you: true, library: true, folder: true, agent_files: true, file: true, conflict: true, transfers: true,
   connections: true, recently_deleted: true, instructions: true, reusable: true, computer_use_review: true,
-  settings: true, accounts: true, agent_logins: true, voice: true, windows: true, library_recovery: true,
+  settings: true, accounts: true, agent_logins: true, sign_in: true, voice: true, windows: true, library_recovery: true,
   stages: true, github: true, github_new: true, github_list: true, contribution: true, contribution_rules: true,
   findings: true, findings_new: true, checklist: true, todo: true,
 };

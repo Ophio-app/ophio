@@ -14,9 +14,10 @@ import { FileDelivery } from "./FileDelivery";
 import { Appearance } from "./Appearance";
 import { Warnings } from "./Warnings";
 import { Lock } from "./Lock";
+import { PairedComputers } from "./PairedComputers";
 import { ListRow, Section } from "../../design/ListRow";
 import {
-  Bell, Bot, Bug, Flag, FolderDown, GitPullRequest, Globe, KeyRound, Link2, Lock as LockIcon, Mic, MonitorSmartphone, Package, Palette, TriangleAlert,
+  Bell, Bot, Bug, Flag, FolderDown, GitPullRequest, Globe, KeyRound, Laptop, Link2, Lock as LockIcon, Mic, MonitorSmartphone, Package, Palette, TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
 import { useGithubSupported } from "../../app/github";
@@ -48,7 +49,8 @@ const PAGES: readonly Page[] = [
   { id: "settings-agents", title: "Agent apps", subtitle: "Claude Code, Codex and others: sign-in, updates and questions", icon: Bot, one: true, group: "agents", body: () => <AgentsAndAccounts /> },
   { id: "settings-files", title: "Where files go", subtitle: "Files from your checklists: this phone, Taildrop, a folder or a drive", icon: FolderDown, also: ["settings-files-folders", "settings-files-drives"], group: "computer", body: () => <FileDelivery /> },
   { id: "settings-link", title: "Open a link from chat", subtitle: "A task, file or approval someone copied from a chat message", icon: Link2, one: true, group: "computer", body: () => <ItemLink /> },
-  { id: "settings-notifications", title: "Notifications", subtitle: "What alerts you, for every project and each one", icon: Bell, group: "device", body: () => <Notifications /> },
+  { id: "settings-computers", title: "Computers", subtitle: "Rename each computer, switch between them, or pair another", icon: Laptop, one: true, group: "device", body: () => <PairedComputers /> },
+  { id: "settings-notifications", title: "Notifications", subtitle: "What notifies you on this phone, and from each project", icon: Bell, group: "device", body: () => <Notifications /> },
   { id: "settings-appearance", title: "Appearance", subtitle: "Light or dark, and motion", icon: Palette, one: true, group: "device", body: () => <Appearance /> },
   { id: "settings-lock", title: "Lock", subtitle: "Biometrics or screen lock to open the app", icon: LockIcon, one: true, group: "device", body: () => <Lock /> },
   { id: "settings-warnings", title: "Warnings", subtitle: "Asking before actions, and the warnings you turned off", icon: TriangleAlert, one: true, group: "device", body: () => <Warnings /> },

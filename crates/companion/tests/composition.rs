@@ -460,6 +460,7 @@ impl Phone {
         client
             .send(&ClientFrame::Subscribe(protocol::Subscribe {
                 after_seq: None,
+                account_items: false,
             }))
             .await;
         Self {
@@ -598,6 +599,7 @@ async fn real_composition_tls_claude_allow_deny_codex_terminal_library_transfer(
     let QueryData::Snapshot(snapshot) = phone
         .query(Query::Snapshot {
             reads_withheld: None,
+            account_items: false,
         })
         .await
     else {
@@ -663,6 +665,7 @@ async fn real_composition_tls_claude_allow_deny_codex_terminal_library_transfer(
         let QueryData::Snapshot(snapshot) = phone
             .query(Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             })
             .await
         else {
@@ -2312,6 +2315,7 @@ async fn phone_holds_the_screen(runtime: &Runtime) -> TargetId {
                 &services::Caller::local_owner(),
                 Query::Snapshot {
                     reads_withheld: None,
+                    account_items: false,
                 },
             )
             .await
@@ -2758,6 +2762,9 @@ async fn a_question_alert_carries_the_question_and_takes_its_answer() {
             showing: Vec::new(),
             quiet: true,
             reports: false,
+            sign_in: false,
+            handled: vec![],
+            types: false,
         })
         .await;
     let AlertServerFrame::Open { alerts, .. } = watcher.receive().await else {
@@ -2845,6 +2852,120 @@ async fn a_question_alert_carries_the_question_and_takes_its_answer() {
         "Yes"
     );
     rig.shutdown().await;
+}
+
+/// A notification handled on one phone, through the real computer: kept on
+/// its item, sent to the phone's other watchers as handled, quiet in every
+/// open list after, and still so once the computer has restarted.
+#[tokio::test]
+async fn a_handled_alert_is_shared_with_every_watcher_and_kept_through_a_restart() {
+    use companion::setup::probe;
+    use protocol::alerts::{Alert, AlertClientFrame, AlertServerFrame};
+    use protocol::notifications::AlertType;
+    let mut rig = Rig::new(true).await;
+    rig.pair().await;
+    let mut phone = Phone::new(&rig).await;
+    let dir = rig.project_dir("handled-alert");
+    let project = phone.project(&dir).await;
+    let watch = |types| AlertClientFrame::Watch {
+        showing: Vec::new(),
+        quiet: true,
+        reports: false,
+        sign_in: false,
+        types,
+        handled: Vec::new(),
+    };
+    let mut swiping = rig.client(ConnectionKind::Alerts).await;
+    let mut tablet = rig.client(ConnectionKind::Alerts).await;
+    for watcher in [&mut swiping, &mut tablet] {
+        watcher.send(&watch(true)).await;
+        let AlertServerFrame::Open {
+            alerts, handled, ..
+        } = watcher.receive().await
+        else {
+            panic!("open list first")
+        };
+        assert!(handled && alerts.is_empty(), "{alerts:?}");
+    }
+    async fn raised(watcher: &mut Client, task: TaskId, kind: AttentionKind) -> Alert {
+        loop {
+            if let AlertServerFrame::Raised { alert } = watcher.receive().await
+                && alert.task_id == task
+                && alert.kind == kind
+            {
+                return alert;
+            }
+        }
+    }
+    async fn handled(watcher: &mut Client, attention_id: AttentionId) {
+        loop {
+            if let AlertServerFrame::Handled { attention_id: id } = watcher.receive().await
+                && id == attention_id
+            {
+                return;
+            }
+        }
+    }
+
+    // An agent asks leave, and the person swipes its notification away.
+    let task = phone
+        .task(project, HarnessKind::ClaudeCode, "bridge-permission")
+        .await;
+    let asked = raised(&mut swiping, task, AttentionKind::Approval).await;
+    assert_eq!(asked.alert_type, Some(AlertType::Approval));
+    assert!(!asked.quiet);
+    raised(&mut tablet, task, AttentionKind::Approval).await;
+    swiping
+        .send(&AlertClientFrame::Handled {
+            attention_ids: vec![asked.attention_id],
+        })
+        .await;
+    handled(&mut tablet, asked.attention_id).await;
+    handled(&mut swiping, asked.attention_id).await;
+    // Still waiting in the app; any phone listing it now holds it quietly.
+    for types in [true, false] {
+        let mut fresh = rig.client(ConnectionKind::Alerts).await;
+        fresh.send(&watch(types)).await;
+        let AlertServerFrame::Open { alerts, .. } = fresh.receive().await else {
+            panic!("open list first")
+        };
+        let listed: Vec<_> = alerts.iter().map(|a| (a.attention_id, a.quiet)).collect();
+        assert_eq!(listed, [(asked.attention_id, true)], "types {types}");
+    }
+
+    // Allowed; the finished task's notification is handled too.
+    phone.event(|e| matches!(e, Event::ApprovalUpserted { approval } if approval.task_id == task && approval.state == ApprovalState::Pending)).await;
+    let (approval, revision) = probe::shown(&rig.paths, task).await.unwrap().unwrap();
+    probe::decide(&rig.paths, approval, revision, ApprovalDecision::Allow)
+        .await
+        .unwrap();
+    let done = raised(&mut tablet, task, AttentionKind::Completed).await;
+    assert_eq!(done.alert_type, Some(AlertType::Finished));
+    tablet
+        .send(&AlertClientFrame::Handled {
+            attention_ids: vec![done.attention_id],
+        })
+        .await;
+    handled(&mut swiping, done.attention_id).await;
+    drop((swiping, tablet, phone));
+
+    let (_temp, paths, identity, options) = rig.shutdown().await;
+    let restarted = Runtime::build(
+        paths.clone(),
+        Config::load(&paths.config_file()).unwrap(),
+        &identity,
+        options,
+    )
+    .await
+    .unwrap();
+    let (alerts, _) = restarted
+        .hub
+        .open_alerts(&services::Caller::local_owner(), true)
+        .await
+        .unwrap();
+    let listed: Vec<_> = alerts.iter().map(|a| (a.attention_id, a.quiet)).collect();
+    assert_eq!(listed, [(done.attention_id, true)]);
+    restarted.shutdown().await.unwrap();
 }
 
 /// The revision `task` had when it next reached `state` after revision `after`.

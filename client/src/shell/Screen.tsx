@@ -24,6 +24,11 @@ export interface RouteInfo {
 const RouteCtx = createContext<RouteInfo | null>(null);
 export const RouteProvider = RouteCtx.Provider;
 
+/** The tab of the route this is part of, or null outside any. */
+export function useRouteTab(): Tab | null {
+  return useContext(RouteCtx)?.tab ?? null;
+}
+
 export function useRoute(): RouteInfo {
   const r = useContext(RouteCtx);
   if (!r) throw new Error("useRoute outside a route");

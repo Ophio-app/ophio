@@ -155,13 +155,14 @@ it("a notice acknowledged while its read waits for approvals stays acknowledged"
 });
 
 it("a phone asks to have approvals named only of a computer that reads history", async () => {
-  expect(link.asked("snapshot")).toEqual([{ kind: "snapshot", reads_withheld: true }]);
+  expect(link.asked("snapshot")).toEqual([{ kind: "snapshot", account_items: true, reads_withheld: true }]);
   // An earlier computer knows nothing of naming them, and sends them all.
   const earlier = new ScriptedLink();
   const other = new HostSession("earlier", earlier);
   other.start();
   earlier.authenticate({ ...fx.capabilities(), features: [] });
-  expect(earlier.asked("snapshot")).toEqual([{ kind: "snapshot" }]);
+  // It ignores the word asking for account notices.
+  expect(earlier.asked("snapshot")).toEqual([{ kind: "snapshot", account_items: true }]);
   other.stop();
 });
 

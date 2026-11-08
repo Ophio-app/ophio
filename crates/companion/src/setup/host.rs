@@ -121,7 +121,7 @@ impl Host for Real {
                 .unwrap_or_else(|| "This computer".into()),
             claude: program("claude").is_some(),
             codex: program("codex").is_some(),
-            tailscale: program("tailscale").is_some(),
+            tailscale: ports::tailscale::program().is_some(),
             npm: program("npm").is_some(),
             curl: program("curl").is_some(),
         }
@@ -164,7 +164,7 @@ impl Host for Real {
                     .map(|name| name.trim_end_matches('.').to_owned()),
                 ips: discovery.tailscale_ips.clone(),
             }
-        } else if program("tailscale").is_some() {
+        } else if ports::tailscale::program().is_some() {
             Tailscale::Stopped
         } else {
             Tailscale::Missing
@@ -263,6 +263,7 @@ impl Host for Real {
         self.command(Command::Account {
             action: AccountAction::SignIn {
                 account_id: account_id.into(),
+                on_phone: false,
             },
         })
         .await
@@ -274,7 +275,8 @@ impl Host for Real {
         account_id: &str,
         since: Timestamp,
     ) -> Result<Option<SignInStage>> {
-        let QueryData::Accounts { view } = self.query(Query::Accounts).await? else {
+        let QueryData::Accounts { view } = self.query(Query::Accounts { on_phone: false }).await?
+        else {
             return Err(crate::error::invalid("unexpected accounts response"));
         };
         Ok(view
@@ -400,6 +402,11 @@ impl Host for Real {
                 if let Some(path) = found.as_deref().and_then(|found| {
                     ports::agent_program::path_for(found, std::env::var_os("PATH").as_deref())
                 }) {
+                    command.env("PATH", path);
+                }
+                // Such as npm, from a Node.js installed since setup started.
+                #[cfg(windows)]
+                if let Some(path) = path() {
                     command.env("PATH", path);
                 }
                 command.args(args);
@@ -630,6 +637,7 @@ impl Host for Real {
         let QueryData::Snapshot(snapshot) = self
             .query(Query::Snapshot {
                 reads_withheld: Some(true),
+                account_items: false,
             })
             .await?
         else {
@@ -852,9 +860,17 @@ pub(super) fn program(name: &str) -> Option<PathBuf> {
     ports::agent_program::on_this_computer(name)
 }
 
+/// Where a program is, as on other computers. `PATH` is read afresh each
+/// time (see [`path`]), so that a program installed while setup runs, such
+/// as Node.js, is found without starting setup again.
 #[cfg(windows)]
 pub(super) fn program(name: &str) -> Option<PathBuf> {
-    let mut folders: Vec<PathBuf> = std::env::var_os("PATH")
+    let path = self::path();
+    if matches!(name, "claude" | "codex") {
+        let homes = ports::agent_program::windows_homes(|name| std::env::var_os(name));
+        return ports::agent_program::windows_find(name, path.as_deref(), &homes);
+    }
+    let mut folders: Vec<PathBuf> = path
         .map(|path| std::env::split_paths(&path).collect())
         .unwrap_or_default();
     if let Some(home) = home() {
@@ -870,7 +886,6 @@ pub(super) fn program(name: &str) -> Option<PathBuf> {
             .map(|folder| home.join(folder)),
         );
     }
-    folders.push(PathBuf::from(r"C:\Program Files\Tailscale"));
     let names: Vec<String> = ["exe", "cmd", "bat"]
         .iter()
         .map(|extension| format!("{name}.{extension}"))
@@ -879,6 +894,14 @@ pub(super) fn program(name: &str) -> Option<PathBuf> {
         .iter()
         .flat_map(|folder| names.iter().map(move |name| folder.join(name)))
         .find(|path| path.is_file())
+}
+
+/// The `PATH` a program started now gets, read from the registry, or else
+/// the one setup started with. Setup's own is the one it was started with,
+/// and Windows gives a running program no installs made since.
+#[cfg(windows)]
+fn path() -> Option<std::ffi::OsString> {
+    platform_windows::environment::fresh_path().or_else(|| std::env::var_os("PATH"))
 }
 
 /// How much of what an installer printed setup keeps: its end.

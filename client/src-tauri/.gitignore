@@ -8,3 +8,9 @@
 /plugins/device/android/.gradle/
 /plugins/device/android/build/
 /.dev-host/
+/gen/apple/
+/gen/apple/**/xcuserdata/
+/plugins/device/.tauri/
+/plugins/device/ios/.build/
+/plugins/device/ios/.swiftpm/
+/plugins/device/ios/Package.resolved

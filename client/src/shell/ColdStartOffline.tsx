@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useRef, type ReactNode } from "react";
 import { useApp, useHost, useLink } from "../app/context";
+import { later, useHeardInBackground } from "../app/lastHeard";
 import type { Route } from "../app/ui";
 import { Button } from "../design/Button";
 import { Age } from "../design/Age";
@@ -14,6 +15,8 @@ export function lastReached(profileId: string): number | null {
 export function ColdStartOffline({ route, children }: { route: Route; children: ReactNode }) {
   const { profile, session, ui } = useApp();
   const link = useLink(), host = useHost((s) => s.host);
+  const shown = !host && ["talk", "work", "control", "todo"].includes(route.screen) && link.state !== "online";
+  const heard = useHeardInBackground(shown)?.[profile.profileId];
   const attempts = useRef(0);
   if (link.state === "connecting") attempts.current = link.attempt;
   // Read from the store rather than rendered: it moves with every streamed
@@ -27,10 +30,10 @@ export function ColdStartOffline({ route, children }: { route: Route; children: 
     remember();
     return session.state.subscribe(remember);
   }, [session, profile.profileId]);
-  if (host || !["talk", "work", "control", "todo"].includes(route.screen) || link.state === "online") return children;
-  const last = lastReached(profile.profileId);
+  if (!shown) return children;
+  const last = later(lastReached(profile.profileId), heard);
   const incompatible = link.state === "failed" && link.reason === "incompatible_version";
-  return <Screen title="Connection" footer={<div className="offline-foot"><Button variant="primary" block onClick={() => session.reconnect()}>Retry connection</Button></div>}><div className="offline-card">
+  return <Screen title="Connection" footer={<div className="offline-foot"><Button variant="primary" block onClick={() => session.reconnect("person")}>Retry connection</Button></div>}><div className="offline-card">
     <h1>{incompatible ? "An update is needed" : `Can’t reach ${profile.name}`}</h1>
     <p>{attempts.current ? `Still trying, attempt ${attempts.current}.` : "Connecting…"}</p>
     {!incompatible && <p>Check that {profile.name} is switched on and not asleep, that Øphio is running on it, and that this phone is online. It keeps trying by itself.</p>}

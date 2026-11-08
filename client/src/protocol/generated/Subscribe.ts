@@ -5,4 +5,10 @@ export type Subscribe = {
  * Last journal sequence the client has applied, or `None` for a fresh
  * snapshot followed by the live tail.
  */
-after_seq: number | null, };
+after_seq: number | null, 
+/**
+ * The client shows attention items about an account (an agent that
+ * isn't signed in, `AttentionItem::account_id`). An older client, which
+ * would count them without showing them, isn't sent them.
+ */
+account_items?: boolean, };

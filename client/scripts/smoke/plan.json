@@ -137,6 +137,8 @@
         ["part", "a new conversation"],
         ["fill", "Ask Claude Code anything about Home", "What changed in the parser?"],
         ["click", "Start conversation", { "exact": true }],
+        ["expect", "I only read files; nothing was changed.", { "timeout": 8000 }],
+        ["reach", "textbox", "Reply to Claude Code", { "timeout": 8000 }],
         ["click", "Turn into a task", { "exact": true, "timeout": 8000 }],
         ["expectRole", "dialog", "Turn into a task"],
         ["expect", "It keeps this conversation’s access, and may change Home.", { "in": "dialog" }],
@@ -145,6 +147,20 @@
         ["expectRole", "button", "More about this task"],
         ["expectRole", "button", "Change & run: Home"],
         ["expect", "Go ahead with what we discussed.", { "in": "main" }]
+      ]
+    },
+    {
+      "name": "conversion-running",
+      "steps": [
+        ["part", "a new conversation"],
+        ["fill", "Ask Claude Code anything about Home", "What changed in the parser?"],
+        ["click", "Start conversation", { "exact": true }],
+        ["expect", "Delivered to the agent", { "in": "main" }],
+        ["eval", "(() => { const h = window.__sim.host; const t = [...h.tasks].reverse().find((t) => t.conversation && t.title.startsWith('What changed')); h.keepWorking(t.task_id); })()"],
+        ["click", "Turn into a task", { "exact": true }],
+        ["expect", "Turned into a task in Work mode.", { "in": "main", "timeout": 8000 }],
+        ["expectRole", "button", "Change & run: Home"],
+        ["expectNot", "What should it do?"]
       ]
     },
     {
@@ -229,11 +245,12 @@
       "steps": [
         ["click", "Settings", { "exact": true, "role": "button" }],
         ["click", "Notifications", { "starts": true }],
-        ["expectRole", "heading", "What alerts you"],
-        ["flips", "checkbox", "Questions", { "latency": 1500 }],
-        ["flips", "checkbox", "Approvals"],
+        ["expectRole", "heading", "What notifies you"],
+        ["flips", "radio", "Off", { "in": "[role=radiogroup][aria-label=Questions]", "latency": 1500 }],
+        ["flips", "radio", "Alert", { "in": "[role=radiogroup][aria-label='Merged pull requests']" }],
+        ["flips", "checkbox", "One notification per project"],
         ["wait", 4000],
-        ["eval", "const box = (name) => [...document.querySelectorAll('input[type=checkbox]')].find((i) => i.labels?.[0]?.textContent.trim() === name); if (box('Questions')?.checked !== false || box('Approvals')?.checked !== false) throw new Error('An alert went back on once the computer answered')"]
+        ["eval", "const on = (group, name) => document.querySelector(`[role=radiogroup][aria-label='${group}'] [role=radio][aria-checked=true]`)?.textContent === name; const box = [...document.querySelectorAll('input[type=checkbox]')].find((i) => i.labels?.[0]?.textContent.trim() === 'One notification per project'); if (!on('Questions', 'Off') || !on('Merged pull requests', 'Alert') || box?.checked !== true) throw new Error('A choice went back once the phone or the computer answered')"]
       ]
     },
     {
@@ -423,6 +440,87 @@
         ["expect", "Add rate-limit headers to /v1/orders", {"timeout": 4000}],
         ["click", "Archived", {"exact": true, "role": "radio"}],
         ["expectNot", "Add rate-limit headers to /v1/orders"]
+      ]
+    },
+    {
+      "name": "computer-menu",
+      "path": "/?three-computers",
+      "steps": [
+        ["click", "Choose a computer"],
+        ["expectRole", "button", "Connection details for spare", {"in": "dialog"}],
+        ["reach", "button", "Pair another computer Connect this device to another computer running it", {"in": "dialog"}],
+        ["click", "All computers", {"in": "dialog", "starts": true}],
+        ["expectRole", "button", "All computers. Choose a computer"],
+        ["clickSel", ".ctx__context"],
+        ["click", "render-farm", {"in": "dialog", "starts": true}],
+        ["expect", "On spare"],
+        ["expectRole", "button", "All computers. Choose a computer"]
+      ]
+    },
+    {
+      "name": "computer-offline",
+      "path": "/?three-computers&computer-offline=spare",
+      "steps": [
+        ["click", "Choose a computer"],
+        ["click", "All computers", {"in": "dialog", "starts": true}],
+        ["expectRole", "button", "All computers: 1 offline. Choose a computer", {"timeout": 8000}],
+        ["clickSel", ".ctx__context"],
+        ["expect", "travel-journal", {"in": "dialog"}],
+        ["expect", "spare isn’t connected. Its projects appear once it answers.", {"in": "dialog"}]
+      ]
+    },
+    {
+      "name": "rename-computer",
+      "path": "/?three-computers",
+      "steps": [
+        ["click", "Settings", {"exact": true}],
+        ["click", "Computers", {"starts": true}],
+        ["click", "Rename spare", {"exact": true}],
+        ["expect", "The new name is kept on spare", {"in": "dialog"}],
+        ["fill", "Computer name", "Workshop"],
+        ["click", "Save name", {"exact": true, "in": "dialog"}],
+        ["expect", "Rename Workshop"],
+        ["clickSel", ".route:not(.is-hidden) .bar > :first-child"],
+        ["clickSel", ".route:not(.is-hidden) .bar > :first-child"],
+        ["click", "Choose a computer"],
+        ["expect", "Workshop", {"in": "dialog"}]
+      ]
+    },
+    {
+      "name": "all-tasks",
+      "path": "/?three-computers",
+      "steps": [
+        ["click", "Choose a computer"],
+        ["click", "All computers", {"in": "dialog", "starts": true}],
+        ["nav", "Tasks"],
+        ["expect", "All projects", {"in": "main"}],
+        ["expect", "Archive last month's renders", {"in": "main"}],
+        ["expect", "spare · render-farm", {"in": "main"}],
+        ["expect", "Render the winter tiles at 4K", {"in": "main"}],
+        ["expect", "laptop · travel-journal", {"in": "main"}]
+      ]
+    },
+    {
+      "name": "all-todo",
+      "path": "/?three-computers",
+      "steps": [
+        ["click", "Choose a computer"],
+        ["click", "All computers", {"in": "dialog", "starts": true}],
+        ["nav", "To-Do"],
+        ["expect", "Sign in to the render service", {"in": "main", "timeout": 8000}],
+        ["expect", "Choose the cover photo for the Lisbon post", {"in": "main", "timeout": 8000}]
+      ]
+    },
+    {
+      "name": "all-offline",
+      "path": "/?three-computers&computer-offline=laptop",
+      "steps": [
+        ["click", "Choose a computer"],
+        ["click", "All computers", {"in": "dialog", "starts": true}],
+        ["nav", "Tasks"],
+        ["expect", "isn’t connected, so its tasks and requests aren’t shown here", {"in": "main", "timeout": 8000}],
+        ["expect", "Archive last month's renders", {"in": "main"}],
+        ["expectNot", "Write up the Lisbon trip"]
       ]
     }
   ]

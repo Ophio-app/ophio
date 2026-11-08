@@ -140,6 +140,7 @@ async fn start(
             browser: false,
             github: false,
             checklist_answers: false,
+            read_only: false,
         },
         deny,
         asked: Mutex::new(Vec::new()),
@@ -175,6 +176,7 @@ async fn start(
         browser: false,
         github: false,
         checklist_answers: false,
+        read_only: false,
     });
     let spec = RunSpec {
         run_id: broker.binding.run_id,

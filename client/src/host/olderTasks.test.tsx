@@ -219,7 +219,7 @@ it("a receipt reads the earlier runs its conversation names", async () => {
 
 it("a conversation reads a decision on an earlier run with that run", async () => {
   app.session.state.set((s) => applyTaskRecords(s, records(one)));
-  const decided = { ...template.approvals[0]!, approval_id: "0192f7a1-0000-7000-8000-00000000c002", run_id: earlier.run_id, task_id: one.task.task_id, state: "allowed" as const, title: "Run the migration" };
+  const decided = { ...template.approvals[0]!, approval_id: "0192f7a1-0000-7000-8000-00000000c002", run_id: earlier.run_id, task_id: one.task.task_id, state: "allowed" as const, title: "Run the migration", headline: undefined };
   const asked: TimelineItem = { seq: 3, at: 3, run_id: earlier.run_id, item: { kind: "approval", approval_id: decided.approval_id } };
   app.session.state.set((s) => ({ ...s, timelines: { ...s.timelines, [one.task.task_id]: { items: [asked], hasMore: false, loaded: true } } }));
   view(<Transcript task={one.task} agent="Codex" />, { screen: "talk" });

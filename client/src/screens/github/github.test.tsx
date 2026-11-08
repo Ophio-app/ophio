@@ -77,6 +77,17 @@ it("links new Work to a draft pull request while the project's workflow is on", 
   expect(taskTitled("Add a retry budget header").github?.link).toEqual({ type: "new_pr" });
 });
 
+it("says in Review what an issue's own choice does with its pull request, over the project's", async () => {
+  roles({ fix: astra });
+  app.ui.saveDraft(ids.pTide, null, { text: "Fix #219: Retry flake in the orders webhook test", mode: "work", agent: astra,
+    review: { title: "", stopWhen: "", placement: null, authorization: "ask_before_start", github: { type: "issue", number: 219, when_green: "merge" } } });
+  review(); await tick();
+  expect(screen.getByText("It merges into main by itself once its checks pass and any review is clear, unless it needs your approval.")).toBeTruthy();
+  expect(screen.queryByText("You mark it ready and merge it.")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
+  expect(created()).toMatchObject({ github: { type: "issue", number: 219, when_green: "merge" } });
+});
+
 it("leaves Ask and Plan unlinked, and a project with the workflow off shows no GitHub row", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Explain the limiter", agent: astra, mode: "ask" });
   const mounted = review(); await tick();
@@ -186,6 +197,37 @@ it("marks a draft ready behind the unlock, and drafts a fix for its failing chec
     review: { github: { type: "pr", number: 217 } },
   });
   expect(app.ui.get().stacks.talk.at(-1)).toMatchObject({ screen: "review", projectId: ids.pTide, intent: "new_task" });
+});
+
+it("changes a started task's merging from its pull request, at once, and back to the project's setting", async () => {
+  const task = app.session.state.get().tasks[ids.tHeaders]!;
+  view(<PrSheet open onClose={() => {}} projectId={ids.pTide} number={214} task={task} />); await tick(); await tick();
+  const sheet = within(screen.getByRole("dialog", { name: "#214 Add rate-limit headers to /v1/orders" }));
+  const when = within(sheet.getByRole("radiogroup", { name: "When its checks pass" }));
+  expect(when.getByRole("radio", { name: "Leave it for me" }).getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(when.getByRole("radio", { name: "Merge it" }));
+  // It flips before the computer answers.
+  expect(when.getByRole("radio", { name: "Merge it" }).getAttribute("aria-checked")).toBe("true");
+  await tick();
+  expect(github().at(-1)).toEqual({ action: "set_when_green", task_id: ids.tHeaders, when_green: "merge" });
+  expect(app.session.state.get().tasks[ids.tHeaders]!.github?.when_green).toBe("merge");
+  expect(screen.getByText("It merges by itself once its checks pass")).toBeTruthy();
+  // Drafts is the project's setting, so leaving it is no choice of its own.
+  fireEvent.click(when.getByRole("radio", { name: "Leave it for me" })); await tick();
+  expect(github().at(-1)).toEqual({ action: "set_when_green", task_id: ids.tHeaders });
+  expect(app.session.state.get().tasks[ids.tHeaders]!.github).not.toHaveProperty("when_green");
+});
+
+it("puts a started task's choice back when the computer refuses it", async () => {
+  const command = vi.spyOn(app.session, "command");
+  command.mockRejectedValueOnce(new Error("Only an admin of samrivera/tidewater-api can have a pull request merge by itself, so leave it for yourself to merge."));
+  const task = app.session.state.get().tasks[ids.tHeaders]!;
+  view(<PrSheet open onClose={() => {}} projectId={ids.pTide} number={214} task={task} />); await tick(); await tick();
+  const sheet = within(screen.getByRole("dialog", { name: "#214 Add rate-limit headers to /v1/orders" }));
+  fireEvent.click(sheet.getByRole("radio", { name: "Merge it" })); await tick();
+  expect(screen.getByText(/Only an admin of samrivera\/tidewater-api/)).toBeTruthy();
+  expect(sheet.getByRole("radio", { name: "Leave it for me" }).getAttribute("aria-checked")).toBe("true");
+  expect(app.session.state.get().tasks[ids.tHeaders]!.github).not.toHaveProperty("when_green");
 });
 
 it("says starting a Find resumes a paused Next up, so its fixes can start", async () => {
@@ -541,6 +583,73 @@ it("leaves an issue's review to the project setting while the computer can't tak
   expect(sheet.queryByRole("checkbox", { name: "Have another agent review the code" })).toBeNull();
   fireEvent.click(sheet.getByRole("button", { name: "Start" })); await tick();
   expect((created() as Extract<Command, { command: "create_task" }>).github).not.toHaveProperty("review_with");
+});
+
+it("lets an issue's pull request merge by itself or wait for the person, starting from the project's setting", async () => {
+  roles({ fix: astra });
+  await hub();
+  fireEvent.click(screen.getByText("#219 Retry flake in the orders webhook test")); await tick();
+  let sheet = within(screen.getByRole("dialog", { name: /^#219/ }));
+  // Drafts: the person merges, unless they say otherwise for this one.
+  const when = within(sheet.getByRole("radiogroup", { name: "When its checks pass" }));
+  expect(when.getByRole("radio", { name: "Leave it for me" }).getAttribute("aria-checked")).toBe("true");
+  expect(sheet.getByText(/you mark it ready and merge it\. That’s this project’s setting\./)).toBeTruthy();
+  fireEvent.click(when.getByRole("radio", { name: "Merge it" })); await tick();
+  expect(sheet.getByText("It merges into main by itself once its checks pass and any review is clear, unless it needs your approval.")).toBeTruthy();
+  fireEvent.click(sheet.getByRole("button", { name: "Start" })); await tick();
+  expect(created()).toMatchObject({ github: { type: "issue", number: 219, when_green: "merge" } });
+  const made = Object.values(app.session.state.get().tasks).find((t) => t.github?.issue === 219)!;
+  expect(made.github?.when_green).toBe("merge");
+
+  // Through merge: the agent merges, unless left to the person. What the project does already is sent as nothing.
+  const host = window.__sim!.host;
+  host.github.settings.set(ids.pTide, { ...host.github.settings.get(ids.pTide)!, mode: "through_merge", warning_answered: true });
+  cleanup(); await hub();
+  fireEvent.click(screen.getByText("#221 Orders export times out for large accounts")); await tick();
+  sheet = within(screen.getByRole("dialog", { name: /^#221/ }));
+  expect(within(sheet.getByRole("radiogroup", { name: "When its checks pass" })).getByRole("radio", { name: "Merge it" }).getAttribute("aria-checked")).toBe("true");
+  fireEvent.change(sheet.getByLabelText("Your answer"), { target: { value: "Stream them." } });
+  fireEvent.click(sheet.getByRole("radio", { name: "Leave it for me" })); await tick();
+  fireEvent.click(sheet.getByRole("radio", { name: "Merge it" })); await tick();
+  // #219 has the project now, so this one waits for it.
+  fireEvent.click(sheet.getByRole("button", { name: "Start when free" })); await tick();
+  expect(sent().filter(c => c.command === "create_task").at(-1)).toMatchObject({ github: { type: "issue", number: 221 } });
+  expect((sent().filter(c => c.command === "create_task").at(-1) as Extract<Command, { command: "create_task" }>).github).not.toHaveProperty("when_green");
+});
+
+it("offers Merge it only where the account administers the repository and the phone may approve", async () => {
+  roles({ fix: astra });
+  const host = window.__sim!.host;
+  host.github.repo = { ...host.github.repo, admin: false };
+  await hub();
+  fireEvent.click(screen.getByText("#219 Retry flake in the orders webhook test")); await tick();
+  let sheet = within(screen.getByRole("dialog", { name: /^#219/ }));
+  expect(sheet.getByRole<HTMLButtonElement>("radio", { name: "Merge it" }).disabled).toBe(true);
+  expect(sheet.getByText("Merge it is offered where @samrivera administers the repository.")).toBeTruthy();
+  cleanup();
+
+  host.github.repo = { ...host.github.repo, admin: true };
+  window.__sim!.permissions({ approvals: false }); await tick(); await tick();
+  await hub();
+  fireEvent.click(screen.getByText("#219 Retry flake in the orders webhook test")); await tick();
+  sheet = within(screen.getByRole("dialog", { name: /^#219/ }));
+  expect(sheet.getByRole<HTMLButtonElement>("radio", { name: "Merge it" }).disabled).toBe(true);
+  expect(sheet.getByText("This phone may not approve merges, so it can’t choose Merge it.")).toBeTruthy();
+  // Leaving it for the person takes only the task.
+  fireEvent.click(sheet.getByRole("button", { name: "Start" })); await tick();
+  expect(created()).toMatchObject({ github: { type: "issue", number: 219 } });
+});
+
+it("leaves an issue's merging to the project while the computer can't take a choice of its own", async () => {
+  roles({ fix: astra });
+  const caps = app.session.state.get().capabilities!;
+  app.session.state.set(s => ({ ...s, capabilities: { ...caps, features: caps.features.filter(f => f !== "github_when_green_v1") } }));
+  await hub();
+  fireEvent.click(screen.getByText("#219 Retry flake in the orders webhook test")); await tick();
+  const sheet = within(screen.getByRole("dialog", { name: /^#219/ }));
+  expect(sheet.queryByRole("radiogroup", { name: "When its checks pass" })).toBeNull();
+  fireEvent.click(sheet.getByRole("button", { name: "Start" })); await tick();
+  expect((created() as Extract<Command, { command: "create_task" }>).github).not.toHaveProperty("when_green");
 });
 
 it("starts an issue when the project is free, or adds it to Next up to start later", async () => {
@@ -1370,4 +1479,58 @@ it("says how merging together went in words", () => {
   expect(togetherWords(t(["merged", "left_out"], { ended_at: 1, stopped: true }), "main")).toBe("You stopped it. 1 of 2 merged.");
   expect(togetherWords(t(["testing", "left_out"], { stopped: true }), "main"))
     .toBe("You stopped it. Checking the merge already sent to GitHub.");
+});
+
+it("keeps a saved explicit merge choice unsent to a computer that cannot honor it", async () => {
+  app.ui.saveDraft(ids.pTide, null, { text: "Fix the retry", mode: "work", agent: astra,
+    review: { ...freshReview(), github: { type: "issue", number: 219, when_green: "leave" } } });
+  const caps = app.session.state.get().capabilities!;
+  app.session.state.set(s => ({ ...s, capabilities: { ...caps, features: caps.features.filter(f => f !== "github_when_green_v1") } }));
+  review(); await tick();
+  expect(screen.getByText("Update Øphio on this computer to start a task with its own choice about merging.")).toBeTruthy();
+  expect(screen.getByRole<HTMLButtonElement>("button", { name: "Start task" }).disabled).toBe(true);
+  expect(created()).toBeUndefined();
+});
+
+it("refuses creating an automatically merging task after approval permission is revoked", async () => {
+  app.ui.saveDraft(ids.pTide, null, { text: "Fix the retry", mode: "work", agent: astra,
+    review: { ...freshReview(), github: { type: "issue", number: 219, when_green: "merge" } } });
+  window.__sim!.permissions({ approvals: false }); await tick(); await tick();
+  review(); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
+  expect(created()).toMatchObject({ github: { when_green: "merge" } });
+  expect(window.__sim!.host.tasks.some(t => t.github?.issue === 219)).toBe(false);
+  expect(screen.getAllByText(/permission for that/).length).toBeGreaterThan(0);
+});
+
+it("explains that selecting automatic merging does not release a stopped review", async () => {
+  const host = window.__sim!.host;
+  const task = host.tasks.find(t => t.task_id === ids.tHeaders)!;
+  host.touchTask(task.task_id, { github: { ...task.github!, stage: "capped", when_green: "merge" } });
+  await tick();
+  view(<PrSheet open onClose={() => {}} projectId={ids.pTide} number={214} task={app.session.state.get().tasks[ids.tHeaders]!} />);
+  await tick(); await tick();
+  expect(screen.getByText("It’s stopped for you to look at, so it doesn’t merge by itself until you pick it up again.")).toBeTruthy();
+});
+
+it("does not discard Leave when an open issue sheet reconnects to an older computer", async () => {
+  roles({ fix: astra });
+  const host = window.__sim!.host;
+  host.github.settings.set(ids.pTide, { ...host.github.settings.get(ids.pTide)!, mode: "through_merge", warning_answered: true });
+  await hub();
+  fireEvent.click(screen.getByText("#219 Retry flake in the orders webhook test")); await tick();
+  const sheet = within(screen.getByRole("dialog", { name: /^#219/ }));
+  fireEvent.click(sheet.getByRole("radio", { name: "Leave it for me" })); await tick();
+  const caps = app.session.state.get().capabilities!;
+  app.session.state.set(s => ({ ...s, capabilities: { ...caps, features: caps.features.filter(f => f !== "github_when_green_v1") } }));
+  await tick();
+  expect(sheet.getByText("Update Øphio on this computer to start a task with its own choice about merging.")).toBeTruthy();
+  const start = sheet.getByRole<HTMLButtonElement>("button", { name: "Start" });
+  expect(start.disabled).toBe(true);
+  fireEvent.click(start); await tick();
+  expect(created()).toBeUndefined();
+  // The choice stays in view, so going back to the project's setting starts it.
+  fireEvent.click(sheet.getByRole("radio", { name: "Merge it" })); await tick();
+  expect(start.disabled).toBe(false);
+  expect(sheet.queryByRole("radio", { name: "Merge it" })).toBeNull();
 });

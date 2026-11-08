@@ -272,6 +272,7 @@ async fn revoke_acknowledgement_fences_queued_native_actions() {
             &caller,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await
@@ -463,6 +464,7 @@ async fn failed_barrier_refuses_both_human_admissions_until_pause_recovers() {
             &caller,
             Query::Snapshot {
                 reads_withheld: None,
+                account_items: false,
             },
         )
         .await

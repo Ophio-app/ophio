@@ -254,9 +254,8 @@ impl Driver for X11Driver {
             state: Arc::new(Mutex::new(InputState {
                 connection: self.connection.clone(),
                 root: self.connection.setup().roots[self.screen].root,
-                held: BTreeMap::new(),
+                keys: Keys::default(),
                 buttons: BTreeSet::new(),
-                remaps: BTreeMap::new(),
                 axis: (0.0, 0.0),
                 fence: None,
             })),
@@ -273,9 +272,8 @@ fn component(pixel: u32, mask: u32) -> u8 {
 struct InputState {
     connection: Arc<RustConnection>,
     root: u32,
-    held: BTreeMap<u32, u8>,
+    keys: Keys,
     buttons: BTreeSet<u8>,
-    remaps: BTreeMap<u8, Vec<u32>>,
     axis: (f64, f64),
     fence: Option<crate::native::InputFence>,
 }
@@ -297,39 +295,6 @@ impl InputState {
                 x11rb::errors::ReplyError::X11Error(_) => failure(error),
                 _ => crate::native::uncertain(error),
             })
-    }
-    fn keycode(&mut self, symbol: u32) -> Result<u8, PlatformError> {
-        if let Some(code) = self.held.get(&symbol) {
-            return Ok(*code);
-        }
-        let setup = self.connection.setup();
-        let first = setup.min_keycode;
-        let count = setup.max_keycode - first + 1;
-        let map = self
-            .connection
-            .get_keyboard_mapping(first, count)
-            .map_err(failure)?
-            .reply()
-            .map_err(failure)?;
-        let width = map.keysyms_per_keycode as usize;
-        if width == 0 {
-            return Err(PlatformError::Native("empty X11 keyboard map".into()));
-        }
-        let (code, remap) = select_keycode(first, &map.keysyms, width, &self.remaps, symbol)?;
-        if !remap {
-            return Ok(code);
-        }
-        let start = usize::from(code - first) * width;
-        let row = &map.keysyms[start..start + width];
-        let mut replacement = vec![symbol; width];
-        replacement[0] = symbol;
-        self.remaps.insert(code, row.to_vec());
-        self.connection
-            .change_keyboard_mapping(1, code, map.keysyms_per_keycode, &replacement)
-            .map_err(failure)?
-            .check()
-            .map_err(failure)?;
-        Ok(code)
     }
     fn event(&mut self, event: Event) -> Result<(), PlatformError> {
         match event {
@@ -374,25 +339,19 @@ impl InputState {
                     self.buttons.remove(&code);
                 }
             }
-            Event::Key { keysym, pressed } => {
-                let code = self.keycode(keysym)?;
-                if pressed {
-                    self.held.insert(keysym, code);
-                }
-                self.fake(
-                    if pressed {
-                        xproto::KEY_PRESS_EVENT
-                    } else {
-                        xproto::KEY_RELEASE_EVENT
-                    },
-                    code,
-                    0,
-                    0,
-                )?;
-                if !pressed {
-                    self.held.remove(&keysym);
-                    self.restore(code).map_err(crate::native::uncertain)?;
-                }
+            Event::Key {
+                keysym,
+                pressed,
+                text,
+            } => {
+                let mut keys = std::mem::take(&mut self.keys);
+                let result = if pressed {
+                    keys.press(self, keysym, text)
+                } else {
+                    keys.release(self, keysym)
+                };
+                self.keys = keys;
+                result?;
             }
             Event::Axis { dx, dy } => {
                 self.axis.0 += dx;
@@ -426,31 +385,337 @@ impl InputState {
         }
         self.connection.flush().map_err(crate::native::uncertain)
     }
-    fn restore(&mut self, code: u8) -> Result<(), PlatformError> {
-        if let Some(row) = self.remaps.get(&code) {
-            self.connection
-                .change_keyboard_mapping(1, code, row.len() as u8, row)
-                .map_err(failure)?
-                .check()
-                .map_err(failure)?;
-            self.remaps.remove(&code);
-        }
-        Ok(())
+}
+impl KeyServer for InputState {
+    fn lock(&mut self) -> Result<bool, PlatformError> {
+        let pointer = self
+            .connection
+            .query_pointer(self.root)
+            .map_err(failure)?
+            .reply()
+            .map_err(failure)?;
+        Ok(u16::from(pointer.mask) & u16::from(xproto::KeyButMask::LOCK) != 0)
+    }
+    fn mapping(&mut self) -> Result<Mapping, PlatformError> {
+        let setup = self.connection.setup();
+        let first = setup.min_keycode;
+        let count = setup.max_keycode - first + 1;
+        let map = self
+            .connection
+            .get_keyboard_mapping(first, count)
+            .map_err(failure)?
+            .reply()
+            .map_err(failure)?;
+        Ok(Mapping {
+            first,
+            width: map.keysyms_per_keycode as usize,
+            keysyms: map.keysyms,
+        })
+    }
+    fn change(&mut self, code: u8, row: &[u32]) -> Result<(), PlatformError> {
+        self.connection
+            .change_keyboard_mapping(1, code, row.len() as u8, row)
+            .map_err(failure)?
+            .check()
+            .map_err(failure)
+    }
+    fn key(&mut self, code: u8, pressed: bool) -> Result<(), PlatformError> {
+        self.fake(
+            if pressed {
+                xproto::KEY_PRESS_EVENT
+            } else {
+                xproto::KEY_RELEASE_EVENT
+            },
+            code,
+            0,
+            0,
+        )
     }
 }
 impl Drop for InputState {
     fn drop(&mut self) {
-        for code in self.held.values() {
-            let _ = self.fake(xproto::KEY_RELEASE_EVENT, *code, 0, 0);
-        }
+        let mut keys = std::mem::take(&mut self.keys);
+        keys.release_all(self);
         for code in &self.buttons {
             let _ = self.fake(xproto::BUTTON_RELEASE_EVENT, *code, 0, 0);
         }
-        let codes: Vec<_> = self.remaps.keys().copied().collect();
-        for code in codes {
-            let _ = self.restore(code);
-        }
+        keys.restore_all(self);
         let _ = self.connection.flush();
+    }
+}
+
+/// A character's small and capital keysyms, or the keysym twice when it has
+/// no case.
+fn case_pair(symbol: u32) -> (u32, u32) {
+    let Some(c) = char::from_u32(xkbcommon::xkb::keysym_to_utf32(
+        xkbcommon::xkb::Keysym::new(symbol),
+    )) else {
+        return (symbol, symbol);
+    };
+    let one = |chars: Vec<char>| (chars.len() == 1).then(|| chars[0]);
+    match (
+        one(c.to_lowercase().collect()),
+        one(c.to_uppercase().collect()),
+    ) {
+        // Only true partners, including the typed symbol itself. Titlecase
+        // digraphs have a small and capital form but are neither of them.
+        // The Kelvin sign lowercases to k, but k's capital is K, not Kelvin.
+        (Some(small), Some(capital))
+            if small != capital
+                && (c == small || c == capital)
+                && one(small.to_uppercase().collect()) == Some(capital)
+                && one(capital.to_lowercase().collect()) == Some(small) =>
+        {
+            (
+                crate::input::character_keysym(small).unwrap_or(symbol),
+                crate::input::character_keysym(capital).unwrap_or(symbol),
+            )
+        }
+        _ => (symbol, symbol),
+    }
+}
+/// Whether a key's two levels are a small letter and its capital.
+fn cased(row: &[u32]) -> bool {
+    let character = |sym: u32| {
+        char::from_u32(xkbcommon::xkb::keysym_to_utf32(
+            xkbcommon::xkb::Keysym::new(sym),
+        ))
+    };
+    match (
+        row.first().and_then(|s| character(*s)),
+        row.get(1).and_then(|s| character(*s)),
+    ) {
+        (Some(small), Some(capital)) => {
+            small.is_lowercase() && small.to_uppercase().eq(std::iter::once(capital))
+        }
+        _ => false,
+    }
+}
+/// The X server as the keyboard logic sees it, so that logic can be tested
+/// without a server.
+trait KeyServer {
+    fn mapping(&mut self) -> Result<Mapping, PlatformError>;
+    fn change(&mut self, code: u8, row: &[u32]) -> Result<(), PlatformError>;
+    fn key(&mut self, code: u8, pressed: bool) -> Result<(), PlatformError>;
+    /// Whether Caps Lock is on.
+    fn lock(&mut self) -> Result<bool, PlatformError>;
+}
+struct Mapping {
+    first: u8,
+    width: usize,
+    keysyms: Vec<u32>,
+}
+impl Mapping {
+    fn row(&self, code: u8) -> Option<&[u32]> {
+        let start = usize::from(code.checked_sub(self.first)?) * self.width;
+        self.keysyms.get(start..start + self.width)
+    }
+}
+/// Keys held through XTest, and keycodes remapped for characters.
+#[derive(Default)]
+struct Keys {
+    /// Held keysyms: their keycode, and whether Shift was pressed for them.
+    held: BTreeMap<u32, (u8, Option<u8>)>,
+    /// Original rows of keycodes remapped to characters the map lacks.
+    remaps: BTreeMap<u8, Vec<u32>>,
+    /// Those keycodes and their characters, least recently used first. They
+    /// stay remapped until reused or dropped: restoring right after a key
+    /// let a client that read the map late see the key as nothing.
+    /// Each with the row as the server reads it back: XKB normalises what
+    /// was written (seven copies come back as four and three empty), so
+    /// that, not the row written, is what shows the remap is still Ophio's.
+    /// A cased character is remapped with its other case as the second
+    /// level, so XKB gives the key a letter's type and Caps Lock swaps its
+    /// levels instead of capitalising it: the pair is (small, capital).
+    remapped: Vec<(u8, (u32, u32), Vec<u32>)>,
+    /// Held keys sharing the Shift this pressed for them, by Shift keycode.
+    shifts: BTreeMap<u8, usize>,
+}
+impl Keys {
+    /// The keycode for `symbol`, and the Shift keycode to hold with it.
+    fn keycode(
+        &mut self,
+        server: &mut dyn KeyServer,
+        symbol: u32,
+        text: bool,
+    ) -> Result<(u8, Option<u8>), PlatformError> {
+        if let Some(code) = self.held.get(&symbol) {
+            return Ok(*code);
+        }
+        let map = server.mapping()?;
+        let width = map.width;
+        if width == 0 {
+            return Err(PlatformError::Native("empty X11 keyboard map".into()));
+        }
+        self.forget_lost(&map);
+        let held_codes: BTreeSet<u8> = self.held.values().map(|(code, _)| *code).collect();
+        let shift_held = self.held.contains_key(&0xffe1) || self.held.contains_key(&0xffe2);
+        let shift_key = map
+            .keysyms
+            .chunks_exact(width)
+            .position(|row| row[0] == 0xffe1)
+            .map(|i| map.first + i as u8);
+        // Caps Lock swaps a letter key's two levels, so typed text needs
+        // Shift for a small letter and none for a capital. Shortcuts name
+        // keys, which Caps Lock does not change.
+        let mut level =
+            |code: u8, second: bool, cased: bool| -> Result<(u8, Option<u8>), PlatformError> {
+                let swapped = text && cased && server.lock()?;
+                let shift = second != swapped;
+                Ok((
+                    code,
+                    if shift && !shift_held {
+                        shift_key
+                    } else {
+                        None
+                    },
+                ))
+            };
+        let choice = select_keycode(map.first, &map.keysyms, width, &self.remaps, symbol)?;
+        // A character the layout lacks: a remap made for it before, or a
+        // fresh one. Never for a character with a key of its own.
+        if matches!(choice, Choice::Free(_) | Choice::Full)
+            && let Some(at) = self
+                .remapped
+                .iter()
+                .position(|(_, (small, capital), _)| *small == symbol || *capital == symbol)
+        {
+            let entry = self.remapped.remove(at);
+            let (code, (small, capital)) = (entry.0, entry.1);
+            self.remapped.push(entry);
+            return level(
+                code,
+                symbol == capital && small != capital,
+                small != capital,
+            );
+        }
+        let code = match choice {
+            Choice::Plain(code) => {
+                let cased = map.row(code).is_some_and(cased);
+                return level(code, false, cased);
+            }
+            Choice::Shifted { code, .. } => {
+                let cased = map.row(code).is_some_and(cased);
+                return level(code, true, cased);
+            }
+            Choice::Free(code) => code,
+            Choice::Full => {
+                // Reuse the least recently used remapped key not held now.
+                let at = self
+                    .remapped
+                    .iter()
+                    .position(|(code, _, _)| !held_codes.contains(code))
+                    .ok_or_else(|| {
+                        PlatformError::Unsupported(
+                            "X11 has no free keycode for this character".into(),
+                        )
+                    })?;
+                self.remapped.remove(at).0
+            }
+        };
+        let original = map
+            .row(code)
+            .ok_or_else(|| PlatformError::Native("invalid X11 keyboard map".into()))?
+            .to_vec();
+        self.remaps.entry(code).or_insert(original);
+        let (small, capital) = case_pair(symbol);
+        let row: Vec<u32> = [small, capital].into_iter().cycle().take(width).collect();
+        server.change(code, &row)?;
+        let written = server
+            .mapping()?
+            .row(code)
+            .ok_or_else(|| PlatformError::Native("invalid X11 keyboard map".into()))?
+            .to_vec();
+        self.remapped.push((code, (small, capital), written));
+        let cased = small != capital;
+        let mut level = |code: u8, second: bool| -> Result<(u8, Option<u8>), PlatformError> {
+            let swapped = text && cased && server.lock()?;
+            let shift = second != swapped;
+            Ok((
+                code,
+                if shift && !shift_held {
+                    shift_key
+                } else {
+                    None
+                },
+            ))
+        };
+        level(code, symbol == capital && cased)
+    }
+    /// Press the key for `symbol`; `text` asks for exactly that character.
+    fn press(
+        &mut self,
+        server: &mut dyn KeyServer,
+        symbol: u32,
+        text: bool,
+    ) -> Result<(), PlatformError> {
+        // A second press of a held key holds nothing more: one release
+        // must let it, and the Shift it took, go.
+        if self.held.contains_key(&symbol) {
+            return Ok(());
+        }
+        let (code, shift) = self.keycode(server, symbol, text)?;
+        self.held.insert(symbol, (code, shift));
+        if let Some(shift) = shift {
+            let users = self.shifts.entry(shift).or_default();
+            *users += 1;
+            if *users == 1 {
+                server.key(shift, true)?;
+            }
+        }
+        server.key(code, true)
+    }
+    fn release(&mut self, server: &mut dyn KeyServer, symbol: u32) -> Result<(), PlatformError> {
+        let Some((code, shift)) = self.held.get(&symbol).copied() else {
+            return Ok(());
+        };
+        server.key(code, false)?;
+        self.held.remove(&symbol);
+        if let Some(shift) = shift
+            && let Some(users) = self.shifts.get_mut(&shift)
+        {
+            *users = users.saturating_sub(1);
+            if *users == 0 {
+                // Kept until the release is sent, so release_all retries it.
+                server.key(shift, false)?;
+                self.shifts.remove(&shift);
+            }
+        }
+        Ok(())
+    }
+    fn release_all(&mut self, server: &mut dyn KeyServer) {
+        for symbol in self.held.keys().copied().collect::<Vec<_>>() {
+            let _ = self.release(server, symbol);
+        }
+        for shift in std::mem::take(&mut self.shifts).into_keys() {
+            let _ = server.key(shift, false);
+        }
+    }
+    /// Forget remaps the keyboard map no longer has, as after setxkbmap or a
+    /// new keyboard: their keys are the keyboard's own again, so they are
+    /// neither used nor ever written back.
+    fn forget_lost(&mut self, map: &Mapping) {
+        let lost: Vec<u8> = self
+            .remapped
+            .iter()
+            .filter(|(code, _, written)| map.row(*code) != Some(written.as_slice()))
+            .map(|(code, _, _)| *code)
+            .collect();
+        for code in lost {
+            self.remapped.retain(|(c, _, _)| *c != code);
+            self.remaps.remove(&code);
+        }
+    }
+    /// Put back the own row of every keycode still remapped.
+    fn restore_all(&mut self, server: &mut dyn KeyServer) {
+        if let Ok(map) = server.mapping() {
+            self.forget_lost(&map);
+            for (code, row) in std::mem::take(&mut self.remaps) {
+                let _ = server.change(code, &row);
+            }
+        }
+        self.remaps.clear();
+        self.remapped.clear();
     }
 }
 struct XInput {
@@ -521,56 +786,347 @@ impl NativeInput for XInput {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum Choice {
+    /// The symbol's own key.
+    Plain(u8),
+    /// Its key with Shift, as a person would type it.
+    Shifted { code: u8, shift: u8 },
+    /// A keycode with no symbols, to remap.
+    Free(u8),
+    /// Every free keycode is remapped already.
+    Full,
+}
 fn select_keycode(
     first: u8,
     map: &[u32],
     width: usize,
     reserved: &BTreeMap<u8, Vec<u32>>,
     symbol: u32,
-) -> Result<(u8, bool), PlatformError> {
+) -> Result<Choice, PlatformError> {
     if width == 0
         || !map.len().is_multiple_of(width)
         || map.len() / width > usize::from(u8::MAX - first) + 1
     {
         return Err(PlatformError::Native("invalid X11 keyboard map".into()));
     }
-    for (i, row) in map.chunks_exact(width).enumerate() {
-        let code = first + i as u8;
-        if row[0] == symbol && !reserved.contains_key(&code) {
-            return Ok((code, false));
-        }
+    let rows = || {
+        map.chunks_exact(width)
+            .enumerate()
+            .map(|(i, row)| (first + i as u8, row))
+            .filter(|(code, _)| !reserved.contains_key(code))
+    };
+    if let Some((code, _)) = rows().find(|(_, row)| row[0] == symbol) {
+        return Ok(Choice::Plain(code));
     }
-    for (i, row) in map.chunks_exact(width).enumerate().rev() {
-        let code = first + i as u8;
-        if row.iter().all(|value| *value == 0) && !reserved.contains_key(&code) {
-            return Ok((code, true));
-        }
+    let shift = rows()
+        .find(|(_, row)| row[0] == 0xffe1)
+        .map(|(code, _)| code);
+    if let Some(shift) = shift
+        && width > 1
+        && let Some((code, _)) = rows().find(|(_, row)| row[1] == symbol)
+    {
+        return Ok(Choice::Shifted { code, shift });
     }
-    Err(PlatformError::Unsupported(
-        "X11 has no free keycode for this character".into(),
-    ))
+    Ok(rows()
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .find(|(_, row)| row.iter().all(|value| *value == 0))
+        .map_or(Choice::Full, |(code, _)| Choice::Free(code)))
 }
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn uppercase_and_unicode_use_unused_keycodes_without_changing_modifiers() {
-        let map = [0x61, 0x41, 0, 0];
+    fn shifted_symbols_use_their_key_with_shift_and_unicode_a_free_keycode() {
+        // a/A, Shift_L, then a free keycode.
+        let map = [0x61, 0x41, 0xffe1, 0, 0, 0];
         let mut reserved = BTreeMap::new();
         assert_eq!(
             select_keycode(8, &map, 2, &reserved, 0x61).unwrap(),
-            (8, false)
+            Choice::Plain(8)
         );
         assert_eq!(
             select_keycode(8, &map, 2, &reserved, 0x41).unwrap(),
-            (9, true)
+            Choice::Shifted { code: 8, shift: 9 }
         );
         assert_eq!(
             select_keycode(8, &map, 2, &reserved, 0x0101f980).unwrap(),
-            (9, true)
+            Choice::Free(10)
         );
-        reserved.insert(9, vec![0, 0]);
-        assert!(select_keycode(8, &map, 2, &reserved, 0x41).is_err());
+        reserved.insert(10, vec![0, 0]);
+        assert_eq!(
+            select_keycode(8, &map, 2, &reserved, 0x0101f980).unwrap(),
+            Choice::Full
+        );
+        // Without a Shift key, a capital needs a free keycode too.
+        let map = [0x61, 0x41, 0, 0];
+        assert_eq!(
+            select_keycode(8, &map, 2, &BTreeMap::new(), 0x41).unwrap(),
+            Choice::Free(9)
+        );
+    }
+    /// A keyboard map of a, Shift_L, b, Caps_Lock and two free keycodes,
+    /// seven keysyms a key, as Xvfb's XKB has it.
+    #[derive(Default)]
+    struct Server {
+        rows: Vec<[u32; 7]>,
+        keys: Vec<(u8, bool)>,
+        changes: Vec<(u8, Vec<u32>)>,
+        caps_lock: bool,
+    }
+    impl Server {
+        fn new() -> Self {
+            Self {
+                rows: vec![
+                    row(0x61, 0x41),
+                    row(0xffe1, 0),
+                    row(0x62, 0x42),
+                    row(0xffe5, 0),
+                    row(0, 0),
+                    row(0, 0),
+                    row(0x6b, 0x4b),
+                ],
+                ..Default::default()
+            }
+        }
+    }
+    impl KeyServer for Server {
+        fn mapping(&mut self) -> Result<Mapping, PlatformError> {
+            Ok(Mapping {
+                first: 8,
+                width: 7,
+                keysyms: self.rows.iter().flatten().copied().collect(),
+            })
+        }
+        fn change(&mut self, code: u8, written: &[u32]) -> Result<(), PlatformError> {
+            // XKB keeps two groups of two levels of a core row and reads the
+            // rest back empty: [é; 7] comes back as [é, é, é, é, 0, 0, 0].
+            let mut kept = [0; 7];
+            kept[..4].copy_from_slice(&written[..4]);
+            self.rows[usize::from(code - 8)] = kept;
+            self.changes.push((code, written.to_vec()));
+            Ok(())
+        }
+        fn key(&mut self, code: u8, pressed: bool) -> Result<(), PlatformError> {
+            self.keys.push((code, pressed));
+            Ok(())
+        }
+        fn lock(&mut self) -> Result<bool, PlatformError> {
+            Ok(self.caps_lock)
+        }
+    }
+    fn row(base: u32, shifted: u32) -> [u32; 7] {
+        [base, shifted, 0, 0, 0, 0, 0]
+    }
+    #[test]
+    fn a_remap_xkb_rewrote_is_still_ophios_and_is_restored() {
+        let mut server = Server::new();
+        let mut keys = Keys::default();
+        for _ in 0..3 {
+            keys.press(&mut server, 0xe9, true).unwrap();
+            keys.release(&mut server, 0xe9).unwrap();
+        }
+        // One remap, used three times, not a new keycode each press.
+        assert_eq!(server.changes.len(), 1, "{:?}", server.changes);
+        keys.restore_all(&mut server);
+        assert_eq!(server.rows[5], row(0, 0), "the keycode types nothing again");
+    }
+    #[test]
+    fn capitals_use_shift_and_characters_the_map_lacks_a_free_keycode() {
+        let mut server = Server::new();
+        let mut keys = Keys::default();
+        for symbol in [0x41, 0xe9] {
+            keys.press(&mut server, symbol, true).unwrap();
+            keys.release(&mut server, symbol).unwrap();
+        }
+        // Shift (9) with a (8); é remapped onto the last free keycode, 13.
+        assert_eq!(
+            server.keys,
+            [
+                (9, true),
+                (8, true),
+                (8, false),
+                (9, false),
+                (13, true),
+                (13, false)
+            ]
+        );
+        // With its capital as the second level, so Caps Lock acts as on a letter.
+        assert_eq!(
+            server.changes,
+            [(13, vec![0xe9, 0xc9, 0xe9, 0xc9, 0xe9, 0xc9, 0xe9])]
+        );
+        keys.restore_all(&mut server);
+        assert_eq!(server.rows[5], row(0, 0));
+    }
+    #[test]
+    fn shift_shared_by_two_held_capitals_stays_down_until_both_are_up() {
+        let mut server = Server::new();
+        let mut keys = Keys::default();
+        keys.press(&mut server, 0x41, true).unwrap();
+        keys.press(&mut server, 0x42, true).unwrap();
+        keys.release(&mut server, 0x41).unwrap();
+        assert!(!server.keys.contains(&(9, false)), "{:?}", server.keys);
+        keys.release(&mut server, 0x42).unwrap();
+        assert_eq!(server.keys.iter().filter(|k| **k == (9, true)).count(), 1);
+        assert_eq!(server.keys.last(), Some(&(9, false)));
+    }
+    #[test]
+    fn caps_lock_does_not_invert_typed_capitals() {
+        let mut server = Server::new();
+        server.caps_lock = true;
+        let mut keys = Keys::default();
+        // "Ab": with Caps Lock on, A is the a key alone and b needs Shift.
+        for symbol in [0x41, 0x62] {
+            keys.press(&mut server, symbol, true).unwrap();
+            keys.release(&mut server, symbol).unwrap();
+        }
+        assert_eq!(
+            server.keys,
+            [
+                (8, true),
+                (8, false),
+                (9, true),
+                (10, true),
+                (10, false),
+                (9, false)
+            ]
+        );
+        // A shortcut names a key, not a character: Caps Lock changes nothing.
+        server.keys.clear();
+        keys.press(&mut server, 0x61, false).unwrap();
+        keys.release(&mut server, 0x61).unwrap();
+        assert_eq!(server.keys, [(8, true), (8, false)]);
+    }
+    #[test]
+    fn a_remap_the_keyboard_map_lost_is_made_again_and_not_restored() {
+        let mut server = Server::new();
+        let mut keys = Keys::default();
+        keys.press(&mut server, 0xe9, true).unwrap();
+        keys.release(&mut server, 0xe9).unwrap();
+        // The map changes underneath, as setxkbmap or a new keyboard does:
+        // keycode 13 types o now.
+        server.rows[5] = row(0x6f, 0x4f);
+        server.keys.clear();
+        keys.press(&mut server, 0xe9, true).unwrap();
+        let (code, _) = server.keys[0];
+        assert_eq!(
+            server.rows[usize::from(code - 8)][0],
+            0xe9,
+            "é has a key again"
+        );
+        keys.release(&mut server, 0xe9).unwrap();
+        // And the keyboard's own new row is not overwritten with the old one.
+        server.rows[usize::from(code - 8)] = row(0x70, 0x50);
+        keys.restore_all(&mut server);
+        assert_eq!(server.rows[5], row(0x6f, 0x4f));
+        assert_eq!(server.rows[usize::from(code - 8)], row(0x70, 0x50));
+    }
+    #[test]
+    fn a_key_pressed_twice_and_released_once_leaves_nothing_held() {
+        let mut server = Server::new();
+        let mut keys = Keys::default();
+        keys.press(&mut server, 0x41, false).unwrap();
+        keys.press(&mut server, 0x41, false).unwrap();
+        keys.release(&mut server, 0x41).unwrap();
+        // Shift (9) and the a key (8) each went down once and came up.
+        for code in [8, 9] {
+            let downs = server.keys.iter().filter(|k| **k == (code, true)).count();
+            let ups = server.keys.iter().filter(|k| **k == (code, false)).count();
+            assert_eq!((downs, ups), (1, 1), "keycode {code}: {:?}", server.keys);
+        }
+    }
+    /// What an XKB client reads from the keys sent: Caps Lock swaps a letter
+    /// key's levels, and otherwise capitalises a small letter it finds.
+    fn typed(server: &Server) -> String {
+        let character = |sym: u32| {
+            char::from_u32(xkbcommon::xkb::keysym_to_utf32(
+                xkbcommon::xkb::Keysym::new(sym),
+            ))
+            .unwrap_or('?')
+        };
+        let mut shift = false;
+        let mut out = String::new();
+        for (code, pressed) in &server.keys {
+            let row = server.rows[usize::from(code - 8)];
+            if row[0] == 0xffe1 {
+                shift = *pressed;
+                continue;
+            }
+            if !pressed {
+                continue;
+            }
+            let c = if cased(&row) {
+                character(if shift != server.caps_lock {
+                    row[1]
+                } else {
+                    row[0]
+                })
+            } else {
+                let c = character(if shift && row[1] != 0 { row[1] } else { row[0] });
+                if server.caps_lock {
+                    c.to_uppercase().next().unwrap()
+                } else {
+                    c
+                }
+            };
+            out.push(c);
+        }
+        out
+    }
+    #[test]
+    fn caps_lock_does_not_capitalise_remapped_characters() {
+        let mut server = Server::new();
+        server.caps_lock = true;
+        let mut keys = Keys::default();
+        for c in "aéÉ".chars() {
+            let symbol = crate::input::character_keysym(c).unwrap();
+            keys.press(&mut server, symbol, true).unwrap();
+            keys.release(&mut server, symbol).unwrap();
+        }
+        assert_eq!(typed(&server), "aéÉ");
+    }
+    #[test]
+    fn a_remap_never_stands_in_for_a_key_the_layout_has() {
+        // The Kelvin sign's small form is k, but it is not k's capital.
+        for (odd, plain) in [(0x0100_212a, 0x6b), (0x0100_212a, 0x4b)] {
+            let mut server = Server::new();
+            let mut keys = Keys::default();
+            keys.press(&mut server, odd, true).unwrap();
+            keys.release(&mut server, odd).unwrap();
+            server.keys.clear();
+            // Ctrl+k must be the k key, which shortcuts grab by keycode.
+            keys.press(&mut server, plain, false).unwrap();
+            keys.release(&mut server, plain).unwrap();
+            assert!(
+                server.keys.contains(&(14, true)),
+                "{plain:x}: {:?}",
+                server.keys
+            );
+        }
+        // ı, ſ and the Ångström sign get no partner either; é does.
+        for odd in ['ı', 'ſ', '\u{212b}', '\u{212a}'] {
+            let symbol = crate::input::character_keysym(odd).unwrap();
+            assert_eq!(case_pair(symbol), (symbol, symbol), "{odd}");
+        }
+        assert_eq!(case_pair(0xe9), (0xe9, 0xc9));
+    }
+    #[test]
+    fn titlecase_digraphs_remap_as_themselves_and_reuse_the_remap() {
+        for titlecase in ['ǅ', 'ǈ', 'ǋ', 'ǲ'] {
+            let symbol = crate::input::character_keysym(titlecase).unwrap();
+            assert_eq!(case_pair(symbol), (symbol, symbol), "{titlecase}");
+            let mut server = Server::new();
+            let mut keys = Keys::default();
+            for _ in 0..2 {
+                keys.press(&mut server, symbol, true).unwrap();
+                keys.release(&mut server, symbol).unwrap();
+            }
+            assert_eq!(typed(&server), titlecase.to_string().repeat(2));
+            assert_eq!(server.changes.len(), 1, "{titlecase}");
+        }
     }
     #[test]
     fn truecolour_masks_scale_to_eight_bits() {

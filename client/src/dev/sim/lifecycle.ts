@@ -38,3 +38,8 @@ export function simulatedLifecycle(enabledForTest: boolean) {
 export function secondProfile(first: HostProfile): HostProfile {
   return { ...first, profileId: "sim-spare", hostId: "01900000-0000-7000-8000-000000000099", name: "spare", addresses: ["spare.tail1234.ts.net:47100"] };
 }
+/** A third computer, for `?three-computers`. */
+export function thirdProfile(first: HostProfile): HostProfile {
+  return { ...first, profileId: "sim-laptop", hostId: "01900000-0000-7000-8000-000000000098", name: "laptop", addresses: ["laptop.tail1234.ts.net:47100"],
+    certSha256: "5d1e8a3c7b9f0e2d4c6a8b1f3e5d7c9a0b2e4f6d8c1a3e5b7d9f0c2a4e6b8d1f", pairedAt: first.pairedAt + 30 * 24 * 3600_000 };
+}

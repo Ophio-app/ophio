@@ -6,7 +6,7 @@
 
 import type { InterventionReceipt, ReceiptFact, TimelineItem } from "../../protocol/types";
 import { NOT_RUN, rows, stepSummary } from "../talk/timeline";
-import { toolInput } from "../talk/toolInput";
+import { toolInput, toolLabel } from "../talk/toolInput";
 
 export interface StopProgress {
   /** The agent's last message before Stop, shortened to a line or two. */
@@ -66,7 +66,7 @@ export function stopProgress(items: TimelineItem[], runId: string): StopProgress
     last = {
       // A step that names its input reads as the tool and that input; one that
       // names none keeps the summary the transcript shows for it.
-      name: input ? tool : stepSummary(step, true),
+      name: input ? toolLabel(tool) : stepSummary(step, true),
       input: input ? excerpt(input.text.split("\n")[0] ?? "", 80) || null : null,
       ended: not_run
         ? NOT_RUN[not_run].counted

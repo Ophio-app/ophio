@@ -11,6 +11,344 @@ use serde::{Deserialize, Serialize};
 /// The most projects with choices of their own.
 pub const MAX_PROJECT_NOTIFICATIONS: usize = 1000;
 
+/// The computer's word that it labels each alert with its [`AlertType`],
+/// keeps each project's [`Tier`] for a type, takes the phone's word that an
+/// alert was handled, and takes `SetTaskNotify`.
+pub const ALERT_TYPES_FEATURE: &str = "alert_types_v1";
+
+/// What a notification is about, in the words the person chooses by. Each
+/// has its own Android notification category and its own choice of
+/// [`Tier`] on each phone, and each project may choose its own.
+///
+/// The rule for what alerts by default: only what waits on the person and
+/// won't move until they act. What is worth a look shows silently, and
+/// routine progress waits in the app.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    schemars::JsonSchema,
+    ts_rs::TS,
+)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum AlertType {
+    /// An agent asked something and waits for the answer.
+    Question,
+    /// An agent waits for leave to do something.
+    Approval,
+    /// An agent can't work: it isn't signed in on the computer.
+    SignIn,
+    /// A task waits for a decision: a conflict, an end Ophio can't confirm,
+    /// the screen to watch, or the agent waiting on the person.
+    Decision,
+    /// A task, or a review, stopped with a problem.
+    Failed,
+    /// A pull request is stuck on the person: checks fail, a conflict, a
+    /// review asks for changes, or some were left out of a merge.
+    PrNeedsYou,
+    /// A problem report the person sent has a question for them.
+    ReportQuestion,
+    /// A task in Next up waits for the go-ahead to start.
+    GoAhead,
+    /// An agent replied in a chat.
+    Reply,
+    /// A pull request passed its checks and waits to be merged.
+    PrReady,
+    /// What a Run all came to, as a whole.
+    Batch,
+    /// An issue waits for a call: it couldn't be reproduced, or looks
+    /// fixed already.
+    IssueCall,
+    /// A problem report moved on, or someone sent one.
+    Reports,
+    /// A computer offers a newer Øphio for this phone. The phone's own.
+    AppUpdate,
+    /// A task finished its work.
+    Finished,
+    /// A pull request merged.
+    Merged,
+    /// Issues were found and filed, or closed as duplicates.
+    Issues,
+    /// A step is taking long.
+    Slow,
+}
+
+/// How a notification of a type shows.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    schemars::JsonSchema,
+    ts_rs::TS,
+)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum Tier {
+    /// No notification: it waits in the app.
+    Off,
+    /// In the shade, with no sound, vibration or pop-up.
+    Silent,
+    /// Sound, vibration and a pop-up.
+    Alert,
+}
+
+/// Where Settings lists a type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TypeGroup {
+    NeedsYou,
+    WorthALook,
+    InTheApp,
+}
+
+/// A type as Settings and Android's categories name it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct TypeInfo {
+    #[serde(rename = "type")]
+    pub alert_type: AlertType,
+    pub name: &'static str,
+    pub description: &'static str,
+    pub group: TypeGroup,
+    /// The recommended choice.
+    pub tier: Tier,
+}
+
+impl AlertType {
+    /// Every type, in the order Settings lists them.
+    pub const ALL: [AlertType; 18] = [
+        AlertType::Question,
+        AlertType::Approval,
+        AlertType::SignIn,
+        AlertType::Decision,
+        AlertType::Failed,
+        AlertType::PrNeedsYou,
+        AlertType::ReportQuestion,
+        AlertType::GoAhead,
+        AlertType::Reply,
+        AlertType::PrReady,
+        AlertType::Batch,
+        AlertType::IssueCall,
+        AlertType::Reports,
+        AlertType::AppUpdate,
+        AlertType::Finished,
+        AlertType::Merged,
+        AlertType::Issues,
+        AlertType::Slow,
+    ];
+
+    /// Its words in Settings and Android's categories, and its
+    /// recommended choice.
+    pub fn info(self) -> TypeInfo {
+        use AlertType::*;
+        use Tier::*;
+        use TypeGroup::*;
+        let (name, description, group, tier) = match self {
+            Question => (
+                "Questions",
+                "An agent asked you something and is waiting for your answer.",
+                NeedsYou,
+                Alert,
+            ),
+            Approval => (
+                "Approvals",
+                "An agent wants your OK before it does something.",
+                NeedsYou,
+                Alert,
+            ),
+            SignIn => (
+                "Agent signed out",
+                "An agent can’t work because it isn’t signed in on a computer.",
+                NeedsYou,
+                Alert,
+            ),
+            Decision => (
+                "Tasks that need a decision",
+                "A conflict, an end Øphio can’t confirm, or a screen to watch.",
+                NeedsYou,
+                Alert,
+            ),
+            Failed => (
+                "Tasks that stopped with a problem",
+                "A task or a review couldn’t finish.",
+                NeedsYou,
+                Alert,
+            ),
+            PrNeedsYou => (
+                "Pull requests that need you",
+                "Checks fail, a conflict, or a review asks for changes.",
+                NeedsYou,
+                Alert,
+            ),
+            ReportQuestion => (
+                "Questions about your reports",
+                "A problem report you sent has a question for you.",
+                NeedsYou,
+                Alert,
+            ),
+            GoAhead => (
+                "Next up go-aheads",
+                "A task in Next up is waiting for your go-ahead to start.",
+                WorthALook,
+                Silent,
+            ),
+            Reply => (
+                "Chat replies",
+                "An agent replied in a chat you’re in.",
+                WorthALook,
+                Silent,
+            ),
+            PrReady => (
+                "Pull requests ready to merge",
+                "Checks passed and it’s waiting for you to merge it.",
+                WorthALook,
+                Silent,
+            ),
+            Batch => (
+                "Run all results",
+                "What a Run all came to, once it’s through.",
+                WorthALook,
+                Silent,
+            ),
+            IssueCall => (
+                "Issues that need your call",
+                "An issue couldn’t be reproduced, or looks fixed already.",
+                WorthALook,
+                Silent,
+            ),
+            Reports => (
+                "Problem report updates",
+                "A report you sent moved on, or someone sent you one.",
+                WorthALook,
+                Silent,
+            ),
+            AppUpdate => (
+                "Øphio updates",
+                "A computer has a newer Øphio for this phone.",
+                WorthALook,
+                Silent,
+            ),
+            Finished => (
+                "Finished tasks",
+                "A task finished. Turn on “Tell me when it’s done” on a task to hear about that one.",
+                InTheApp,
+                Off,
+            ),
+            Merged => (
+                "Merged pull requests",
+                "A pull request merged.",
+                InTheApp,
+                Off,
+            ),
+            Issues => (
+                "Issues filed",
+                "Issues were found and filed, or closed as duplicates.",
+                InTheApp,
+                Off,
+            ),
+            Slow => (
+                "Slow steps",
+                "A step is taking longer than usual.",
+                InTheApp,
+                Off,
+            ),
+        };
+        TypeInfo {
+            alert_type: self,
+            name,
+            description,
+            group,
+            tier,
+        }
+    }
+
+    /// The recommended choice for this type.
+    pub fn default_tier(self) -> Tier {
+        self.info().tier
+    }
+
+    /// The type of an item, as the computer labels it: the one it was
+    /// raised with, or the one its kind, topic and task say. `conversation`
+    /// is whether its task is a chat. None for an item that never alerts.
+    pub fn of(item: &crate::model::AttentionItem, conversation: bool) -> Option<AlertType> {
+        if let Some(t) = item.alert {
+            return Some(t);
+        }
+        if item.account_id.is_some() && item.task_id.is_none() {
+            return Some(AlertType::SignIn);
+        }
+        if item.report_id.is_some() {
+            if item.kind == AttentionKind::Question {
+                return Some(AlertType::ReportQuestion);
+            }
+            if item.task_id.is_none() {
+                return Some(AlertType::Reports);
+            }
+        }
+        let topic = item.topic;
+        Some(match item.kind {
+            AttentionKind::ConnectionIssue => return None,
+            AttentionKind::Question => AlertType::Question,
+            AttentionKind::Approval => AlertType::Approval,
+            AttentionKind::Conflict | AttentionKind::ReconciliationRequired => AlertType::Decision,
+            AttentionKind::Failure => AlertType::Failed,
+            AttentionKind::Completed => match topic {
+                Some(AlertTopic::Merged) => AlertType::Merged,
+                Some(AlertTopic::PrReady) => AlertType::PrReady,
+                Some(AlertTopic::Issues) => AlertType::Issues,
+                Some(AlertTopic::Reports) => AlertType::Reports,
+                Some(AlertTopic::PrNeedsYou) => AlertType::PrNeedsYou,
+                _ if conversation => AlertType::Reply,
+                _ => AlertType::Finished,
+            },
+            AttentionKind::WaitingForYou => match topic {
+                Some(AlertTopic::PrNeedsYou) => AlertType::PrNeedsYou,
+                Some(AlertTopic::Issues) => AlertType::IssueCall,
+                Some(AlertTopic::SlowWork) => AlertType::Slow,
+                // A review that couldn't check or file its findings.
+                Some(AlertTopic::Finished) | Some(AlertTopic::Failed) => AlertType::Failed,
+                Some(AlertTopic::Reports) => AlertType::Reports,
+                Some(AlertTopic::PrReady) => AlertType::PrReady,
+                Some(AlertTopic::Merged) => AlertType::Merged,
+                _ => AlertType::Decision,
+            },
+        })
+    }
+
+    /// Whether a task's "Tell me when it's done" makes this type alert.
+    pub fn follows_task(self) -> bool {
+        matches!(
+            self,
+            AlertType::Finished | AlertType::Failed | AlertType::Reply
+        )
+    }
+}
+
+/// A project's own choice for one type.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS,
+)]
+#[ts(export)]
+pub struct TypeTier {
+    #[serde(rename = "type")]
+    pub alert_type: AlertType,
+    pub tier: Tier,
+}
+
 /// What an alert is about. Each can be turned off, everywhere or in one
 /// project.
 #[derive(
@@ -103,6 +441,14 @@ pub struct NotificationSettings {
     /// Projects with choices of their own.
     #[serde(default)]
     pub projects: Vec<ProjectNotifications>,
+    /// Choices by type for every project on this computer, over each
+    /// phone's, that a project without its own choice for the type
+    /// follows, new projects included. Only ever brought over from a topic
+    /// turned off for every project before types existed, and only
+    /// stricter: phones don't set it, and saving keeps it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<Vec<TypeTier>>", optional)]
+    pub tiers: Vec<TypeTier>,
     #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
     #[serde(default)]
     pub revision: u64,
@@ -127,6 +473,11 @@ pub struct ProjectNotifications {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub bundle: Option<bool>,
+    /// The project's own choice for a type, over each phone's. Older
+    /// computers keep none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<Vec<TypeTier>>", optional)]
+    pub tiers: Vec<TypeTier>,
 }
 
 impl ProjectNotifications {
@@ -137,11 +488,22 @@ impl ProjectNotifications {
             on: Vec::new(),
             off: Vec::new(),
             bundle: None,
+            tiers: Vec::new(),
         }
     }
     /// Says nothing the default doesn't.
     pub fn is_empty(&self) -> bool {
-        !self.mute && self.on.is_empty() && self.off.is_empty() && self.bundle.is_none()
+        !self.mute
+            && self.on.is_empty()
+            && self.off.is_empty()
+            && self.bundle.is_none()
+            && self.tiers.is_empty()
+    }
+    /// The project's own choice for `alert_type`, if it made one.
+    pub fn tier(&self, alert_type: AlertType) -> Option<Tier> {
+        (self.tiers.iter())
+            .find(|t| t.alert_type == alert_type)
+            .map(|t| t.tier)
     }
 }
 
@@ -157,6 +519,21 @@ impl NotificationSettings {
             _ => !self.off.contains(&topic),
         }
     }
+    /// The project's own choice for a type: `Off` when it is muted.
+    pub fn project_tier(&self, project_id: ProjectId, alert_type: AlertType) -> Option<Tier> {
+        let p = self.project(project_id);
+        if p.is_some_and(|p| p.mute) {
+            return Some(Tier::Off);
+        }
+        (p.and_then(|p| p.tier(alert_type))).or_else(|| self.computer_tier(alert_type))
+    }
+    /// This computer's choice for a type in every project (see
+    /// [`Self::tiers`]).
+    pub fn computer_tier(&self, alert_type: AlertType) -> Option<Tier> {
+        (self.tiers.iter())
+            .find(|t| t.alert_type == alert_type)
+            .map(|t| t.tier)
+    }
     /// Whether `project_id`'s alerts fold into one.
     pub fn bundles(&self, project_id: ProjectId) -> bool {
         self.project(project_id)
@@ -171,11 +548,28 @@ impl NotificationSettings {
             topics.dedup();
         }
         once(&mut self.off);
+        let mut tiers: Vec<TypeTier> = Vec::new();
+        for t in self.tiers.drain(..).rev() {
+            if !tiers.iter().any(|k| k.alert_type == t.alert_type) {
+                tiers.push(t);
+            }
+        }
+        tiers.sort_by_key(|t| t.alert_type);
+        self.tiers = tiers;
         let mut projects: Vec<ProjectNotifications> = Vec::new();
         for mut p in self.projects {
             once(&mut p.on);
             once(&mut p.off);
             p.on.retain(|t| !p.off.contains(t));
+            // Each type once, the last choice for it kept, in type order.
+            let mut tiers: Vec<TypeTier> = Vec::new();
+            for t in p.tiers.drain(..).rev() {
+                if !tiers.iter().any(|k| k.alert_type == t.alert_type) {
+                    tiers.push(t);
+                }
+            }
+            tiers.sort_by_key(|t| t.alert_type);
+            p.tiers = tiers;
             if p.is_empty() {
                 continue;
             }
@@ -215,6 +609,7 @@ mod tests {
                     ..ProjectNotifications::new(b)
                 },
             ],
+            tiers: Vec::new(),
             revision: 0,
         };
         let other = ProjectId::new();
@@ -259,6 +654,74 @@ mod tests {
             ..NotificationSettings::default()
         };
         assert!(many.tidy().is_none());
+    }
+
+    #[test]
+    fn every_type_is_listed_once_with_words_and_a_choice() {
+        let mut seen = std::collections::BTreeSet::new();
+        for t in AlertType::ALL {
+            assert!(seen.insert(t));
+            let info = t.info();
+            assert!(!info.name.is_empty() && info.description.ends_with('.'));
+        }
+        // Only what waits on the person alerts by default.
+        assert!(
+            (AlertType::ALL.iter())
+                .filter(|t| t.default_tier() == Tier::Alert)
+                .all(|t| t.info().group == TypeGroup::NeedsYou)
+        );
+        assert_eq!(AlertType::Finished.default_tier(), Tier::Off);
+        assert_eq!(AlertType::GoAhead.default_tier(), Tier::Silent);
+        assert_eq!(AlertType::Reply.default_tier(), Tier::Silent);
+        let text = serde_json::to_string(&AlertType::PrNeedsYou).unwrap();
+        assert_eq!(text, r#""pr_needs_you""#);
+    }
+
+    /// The app's Settings reads every type's words from this file, so they
+    /// are said in one place. Like the other generated bindings, a change
+    /// here rewrites it and CI fails until it is committed.
+    #[test]
+    fn the_type_list_is_exported_for_the_app() {
+        let list: Vec<TypeInfo> = AlertType::ALL.iter().map(|t| t.info()).collect();
+        let text = serde_json::to_string_pretty(&list).unwrap() + "\n";
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../client/src/protocol/generated/alertTypes.json");
+        if std::fs::read_to_string(&path).ok().as_deref() != Some(text.as_str()) {
+            std::fs::write(&path, text).unwrap();
+        }
+    }
+
+    #[test]
+    fn a_projects_type_choice_is_kept_once_and_mute_wins() {
+        let a = ProjectId::new();
+        let choice = |alert_type, tier| TypeTier { alert_type, tier };
+        let settings = NotificationSettings {
+            projects: vec![ProjectNotifications {
+                tiers: vec![
+                    choice(AlertType::Finished, Tier::Silent),
+                    choice(AlertType::Question, Tier::Off),
+                    choice(AlertType::Finished, Tier::Alert),
+                ],
+                ..ProjectNotifications::new(a)
+            }],
+            ..NotificationSettings::default()
+        }
+        .tidy()
+        .unwrap();
+        let p = settings.projects[0].clone();
+        assert_eq!(p.tiers.len(), 2);
+        let tier = |s: &NotificationSettings, t| s.project_tier(a, t);
+        assert_eq!(tier(&settings, AlertType::Finished), Some(Tier::Alert));
+        assert_eq!(tier(&settings, AlertType::Merged), None);
+        assert_eq!(
+            settings.project_tier(ProjectId::new(), AlertType::Merged),
+            None
+        );
+        let muted = NotificationSettings {
+            projects: vec![ProjectNotifications { mute: true, ..p }],
+            ..settings.clone()
+        };
+        assert_eq!(tier(&muted, AlertType::Finished), Some(Tier::Off));
     }
 
     #[test]

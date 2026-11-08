@@ -12,6 +12,8 @@ import { ids } from "../../dev/sim/scenario";
 import { HostSession } from "../../host/session";
 import { parseOpenRoute } from "../../platform/notifications";
 import { alertsFor, bundlesFor, withProject } from "../../platform/notificationSettings";
+import { ALERT_TYPES, TIER_LABELS } from "../../platform/alertTypes";
+import { Toasts } from "../../design/Toast";
 import { RouteProvider } from "../../shell/Screen";
 import NeedsYou from "../work/NeedsYou";
 import Settings from "./Settings";
@@ -85,48 +87,149 @@ it("lists Settings as pages, and a link to a section opens its page", async () =
   expect(screen.queryByRole("heading", { name: "Voice control" })).toBeNull();
 });
 
-it("turns a topic off for every project, folds alerts per project, and opens a project's own", async () => {
+const group = (name: string) => within(screen.getByRole("radiogroup", { name }));
+const checked = (name: string) => group(name).getAllByRole("radio").find((r) => r.getAttribute("aria-checked") === "true")?.textContent;
+
+it("lists every type in plain words under its heading, each with Alert, Silent and Off and the recommended one marked", async () => {
   show({ screen: "settings", section: "settings-notifications" }); await advance();
-  const finished = screen.getByRole("checkbox", { name: "Finished tasks" }) as HTMLInputElement;
-  expect(finished.checked).toBe(true);
-  fireEvent.click(finished); await advance(900);
-  expect(kept()).toMatchObject({ off: ["finished"], bundle: false, revision: 1 });
-  expect((screen.getByRole("checkbox", { name: "Finished tasks" }) as HTMLInputElement).checked).toBe(false);
+  for (const heading of ["This phone", "What notifies you", "Projects", "How they look", "Elsewhere"])
+    expect(screen.getByRole("heading", { level: 2, name: heading })).toBeTruthy();
+  for (const heading of ["Needs you", "Worth a look", "Only in the app"])
+    expect(screen.getByRole("heading", { level: 3, name: heading })).toBeTruthy();
+  for (const t of ALERT_TYPES) {
+    const row = screen.getByRole("group", { name: t.name });
+    expect(row.getAttribute("aria-describedby") && document.getElementById(row.getAttribute("aria-describedby")!)?.textContent).toBe(t.description);
+    const radios = group(t.name).getAllByRole("radio");
+    expect(radios.map((r) => r.textContent?.replace(", recommended", ""))).toEqual(["Alert", "Silent", "Off"]);
+    // The recommended choice is marked, and chosen at first.
+    expect(group(t.name).getByRole("radio", { name: `${TIER_LABELS[t.tier]}, recommended` }).getAttribute("aria-checked")).toBe("true");
+  }
+  expect(screen.getAllByRole("radio", { name: /, recommended$/ })).toHaveLength(ALERT_TYPES.length);
+  // The words come from the computer's own list, in its order.
+  expect(ALERT_TYPES.map((t) => t.type)).toContain("app_update");
+  expect((screen.getByRole("button", { name: "Use the recommended choices" }) as HTMLButtonElement).disabled).toBe(true);
+  // Telegram and Discord have their own settings, and Connections is a tap away.
+  expect(screen.getByText(/Telegram or Discord aren’t covered here/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /^Chat links/ }));
+  expect(top()).toEqual({ screen: "connections" });
+});
+
+it("changes a type on the tap, tells Android at once, goes back with a toast when refused, and resets to the recommended choices", async () => {
+  const device = window.__sim!.device;
+  render(<AppProvider app={app}><RouteProvider value={{ tab: "work", route: { screen: "settings", section: "settings-notifications" }, depth: 1, active: true }}><Settings route={{ screen: "settings", section: "settings-notifications" }} /></RouteProvider><Toasts /></AppProvider>);
+  await advance();
+  fireEvent.click(group("Merged pull requests").getByRole("radio", { name: "Alert" }));
+  // Shown on the tap, before Android answers.
+  expect(checked("Merged pull requests")).toBe("Alert");
+  await advance(0);
+  expect(device.tierChanges).toEqual([{ alertType: "merged", tier: "alert" }]);
+  expect(device.alerts.tiers?.merged).toBe("alert");
+  expect(screen.getByRole("status").textContent).toMatch(/^1 choice differs/);
+
+  device.refuseTier("Android didn’t take it.");
+  fireEvent.click(group("Questions").getByRole("radio", { name: "Silent" }));
+  expect(checked("Questions")).toBe("Silent");
+  await advance(0);
+  expect(checked("Questions")).toBe("Alert, recommended");
+  expect(screen.getByText("Couldn’t change how questions notify you. Android didn’t take it.")).toBeTruthy();
+  expect(device.alerts.tiers?.question).toBe("alert");
+
+  fireEvent.click(screen.getByRole("button", { name: "Use the recommended choices" }));
+  expect(checked("Merged pull requests")).toBe("Off, recommended");
+  await advance(0);
+  expect(device.alerts.tiers?.merged).toBe("off");
+});
+
+it("keeps the choices on this device where there is no watcher, and says they apply while Øphio is open", async () => {
+  const platform = app.platform as { alerts?: unknown };
+  delete platform.alerts;
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
+  expect(screen.getByText(/notifications arrive only while the app is open/)).toBeTruthy();
+  expect(screen.getByText(/while Øphio is open\. A dot marks/)).toBeTruthy();
+  fireEvent.click(group("Finished tasks").getByRole("radio", { name: "Silent" }));
+  await advance(0);
+  expect(checked("Finished tasks")).toBe("Silent");
+  expect(JSON.parse(localStorage.getItem("alert-tiers")!)).toMatchObject({ finished: "silent", question: "alert" });
+  expect(screen.queryByRole("button", { name: "Open Android settings" })).toBeNull();
+});
+
+it("folds alerts per project on the computer, and lists each project with its choices", async () => {
+  window.__sim!.host.notificationSettings = { off: [], bundle: false, revision: 3, projects: [
+    { project_id: ids.pTide, mute: false, on: [], off: [], tiers: [{ type: "question", tier: "silent" }, { type: "merged", tier: "alert" }] },
+  ] };
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
   fireEvent.click(screen.getByRole("checkbox", { name: "One notification per project" })); await advance(900);
-  expect(kept()).toMatchObject({ off: ["finished"], bundle: true, revision: 2 });
+  expect(kept()).toMatchObject({ bundle: true, revision: 4 });
   const projects = within(screen.getByRole("region", { name: "Projects" }));
+  expect(projects.getByRole("button", { name: /^tidewater-api/ }).textContent).toContain("2 changes");
+  expect(projects.getByRole("button", { name: /^field-notes/ }).textContent).toContain("Default");
   fireEvent.click(projects.getByRole("button", { name: /^tidewater-api/ }));
   expect(top()).toEqual({ screen: "settings", section: "settings-notifications", projectId: ids.pTide });
 });
 
-it("keeps one project's choices: muted, a topic on over the default, and one notification or each", async () => {
-  window.__sim!.host.notificationSettings = { off: ["finished"], bundle: true, projects: [], revision: 4 };
+it("shows a choice the computer keeps for every project as a project's default, and keeps it on save", async () => {
+  window.__sim!.host.notificationSettings = { off: [], bundle: false, projects: [], tiers: [{ type: "question", tier: "off" }], revision: 4 };
+  show({ screen: "settings", section: "settings-notifications", projectId: ids.pTide }); await advance();
+  expect(group("Questions").getByRole("radio", { name: "Default (Off)" }).getAttribute("aria-checked")).toBe("true");
+  expect(group("Approvals").getByRole("radio", { name: "Default (Alert)" }).getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(group("Finished tasks").getByRole("radio", { name: "Silent" })); await advance(900);
+  expect(kept().tiers).toEqual([{ type: "question", tier: "off" }]);
+});
+
+it("keeps one project's choices per type in tiers: muted, a type over the default, and reset", async () => {
+  window.__sim!.host.notificationSettings = { off: [], bundle: true, projects: [], revision: 4 };
   show({ screen: "settings", section: "settings-notifications", projectId: ids.pTide }); await advance();
   expect(screen.getByText("tidewater-api")).toBeTruthy();
-  const finished = within(screen.getByRole("radiogroup", { name: "Finished tasks" }));
-  expect(finished.getByRole("radio", { name: "Default (off)" }).getAttribute("aria-checked")).toBe("true");
-  fireEvent.click(finished.getByRole("radio", { name: "On" })); await advance(900);
-  expect(kept().projects).toEqual([{ project_id: ids.pTide, mute: false, on: ["finished"], off: [] }]);
+  // Every type but the app's own updates, each with Default showing this phone's choice.
+  expect(screen.queryByRole("radiogroup", { name: "Øphio updates" })).toBeNull();
+  expect(screen.getAllByRole("radiogroup").length).toBe(ALERT_TYPES.length - 1 + 1);
+  expect(group("Finished tasks").getByRole("radio", { name: "Default (Off)" }).getAttribute("aria-checked")).toBe("true");
+  expect(group("Questions").getByRole("radio", { name: "Default (Alert)" }).getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(group("Finished tasks").getByRole("radio", { name: "Alert" }));
+  expect(group("Finished tasks").getByRole("radio", { name: "Alert" }).getAttribute("aria-checked")).toBe("true");
+  await advance(900);
+  expect(kept().projects).toEqual([{ project_id: ids.pTide, mute: false, on: [], off: [], tiers: [{ type: "finished", tier: "alert" }] }]);
+  fireEvent.click(group("Questions").getByRole("radio", { name: "Silent" })); await advance(900);
+  expect(kept().projects[0]?.tiers).toEqual([{ type: "question", tier: "silent" }, { type: "finished", tier: "alert" }]);
   const one = within(screen.getByRole("radiogroup", { name: "One notification for tidewater-api" }));
   expect(one.getByRole("radio", { name: "Default (one)" }).getAttribute("aria-checked")).toBe("true");
   fireEvent.click(one.getByRole("radio", { name: "Separate" })); await advance(900);
   expect(kept().projects[0]).toMatchObject({ bundle: false });
+  expect(screen.getByRole("status").textContent).toBe("3 changes from the defaults.");
   fireEvent.click(screen.getByRole("checkbox", { name: "Mute this project" })); await advance(900);
-  expect(kept().projects[0]).toMatchObject({ mute: true, on: ["finished"] });
-  expect((within(screen.getByRole("radiogroup", { name: "Questions" })).getByRole("radio", { name: "Off" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(kept().projects[0]).toMatchObject({ mute: true, tiers: [{ type: "question", tier: "silent" }, { type: "finished", tier: "alert" }] });
+  expect((group("Questions").getByRole("radio", { name: "Off" }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(group("Finished tasks").getByRole("radio", { name: "Default (Off)" }));
   fireEvent.click(screen.getByRole("button", { name: "Reset to the defaults" })); await advance(900);
   expect(kept().projects).toEqual([]);
-  expect(kept().revision).toBe(8);
+});
+
+it("keeps the per-topic project page for a computer without types", async () => {
+  const caps = app.session.state.get().capabilities!;
+  act(() => app.session.state.set((s) => ({ ...s, capabilities: { ...caps, features: caps.features.filter((f) => f !== "alert_types_v1") } })));
+  window.__sim!.host.notificationSettings = { off: ["finished"], bundle: true, projects: [], revision: 4 };
+  show({ screen: "settings", section: "settings-notifications", projectId: ids.pTide }); await advance();
+  const finished = within(screen.getByRole("radiogroup", { name: "Finished tasks" }));
+  expect(finished.getByRole("radio", { name: "Default (off)" }).getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(finished.getByRole("radio", { name: "On" })); await advance(900);
+  expect(kept().projects).toEqual([{ project_id: ids.pTide, mute: false, on: ["finished"], off: [] }]);
+  cleanup();
+  // On the main page, its switches for every project are said, with a way back.
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
+  expect(screen.getByText(/It doesn’t send finished tasks to any phone/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Turn them back on" })); await advance(900);
+  expect(kept().off).toEqual([]);
 });
 
 it("says to update a computer that doesn't keep these choices", async () => {
   const caps = app.session.state.get().capabilities!;
-  act(() => app.session.state.set((s) => ({ ...s, capabilities: { ...caps, features: caps.features.filter((f) => f !== "notification_settings_v1") } })));
+  act(() => app.session.state.set((s) => ({ ...s, capabilities: { ...caps, features: caps.features.filter((f) => f !== "notification_settings_v1" && f !== "alert_types_v1") } })));
   show({ screen: "settings", section: "settings-notifications" }); await advance();
-  expect(screen.getByText(/Update Øphio on .* to choose what alerts you/)).toBeTruthy();
-  expect(screen.queryByRole("checkbox", { name: "Finished tasks" })).toBeNull();
-  // What this phone does with alerts stays.
-  expect(screen.getByRole("heading", { name: "On this phone" })).toBeTruthy();
+  expect(screen.getByText(/Update Øphio on .* to choose what notifies you from each of its projects/)).toBeTruthy();
+  expect(screen.queryByRole("checkbox", { name: "One notification per project" })).toBeNull();
+  // What this phone does with notifications stays.
+  expect(screen.getByRole("heading", { name: "This phone" })).toBeTruthy();
+  expect(screen.getByRole("radiogroup", { name: "Questions" })).toBeTruthy();
 });
 
 it("opens a project's Needs you from the note that counts its alerts", async () => {

@@ -9,7 +9,7 @@ import type { Platform } from "../../host/link";
 import { HostSession } from "../../host/session";
 import { annotationStore, blobs, MAX_SOURCES, outgoingSources, useAnnotation, type AnnotationStore, type SourceDraft } from "../../state/annotations";
 import { emptyHostState } from "../../state/projection";
-import { Sources } from "./Sources";
+import { Sources } from "./SourcesView";
 
 vi.mock("./useSourceUrl", () => ({ useSourceUrl: () => ({ url: null, error: null }) }));
 

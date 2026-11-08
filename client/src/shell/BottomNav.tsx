@@ -6,14 +6,30 @@ import { useTodoBadge } from "../app/checklist";
 import { navigationInputState } from "../screens/control/ownership";
 import { openAttention } from "../state/projection";
 import { TABS, tabLabel, type Tab } from "../app/ui";
+import { useAllCounts } from "../app/allCounts";
 
 const ICON: Record<Tab, LucideIcon> = { talk: MessageSquare, control: Monitor, work: ListChecks, library: BookOpen, todo: ListTodo };
 
 export function BottomNav() {
-  const { ui } = useApp();
-  const tab = useUi((s) => s.tab);
+  const { all } = useApp();
+  return all ? <AllNav /> : <OneNav />;
+}
+
+function OneNav() {
   const attention = useHost((s) => openAttention(s).length);
   const todo = useTodoBadge();
+  return <Nav attention={attention} todo={todo} />;
+}
+
+/** With All computers, the counts are what All's lists show on every one. */
+function AllNav() {
+  const { counts, readers } = useAllCounts(useTodoBadge);
+  return <><Nav attention={counts.needs + counts.asking} todo={counts.todo} />{readers}</>;
+}
+
+function Nav({ attention, todo }: { attention: number; todo: number }) {
+  const { ui } = useApp();
+  const tab = useUi((s) => s.tab);
   // Someone holds input on a screen: keep that visible from every destination.
   const online = useLink().state === "online";
   const inputState = useHost(s => navigationInputState(s, online));

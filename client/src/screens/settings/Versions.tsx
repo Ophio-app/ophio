@@ -3,6 +3,7 @@ import { PRODUCT_NAME } from "../../brand";
 import { useEffect, useState } from "react";
 import { useApp, useHost, useLink } from "../../app/context";
 import { Button } from "../../design/Button";
+import { onIPhone } from "../../design/formFactor";
 import { Section } from "../../design/ListRow";
 import { Notice } from "../../design/Notice";
 import { Sheet } from "../../design/Sheet";
@@ -15,7 +16,9 @@ import packageInfo from "../../../package.json";
 export function protectionWords(value: string | undefined): string {
   if (value === "keystore") return "Device key kept in Android’s secure storage";
   if (value === "wrapped")
-    return "Device key locked by a key kept in Android’s secure storage";
+    return onIPhone()
+      ? "Device key sealed by the iPhone’s Secure Enclave"
+      : "Device key locked by a key kept in Android’s secure storage";
   if (value === "simulated")
     return "Simulated device key — no Android key is stored";
   return "Device key protection is not reported by this build";

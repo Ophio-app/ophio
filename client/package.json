@@ -1,14 +1,14 @@
 {
   "name": "client",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:sim": "vite --mode sim",
-    "build": "tsc --noEmit -p . && vite build && node scripts/css-order-check.mjs",
-    "build:sim": "tsc --noEmit -p . && vite build --mode sim && node scripts/css-order-check.mjs",
+    "build": "node scripts/case-check.mjs && tsc --noEmit -p . && vite build && node scripts/css-order-check.mjs",
+    "build:sim": "node scripts/case-check.mjs && tsc --noEmit -p . && vite build --mode sim && node scripts/css-order-check.mjs",
     "typecheck": "tsc --noEmit -p .",
     "test": "sh scripts/test.sh",
     "tauri": "tauri",

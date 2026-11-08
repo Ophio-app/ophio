@@ -223,3 +223,15 @@ it("opens web pages, and the emails and calls a checklist step starts, in the ph
   await expect(platform.openExternal("https://me:secret@example.com/")).rejects.toThrow();
   expect(native.invoke).not.toHaveBeenCalledWith("plugin:opener|open_url", expect.anything());
 });
+
+it("tells the native link who asked it to try again", async () => {
+  const control = createNativePlatform().control("profile");
+  control.connect(); await tick();
+  control.connect("person"); await tick();
+  control.connect("event"); await tick();
+  const asks = native.invoke.mock.calls.filter(([command]) => command === "link_connect").map(([, args]) => (args as { ask?: string }).ask);
+  // The first starts the link; the person's Retry and the app or network
+  // coming back say so, and the native side limits only the others.
+  expect(asks).toEqual([undefined, "person", "event"]);
+  control.disconnect();
+});

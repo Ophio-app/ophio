@@ -14,7 +14,7 @@ import { Notice } from "../../design/Notice";
 import type { ChecklistItem, Project } from "../../protocol/types";
 import { ContextHeader } from "../../shell/ContextHeader";
 import { NotAllowed, useMay } from "../../shell/NotAllowed";
-import { Screen } from "../../shell/Screen";
+import { Screen, useRoute } from "../../shell/Screen";
 import type { RouteProps } from "../types";
 import { useQueue } from "../work/useQueue";
 import { AgentWorkEntry, deriveAgentWork, type AgentWorkEntryData } from "./AgentWork";
@@ -22,6 +22,9 @@ import { ChecklistBody, ChecklistEntry } from "./Checklist";
 import { RequestChecklist } from "./RequestChecklist";
 import { checklistOrder, compareTodo, type TodoOrder } from "./todoOrder";
 import "./todo.css";
+import { useEveryProject, showEveryProject } from "../../app/everyProject";
+import { OnComputer, storeOf, whenShown } from "../../app/onComputer";
+import { LeftOut, useAllOnScreen, useReach } from "../work/AllWork";
 
 /** Queue queries populate the host cache; events keep it current afterward. */
 function QueueReader({ project, shown }: { project: Project; shown: boolean }) {
@@ -33,18 +36,44 @@ function QueueReader({ project, shown }: { project: Project; shown: boolean }) {
 
 export default function Todo(_: RouteProps<"todo">) {
   const allowed = useMay("tasks");
+  // With All computers, every project's to-dos on every one, until a project is chosen.
+  const everywhere = useEveryProject(useRoute().tab);
   return <Screen header={<ContextHeader heading />} className="checklist-screen todo-screen">
-    {allowed ? <TodoContents /> : <NotAllowed what="see and tick off checklists" permission="tasks" />}
+    {everywhere ? <EveryComputer /> : allowed ? <TodoContents /> : <NotAllowed what="see and tick off checklists" permission="tasks" />}
   </Screen>;
+}
+
+/** Every connected computer's to-dos, each computer's together under its
+ * name and shown as its own, so a tick goes to that computer. One out of
+ * reach is named, not listed. */
+function EveryComputer() {
+  // On screen, every connected computer's to-dos and requests are, so their alerts are too.
+  useAllOnScreen();
+  const reach = useReach();
+  const live = reach.filter((r) => r.online);
+  return <>
+    <LeftOut reach={reach} what="to-dos" />
+    {live.map((r) => <OnComputer key={r.entry.profile.profileId} entry={r.entry}><ComputerTodos /></OnComputer>)}
+  </>;
+}
+
+function ComputerTodos() {
+  const allowed = useMay("tasks");
+  const { profile } = useApp();
+  return allowed ? <TodoContents everywhere /> : <section className="todo-computer">
+    <h2 className="todo-heading"><bdi>{profile.name}</bdi></h2>
+    <NotAllowed what="see and tick off checklists" permission="tasks" />
+  </section>;
 }
 
 type AllEntry = TodoOrder & ({ kind: "item"; item: ChecklistItem } | { kind: "task"; entry: AgentWorkEntryData });
 
-function TodoContents() {
+/** `everywhere`: this computer's part of All's to-dos, under its name. */
+function TodoContents({ everywhere = false }: { everywhere?: boolean }) {
   const { ui, profile } = useApp();
   const online = useLink().state === "online";
   const projectId = useUi((s) => s.projectId);
-  const all = useUi((s) => s.todoAll);
+  const all = useUi((s) => s.todoAll) || everywhere;
   const itemId = useUi((s) => s.todoItemId);
   const projects = useHost((s) => Object.values(s.projects), shallowEqual);
   // Text/output streaming does not change any input used by these entries.
@@ -60,7 +89,11 @@ function TodoContents() {
   const [kept, setKept] = useState<ReadonlySet<string>>(() => new Set());
   const supported = !!host.capabilities?.features.includes("checklist_v1");
   const work = new Map(projects.map((p) => [p.project_id, deriveAgentWork(host, p.project_id, lists.get(p.project_id)?.list)]));
-  const choose = (id: string) => { ui.selectProject(id); ui.setTodoAll(false); ui.setTodoItem(null); };
+  const choose = (id: string) => {
+    // Leaving All projects counts once the project is shown, after the switch.
+    if (everywhere) whenShown(ui, () => showEveryProject(false));
+    ui.selectProject(id); ui.setTodoAll(false); ui.setTodoItem(null);
+  };
   const go = (id: string, item?: string) => {
     if (all && item) {
       if (lists.get(id)?.list?.sections.some((s) => s.items.some((i) => i.item_id === item && i.done_at !== undefined))) setShowDone(true);
@@ -68,7 +101,9 @@ function TodoContents() {
     }
     else ui.openChecklist(id, item);
   };
-  const projectLabel = (project: Project) => <button className="todo-project-link" type="button" onClick={() => choose(project.project_id)}>{project.name}</button>;
+  // In All, a row names its computer too, isolated so no name can turn the text around.
+  const projectLabel = (project: Project) => <button className="todo-project-link" type="button" onClick={() => choose(project.project_id)}>
+    {everywhere ? <><bdi className="all-projects__computer">{profile.name}</bdi> · {project.name}</> : project.name}</button>;
   const entries: AllEntry[] = projects.flatMap((p) => {
     const list = lists.get(p.project_id)?.list;
     const items: AllEntry[] = list ? checklistOrder(list).filter((value) => stillShown(value.item) || kept.has(`${p.project_id}/${value.id}`))
@@ -88,7 +123,9 @@ function TodoContents() {
   const value = projectId ? lists.get(projectId) : undefined;
   // Consume a focus request after its list mounts. Clearing it lets the same
   // link reopen a fold later, without reopening it after an ordinary tick.
-  useEffect(() => { if (itemId && value?.list && allItems(value.list).some((item) => item.item_id === itemId)) ui.setTodoItem(null); }, [itemId, value?.list, ui]);
+  // No tap makes this, so it never switches computers: made in place on
+  // this computer's own store, as when All lists another computer's to-dos.
+  useEffect(() => { if (itemId && value?.list && allItems(value.list).some((item) => item.item_id === itemId)) storeOf(ui).setTodoItem(null); }, [itemId, value?.list, ui]);
   useEffect(() => { if (allFocus) setAllFocus(null); }, [allFocus]);
   const agentEntries = projectId ? work.get(projectId) ?? [] : [];
   const workSection = (entries: AgentWorkEntryData[], later = false) => entries.length > 0 && <Section title={later ? "Next up" : "Agents’ work"}>
@@ -97,13 +134,17 @@ function TodoContents() {
   const errors = all ? projects.filter((p) => lists.get(p.project_id)?.error) : project && value?.error ? [project] : [];
   const unread = supported && [...lists.values()].some((v) => v.list === undefined && !v.error);
   return <>
+    {/* In All, this computer's part starts with its name, and what goes
+        wrong here says which computer it is. */}
+    {everywhere && <h2 className="todo-heading"><bdi>{profile.name}</bdi></h2>}
     {projects.map((p) => <QueueReader key={p.project_id} project={p} shown={all || p.project_id === projectId} />)}
-    {!supported && <Notice tone="warn" title="Update the computer">{CHECKLIST_UPDATE}</Notice>}
-    {errors.map((p) => <Notice key={p.project_id} tone="unknown" title={p.name} action={<Button size="sm" disabled={!lists.get(p.project_id)?.online} onClick={lists.get(p.project_id)?.reload}>Try again</Button>}>{lists.get(p.project_id)?.error}</Notice>)}
+    {!supported && <Notice tone="warn" title={everywhere ? <>Update <bdi>{profile.name}</bdi></> : "Update the computer"}>{CHECKLIST_UPDATE}</Notice>}
+    {errors.map((p) => <Notice key={p.project_id} tone="unknown" title={everywhere ? <><bdi>{profile.name}</bdi> · {p.name}</> : p.name} action={<Button size="sm" disabled={!lists.get(p.project_id)?.online} onClick={lists.get(p.project_id)?.reload}>Try again</Button>}>{lists.get(p.project_id)?.error}</Notice>)}
     {all ? <>
-      <h2 className="todo-heading">All to-dos</h2>
+      {!everywhere && <h2 className="todo-heading">All to-dos</h2>}
       {entries.some((entry) => !entry.done) ? <ol className="cl-items todo-all">{entries.filter((entry) => !entry.done).map(renderEntry)}</ol>
-        : !unread && errors.length === 0 && <Empty icon={ListTodo} title="Nothing to do here">Your checklists and agents’ work appear here.</Empty>}
+        : !unread && errors.length === 0 && (everywhere ? <p className="work-muted">Nothing to do on <bdi>{profile.name}</bdi>.</p>
+          : <Empty icon={ListTodo} title="Nothing to do here">Your checklists and agents’ work appear here.</Empty>)}
       {unread && (online ? <p className="settings-meta" aria-busy="true">Reading the checklists…</p>
         : <Notice tone="unknown">Connect to {profile.name} to read the checklists.</Notice>)}
       {entries.some((entry) => entry.done) && <section className="todo-done">

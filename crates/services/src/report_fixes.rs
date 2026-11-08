@@ -437,9 +437,11 @@ impl Approvals for OwnerApprovals {
                         already_fixed: false,
                         approval: None,
                         review: None,
+                        when_green: None,
                     })),
                     wake: None,
                     asked_by: None,
+                    report: None,
                     created_by: Principal::System,
                     created_at: now,
                     updated_at: now,
@@ -449,6 +451,7 @@ impl Approvals for OwnerApprovals {
                     attention_count: 1,
                     status_line: None,
                     review: None,
+                    notify_done: false,
                 };
                 tx.put("task", task_id, &task)?;
                 tx.emit(Event::TaskUpserted { task })?;
@@ -467,6 +470,9 @@ impl Approvals for OwnerApprovals {
                     topic: Some(protocol::notifications::AlertTopic::PrNeedsYou),
                     quiet: false,
                     report_id: Some(view.report_id),
+                    account_id: None,
+                    alert: None,
+                    alert_handled_at: None,
                 };
                 tx.put(
                     PENDING,

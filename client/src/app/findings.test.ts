@@ -121,11 +121,15 @@ it("reads the sim's FINDINGS.md verdicts, hyphen and all", () => {
 
 it("asks the fixer to tick each box and to ask before deleting the file", () => {
   for (const prompt of [fixAllPrompt(), fixOnePrompt({ number: 2, title: "Deleting a bed leaves its plantings behind" })]) {
+    expect(prompt).toContain("add nothing else because of it");
+    expect(prompt).toContain("add one test that fails without the fix");
+    expect(prompt).toContain("take a picture of the screen and show it to me");
     expect(prompt).toContain('tick its box ("## [x]")');
     expect(prompt).toContain("ask me whether to delete FINDINGS.md, and delete it only if I say yes.");
     expect(prompt).toContain("leave it out of any commit");
   }
   expect(fixOnePrompt({ number: 2, title: "Beds" })).toMatch(/^Fix finding 2 in FINDINGS\.md/);
+  expect(fixAllPrompt()).toContain("For each: check it is real, then fix it with the smallest change that does");
   expect(fixOneTitle({ number: 9, title: "x".repeat(200) })).toHaveLength(120);
 });
 

@@ -59,11 +59,11 @@ impl UpdateArgs {
 }
 
 pub async fn install(args: InstallArgs) -> Result<()> {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
-        linux::install(args).await
+        unix::install(args).await
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     {
         let _ = args;
         Err(unsupported())
@@ -71,50 +71,73 @@ pub async fn install(args: InstallArgs) -> Result<()> {
 }
 
 pub async fn update(args: UpdateArgs) -> Result<()> {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
-        linux::update(args).await
+        unix::update(args).await
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     {
         let _ = args;
         Err(unsupported())
     }
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn unsupported() -> Error {
     Error::Unsupported(
-        "Installing and updating with this command is for Linux. On Windows, replace ophio.exe and computer-mcp.exe with the new download's while Øphio is stopped.",
+        "Installing and updating with this command is for Linux and Macs. On Windows, replace ophio.exe and computer-mcp.exe with the new download's while Øphio is stopped.",
     )
 }
 
 /// Finish an interrupted replacement before the installed command (including
 /// the login service) reads its sibling programs or install metadata.
 pub fn recover_on_start() -> Result<()> {
-    #[cfg(target_os = "linux")]
-    linux::recover_on_start()?;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    unix::recover_on_start()?;
     Ok(())
 }
 
 /// The phone apps an install offers its devices: `app/*.apk` beside `bin/`.
-/// There is one app per signing key, so that each device is offered the one
-/// it can update itself with; an app that isn't signed for that is skipped.
+/// Without any there, the `ophio.apk` that came beside the program in the
+/// download. There is one app per signing key, so that each device is
+/// offered the one it can update itself with; an app that isn't signed for
+/// that is skipped.
+///
+/// On Windows, where nothing installs Øphio, only the app beside the program:
+/// the folder around wherever the archive was extracted is no install's, and
+/// may be one that others can put an app in.
 pub(crate) fn app_offers(program_dir: &Path) -> Vec<(protocol::capability::AppOffer, PathBuf)> {
-    let Some(opt) = program_dir.parent() else {
-        return Vec::new();
-    };
-    let mut apps: Vec<PathBuf> = std::fs::read_dir(opt.join("app"))
+    app_offers_in(program_dir, !cfg!(windows))
+}
+
+/// [`app_offers`], looking in the install's `app` folder only when
+/// `installed`.
+fn app_offers_in(
+    program_dir: &Path,
+    installed: bool,
+) -> Vec<(protocol::capability::AppOffer, PathBuf)> {
+    let regular = |path: &Path| std::fs::symlink_metadata(path).is_ok_and(|m| m.is_file());
+    let mut apps: Vec<PathBuf> = (program_dir.parent())
+        .filter(|_| installed)
+        .map(|opt| std::fs::read_dir(opt.join("app")))
         .into_iter()
         .flatten()
         .flatten()
+        .flatten()
         .map(|entry| entry.path())
-        .filter(|path| {
-            path.extension().is_some_and(|e| e == "apk")
-                && std::fs::symlink_metadata(path).is_ok_and(|m| m.is_file())
-        })
+        .filter(|path| path.extension().is_some_and(|e| e == "apk") && regular(path))
         .collect();
     apps.sort();
+    let offers = offered(apps);
+    let beside = program_dir.join("ophio.apk");
+    if offers.is_empty() && regular(&beside) {
+        return offered(vec![beside]);
+    }
+    offers
+}
+
+/// [`app_offers`] for the apps in `apps`.
+fn offered(apps: Vec<PathBuf>) -> Vec<(protocol::capability::AppOffer, PathBuf)> {
     apps.into_iter()
         .filter_map(|path| {
             let Ok(Ok(signers)) = crate::phone::apk::signers(&path) else {
@@ -151,8 +174,8 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-#[cfg(target_os = "linux")]
-pub(crate) mod linux {
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+pub(crate) mod unix {
     use super::*;
     use crate::{
         config::{APP_NAME, Paths},
@@ -175,7 +198,15 @@ pub(crate) mod linux {
     // Tokio's, so that tests can let time pass.
     use tokio::time::Instant;
 
-    pub(crate) const PROGRAMS: [&str; 3] = ["ophio", "computer-mcp", "ophio-sandbox-shim"];
+    #[cfg(target_os = "linux")]
+    pub(crate) const PROGRAMS: &[&str] = &["ophio", "computer-mcp", "ophio-sandbox-shim"];
+    #[cfg(target_os = "macos")]
+    pub(crate) const PROGRAMS: &[&str] = &["ophio", "computer-mcp"];
+    /// How this system's name reads in what the person is told.
+    #[cfg(target_os = "linux")]
+    const SYSTEM: &str = "Linux";
+    #[cfg(target_os = "macos")]
+    const SYSTEM: &str = "Mac";
     /// How long Øphio must have had nothing running before an update stops it.
     const IDLE_FOR: Duration = Duration::from_secs(60);
     const IDLE_POLL: Duration = Duration::from_secs(15);
@@ -194,8 +225,14 @@ pub(crate) mod linux {
     const ENTRY_LIMIT: usize = 4096;
     const METADATA_LIMIT: u64 = 1 << 20;
 
+    #[cfg(target_os = "linux")]
     fn unit() -> String {
         format!("{APP_NAME}-update")
+    }
+    /// The update's own background job.
+    #[cfg(target_os = "macos")]
+    fn unit() -> String {
+        "app.ophio.update".into()
     }
 
     /// Where an install's files go. Fixed under the home directory, as the
@@ -378,7 +415,7 @@ pub(crate) mod linux {
         }
         pub(crate) fn line(&mut self, text: impl AsRef<str>) {
             let text = text.as_ref();
-            println!("{text}");
+            say!("{text}");
             if let Some(file) = &mut self.file {
                 let _ = writeln!(file, "{} {text}", stamp(now()));
             }
@@ -549,20 +586,20 @@ pub(crate) mod linux {
         } else {
             from.to_owned()
         };
-        for program in PROGRAMS {
+        for &program in PROGRAMS {
             // An install from before the sandbox shim existed has none to go back to.
             if earlier && program == "ophio-sandbox-shim" {
                 continue;
             }
             let source = programs.join(program);
-            if !regular(&source) || !elf(&source) {
+            if !regular(&source) || !native_program(&source) {
                 return Err(Error::Ended(format!(
-                    "{} isn't an Øphio download for Linux: it has no {program} program.",
+                    "{} isn't an Øphio download for {SYSTEM}: it has no {program} program.",
                     from.display()
                 )));
             }
         }
-        for program in PROGRAMS.into_iter().filter(|p| programs.join(p).exists()) {
+        for &program in PROGRAMS.iter().filter(|p| programs.join(p).exists()) {
             place(
                 &programs.join(program),
                 &root.join("bin").join(program),
@@ -601,12 +638,26 @@ pub(crate) mod linux {
         Ok(())
     }
 
-    fn elf(path: &Path) -> bool {
+    /// Whether a file starts as a program for this system does.
+    fn native_program(path: &Path) -> bool {
+        #[cfg(target_os = "linux")]
+        let wanted: &[[u8; 4]] = &[*b"\x7fELF"];
+        // 64-bit, or a universal binary with several in it.
+        #[cfg(target_os = "macos")]
+        let wanted: &[[u8; 4]] = &[[0xcf, 0xfa, 0xed, 0xfe], [0xca, 0xfe, 0xba, 0xbe]];
         let mut magic = [0; 4];
         std::fs::File::open(path)
             .and_then(|mut f| f.read_exact(&mut magic))
             .is_ok()
-            && magic == *b"\x7fELF"
+            && wanted.contains(&magic)
+    }
+
+    /// The file this process runs from.
+    fn running_program() -> std::io::Result<PathBuf> {
+        #[cfg(target_os = "linux")]
+        return Ok(PathBuf::from("/proc/self/exe"));
+        #[cfg(target_os = "macos")]
+        return crate::config::running_program();
     }
 
     const UNSAFE: &str = "The download couldn't be unpacked safely, so it wasn't used.";
@@ -1163,14 +1214,15 @@ pub(crate) mod linux {
         let layout = Layout::discover()?;
         #[cfg(test)]
         tests::pause_startup(&layout, "entry");
-        // current_exe resolves symlinked ancestors. Only the install root is
-        // canonicalized: a displaced executable's parent may already be gone.
+        // The running program's path resolves symlinked ancestors. Only the
+        // install root is canonicalized: a displaced executable's parent may
+        // already be gone.
         let Ok(opt) = layout.opt.canonicalize() else {
             return Ok(());
         };
         #[cfg(test)]
         tests::pause_startup(&layout, "executable");
-        let executable = std::env::current_exe()?;
+        let executable = crate::config::running_program()?;
         // Downloaded/staged updaters recover under their apply lock. Only an
         // installed invocation (including one moved aside by another launch)
         // performs startup recovery.
@@ -1180,7 +1232,7 @@ pub(crate) mod linux {
         {
             return Ok(());
         }
-        let running = FileId::at(Path::new("/proc/self/exe"))?;
+        let running = FileId::at(&running_program()?)?;
         let journal = layout.opt.join("replacement.json");
         // The updater keeps its lock while starting and checking the service.
         // A completed replacement must allow that startup without taking it.
@@ -1198,7 +1250,7 @@ pub(crate) mod linux {
         // the directory: hard-linked binaries can share an inode while the
         // running executable's old directory (and its helpers) was removed.
         let changed = FileId::at(&program)? != running
-            || std::env::current_exe()?.parent() != Some(bin.as_path());
+            || crate::config::running_program()?.parent() != Some(bin.as_path());
         drop(lock);
         if changed {
             use std::os::unix::process::CommandExt;
@@ -1378,6 +1430,7 @@ pub(crate) mod linux {
                 &mut client,
                 Query::Snapshot {
                     reads_withheld: Some(true),
+                    account_items: false,
                 },
             )
             .await?
@@ -1388,6 +1441,7 @@ pub(crate) mod linux {
         }
     }
 
+    #[cfg(target_os = "linux")]
     async fn systemctl(args: &[&str]) -> std::io::Result<std::process::Output> {
         tokio::process::Command::new("systemctl")
             .arg("--user")
@@ -1397,14 +1451,48 @@ pub(crate) mod linux {
             .await
     }
 
+    #[cfg(target_os = "linux")]
     async fn active(unit: &str) -> bool {
         systemctl(&["is-active", "--quiet", unit])
             .await
             .is_ok_and(|o| o.status.success())
     }
 
+    #[cfg(target_os = "linux")]
     fn service_name() -> String {
         format!("{APP_NAME}.service")
+    }
+
+    /// What launchd says of a job in this session: nothing if it has none.
+    #[cfg(target_os = "macos")]
+    async fn launchd_print(label: &str) -> Option<String> {
+        let name = format!("gui/{}/{label}", rustix::process::getuid().as_raw());
+        let output = tokio::process::Command::new("/bin/launchctl")
+            .args(["print", &name])
+            .stdin(std::process::Stdio::null())
+            .output()
+            .await
+            .ok()?;
+        output
+            .status
+            .success()
+            .then(|| String::from_utf8_lossy(&output.stdout).into_owned())
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn active(label: &str) -> bool {
+        // Just loaded it isn't running yet, but it is about to: only a job that
+        // has ended says it isn't running.
+        launchd_print(label).await.is_some_and(|said| {
+            said.lines()
+                .find_map(|line| line.strip_prefix("\tstate = "))
+                .is_some_and(|state| state != "not running")
+        })
+    }
+
+    #[cfg(target_os = "macos")]
+    fn service_name() -> String {
+        crate::install::LABEL.into()
     }
 
     impl Host for System {
@@ -1454,23 +1542,31 @@ pub(crate) mod linux {
         }
 
         async fn stop(&self, before: &Before) -> Result<()> {
+            #[cfg(target_os = "linux")]
             if before.service {
                 let output = systemctl(&["stop", &service_name()]).await?;
                 if !output.status.success() {
                     return Err(Error::Ended("Øphio's service didn't stop.".into()));
                 }
-                Ok(())
-            } else {
+                return Ok(());
+            }
+            {
+                let _ = before;
                 crate::install::stop_now(&self.paths).await.map(|_| ())
             }
         }
 
         async fn start(&self, before: &Before, program: &Path) -> Result<()> {
             if before.service {
-                let output = systemctl(&["start", &service_name()]).await?;
-                if !output.status.success() {
-                    return Err(Error::Ended("Øphio's service didn't start.".into()));
+                #[cfg(target_os = "linux")]
+                {
+                    let output = systemctl(&["start", &service_name()]).await?;
+                    if !output.status.success() {
+                        return Err(Error::Ended("Øphio's service didn't start.".into()));
+                    }
                 }
+                #[cfg(target_os = "macos")]
+                crate::install::start_now(&self.paths).await?;
             } else {
                 crate::install::detached(program)?;
             }
@@ -1544,6 +1640,37 @@ pub(crate) mod linux {
         }
     }
 
+    #[cfg(target_os = "macos")]
+    async fn main_pid() -> Option<u32> {
+        launchd_print(&service_name())
+            .await?
+            .lines()
+            .find_map(|line| {
+                line.trim()
+                    .strip_prefix("pid = ")?
+                    .parse()
+                    .ok()
+                    .filter(|pid| *pid != 0)
+            })
+    }
+
+    /// The addresses beyond this computer that process `pid` listens on for
+    /// TCP connections.
+    #[cfg(target_os = "macos")]
+    pub(crate) fn listeners(pid: u32) -> Vec<String> {
+        let mut found: Vec<String> = i32::try_from(pid)
+            .map(platform_macos::process::listening)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|socket| !socket.address.to_canonical().is_loopback())
+            .map(|socket| std::net::SocketAddr::new(socket.address, socket.port).to_string())
+            .collect();
+        found.sort();
+        found.dedup();
+        found
+    }
+
+    #[cfg(target_os = "linux")]
     async fn main_pid() -> Option<u32> {
         let output = systemctl(&["show", "-p", "MainPID", "--value", &service_name()])
             .await
@@ -1557,6 +1684,7 @@ pub(crate) mod linux {
 
     /// The addresses beyond this computer that process `pid` listens on for
     /// TCP connections.
+    #[cfg(target_os = "linux")]
     pub(crate) fn listeners(pid: u32) -> Vec<String> {
         let mut inodes = std::collections::HashSet::new();
         for fd in std::fs::read_dir(format!("/proc/{pid}/fd"))
@@ -1585,6 +1713,7 @@ pub(crate) mod linux {
 
     /// The non-loopback listening addresses in a `/proc/net/tcp` table among
     /// sockets `inodes`.
+    #[cfg(target_os = "linux")]
     pub(crate) fn listening(
         table: &str,
         inodes: &std::collections::HashSet<String>,
@@ -1605,6 +1734,7 @@ pub(crate) mod linux {
         found
     }
 
+    #[cfg(target_os = "linux")]
     fn socket_address(text: &str) -> Option<std::net::SocketAddr> {
         let (address, port) = text.split_once(':')?;
         let port = u16::from_str_radix(port, 16).ok()?;
@@ -1696,7 +1826,7 @@ pub(crate) mod linux {
             trim(&layout.log(), LOG_KEEP);
             stage(layout, source, host).await?
         };
-        println!("Checked {}.", release.named());
+        say!("Checked {}.", release.named());
         let program = layout.staging().join(&id).join("bin/ophio");
         hand_over(layout, &program, &id, now_).await
     }
@@ -1725,6 +1855,7 @@ pub(crate) mod linux {
             return finished(layout, id);
         }
         let offset = std::fs::metadata(layout.log()).map_or(0, |m| m.len());
+        #[cfg(target_os = "linux")]
         let started = tokio::process::Command::new("systemd-run")
             .args([
                 "--user",
@@ -1740,10 +1871,21 @@ pub(crate) mod linux {
             .args(&args)
             .status()
             .await;
-        if !started.is_ok_and(|s| s.success()) {
+        #[cfg(target_os = "linux")]
+        let started = started.is_ok_and(|s| s.success());
+        #[cfg(target_os = "macos")]
+        let started = crate::install::run_job(
+            &unit(),
+            &layout.opt.join("update-job.plist"),
+            program,
+            &args,
+        )
+        .await
+        .unwrap_or(false);
+        if !started {
             let _ = remove_all(&layout.staging().join(id));
             return Err(Error::Ended(
-                "Couldn't start the update in the background with systemd-run.".into(),
+                "Couldn't start the update in the background.".into(),
             ));
         }
         follow(layout, id, offset).await
@@ -1766,10 +1908,10 @@ pub(crate) mod linux {
                     for line in text.lines() {
                         // Each line starts with its date and time.
                         let line = line.splitn(3, ' ').nth(2).unwrap_or(line);
-                        println!("{line}");
+                        say!("{line}");
                         if line.starts_with("Waiting until Øphio is idle") && !said_waiting {
                             said_waiting = true;
-                            println!(
+                            say!(
                                 "The update carries on if you close this terminal. `{COMMAND} update` shows how it is going, and `{COMMAND} update --cancel` stops it."
                             );
                         }
@@ -1781,7 +1923,7 @@ pub(crate) mod linux {
             }
             tokio::select! {
                 _ = tokio::signal::ctrl_c() => {
-                    println!("The update carries on in the background. `{COMMAND} update` shows how it is going.");
+                    say!("The update carries on in the background. `{COMMAND} update` shows how it is going.");
                     return Ok(());
                 }
                 () = tokio::time::sleep(Duration::from_millis(500)) => {}
@@ -1824,19 +1966,29 @@ pub(crate) mod linux {
 
     async fn cancel(layout: &Layout) -> Result<()> {
         if !active(&unit()).await {
-            println!("No update is waiting.");
+            say!("No update is waiting.");
             return Ok(());
         }
+        #[cfg(target_os = "linux")]
         let output = systemctl(&["stop", &unit()]).await?;
+        #[cfg(target_os = "macos")]
+        let output = tokio::process::Command::new("/bin/launchctl")
+            .args([
+                "kill",
+                "SIGTERM",
+                &format!("gui/{}/{}", rustix::process::getuid().as_raw(), unit()),
+            ])
+            .output()
+            .await?;
         if !output.status.success() {
             return Err(Error::Ended("Couldn't stop the waiting update.".into()));
         }
         match read_json::<Outcome>(&layout.last()) {
             Some(outcome) if outcome.result == Result_::Cancelled => {
-                println!("{}", outcome.message)
+                say!("{}", outcome.message)
             }
-            Some(outcome) => println!("{}", outcome.message),
-            None => println!("The update was stopped."),
+            Some(outcome) => say!("{}", outcome.message),
+            None => say!("The update was stopped."),
         }
         Ok(())
     }
@@ -1872,7 +2024,7 @@ pub(crate) mod linux {
         // The earlier executable may not know how to recover an interruption.
         // Put its apps and metadata in place before exchanging the programs.
         std::fs::write(layout.staging().join(&id).join("rollback"), b"")?;
-        println!("Going back to {}.", release.named());
+        say!("Going back to {}.", release.named());
         // This version carries out the swap: the earlier one may predate it.
         hand_over(layout, &std::env::current_exe()?, &id, now_).await
     }
@@ -1904,26 +2056,26 @@ pub(crate) mod linux {
                 "folder": layout.opt,
                 "bytes": size,
             });
-            println!(
+            say!(
                 "{}",
                 serde_json::to_string_pretty(&value).map_err(|_| Error::Closed)?
             );
             return Ok(());
         }
         match &installed {
-            Some(release) if release.installed_at > 0 => println!(
+            Some(release) if release.installed_at > 0 => say!(
                 "Installed: {}, {}.",
                 release.named(),
                 ago(release.installed_at)
             ),
-            Some(release) => println!("Installed: {}.", release.named()),
-            None => println!(
+            Some(release) => say!("Installed: {}.", release.named()),
+            None => say!(
                 "Øphio isn't installed in {}. Run `ophio install` from an extracted download.",
                 layout.opt.display()
             ),
         }
         if let Some(previous) = &previous {
-            println!(
+            say!(
                 "Kept to go back to: {}. `{COMMAND} update --rollback` goes back.",
                 previous.named()
             );
@@ -1935,7 +2087,7 @@ pub(crate) mod linux {
                 Result_::NotInstalled => "not installed",
                 Result_::Cancelled => "cancelled",
             };
-            println!(
+            say!(
                 "Last update: {} {}, {}. {}",
                 last.release.named(),
                 what,
@@ -1952,12 +2104,12 @@ pub(crate) mod linux {
                         .map(|l| l.splitn(3, ' ').nth(2).unwrap_or(l).to_owned())
                 })
                 .unwrap_or_default();
-            println!(
+            say!(
                 "An update is under way: {line} `{COMMAND} update --cancel` stops it while it waits."
             );
         }
         if installed.is_some() {
-            println!("{} uses {}.", layout.opt.display(), size_text(size));
+            say!("{} uses {}.", layout.opt.display(), size_text(size));
         }
         Ok(())
     }
@@ -2001,7 +2153,7 @@ pub(crate) mod linux {
         let on_path = std::env::var_os("PATH")
             .is_some_and(|path| std::env::split_paths(&path).any(|p| p == layout.links));
         if !on_path {
-            println!(
+            say!(
                 "{} is not on your PATH. Add it to type ophio, or run {}.",
                 layout.links.display(),
                 layout.bin().join("ophio").display()
@@ -2019,16 +2171,16 @@ pub(crate) mod linux {
             ))
         });
         if earlier_managed {
-            println!("Next, run: ophio service install");
-            println!(
+            say!("Next, run: ophio service install");
+            say!(
                 "It stops the earlier companion service and starts Øphio in its place. Øphio then moves the earlier settings, paired devices and data to its own folders."
             );
-            println!("Afterwards you can delete {}.", earlier.display());
+            say!("Afterwards you can delete {}.", earlier.display());
             return;
         }
         if earlier.is_dir() {
-            println!("Stop the earlier companion program, then run: ophio run");
-            println!(
+            say!("Stop the earlier companion program, then run: ophio run");
+            say!(
                 "Øphio moves the earlier settings, paired devices and data to its own folders when it starts. Afterwards you can delete {}.",
                 earlier.display()
             );
@@ -2039,7 +2191,7 @@ pub(crate) mod linux {
         if starts {
             // A setup left part way carries on with `ophio setup`, so the
             // install has still succeeded however it ends.
-            println!();
+            say!();
             let program = if link.exists() {
                 link
             } else {
@@ -2047,7 +2199,7 @@ pub(crate) mod linux {
             };
             start_setup(&program, &mut std::io::stdout());
         } else {
-            println!("{}", setup_next(false));
+            say!("{}", setup_next(false));
         }
     }
 
@@ -2084,6 +2236,11 @@ pub(crate) mod linux {
     #[cfg(test)]
     mod tests {
         use super::*;
+        /// What a program for this system starts with.
+        #[cfg(target_os = "linux")]
+        const NATIVE_MAGIC: &[u8] = b"\x7fELF";
+        #[cfg(target_os = "macos")]
+        const NATIVE_MAGIC: &[u8] = &[0xcf, 0xfa, 0xed, 0xfe];
         use std::{cell::RefCell, collections::VecDeque, os::unix::fs::PermissionsExt};
 
         #[test]
@@ -2237,7 +2394,7 @@ pub(crate) mod linux {
                         "helpers must be resolved beside the installed executable"
                     );
                     assert_eq!(
-                        FileId::at(Path::new("/proc/self/exe")).unwrap(),
+                        FileId::at(&running_program().unwrap()).unwrap(),
                         FileId::at(&layout.bin().join("ophio")).unwrap(),
                         "startup must execute the installed version"
                     );
@@ -2277,7 +2434,7 @@ pub(crate) mod linux {
             child
                 .args([
                     "--exact",
-                    "update::linux::tests::replacement_subprocess",
+                    "update::unix::tests::replacement_subprocess",
                     "--nocapture",
                 ])
                 .env("HOME", home)
@@ -2592,7 +2749,11 @@ pub(crate) mod linux {
             let dir = home.root.join(format!("download-{version}"));
             std::fs::create_dir_all(dir.join("icons/hicolor/64x64/apps")).unwrap();
             for program in PROGRAMS {
-                std::fs::write(dir.join(program), format!("\x7fELF{version}")).unwrap();
+                std::fs::write(
+                    dir.join(program),
+                    [NATIVE_MAGIC, version.as_bytes()].concat(),
+                )
+                .unwrap();
             }
             std::fs::write(dir.join("ophio.apk"), format!("apk {version}")).unwrap();
             std::fs::write(dir.join("INSTALL.md"), "read me").unwrap();
@@ -2610,8 +2771,8 @@ pub(crate) mod linux {
         }
 
         fn installed_version(home: &Home) -> String {
-            String::from_utf8(std::fs::read(home.layout.bin().join("ophio")).unwrap()).unwrap()[4..]
-                .to_owned()
+            String::from_utf8(std::fs::read(home.layout.bin().join("ophio")).unwrap()[4..].to_vec())
+                .unwrap()
         }
 
         fn staged(home: &Home) -> Vec<String> {
@@ -2739,6 +2900,54 @@ pub(crate) mod linux {
             );
         }
 
+        #[test]
+        fn without_an_installed_app_the_one_beside_the_program_is_offered() {
+            let dir = tempfile::tempdir().unwrap();
+            let program_dir = dir.path().join("ophio-0.1.1-x86_64-windows");
+            std::fs::create_dir_all(&program_dir).unwrap();
+            assert!(app_offers(&program_dir).is_empty());
+
+            // As the Windows archive is extracted: ophio.apk beside ophio.exe.
+            let beside = program_dir.join("ophio.apk");
+            std::fs::write(&beside, b"not signed").unwrap();
+            assert!(app_offers(&program_dir).is_empty(), "not signed");
+            std::fs::write(&beside, crate::phone::apk::tests::signed_app(b"release")).unwrap();
+            let offers = app_offers(&program_dir);
+            assert_eq!(offers.len(), 1);
+            assert_eq!(offers[0].1, beside);
+
+            // An installed app, in `app` beside the program's folder, comes
+            // instead, and the same app is never offered twice.
+            let app = dir.path().join("app/ophio.apk");
+            std::fs::create_dir_all(app.parent().unwrap()).unwrap();
+            std::fs::write(&app, crate::phone::apk::tests::signed_app(b"release")).unwrap();
+            let offers = app_offers_in(&program_dir, true);
+            assert_eq!(offers.len(), 1);
+            assert_eq!(offers[0].1, app);
+        }
+
+        #[test]
+        fn on_windows_only_the_app_beside_the_program_is_offered() {
+            use sha2::Digest;
+            // Extracted inside a folder others may put an app in.
+            let dir = tempfile::tempdir().unwrap();
+            let program_dir = dir.path().join("ophio-0.1.1-x86_64-windows");
+            std::fs::create_dir_all(&program_dir).unwrap();
+            let other = dir.path().join("app/other.apk");
+            std::fs::create_dir_all(other.parent().unwrap()).unwrap();
+            std::fs::write(&other, crate::phone::apk::tests::signed_app(b"other")).unwrap();
+            assert!(app_offers_in(&program_dir, false).is_empty());
+            let beside = program_dir.join("ophio.apk");
+            std::fs::write(&beside, crate::phone::apk::tests::signed_app(b"release")).unwrap();
+            let offers = app_offers_in(&program_dir, false);
+            assert_eq!(offers.len(), 1);
+            assert_eq!(offers[0].1, beside);
+            assert_eq!(
+                offers[0].0.signers,
+                [hex(&<[u8; 32]>::from(sha2::Sha256::digest(b"release")))]
+            );
+        }
+
         #[tokio::test]
         async fn keeps_only_one_previous_version() {
             let home = home();
@@ -2838,6 +3047,7 @@ pub(crate) mod linux {
             assert!(!home.layout.staging().exists());
         }
 
+        #[cfg(target_os = "linux")]
         #[tokio::test]
         async fn goes_back_to_an_install_from_before_the_sandbox_shim() {
             let home = home();
@@ -2957,6 +3167,7 @@ pub(crate) mod linux {
                     inbox_path: None,
                     host_id: protocol::HostId::new(),
                     name: "studio".into(),
+                    renamed: false,
                     os_label: "Linux".into(),
                     companion_version: "0.1.0".into(),
                     boot_epoch: protocol::BootEpoch::new(),
@@ -3126,6 +3337,7 @@ pub(crate) mod linux {
             assert!(kept.ends_with("line 099\n"));
         }
 
+        #[cfg(target_os = "linux")]
         #[test]
         fn finds_listeners_beyond_this_computer() {
             let table = "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
@@ -3187,6 +3399,7 @@ pub(crate) mod linux {
                             &owner,
                             Query::Snapshot {
                                 reads_withheld: Some(true),
+                                account_items: false,
                             },
                         )
                         .await

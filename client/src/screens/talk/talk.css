@@ -613,6 +613,11 @@
 .composer__how {
   flex: none;
 }
+/* Switch to Work keeps its words on one line; the agent's name wraps first. */
+.composer__switch {
+  flex: none;
+  white-space: nowrap;
+}
 .composer__agent {
   flex: 0 1 auto;
   min-width: 0;
@@ -1309,10 +1314,8 @@
 .talk-held { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--s2); }
 .talk-held__error { width: 100%; font-size: var(--text-error); font-weight: 620; color: var(--error-text); }
 .talk-held__note { font-size: var(--text-sm); color: var(--ink-2); }
-.talk-quick-approval { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.talk-quick-approval { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); padding: var(--s3) var(--s4) var(--s2); border-top: 1px solid var(--line); overflow-wrap: anywhere; }
 .talk-quick-approval p { margin: 0; }
-.talk-quick-approval__detail { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); color: var(--ink-2); }
-.talk-quick-approval__actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
 
 /* A phone on its side keeps room for the conversation. */
 @media (max-height: 480px) and (min-width: 700px) {

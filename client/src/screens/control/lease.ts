@@ -24,18 +24,20 @@ export class InputSender {
   #sequences = new Map<string, number>();
   #retired = new Set<string>();
   #held = new Map<string, InputAction[]>();
-  constructor(private readonly transmit: (env: InputEnvelope) => boolean) {}
-  send(lease: LeaseView, revision: number, action: InputAction): boolean {
+  constructor(private readonly transmit: (env: InputEnvelope, live?: boolean) => boolean) {}
+  send(lease: LeaseView, revision: number, action: InputAction, beforeTransmit?: (env: InputEnvelope) => void, live = false): boolean {
     if (this.#retired.has(lease.lease_id)) return false;
     const seq = (this.#sequences.get(lease.lease_id) ?? 0) + 1;
     this.#sequences.set(lease.lease_id, seq);
-    const ok = this.transmit({
+    const env: InputEnvelope = {
       lease_id: lease.lease_id,
       generation: lease.generation,
       geometry_revision: revision,
       seq,
       action,
-    });
+    };
+    beforeTransmit?.(env);
+    const ok = this.transmit(env, live);
     if (ok) {
       const held = this.#held.get(lease.lease_id) ?? [];
       if (action.action === "key_press") {

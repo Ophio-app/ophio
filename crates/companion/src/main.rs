@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #[tokio::main]
 async fn main() -> std::process::ExitCode {
+    // Only as the menu bar's Stop item: see `platform_macos::protection`.
+    #[cfg(target_os = "macos")]
+    if std::env::args().nth(1).as_deref() == Some(platform_macos::protection::INDICATOR_ROLE) {
+        platform_macos::protection::run_indicator();
+    }
     #[cfg(windows)]
     if companion::cli::opened_from_explorer() {
         return std::process::ExitCode::SUCCESS;

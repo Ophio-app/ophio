@@ -1,73 +1,173 @@
 # Notifications
 
-Ophio alerts you on the phone when an agent needs you or a task ends. Which
-alerts reach you is chosen on the computer, for every project and for each one
-(see [What alerts you](#what-alerts-you)). There are two kinds, each an Android
-notification category you can turn off under Settings › Notifications › On
-this phone, or in Android's own settings:
+Ophio notifies you on the phone when something needs you. By default only
+what waits on you, and won't move until you act, makes a sound: an agent's
+question or approval, an agent that isn't signed in, a task that needs a
+decision or stopped with a problem, a pull request stuck on you. What is
+worth a look shows silently in the shade. Routine progress, such as a task
+finishing, waits in the app unless you ask to hear about it.
 
-- **Needs you** (pops up, with sound):
-  - "Question from Claude Code" (or the task's agent): the agent asked something;
-  - "Approval waiting";
-  - "Task needs you": waiting for you, a conflict, or a result to check.
-- **Finished tasks** (sound, no pop-up):
-  - "Task finished";
-  - "Task stopped with a problem".
-  Several from one computer stack under its name. A task someone stopped
-  raises nothing.
+Each notification names the computer and the project. **Notification detail**
+adds the task's title; titles can hold private details, and they show on the
+lock screen. An agent's question shows in full whichever detail you choose,
+so you can read and answer it; like a title, it shows on the lock screen
+unless Android hides notification content there. With app lock on, a
+notification shows only "Open the app to review."
 
-Each alert names the computer and the project. **Notification detail** adds
-the task's title; titles can hold private details, and they show on the lock
-screen. An agent's question shows in full whichever detail you choose, so you
-can read and answer it; like a title, it shows on the lock screen unless
-Android hides notification content there. With app lock on, an alert shows
-only "Open the app to review."
-Tapping an alert opens that question, approval or result. An alert goes away
-when it is answered anywhere: on this phone, another device, in Telegram or
-Discord, or at the computer. Nothing else raises a notification: no streamed
-text, no progress.
+Tapping a notification opens that question, approval or result. A
+notification goes away when it is answered anywhere: on this phone, another
+device, in Telegram or Discord, or at the computer. Nothing else raises a
+notification: no streamed text, no progress.
 
-## What alerts you
+## What notifies you
 
-Settings › Notifications chooses which alerts reach you. The computer keeps
-the choices, so they hold on every phone paired with it, for the app's own
-alerts and the watcher's alike. A device with leave to start tasks, or an
-admin, may change them; any paired device sees them.
+Settings › Notifications lists every type of notification in plain English,
+each with a line saying what it is for and a choice of **Alert** (sound and a
+pop-up), **Silent** (in the shade only) or **Off** (in the app only):
 
-Each alert has a topic:
+| Type | When | Recommended |
+|---|---|---|
+| Questions | An agent asked you something and is waiting for your answer. | Alert |
+| Approvals | An agent wants your OK before it does something. | Alert |
+| Agent signed out | An agent can't work because it isn't signed in on a computer. Tap it to sign in again from the phone; see [Accounts](accounts.md#when-an-agent-isnt-signed-in). | Alert |
+| Tasks that need a decision | A conflict, an end Ophio can't confirm, or a screen to watch. | Alert |
+| Tasks that stopped with a problem | A task or a review couldn't finish, or work stopped for showing no progress. | Alert |
+| Pull requests that need you | Checks fail, a conflict, a review asks for changes, or some were left out of a merge. | Alert |
+| Questions about your reports | A problem report you sent has a question for you. | Alert |
+| Next up go-aheads | A task in Next up is waiting for your go-ahead to start. | Silent |
+| Chat replies | An agent replied in a chat you're in. | Silent |
+| Pull requests ready to merge | Checks passed and it's waiting for you to merge it. | Silent |
+| Run all results | What a Run all came to, once it's through. | Silent |
+| Issues that need your call | An issue couldn't be reproduced, or looks fixed already. | Silent |
+| Problem report updates | A report you sent moved on, or someone sent you one. | Silent |
+| Øphio updates | A computer has a newer Øphio for this phone. | Silent |
+| Finished tasks | A task finished. | Off |
+| Merged pull requests | A pull request merged. | Off |
+| Issues filed | Issues were found and filed, or closed as duplicates. | Off |
+| Slow steps | A step is taking longer than usual. | Off |
 
-| Topic | Alerts when |
-|---|---|
-| Questions | An agent asks you something. |
-| Approvals | An agent waits for your leave to do something. |
-| Tasks waiting for you | A task waits for you to go ahead, settle a conflict, or say how it ended. |
-| Finished tasks | A task finished its work. |
-| Tasks that stopped with a problem | A task couldn't finish. |
-| Pull requests ready to merge | Checks passed and nothing blocks it. |
-| Pull requests that need you | A check failed, a conflict, or a review asks for changes. |
-| Merged pull requests | A pull request merged. |
-| Issues | Issues found and filed, closed as duplicates, or not reproduced. |
-| Slow or stalled work | A step is taking long, or work stopped for showing no progress. |
+The rule behind the recommendations: a notification alerts only when
+something is waiting on you and won't move until you act. **Use the
+recommended choices** puts them all back.
 
-- **What alerts you** is the default for every project: each topic on or off.
-  All are on until you turn one off.
-- **One notification per project** (off by default): once a project has a
-  second alert, its alerts fold into one note, "tidewater-api has 3
-  notifications", that says how many need you and how many are to look at.
-  It alerts again, with sound, only for something that needs you (a question,
-  an approval, a task waiting for you, a pull request that needs you);
-  anything else changes its count quietly. Answered alerts leave the count,
-  and the note goes with the last. A note the background watcher raised and
-  you swiped away counts no more; the next alert starts again.
-- **Projects** lists each project, saying whether it follows the default.
-  Its page, also opened from the project's sheet in Tasks, has:
-  - **Mute this project**: no alerts from it at all;
-  - **One notification for this project**: Default, One or Separate;
-  - each topic: Default, On or Off, over the default for every project.
-  **Reset to the defaults** clears the project's own choices.
+- **The choices belong to this phone.** They hold for every computer it is
+  paired with, and a tablet keeps its own, so it can be quieter than the
+  phone. They are kept in Android's own notification categories, one for
+  each type under the same name, so Android's settings for Øphio list the
+  same types. A change in the app changes Android's category at once; a
+  change in Android's settings shows in the app when you come back to it.
+  Both survive updates of the app.
+- **Off** shows nothing, and the item waits in the app as before. Turning a
+  type off clears its notifications already showing. Turning it on later
+  raises nothing it held back.
+- **Silent** shows in the shade with no sound, vibration or pop-up.
+- A type from a newer computer that this phone doesn't know yet shows
+  silently until the app is updated.
+- Switching off one of the categories, or one of their headings, in
+  Android's settings counts as Off.
 
-Tapping a project's note opens that project's **Needs you**: what waits for
-you, and under **To look at**, results nobody has opened yet.
+### Each project's own choices
+
+Settings › Notifications › Projects lists each project of the computer in
+use, saying whether it follows your choices. Its page, also opened from the
+project's sheet in Tasks, has:
+
+- **Mute this project**: nothing from it notifies at all;
+- for each type: **Default** (your choice on each phone), **Alert**, **Silent**
+  or **Off**;
+- **One notification for this project**: Default, One or Separate;
+- **Reset to the defaults**.
+
+The computer keeps a project's choices, so they hold on every phone and
+tablet paired with it. A device with leave to start tasks, or an admin, may
+change them. A project's choice wins over the phone's. Where a project, or a
+task you asked about, makes a type louder than your phone's choice for it,
+the notification shows under Android's "Projects and tasks you follow"
+category.
+
+### Tell me when it's done
+
+The bell in a task's or a chat's header, **Tell me when it's done**, makes
+its finish, its failure or, in a chat, the agent's reply alert on every
+phone, whatever your choice for those types, even in a muted project: asking
+about one task is the more particular choice. The computer keeps it with the
+task. Starting a task asks once whether to turn it on.
+
+### Grouping and bursts
+
+A project's notifications from one computer stack together in the shade
+under "project · computer", so a busy project takes one place. After one
+notification from a computer makes a sound, the others from it in the next
+minute show silently: a burst makes one sound, not one each. The shade holds
+24 at most; when it is full, one that alerts takes the place of the oldest
+showing silently, which waits in the app.
+
+**One notification per project** (off by default) goes further: once a
+project has a second notification, they fold into one note,
+"tidewater-api has 3 notifications", that says how many need you and how
+many are to look at. Tapping it opens that project's **Needs you**: what
+waits for you, and under **To look at**, results nobody has opened yet.
+
+### Stays gone
+
+A notification is raised once for each thing that happened, and never again
+for it.
+
+- **Swiping it away, clearing the shade, tapping it or answering it** handles
+  it. So does **seeing its item in the app**: opening its task, result or
+  question counts at once. A row in the list where it lives (Needs you, a
+  project's Needs you, Finished's Unread, or All) counts once it has been at
+  least half on screen for two seconds, outside a closed group, while the
+  app is in front and unlocked and you touched it in the last minute. A
+  tablet left open on Tasks doesn't silence your phone.
+- Only those count. Android also removes notifications for its own reasons:
+  a force stop, a manufacturer's app sleeping, a category replaced. Those
+  aren't handled and aren't told to your other devices; a notification
+  removed that way, still open and still switched on, goes back silently
+  about ten seconds later, unless the app cleared it because it was answered
+  or seen. A snoozed one stays snoozed until its time, though it then comes
+  back silently if it was put back meanwhile.
+- A handled notification never comes back: not after a reconnect, a restart
+  of the app, a restart of the phone, an update of the app or a change of
+  computer.
+- **Your other devices** clear it too: the phone tells the computer, which
+  tells every other phone or tablet paired with it. Handling a notification
+  doesn't deal with the item itself, which still waits in Needs you or
+  Unread on every device.
+- A restart of the phone or an update of the app clears Android's shade. Once
+  the computer is reached, the notifications that were still showing just
+  before, never swiped, opened or seen, are put back silently, if they are
+  still open; nothing else comes back.
+- Something new about the same task, such as another question, notifies as
+  usual. New means: a new question or approval; a new lapse of an agent's
+  sign-in; a new decision or failure, on a new run; a pull request handed
+  back for a new reason; another task at the front of Next up, or the same
+  one taken out and put back; a new reply; a report whose status changed. An
+  answer that couldn't reach the agent asks again once, saying so.
+
+A choice that hides a notification already showing clears it from this
+device only, without handling it: muting its project, turning its type off
+there, or turning its type off on this phone.
+
+The update that brought this in counted everything open at the time as
+already raised, so none of it came back. Choices made before it carried
+over, where they were quieter than the new recommendations: the old
+"Needs you", "Finished tasks" and "App updates" categories in Android's
+settings to the types that used to show in them, and each computer's old
+topic switches: one a project turned off became that project's choice
+for the types under it; one turned off for every project became the
+computer's own choice for those types, which every project without a choice
+of its own follows, including projects added later, and which a project's
+page shows as its default. After that the old switches no longer
+apply; an older phone's own screen shows them as on. An older phone, which
+can't choose by type, is told to hold back what the recommended choices and
+each project's own turn off, so it shows what a newer phone left as
+recommended would; saving its settings keeps each project's choices by type. It posted one silent note,
+"Notifications are calmer now", saying how many things were waiting for you
+in Needs you, under Android's "Notes from Øphio" category, which never makes
+a sound.
+
+### Where things wait in the app
 
 Each open task shows in one place on Tasks: under **Needs you** while it waits
 for you, otherwise under **Running** or **Next up**. What waits for you
@@ -81,12 +181,12 @@ A finished task is never under Needs you: it is under **Finished**, in
 held for you, is part of its result and counts as unread. An approval or
 question still waits under Needs you until it's decided.
 
-An alert turned off counts as raised and is never shown, so turning its topic
-back on raises nothing it held back. With **Alerts when the app is closed**
-on, turning a topic off also clears the alerts of that topic already showing.
+These choices cover the phone's notifications only. Messages in Telegram or
+Discord chats have their own settings, for each chat.
 
-These choices cover the phone's notifications only, not messages in Telegram
-or Discord chats.
+A computer whose Ophio predates notification types keeps its older choices of
+which topics alert, for every project; a phone that predates them uses those.
+This phone's own choices replace them.
 
 ### What alerts once
 
@@ -164,13 +264,13 @@ A question's notification shows the question itself, and takes your answer:
 - Only the background watcher's alerts take answers. While **Alerts when the
   app is closed** is off, the app's own alerts open the question instead.
 
-## Alerts when the app is closed
+## Notifications when the app is closed
 
-One switch, **Alerts when the app is closed**, covers every paired computer.
-The phone asks once, right after pairing (or after the update that added it):
-"Get alerts when an agent asks something or finishes?", with Turn on chosen.
-Turning it on walks through only the Android steps still needed, each
-explained first:
+While the app runs, notifications come whatever you choose here. One switch,
+**Notify me when Øphio is closed**, keeps them coming once the app is closed,
+for every paired computer. The phone asks once, right after pairing (or after
+the update that added it), with Turn on chosen. Turning it on walks through
+only the Android steps still needed, each explained first:
 
 1. Android's notification permission.
 2. Battery use set to Unrestricted. Android lets Ophio keep waiting for alerts
@@ -178,7 +278,7 @@ explained first:
    while the app is open.
 
 Closing the question without choosing asks again the next time the app opens.
-Off means alerts arrive only while the app is open.
+Off means notifications arrive only while the app is running.
 
 Ophio keeps nothing in the status bar or the shade while it waits: only the
 alerts themselves show.
@@ -186,17 +286,26 @@ alerts themselves show.
 ### How it works
 
 A small watcher in the app's Rust core keeps its own connection to each
-paired computer, separate from the app's screen. A plain Android service runs
-it, with no notice of its own, so swiping the app away or Android reclaiming the
-screen doesn't stop it. Android keeps such a service running in the background
-only for an app whose battery use is Unrestricted; for any other it stops the
-service about a minute after the app leaves the screen.
+paired computer, separate from the app's screen, and posts every
+notification on Android. It runs whenever the app does. With **Notify me when
+Øphio is closed** on, a plain Android service keeps it running, with no notice
+of its own, so swiping the app away or Android reclaiming the screen doesn't
+stop it. Android keeps such a service running in the background only for an
+app whose battery use is Unrestricted; for any other it stops the service
+about a minute after the app leaves the screen.
 
 - The watcher signs in with the phone's own device key at `/v1/alerts`. It
   receives alerts only: the kind, project, task title and time, and for a
   question the agent asked you, the question and its choices. Never other task
   text, terminal output or the screen. A device sees an alert only for an item
-  it may see in the app, and a question only if it may answer approvals.
+  it may see in the app, and a question only if it may answer approvals. Each
+  alert says its type, its project's choice for that type, and whether you
+  asked to hear about its task; the phone decides how it shows.
+- The same connection is the one way the phone speaks: it names the
+  notifications you handled (swiped, opened or seen in the app), and the
+  computer records each on its item and tells every other device watching.
+  What was handled while the computer was out of reach is named when the
+  phone reconnects.
 - Every connection starts with the computer's list of open alerts, oldest
   first. The phone remembers which it has raised, so alerts that came up while
   it was offline arrive once, in order, and ones already answered never show.
@@ -209,9 +318,12 @@ service about a minute after the app leaves the screen.
 - The phone records an alert only once Android has shown it. One Android
   refused is raised again on the next connection.
 - The shade holds at most 24 alerts at once, the app's and the watcher's
-  together. More wait behind one "N more alerts" note and rise as you clear
-  the shown ones, with the detail chosen by then. Tapping the note opens the
-  app.
+  together. A new one that alerts takes the place of the oldest showing
+  silently; any more are counted in one "N more alerts" note instead of
+  showing, and wait in the app. They don't rise later as you clear the shade,
+  so swiping alerts away never brings older ones up in their place. The note
+  changes its count silently, and alerts again only when one more needs you.
+  Tapping it opens the app.
 - The computer pings every four minutes and the phone only answers, so the
   phone sets no timers of its own. Ten minutes of silence, or a network change,
   reconnects. After a failure it waits 5 s, 15 s, 1 min, 5 min, then every
@@ -224,19 +336,20 @@ service about a minute after the app leaves the screen.
   locked, is raised by the watcher about two seconds later. While the app is
   locked the watcher raises them all.
 - An alert answered anywhere is cleared from the shade, by the watcher or by
-  the open app. One answered before the app or the watcher posts it, as one
-  waiting for room, is not posted. Turning background alerts off clears the
-  ones the watcher raised, and a watcher switched off and on again leaves
-  everything to the new one, which raises what still waits only once each
-  computer says what was answered meanwhile. If the computer stops accepting this phone, its alerts are cleared
-  too, so a task title doesn't stay on the lock screen.
+  the open app. One answered before the app or the watcher posts it is not
+  posted. Turning **Notify me when Øphio is closed** off keeps what shows; a
+  watcher stopped and started again leaves everything to the new one, which
+  raises what still waits only once each computer says what was answered
+  meanwhile. If the computer stops accepting this phone, its alerts are
+  cleared too, so a task title doesn't stay on the lock screen.
 
 With Unrestricted battery use it comes back on its own:
 
 - after the app is swiped away. The app closes its own process, and Android
   restarts the service in a new one;
 - after the phone restarts, and after the app is updated. Both clear Android's
-  shade, so alerts still waiting are raised again;
+  shade; what was still showing is put back silently, and nothing you swiped
+  away, opened or saw comes back (see [Stays gone](#stays-gone));
 - every 15 minutes a check restarts it if Android stopped it.
 
 Without it, opening the app starts it again.
@@ -245,7 +358,7 @@ Force-stopping the app in Android's settings stops it until the app is opened.
 
 ### Status in Settings
 
-Settings › Notifications shows, for the computer in use:
+Settings › Notifications shows, for each paired computer:
 
 | Status | Meaning |
 |---|---|
@@ -258,7 +371,7 @@ Settings › Notifications shows, for the computer in use:
 
 When battery use isn't Unrestricted it warns that alerts stop when the app
 closes, with **Allow** to change it. It also opens Android's settings for each
-category.
+type's category.
 
 ## Checks
 

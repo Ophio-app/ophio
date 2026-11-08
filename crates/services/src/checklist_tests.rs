@@ -1146,7 +1146,8 @@ async fn a_question_for_an_agent_put_away_is_answered_under_its_item() {
     assert_eq!(list.summary().unanswered, 0);
     assert_eq!(list.title, "Launch");
 
-    // Any other task in Ask mode still has none of Ophio's tools.
+    // Any other task in Ask mode has none of Ophio's tools but the one it
+    // asks for more with.
     let r = f
         .hub
         .submit(
@@ -1180,7 +1181,12 @@ async fn a_question_for_an_agent_put_away_is_answered_under_its_item() {
     assert_eq!(r.status, ReceiptStatus::Accepted, "{r:?}");
     until_task(&f, "Just asking").await;
     let spec = (f.harness.specs.lock().unwrap().last().cloned()).unwrap();
-    assert!(spec.bridge.is_none());
+    // It may only ask for more, with request_access.
+    assert!(
+        spec.bridge
+            .as_ref()
+            .is_some_and(|b| b.read_only && !b.checklist_answers)
+    );
     f.close().await;
 }
 

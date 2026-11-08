@@ -10,9 +10,9 @@ import type { SpeechEvent } from "../../host/link";
 import type { MarkShape } from "../../protocol/types";
 import { AnnotationStore, type SourceDraft } from "../../state/annotations";
 import { emptyHostState, type HostState } from "../../state/projection";
-import { Canvas } from "./Canvas";
+import { Canvas } from "./CanvasView";
 import { FIT } from "./canvas";
-import { Speech } from "./Speech";
+import { Speech } from "./SpeechView";
 
 let listener: ((event: SpeechEvent) => void) | undefined;
 const platform = {
