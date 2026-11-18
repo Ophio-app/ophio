@@ -23,7 +23,7 @@ async fn old_database_starts_and_preserves_dedupe_without_reapplying_grants() {
     };
     f.hub.shutdown().await.unwrap();
     let path = f.path.clone();
-    drop(f);
+    crate::testing::drop_hub_and_wait(f.hub, WAIT).await;
     let mut raw: serde_json::Value = serde_json::from_str(OLD_GRANTS).unwrap();
     raw["envelope"]["body"]["device_id"] = serde_json::to_value(device_id).unwrap();
     let pending: store::StoredCommand = serde_json::from_value(raw.clone()).unwrap();
@@ -63,6 +63,7 @@ async fn old_database_starts_and_preserves_dedupe_without_reapplying_grants() {
             "legacy commands must never be applied blind"
         );
         hub.shutdown().await.unwrap();
+        crate::testing::drop_hub_and_wait(hub, WAIT).await;
     }
     std::fs::remove_dir_all(path).unwrap();
 }
@@ -160,6 +161,7 @@ async fn unreadable_commands_are_durably_quarantined_and_never_redispatched() {
         };
         assert!(!events.iter().any(|e| matches!(&e.event, Event::CommandProgress { command_id, .. } if rows.iter().any(|(id, _)| id == command_id))));
         hub.shutdown().await.unwrap();
+        crate::testing::drop_hub_and_wait(hub, WAIT).await;
     }
 }
 

@@ -52,7 +52,15 @@ pub struct LauncherDirs {
 /// from it, unless the person has their own copy in `ophio_skills`, which is
 /// used instead. Its built-in agents, in `setup_agents`, work the same way,
 /// with copies in `ophio_agents`.
-const SETUP_SKILLS: [(&str, &str); 17] = [
+const SETUP_SKILLS: [(&str, &str); 19] = [
+    (
+        "set-up-checks",
+        include_str!("setup_skills/set-up-checks.md"),
+    ),
+    (
+        "change-checks",
+        include_str!("setup_skills/change-checks.md"),
+    ),
     (
         "setup-phone",
         concat!(
@@ -675,11 +683,20 @@ fn library_of(path: &Path, roots: &[LibraryRoot]) -> Option<CatalogFile> {
 
 /// Where `path` can be opened in Library: the deepest root holding it.
 pub(crate) fn library_file(path: &Path, roots: &[LibraryRoot]) -> Option<CatalogFile> {
+    // Windows' display spelling can change when just the file crosses the
+    // long-path threshold. Compare resolved paths in one stable spelling,
+    // without putting that spelling into the catalog's human-facing paths.
+    #[cfg(windows)]
+    let path = ports::library::comparison(path).ok()?;
     roots
         .iter()
         .filter_map(|root| {
+            #[cfg(windows)]
+            let root_path = ports::library::comparison(Path::new(&root.host_path)).ok()?;
+            #[cfg(not(windows))]
+            let root_path = Path::new(&root.host_path);
             let parts = path
-                .strip_prefix(&root.host_path)
+                .strip_prefix(root_path)
                 .ok()?
                 .components()
                 .map(|c| match c {
@@ -1970,7 +1987,7 @@ mod tests {
                 assert!(!lower.contains(word), "{id} says {word}");
             }
         }
-        assert_eq!(ids.len(), 33);
+        assert_eq!(ids.len(), 35);
     }
 
     #[test]

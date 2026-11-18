@@ -1,0 +1,48 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-000000000102",
+    "issued_at": 1700000000000,
+    "expected_revision": null,
+    "expires_at": null,
+    "body": {
+      "command": "checks_save",
+      "project_id": "00000000-0000-4000-8000-000000000001",
+      "base_version": 2,
+      "edit": {
+        "kind": "save",
+        "check": {
+          "check_id": "00000000-0000-4000-8000-000000000002",
+          "name": "App tests pass",
+          "about": "Proves that the app still works.",
+          "run": "npm test",
+          "setup": null,
+          "paths": [
+            "src/**"
+          ],
+          "when": "every_task",
+          "timeout_secs": 600,
+          "network": false,
+          "inputs": [
+            "package.json"
+          ],
+          "enabled": true,
+          "typical_secs": null
+        }
+      }
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-000000000102",
+    "status": "accepted",
+    "seq": null,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

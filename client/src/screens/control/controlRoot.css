@@ -86,7 +86,7 @@
 .control-live__picture .live-picture--compact .picture-surface {
   width: 100%;
   height: auto;
-  max-height: 46dvh;
+  max-height: calc(46 * var(--pane-vh, 1dvh));
 }
 .control-live__open {
   position: absolute;
@@ -116,14 +116,14 @@
 }
 /* On its side the picture keeps its shape at most of the height, rather than
    a wide letterbox. */
-@media (orientation: landscape) {
+@container pane (orientation: landscape) {
   .control-live__picture {
     align-self: center;
     max-width: 100%;
   }
   .control-live__picture .live-picture--compact .picture-surface {
     width: auto;
-    height: 60dvh;
+    height: calc(60 * var(--pane-vh, 1dvh));
     max-width: 100%;
     align-self: center;
   }
@@ -174,4 +174,4 @@
 
 /* At large text Voice, Settings and the status dot take the 48px floor, as
    Chat's header does, so a short project name stays whole beside them. */
-:root.app-narrow .control-screen .ctx { --target: 48px; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .control-screen .ctx { --target: 48px; }

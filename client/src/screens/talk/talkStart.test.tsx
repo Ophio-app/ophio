@@ -87,6 +87,10 @@ it("retains each agent and model effort through a round trip and an applied shee
   const project = app.session.state.get().projects[ids.pTide]!;
   const sheet = () => <AgentSheet open onClose={() => {}} project={project} value={{ harness: "claude_code", model: "claude-opus-5-5", effort: "high" }} onChange={() => {}} />;
   view(sheet());
+  const agents = within(screen.getByRole("group", { name: "Agent" }));
+  expect(agents.getAllByRole("button").map((b) => b.textContent)).toEqual(["Claude Code", "Codex"]);
+  expect(agents.queryByText(/Signed in|Personal|Max/)).toBeNull();
+  expect(within(screen.getByRole("group", { name: "Model" })).getAllByRole("button").length).toBeLessThanOrEqual(5);
   fireEvent.click(screen.getByRole("button", { name: /^Codex/ }));
   // One chip says default: Agent’s default, not also the model it is.
   const models = within(screen.getByRole("group", { name: "Model" })).getAllByRole("button").map((b) => b.textContent);

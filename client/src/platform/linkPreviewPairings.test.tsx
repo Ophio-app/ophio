@@ -31,6 +31,6 @@ it("opens a link to the connected computer on the pairing in use, not an earlier
   // The earlier pairing may be revoked on the computer; the link must not
   // open a second connection with it or move the app over to it.
   expect(control).not.toHaveBeenCalled();
-  expect(open).toHaveBeenCalledWith(profile, { screen: "receipt", taskId: fx.ids.tFlaky }, session);
+  expect(open).toHaveBeenCalledWith(profile, { screen: "receipt", taskId: fx.ids.tFlaky, taskEntry: true }, session);
   session.stop();
 });

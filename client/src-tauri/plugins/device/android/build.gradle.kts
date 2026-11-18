@@ -18,8 +18,11 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.activity:activity-ktx:1.10.1")
+    implementation("androidx.window:window:1.4.0")
+    implementation("androidx.window:window-java:1.4.0")
     implementation("com.google.zxing:core:3.5.3")
     implementation(project(":tauri-android"))
+    testImplementation("junit:junit:4.13.2")
     // PreviewChecks builds the Invoke that tauri-android's Jackson types.
     androidTestImplementation("com.fasterxml.jackson.core:jackson-databind:2.15.3")
 }

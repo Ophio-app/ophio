@@ -1,31 +1,43 @@
 # Platform support and qualification
 
-The 0.2.0 beta targets Android ARM64 phones and Linux x86_64 computers.
-The [v0.2.0 release](https://github.com/ophio-app/ophio/releases/tag/v0.2.0)
+The 0.3.0 beta targets Android ARM64 phones and Linux x86_64 computers. The
+release files were checked in a Linux virtual machine with an Android emulator;
+physical-phone and real-provider checks were not run. Windows and Mac have
+separate, limited checks described below. The
+[v0.3.0 release](https://github.com/ophio-app/ophio/releases/tag/v0.3.0)
 carries the official files: the Linux archive
-`ophio-0.2.0-x86_64-linux.tar.gz`, the source `ophio-0.2.0-source.tar.gz`,
-the Android app `ophio-0.2.0-arm64.apk` and `SHA256SUMS`. A Windows build can
-be made from the source and is partly qualified in a virtual machine, but it
-has no download and Windows is not a beta support promise. macOS and iPhone
-are not supported release targets and have no download; experimental
+`ophio-0.3.0-x86_64-linux.tar.gz`, the source `ophio-0.3.0-source.tar.gz`,
+the Android app `ophio-0.3.0-arm64.apk` and `SHA256SUMS`. The 0.3.0 release
+also includes an experimental, unsigned Windows 11 x86_64 ZIP, not a beta
+support promise;
+paid signing is optional and is not required for that download. Before
+installing Øphio on Windows, read
+[Windows warnings and how to continue](packaging/windows/INSTALL.md#windows-warnings-and-how-to-continue)
+for the **Windows protected your PC** and Smart App Control choices. 0.3.0 also
+has an experimental Mac archive for Apple silicon,
+`ophio-0.3.0-aarch64-macos.tar.gz`, which is not a beta support promise either;
+its limits are in the table. iPhone is not a supported release target and has
+no download; experimental
 implementations do not establish support.
 
-The table below records prior qualification, not a passing result for every
-later release. No complete physical phone-to-host combination is certified by
-compilation, synthetic tests or archive checks alone. Each beta candidate
-needs fresh installation and physical-phone checks on its advertised
-combination. Start with the [beta walkthrough](docs/beta.md); Linux route
-details and limits are in `docs/qualification/linux.md`.
+The table distinguishes checks of the final 0.3.0 files from earlier results.
+Earlier passes do not qualify a later file. No complete physical phone-to-host
+combination is certified by compilation, synthetic tests or archive checks
+alone. Physical-phone checks remain unqualified for these release files.
+Start with the [beta walkthrough](docs/beta.md); Linux route
+details and limits are in `docs/qualification/linux.md`. Current Windows and
+Mac feature differences and the work needed to close them are described in
+[Windows and macOS qualification](docs/qualification/windows-macos.md).
 
 | Platform | Implemented scope | Qualification status |
 | --- | --- | --- |
-| Android ARM64 phone | Tauri native shell, pinned transport, device keys and Kotlin integration; configured minimum API 29, target/compile API 37 | Hand-tested on one physical Android 14 tablet against Øphio on a Linux computer: pairing, conversation, tasks and receipts, library, Stop and background task alerts. Desktop watching from a physical device, other devices, IME breadth, microphone and long background lifecycle remain release qualification work. API 29 is a build minimum, not a tested support floor; Android 13+ is the proposed physical test baseline. |
-| Linux x86_64, Wayland native protocols | wlroots screencopy or ext-image-copy-capture, SHM frames, virtual pointer/keyboard | Hyprland 0.56 qualified in a disposable KVM guest with software rendering: capture, input, geometry, lock fencing, disconnect/reconnect and phone Stop during computer use. Sway, other wlroots compositors and physical GPUs remain unqualified. |
-| Linux x86_64, desktop portals | ScreenCast + RemoteDesktop with PipeWire and explicit session consent | GNOME 46 (Ubuntu 24.04) and KDE Plasma 6.7 qualified independently in KVM guests: consent and restore, lock fencing, input, disconnect/reconnect and phone Stop. GNOME 46 ends capture when the display is rescaled; sharing must be reopened explicitly and may ask for consent again. Characters outside the portal keymap are refused as a whole; explicit paste works. |
+| Android ARM64 phone | Tauri native shell, pinned transport, device keys and Kotlin integration; configured minimum API 29, target/compile API 37 | The final signed 0.3.0 app was checked on Android 15 emulators with ARM translation: installation, pairing, release-key update from 0.2.0, core Chat and Task use with both mixed versions, attachments, permissions and interrupted replies. Agents were synthetic programs, not real providers. Foldable checks covered independent panes, drafts, restart, closing either side, keyboard/Back and large text; the tablet run stopped after emulator crashes. Full focus/selection, reply-sound, locked-screen tap and dismissal/reconnection checks remain incomplete. No physical-phone result is claimed for this file. Earlier builds were hand-tested on an Android 14 tablet; that is not a 0.3.0 pass. API 29 is a build minimum, not a tested support floor. |
+| Linux x86_64, Wayland native protocols | wlroots screencopy or ext-image-copy-capture, SHM frames, virtual pointer/keyboard | Earlier builds: Hyprland 0.56 qualified in a disposable KVM guest with software rendering: capture, input, geometry, lock fencing, disconnect/reconnect and phone Stop during computer use. Sway, other wlroots compositors and physical GPUs remain unqualified. |
+| Linux x86_64, desktop portals | ScreenCast + RemoteDesktop with PipeWire and explicit session consent | Earlier builds: GNOME 46 (Ubuntu 24.04) and KDE Plasma 6.7 qualified independently in KVM guests: consent and restore, lock fencing, input, disconnect/reconnect and phone Stop. GNOME 46 ends capture when the display is rescaled; sharing must be reopened explicitly and may ask for consent again. Characters outside the portal keymap are refused as a whole; explicit paste works. |
 | Linux x86_64, X11 | GetImage, RandR, XFixes cursor composition and XTest input | Implemented fallback; native interoperability remains unqualified. MIT-SHM acceleration is not implemented. |
-| Windows 11 x86_64 | WGC monitor capture with DXGI fallback, SendInput, ConPTY, per-user protected storage/IPC and logon startup; every agent run Øphio launches starts suspended in a Job Object that allows no breakaway; private handoff for restricted Claude runs | Partly qualified in a KVM guest running Windows 11 Enterprise LTSC 2024 (24H2) with one 1280×800 display on the Microsoft Basic Display Adapter. Binaries are cross-compiled on Linux. The native tests of twelve crates, `containment` and `harness-claude` included, passed in the recorded standard-user desktop session; four were also exercised on a GitHub-hosted Windows Server 2025 runner. Those results do not establish that Windows checks run for the current candidate. Run in the guest: cross-account DPAPI refusal; owner-pipe refusal of another account and of SYSTEM; the packaged archive's install, login start, stop and update; console Ctrl+C, Ctrl+Break and close; and, with an Android emulator, pairing, the PowerShell terminal, file transfer, desktop watching, Take over, typing on US and German layouts and the lock state. In a classic console window, characters needing a dead-key composition or missing from the keyboard layout are dropped; Windows Terminal receives them. A physical PC, hardware GPU, more than one monitor, DPI or rotation changes, DXGI fallback, an elevated or UAC desktop, pointer input from the phone, a real Claude or Codex run, private handoff and Windows 10 are untested. `crates/platform-windows/README.md` lists what remains. |
-| iPhone | Tauri native shell with a Swift device plugin, iOS 16 or later | In development, not released, and no download exists in this release. Builds and starts in the iPhone simulator. Never run on a real iPhone, so Face ID, camera, microphone and the local network prompt are untested. Alerts arrive only while the app is open. |
-| Mac, Apple silicon | System sandbox, launchd login agent, ScreenCaptureKit capture, CoreGraphics input, menu bar Stop | In development, not released, and no download exists in this release. The automated tests pass on one Apple silicon Mac. Screen capture and input have not been run, because they need permissions given at the Mac. Voice control and window actions aren't implemented. |
+| Windows 11 x86_64 | Native capture and input, ConPTY terminals, per-user protected storage and IPC, logon startup, Job Object process containment, preview discovery, system readings, clipboard paste and voice app launch; per-user idle updates, rollback and interrupted-update recovery through a stable launcher. Limited chats and tasks are refused with a Windows-specific explanation; resource-limited containers are refused until their enforcement is qualified. | Experimental unsigned download. The final ZIP passed archive and checksum checks, local-fixture installer acceptance/refusal, phone-free setup, service operation, diagnostics and removal retaining data in a Windows 11 24H2 virtual machine. Update, retained-version rollback and re-update passed from a synthetic managed older installation, not an old flat ZIP install. A script that starts the service and waits for output can hang; typing commands yourself and the one-line installer are unaffected. An earlier 0.3.0 archive passed connected emulator workflows and packaged locked-file recovery; those were not repeated on the final ZIP. Physical PCs, hardware graphics, Windows 10, real providers and matching-phone workflows remain unqualified. See [Windows and macOS qualification](docs/qualification/windows-macos.md). |
+| iPhone | Tauri native shell with a Swift device plugin, iOS 16 or later | In development, not released, and no download exists in this release. Builds and starts in the iPhone simulator. Never run on a real iPhone, so Face ID, camera, microphone and the local network prompt are untested. Alerts arrive only while the app is open. For split view on a foldable iPhone, the app reads only whether it is folded, not where the crease is; this has run only in the simulator. |
+| Mac, Apple silicon | System sandbox, launchd login agent, per-user idle updates and rollback, ScreenCaptureKit capture, CoreGraphics input, menu bar Stop, window actions, named-control voice accessibility, voice app launch and explicit clipboard paste | Experimental download. The final archive passed checksum, architecture, strict signature and clean version checks on macOS 27.2, plus a synthetic clear-before-extraction quarantine test. Its programs are signed ad hoc, not signed with an Apple Developer ID or notarized. Gatekeeper rejected clean and synthetically marked copies as expected; read [the Mac install guide](packaging/macos/INSTALL.md). Installation, background service, updates, rollback, uninstall and full workflows were not tested on this final archive. Screen capture, input, voice and clipboard control, real-browser downloads, physical phones and other macOS versions remain unqualified. The programs declare a macOS 11.0 minimum; this is not a runtime test or a promise of support. Intel Macs are not supported. Strong process containment and hard disk budgets for chats are unsupported, and a limited chat can read other programs' command lines. |
 
 Use an ordinary logged-in desktop session with explicit capture/input permission.
 Input targets the session's focus and does not guarantee isolation to one window.
@@ -53,6 +65,15 @@ their commands through, and point to a newer installation when there is one. Ter
 managed-task or GUI-control parity. Optional external chat services have their
 own privacy and availability boundaries; Android background attention delivery
 also requires physical-device qualification.
+
+A project's checks, which Øphio runs after each task, run on Linux inside the
+same kind of bubblewrap sandbox as limited chats, with no more access than the
+agent had. On Windows, where that sandbox does not exist, checks are recorded
+as having run without one. Windows is experimental, not a beta support
+promise. Supporting limited chats/tasks would require a
+real filesystem, network and credential boundary; supporting resource-limited
+containers would also require qualified native resource enforcement. Process
+cleanup alone does not provide these guarantees.
 
 When requesting help, include the artifact version and hash, OS/backend,
 relevant permission state, and a minimal synthetic reproduction. Share only

@@ -178,10 +178,11 @@ mod unix {
         os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt},
         path::{Path, PathBuf},
     };
-    use tokio::{
-        net::{UnixListener, UnixStream},
-        task::JoinSet,
-    };
+    // The owner's connections are accepted, and the socket made and closed, so
+    // that no agent started meanwhile on the Mac keeps one: an agent holding
+    // one could act as the owner.
+    use containment::inherit::UnixListener;
+    use tokio::{net::UnixStream, task::JoinSet};
 
     #[derive(Debug)]
     pub struct LocalServer {
@@ -223,7 +224,7 @@ mod unix {
                     _ = shutdown.cancelled() => break Ok(()),
                     Some(_) = tasks.join_next(), if !tasks.is_empty() => {},
                     accepted = crate::server::accept_with_retry(|| self.listener.accept(), &shutdown) => {
-                        let (stream, _) = match accepted {
+                        let stream = match accepted {
                             Ok(Some(stream)) => stream,
                             Ok(None) => break Ok(()),
                             Err(error) => { shutdown.cancel(); break Err(Error::Io(error)); }
@@ -488,6 +489,39 @@ mod tests {
                 .to_string()
                 .starts_with("Øphio is not running. Run `ophio run`")
         );
+    }
+
+    /// The owner's socket is made only while no process is being started, so
+    /// an agent started meanwhile cannot keep it and act as the owner.
+    #[cfg(target_os = "macos")]
+    #[tokio::test]
+    async fn the_owner_socket_is_made_only_between_starts() {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+            mpsc,
+        };
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("owner").join("owner.sock");
+        let ended = Arc::new(AtomicBool::new(false));
+        let (inside, is_inside) = mpsc::channel();
+        let starting = {
+            let ended = ended.clone();
+            std::thread::spawn(move || {
+                containment::inherit::start(|| {
+                    inside.send(()).unwrap();
+                    std::thread::sleep(std::time::Duration::from_millis(300));
+                    ended.store(true, Ordering::SeqCst);
+                })
+            })
+        };
+        is_inside.recv().unwrap();
+        let bound =
+            super::LocalServer::bind(&path, crate::started::Started::claim().unwrap()).await;
+        let made_after = ended.load(Ordering::SeqCst);
+        starting.join().unwrap();
+        drop(bound.unwrap());
+        assert!(made_after, "the owner socket was made during a start");
     }
 
     #[test]

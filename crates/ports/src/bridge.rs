@@ -99,9 +99,11 @@ pub const QUESTIONS_TOOL: &str = "can_ask";
 /// it may choose, another agent it asks for help, issues it files on the
 /// project's repository and work it starts on them. Every run with the
 /// bridge has them except the computer-use specialist's; a run working on
-/// GitHub has only [`ASK_TOOLS`] of them.
+/// GitHub has only [`ASK_TOOLS`] of them. A read-only run (Plan, Ask) has
+/// [`PROPOSE_TOOL`] and [`ACCESS_TOOL`] instead of the other work tools.
 pub const WORK_TOOLS: &[&str] = &[
     "ophio_agents",
+    PROPOSE_TOOL,
     ASK_TOOL,
     "github_new_issue",
     "github_start_issue",
@@ -110,6 +112,8 @@ pub const WORK_TOOLS: &[&str] = &[
 /// The tool an agent asks another agent with (Codex from Claude Code, say):
 /// Ophio runs it read-only and brings its answer back.
 pub const ASK_TOOL: &str = "ask_agent";
+/// The tool an agent uses to propose work as a card in this chat.
+pub const PROPOSE_TOOL: &str = "ophio_propose";
 /// What every run with [`WORK_TOOLS`] has, working on GitHub too: the
 /// agents there are, and asking one of them.
 pub const ASK_TOOLS: &[&str] = &["ophio_agents", ASK_TOOL];
@@ -117,8 +121,18 @@ pub const ASK_TOOLS: &[&str] = &["ophio_agents", ASK_TOOL];
 /// project, the internet, the person's own network or the whole computer.
 /// Ophio puts it to the person as one card. Every run with the bridge has
 /// it except the computer-use specialist's and a turn answering on the
-/// checklist; a read-only run (Plan, Ask) has it and nothing else.
+/// checklist; a read-only run (Plan, Ask) has it and [`PROPOSE_TOOL`].
 pub const ACCESS_TOOL: &str = "request_access";
+/// What a read-only run (Plan, Ask) may call: ask for more, or propose work,
+/// which starts nothing until the person does. Each agent's program is
+/// allowed exactly these on such a turn.
+pub const READ_ONLY_TOOLS: &[&str] = &[ACCESS_TOOL, PROPOSE_TOOL];
+
+/// Read the approved checks of the project bound to an ordinary run.
+pub const CHECKS_READ_TOOL: &str = "checks_read";
+/// Replace the task's open checks draft, without changing approved checks.
+/// Only an ordinary Work run may call it.
+pub const CHECKS_PROPOSE_TOOL: &str = "checks_propose";
 
 /// What [`BRIDGE_FILE_ARG`]'s file holds.
 #[derive(Clone, Serialize, Deserialize)]
@@ -206,10 +220,27 @@ pub enum BridgeRequest {
     Work {
         action: WorkCall,
     },
+    /// Read the run's project's approved checks, or draft changes for its task.
+    /// The connection supplies project and task identity, never model arguments.
+    Checks {
+        action: ChecksCall,
+    },
     /// The run asks the person for more than it has ([`ACCESS_TOOL`]).
     RequestAccess {
         needs: Vec<protocol::model::AccessNeed>,
         reason: String,
+    },
+}
+
+/// Checks the run reads or proposes. Drafts replace the task's open draft;
+/// they never change approved checks until the person accepts them.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "do", rename_all = "snake_case")]
+pub enum ChecksCall {
+    Read,
+    Propose {
+        base_version: u64,
+        items: Vec<protocol::checks::CheckDraftItem>,
     },
 }
 
@@ -283,6 +314,20 @@ pub enum WorkCall {
         #[serde(default)]
         then: Option<protocol::github::FixFindings>,
     },
+    /// Put work in front of the person as a card: one task, an ordered set
+    /// of them, or fixing every open issue. Each task is a suggestion in
+    /// the run report's own shape (`title`, `brief`, `mode`, `issue`,
+    /// `needs`), checked as one.
+    Propose {
+        #[serde(default)]
+        tasks: Vec<serde_json::Value>,
+        /// Each task waits for the one before it to finish.
+        #[serde(default)]
+        in_order: bool,
+        /// Fix every issue Agent can take, as Run all does; `tasks` empty.
+        #[serde(default)]
+        all_issues: bool,
+    },
 }
 
 /// What an agent puts in front of the person. Files come from the task's
@@ -322,7 +367,13 @@ pub enum PersonCall {
     },
     /// Start the task's next turn in `minutes`, for what it waits on. The
     /// agent ends its turn meanwhile, and the project is free.
-    Wake { minutes: u32, reason: String },
+    Wake {
+        minutes: u32,
+        reason: String,
+        /// A short, plain sentence for the person, separate from the agent reminder.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        person_reason: Option<String>,
+    },
     /// Whether the person has questions on now, and what to do if not.
     CanAsk,
     /// The project's checklist as the agent reads it, with every id.
@@ -353,13 +404,20 @@ pub enum PersonCall {
     },
 }
 
-/// What an agent asks to post on GitHub. The repository, the issue or pull
-/// request and the branch come from the run's task, never from these.
+/// What an agent asks to post on GitHub. The repository and the issue or
+/// pull request come from the run's task. A replacement branch is explicit.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "do", rename_all = "snake_case")]
 pub enum GithubCall {
     /// Open the task's pull request from its branch, or edit the one open.
-    Pr { title: String, body: String },
+    Pr {
+        title: String,
+        body: String,
+        /// Deliberately replace the task's branch with this pushed branch.
+        /// Remembered only after the pull request is accepted.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        branch: Option<String>,
+    },
     /// Comment on the task's pull request or issue, or reply in one of the
     /// pull request's review threads.
     Comment {
@@ -480,10 +538,14 @@ pub enum BridgeResponse {
         /// (`ANSWER_TOOLS`).
         #[serde(default)]
         checklist_answers: bool,
-        /// The run only reads (Plan, Ask): its one tool is
-        /// [`ACCESS_TOOL`].
+        /// The run only reads (Plan, Ask): its tools are [`ACCESS_TOOL`]
+        /// and [`PROPOSE_TOOL`].
         #[serde(default)]
         read_only: bool,
+        /// The ordinary run has a project whose approved checks it may read.
+        /// Work runs may also draft changes, even when no checks exist yet.
+        #[serde(default)]
+        checks: bool,
     },
     /// Claude permission-prompt-tool answer, already in the shape Claude Code
     /// expects (`{"behavior":"allow","updatedInput":…}` or
@@ -539,6 +601,11 @@ pub enum BridgeResponse {
     AccessResult {
         text: String,
     },
+    /// Approved check definitions, or the outcome of replacing the task's draft.
+    /// Validation mistakes use Error so the model can correct the same call.
+    ChecksResult {
+        text: String,
+    },
     /// Which app opened, for the model.
     AppOpened {
         text: String,
@@ -575,6 +642,27 @@ pub struct BridgeBinding {
     /// (`ANSWER_TOOLS`): it answers the person's question for an agent that
     /// was put away.
     pub checklist_answers: bool,
-    /// The run only reads (Plan, Ask): all it may call is [`ACCESS_TOOL`].
+    /// The run only reads (Plan, Ask): it may call [`ACCESS_TOOL`] and
+    /// [`PROPOSE_TOOL`].
     pub read_only: bool,
+    /// The ordinary run has a project. This allows reading approved checks,
+    /// including an empty list, and proposing drafts in Work runs only.
+    pub checks: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn older_bridge_welcome_does_not_enable_checks() {
+        let value = serde_json::json!({
+            "result": "welcome", "run_id": RunId::new(), "target_id": null,
+            "computer_use": false,
+        });
+        assert!(matches!(
+            serde_json::from_value::<BridgeResponse>(value).unwrap(),
+            BridgeResponse::Welcome { checks: false, .. }
+        ));
+    }
 }

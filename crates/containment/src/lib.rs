@@ -14,15 +14,21 @@ use ports::{Containment, HarnessError};
 use std::sync::Arc;
 use tokio::process::{Child, Command};
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 mod accounting;
 #[cfg(target_os = "linux")]
 mod cgroup;
 #[cfg(unix)]
 mod group;
+pub mod inherit;
 #[cfg(windows)]
 #[allow(unsafe_code)]
 mod job;
+/// Windows-only named containment for independently run project checks.
+#[cfg(windows)]
+pub use job::NamedJob;
+#[cfg(any(windows, test))]
+mod job_limits;
 #[cfg(unix)]
 mod leader;
 
@@ -44,6 +50,8 @@ pub struct Container {
 
 #[derive(Debug, Clone, Copy)]
 pub struct ResourceLimits {
+    /// Native aggregate memory allowance. Linux charges cgroup memory.
+    /// Resource-limited Windows containers are unavailable until qualified.
     pub memory_bytes: u64,
     /// CPU milliseconds per second for the whole process tree.
     pub cpu_millis_per_second: u32,
@@ -61,7 +69,8 @@ enum Inner {
 }
 
 impl Container {
-    /// Requires aggregate limits; process-group fallback is never sufficient.
+    /// Requires qualified aggregate limits; no weaker container is substituted.
+    /// Windows refuses until its native resource enforcement is qualified.
     pub fn limited(limits: ResourceLimits) -> Result<Self, HarnessError> {
         if limits.memory_bytes == 0 || limits.cpu_millis_per_second == 0 || limits.processes == 0 {
             return Err(HarnessError::Unsupported(
@@ -72,9 +81,13 @@ impl Container {
         return cgroup::Cgroup::limited(limits)
             .map(|group| Self::of(Inner::Cgroup(group)))
             .map_err(HarnessError::Unsupported);
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(windows)]
+        return Err(HarnessError::Unsupported(
+            "Aggregate resource limits are unavailable on Windows until native CPU and process limit enforcement is qualified".into(),
+        ));
+        #[cfg(not(any(target_os = "linux", windows)))]
         Err(HarnessError::Unsupported(
-            "Aggregate resource limits require a delegated Linux cgroup".into(),
+            "Aggregate resource limits require a delegated Linux cgroup or a Windows Job".into(),
         ))
     }
     /// An empty container for one run.
@@ -132,8 +145,28 @@ impl Container {
         }
     }
 
+    /// The run's own cgroup, which every process the run starts stays in
+    /// and which can't be removed while any of them runs. A later companion
+    /// can look there to confirm that a run from before it ended. `None`
+    /// where the run keeps only its process group, and off Linux.
+    pub fn group_dir(&self) -> Option<&std::path::Path> {
+        match &self.inner {
+            #[cfg(target_os = "linux")]
+            Inner::Cgroup(cgroup) => Some(cgroup.dir()),
+            _ => None,
+        }
+    }
+
     /// Start `command` inside the container. No instruction of the new
     /// process runs before it is inside, so nothing it starts is outside.
+    /// It starts under [`inherit::start`], so it keeps none of the
+    /// descriptors the companion makes, accepts or closes under
+    /// [`inherit::private`] (another run's relay and proxy listeners and their
+    /// connections, the companion's own listeners and connections) and none
+    /// of the pipes another such start is making. On Apple systems it can
+    /// still keep a descriptor made elsewhere at that moment without
+    /// [`inherit::private`], such as a relay's connection to the model
+    /// provider; see [`inherit`].
     ///
     /// Wait for the child's exit without reaping it, and reap it only once
     /// [`Container::end`] has been confirmed, which it is only once the child
@@ -142,9 +175,7 @@ impl Container {
     pub async fn spawn(&self, command: &mut Command) -> Result<Child, HarnessError> {
         #[cfg(unix)]
         let spawn = |command: &mut Command| {
-            command
-                .spawn()
-                .map_err(|e| HarnessError::SpawnFailed(e.to_string()))
+            inherit::start(|| command.spawn()).map_err(|e| HarnessError::SpawnFailed(e.to_string()))
         };
         match &self.inner {
             #[cfg(target_os = "linux")]
@@ -197,12 +228,26 @@ impl Container {
     }
 
     /// Have a process started outside [`Container::spawn`], such as one on a
-    /// pseudo console, join the container. Only what it starts after joining
-    /// is inside, so start nothing else before this.
+    /// pseudo console, join an unlimited container. Resource-limited containers
+    /// refuse external adoption: allocations made before assignment would not
+    /// be charged. Only what it starts after joining is inside.
     #[cfg(windows)]
     pub fn adopt(&self, process: std::os::windows::io::RawHandle) -> Result<(), HarnessError> {
         match &self.inner {
             Inner::Job(job) => job.adopt(process),
+        }
+    }
+
+    /// Borrow the non-inheritable Job for `PROC_THREAD_ATTRIBUTE_JOB_LIST` in
+    /// trusted native process creation. Keep the borrow alive through creation,
+    /// verify child membership before resume, and terminate on every failure.
+    /// Never duplicate/inherit this handle into the child or use it to assign an
+    /// already-running process: that would bypass limited-memory accounting.
+    /// There is no fallback when native creation-time assignment is unsupported.
+    #[cfg(windows)]
+    pub fn creation_job(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        match &self.inner {
+            Inner::Job(job) => job.creation_handle(),
         }
     }
 
@@ -423,3 +468,39 @@ fn unconfirmed(reason: impl std::fmt::Display) -> HarnessError {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(test, windows))]
+mod windows_limit_tests {
+    use super::*;
+
+    #[test]
+    fn limited_containers_refuse_unqualified_windows_enforcement() {
+        for limits in [
+            ResourceLimits {
+                memory_bytes: 128 * 1024 * 1024,
+                cpu_millis_per_second: 200,
+                processes: 4,
+            },
+            ResourceLimits {
+                memory_bytes: 1,
+                cpu_millis_per_second: 1,
+                processes: 1,
+            },
+            ResourceLimits {
+                memory_bytes: u64::MAX,
+                cpu_millis_per_second: u32::MAX,
+                processes: u32::MAX,
+            },
+        ] {
+            match Container::limited(limits) {
+                Err(HarnessError::Unsupported(reason)) => assert_eq!(
+                    reason,
+                    "Aggregate resource limits are unavailable on Windows until native CPU and process limit enforcement is qualified"
+                ),
+                other => panic!(
+                    "unqualified Windows limits must refuse, not create a container: {other:?}"
+                ),
+            }
+        }
+    }
+}

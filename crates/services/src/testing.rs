@@ -14,6 +14,91 @@ use std::{
 };
 use tokio::sync::{Semaphore, broadcast, mpsc};
 
+/// Drop a test hub before reopening its data directory in this process.
+///
+/// Aborting async jobs does not stop an already running blocking worker. Wait
+/// for every hub owner and then for its destructor to release the instance lock;
+/// an Arc's strong count reaches zero before its fields have finished dropping.
+/// This does not perform graceful shutdown or save an uncheckpointed reply.
+pub async fn drop_hub_and_wait(hub: crate::CompanionHub, wait: Duration) {
+    let path = hub.inner.data.join("companion.lock");
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(&path)
+        .unwrap();
+    let weak = Arc::downgrade(&hub.inner);
+    let deadline = Instant::now() + wait;
+    drop(hub);
+    loop {
+        if weak.strong_count() == 0 {
+            match store::InstanceLock::acquire(file.try_clone().unwrap()) {
+                Ok(lock) => {
+                    drop(lock);
+                    return;
+                }
+                Err(std::fs::TryLockError::WouldBlock) => {}
+                Err(error) => panic!("cannot check released hub lock {}: {error}", path.display()),
+            }
+        }
+        assert!(
+            Instant::now() < deadline,
+            "old test hub did not release {} within {wait:?}; {} strong references remain",
+            path.display(),
+            weak.strong_count(),
+        );
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+}
+
+/// Keep exact path spelling off Windows. Windows may have equivalent ordinary,
+/// extended or mapped names, but human-facing actual paths must stay ordinary.
+#[cfg(test)]
+#[track_caller]
+pub(crate) fn assert_path_eq(
+    actual: impl AsRef<std::path::Path>,
+    expected: impl AsRef<std::path::Path>,
+    human_facing: bool,
+) {
+    let actual = actual.as_ref();
+    let expected = expected.as_ref();
+    if cfg!(windows) && human_facing {
+        assert!(
+            !actual.as_os_str().to_string_lossy().starts_with(r"\\?\"),
+            "Human-facing paths must not use the extended Windows prefix: {actual:?}"
+        );
+    }
+    #[cfg(windows)]
+    assert_eq!(
+        ports::library::comparison(actual).unwrap(),
+        ports::library::comparison(expected).unwrap()
+    );
+    #[cfg(not(windows))]
+    assert_eq!(actual.as_os_str(), expected.as_os_str());
+}
+
+#[cfg(test)]
+mod path_assertion_tests {
+    use super::assert_path_eq;
+
+    #[cfg(not(windows))]
+    #[test]
+    fn non_windows_path_assertions_reject_different_spellings() {
+        assert_path_eq("a/b", "a/b", true);
+        assert!(std::panic::catch_unwind(|| assert_path_eq("a//b", "a/b", true)).is_err());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_extended_paths_are_internal_only() {
+        let temp = tempfile::tempdir().unwrap();
+        let extended = std::fs::canonicalize(temp.path()).unwrap();
+        assert!(extended.to_string_lossy().starts_with(r"\\?\"));
+        assert_path_eq(&extended, temp.path(), false);
+        assert!(std::panic::catch_unwind(|| assert_path_eq(&extended, temp.path(), true)).is_err());
+    }
+}
+
 impl crate::CompanionHub {
     /// Make delivery retries and the next status/feed check due without waiting.
     pub async fn check_reports_now(&self) -> Result<(), ProtocolError> {
@@ -66,6 +151,7 @@ impl Clock for FakeClock {
 }
 
 pub struct FakeHarness {
+    pub kind: HarnessKind,
     pub starts: AtomicU64,
     pub controls: Arc<FakeRunControl>,
     /// Zero permits holds dispatch before the adapter returns. Add one to ack
@@ -88,6 +174,7 @@ impl std::fmt::Debug for FakeHarness {
 impl Default for FakeHarness {
     fn default() -> Self {
         Self {
+            kind: HarnessKind::ClaudeCode,
             starts: AtomicU64::new(0),
             controls: Arc::new(FakeRunControl::default()),
             spawn_gate: Semaphore::new(0),
@@ -104,6 +191,13 @@ impl Default for FakeHarness {
     }
 }
 impl FakeHarness {
+    pub fn of_kind(kind: HarnessKind) -> Self {
+        Self {
+            kind,
+            ..Self::default()
+        }
+    }
+
     pub async fn emit(&self, id: RunId, event: HarnessEvent) {
         let sender = self
             .senders
@@ -126,7 +220,7 @@ impl FakeHarness {
 #[async_trait]
 impl HarnessAdapter for FakeHarness {
     fn kind(&self) -> HarnessKind {
-        HarnessKind::ClaudeCode
+        self.kind
     }
     async fn probe(&self) -> HarnessInfo {
         let a = Availability::Available;
@@ -207,6 +301,8 @@ pub struct FakeRunControl {
     /// The adapter refuses a decision before answering the agent.
     pub refuse_resolution: AtomicBool,
     pub containment: Mutex<Option<Containment>>,
+    /// The kernel group it says holds the run's processes.
+    pub run_group: Mutex<Option<std::path::PathBuf>>,
     /// Force stop waits at `terminate_gate` once `terminate_entered` says it
     /// arrived, then confirms the end only with `confirm_terminate`.
     pub hold_terminate: AtomicBool,
@@ -236,6 +332,7 @@ impl Default for FakeRunControl {
             resolution_gate: Semaphore::new(0),
             refuse_resolution: AtomicBool::new(false),
             containment: Mutex::new(None),
+            run_group: Mutex::new(None),
             hold_terminate: AtomicBool::new(false),
             terminate_entered: Semaphore::new(0),
             terminate_gate: Semaphore::new(0),
@@ -309,6 +406,9 @@ impl RunControl for FakeRunControl {
     fn close_admission(&self) {}
     fn containment(&self) -> Option<Containment> {
         self.containment.lock().expect("fake mutex").clone()
+    }
+    fn run_group(&self) -> Option<std::path::PathBuf> {
+        self.run_group.lock().expect("fake mutex").clone()
     }
     async fn resolve_approval(
         &self,

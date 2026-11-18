@@ -17,7 +17,7 @@ tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber = { version = "0.3", features = ["json"] }
 axum = "0.8.8"
-rusqlite = { version = "0.38.0", features = ["bundled"] }
+rusqlite = { version = "0.41.0", features = ["bundled"] }
 ed25519-dalek = "2.2"
 sha2 = "0.10.9"
 base64 = "0.22.1"

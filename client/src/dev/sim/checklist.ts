@@ -2,13 +2,22 @@
 import type {
   Checklist, ChecklistFile, ChecklistItem, ChecklistSummary, Command, CommandResult, FileDeliverySettings, FileDeliveryView, ProtocolError,
 } from "../../protocol/types";
-import { sha256, type SimHost } from "./host";
+import type { SimHost } from "./host";
 import { ids } from "./scenario";
 
 const fail = (code: ProtocolError["code"], message: string): ProtocolError => ({ code, message } as ProtocolError);
 
 const ENV_FILE = "# tidewater-api: the webhook secret Stripe shows once, for the server.\n# Put the whsec_ value Stripe gives you after the equals sign.\nSTRIPE_WEBHOOK_SECRET=\n";
 const LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0e7490"/><path d="M10 38c6-6 12-6 18 0s12 6 18 0 8-5 8-5v9c-6 6-12 6-18 0s-12-6-18 0-8 5-8 5z" fill="#ecfeff"/><circle cx="44" cy="20" r="6" fill="#fde68a"/></svg>\n';
+/** The SHA-256 of each file above, written out so the checklist is whole the
+ * moment the simulated computer starts. Hashing them there instead finished
+ * on real time, so a phone whose clock was faked could ask before it had.
+ * `checklist.test.ts` checks them against the files. */
+export const SEEDED_FILE_SHA256 = {
+  env: "4bcdd6d196c783e4ecf98c4f284f10febef3e5ccd89b60aa19ca25c15b29f2bc",
+  logo: "db423379f4a797b5063ce3eae882bb945aa7b4d64f3ab7e66db8ca49b18708da",
+} as const;
+export const SEEDED_FILES = { env: ENV_FILE, logo: LOGO } as const;
 
 /** The computer's checklists (`crates/services/src/checklist.rs`), as the phone
  * sees them: tidewater-api has one an agent wrote, waiting on Stripe access. */
@@ -23,28 +32,26 @@ export class ChecklistSim {
   #bytes = new Map<string, Uint8Array>();
   #notes = 0;
   #followups = new Map<string, ReturnType<typeof setTimeout>>();
-  readonly ready: Promise<void>;
 
   dispose(): void {
     for (const timer of this.#followups.values()) clearTimeout(timer);
     this.#followups.clear();
   }
   constructor(private readonly host: SimHost) {
-    this.ready = this.#seed();
+    this.#seed();
   }
 
-  async #file(name: string, media_type: string, text: string): Promise<ChecklistFile> {
+  #file(name: string, media_type: string, text: string, hash: string): ChecklistFile {
     const bytes = new TextEncoder().encode(text);
-    const hash = await sha256(bytes);
     this.#bytes.set(hash, bytes);
     return { name, size: bytes.length, sha256: hash, media_type };
   }
 
-  async #seed(): Promise<void> {
+  #seed(): void {
     const now = Date.now();
     const at = (min: number) => now - min * 60_000;
-    const env = await this.#file("tidewater.env", "text/plain", ENV_FILE);
-    const logo = await this.#file("tidewater.svg", "image/svg+xml", LOGO);
+    const env = this.#file("tidewater.env", "text/plain", ENV_FILE, SEEDED_FILE_SHA256.env);
+    const logo = this.#file("tidewater.svg", "image/svg+xml", LOGO, SEEDED_FILE_SHA256.logo);
     const item = (i: Partial<ChecklistItem> & Pick<ChecklistItem, "item_id" | "title" | "steps">): ChecklistItem =>
       ({ priority: "medium", added_at: at(90), changed_at: at(90), task_id: ids.tHeaders, ...i });
     this.lists.set(ids.pTide, {
@@ -164,7 +171,6 @@ export class ChecklistSim {
   }
 
   async query(q: { kind: "checklists" } | { kind: "checklist"; project_id: string } | { kind: "file_delivery" }) {
-    await this.ready;
     switch (q.kind) {
       case "checklists": {
         const checklists = [...this.lists.values()].map(summary).sort((a, b) => b.updated_at - a.updated_at);
@@ -188,7 +194,6 @@ export class ChecklistSim {
   }
 
   async act(c: Command, expectedRevision: number | null): Promise<CommandResult | null> {
-    await this.ready;
     const now = Date.now();
     switch (c.command) {
       case "checklist_tick": {
@@ -273,7 +278,6 @@ export class ChecklistSim {
 
   /** A file kept with `projectId`'s checklist, for a download. */
   async file(projectId: string, hash: string): Promise<{ name: string; bytes: Uint8Array }> {
-    await this.ready;
     const list = this.lists.get(projectId);
     const file = list && files(list).find((f) => f.sha256 === hash);
     const bytes = this.#bytes.get(hash);

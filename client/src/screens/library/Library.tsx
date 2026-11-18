@@ -9,7 +9,7 @@
 // the header narrows each list to that project's own, then Øphio's, which
 // every project has as its defaults.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bot, Info, NotebookPen, Plus, Sparkles } from "lucide-react";
 import { SOURCE_LABEL } from "../../app/launchers";
 import { IconButton } from "../../design/Button";
@@ -18,31 +18,36 @@ import { TextField } from "../../design/Field";
 import { ListRow } from "../../design/ListRow";
 import type { CatalogEntry, CatalogSource, HarnessInfo } from "../../protocol/types";
 import { useStore } from "../../state/store";
-import { Screen } from "../../shell/Screen";
+import { Screen, useRoute } from "../../shell/Screen";
 import { entryAsks, matching, useAgents, type Agents } from "../launch/agents";
 import type { RouteProps } from "../types";
 import { LibraryFiles } from "./Files";
 import { ConnectionNote, useLibrary, useLibraryScope, useScreenBody } from "./shared";
 import { Checking, DisabledSection } from "./Disabled";
 import { listedDisabled, useDisabled } from "../../app/disabled";
+import { Checks } from "../checks/Checks";
 import "./library.css";
 
 /** Past this many, a list gets a search. */
 const SEARCHABLE = 8;
 
-type Part = "agents" | "skills" | "files";
+type Part = "agents" | "skills" | "checks" | "files";
 
 /** Found in a project's own folders rather than the person's or Øphio's. */
 const PROJECT_SOURCES: CatalogSource[] = ["claude_project", "codex_project"];
 /** Øphio's own, built in or made in it: every project lists them after its own. */
 const OPHIO_SOURCES: CatalogSource[] = ["ophio_setup", "ophio"];
 
-export default function Library(_props: RouteProps<"library">) {
+export default function Library({ route }: RouteProps<"library">) {
   const bodyRef = useScreenBody();
-  const at = useStore(useLibrary(), (s) => s.roots?.at);
+  const { depth } = useRoute();
+  const library = useLibrary();
+  const at = useStore(library, (s) => s.roots?.at);
+  const fileSearch = useStore(library, (s) => s.forms.search ?? "");
   const a = useAgents();
   const scope = useLibraryScope();
-  const [part, setPart] = useState<Part>("agents");
+  const [part, setPart] = useState<Part>(route.part ?? "agents");
+  useEffect(() => { if (route.part) setPart(route.part); }, [route.part]);
   const [query, setQuery] = useState("");
   const own = (entries: CatalogEntry[]) => scope
     ? [...entries.filter((e) => PROJECT_SOURCES.includes(e.source)), ...entries.filter((e) => OPHIO_SOURCES.includes(e.source))]
@@ -59,6 +64,15 @@ export default function Library(_props: RouteProps<"library">) {
       <h1 className="visually-hidden">Library</h1>
       <ConnectionNote at={at} />
       <div className="library-body">
+        {part !== "checks" && <TextField
+          label="Search files"
+          hideLabel
+          placeholder="Search files"
+          type="search"
+          value={fileSearch}
+          onFocus={() => setPart("files")}
+          onChange={(value) => { library.form("search", value); setPart("files"); }}
+        />}
         <Segmented<Part>
           label="Show"
           className="agents-parts"
@@ -68,10 +82,12 @@ export default function Library(_props: RouteProps<"library">) {
           options={[
             { value: "agents", label: agents.length ? `Agents ${agents.length + (scope ? 0 : 1)}` : "Agents" },
             { value: "skills", label: skills.length ? `Skills ${skills.length}` : "Skills" },
+            { value: "checks", label: "Checks" },
             { value: "files", label: "Files" },
           ]}
         />
-        {part === "files" ? <LibraryFiles scope={scope} /> : (
+        {part === "checks" && scope && depth > 1 && <h2 className="section__title">{scope.name}</h2>}
+        {part === "checks" ? <Checks projectId={scope?.project_id ?? null} /> : part === "files" ? <LibraryFiles scope={scope} /> : (
           <div className="agents-body">
             {a.failed}
             {a.blocked}

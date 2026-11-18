@@ -19,6 +19,8 @@ it("names a model as the computer does, and a catalog's own name as published", 
   const codex = harnesses.find(h => h.kind === "codex")!;
   expect(modelName("gpt-6-astra", codex)).toBe(codex.models.find(m => m.id === "gpt-6-astra")!.label);
   expect(modelName("claude-opus-5-5", codex)).toBe("Claude Opus 5.5");
+  const olderComputer = { ...codex, models: [{ id: "claude-opus-5-5", label: "claude-opus-5-5", is_default: false, suggested_for_computer_use: false }] };
+  expect(modelName("claude-opus-5-5", olderComputer, "Claude Code")).toBe("Opus 5.5");
 });
 
 it("reads the ids harnesses and the simulator report as their catalogs name them, once beside the agent", () => {

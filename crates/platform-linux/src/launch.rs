@@ -83,7 +83,11 @@ impl LinuxLauncher {
             if let Some(words) = hyprland {
                 preferences.terminal.insert(0, Pick::Command(words));
             }
-            Ok(catalog(desktops, &preferences))
+            Ok(catalog(
+                desktops,
+                &preferences,
+                environment.get("HOME").map(Path::new),
+            ))
         })
         .await
         .map_err(|_| PlatformError::Native("The app list could not be read".into()))?
@@ -899,13 +903,17 @@ fn defaults(desktops: &[Desktop], preferences: &Preferences) -> BTreeMap<AppRole
 }
 /// Where a desktop entry comes from, when that tells two apps of one name
 /// apart.
-pub(crate) fn source(path: &Path) -> Option<String> {
-    let path = path.to_string_lossy();
-    if path.contains("/flatpak/exports/") {
+pub(crate) fn source(path: &Path, home: Option<&Path>) -> Option<String> {
+    let text = path.to_string_lossy();
+    if text.contains("/flatpak/exports/") {
         Some("Flatpak".into())
-    } else if path.contains("/snapd/") {
+    } else if text.contains("/snapd/") {
         Some("Snap".into())
-    } else if path.contains("/.local/share/") {
+    } else if home
+        .filter(|h| h.is_absolute())
+        .and_then(|h| path.strip_prefix(h).ok())
+        .is_some_and(|relative| relative.starts_with(".local/share"))
+    {
         Some("in your home folder".into())
     } else {
         None
@@ -914,6 +922,7 @@ pub(crate) fn source(path: &Path) -> Option<String> {
 pub(crate) fn catalog(
     desktops: Vec<Desktop>,
     preferences: &Preferences,
+    home: Option<&Path>,
 ) -> Vec<(Desktop, LaunchApp)> {
     let defaults = defaults(&desktops, preferences);
     desktops
@@ -937,7 +946,7 @@ pub(crate) fn catalog(
                     .map(|(role, _)| *role)
                     .collect(),
                 listed: d.listed,
-                detail: source(&d.path),
+                detail: source(&d.path, home),
             };
             (d, app)
         })

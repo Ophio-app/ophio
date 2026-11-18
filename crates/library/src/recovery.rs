@@ -71,6 +71,12 @@ impl Core {
         if root.canonical != record.root_path || !root.spec.writable {
             return Ok(());
         }
+        #[cfg(windows)]
+        if root.ensure_mutations_supported().is_err() {
+            // Retain recovery evidence rather than mutate an unsupported drive
+            // during startup, a read request, or the background cleanup pass.
+            return Ok(());
+        }
         let (parent, _) = root.parent(&record.path)?;
         match read_saved(&parent, id, "old", self.config.max_file_bytes) {
             Ok((backup, bytes)) if revision(&bytes) == record.revision => {
@@ -132,7 +138,8 @@ impl FsLibrary {
         self.run(|core, state| {
             core.sweep_confirmed(state)?;
             let mut entries = Vec::new();
-            for item in core.data.directory("recovery")?.entries()? {
+            let recovery = core.data.directory("recovery")?;
+            for item in recovery.entries()? {
                 let item = item?;
                 let Some(id) = item.file_name().to_str().map(str::to_owned) else {
                     continue;

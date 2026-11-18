@@ -20,6 +20,7 @@ pub fn say_line(line: std::fmt::Arguments<'_>) {
     let _ = writeln!(std::io::stdout().lock(), "{line}");
 }
 
+mod agent_release_notes;
 pub mod agent_updates;
 mod alerts;
 pub mod cli;
@@ -27,6 +28,8 @@ pub mod compose;
 pub mod config;
 mod control;
 pub mod error;
+#[doc(hidden)]
+pub mod executable;
 pub mod frontdoors;
 pub mod identity;
 pub mod install;
@@ -36,6 +39,7 @@ pub mod network;
 mod person_only;
 pub mod phone;
 pub mod readable;
+pub mod release_check;
 pub mod reports;
 pub mod server;
 pub mod setup;

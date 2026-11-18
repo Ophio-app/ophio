@@ -40,8 +40,8 @@ struct Listed {
 }
 
 /// What the phone's `Watch` said it understands: alerts it may hold
-/// quietly, and those about problem reports and sign-ins, which older
-/// phones can't read and aren't sent. A phone that chooses by type
+/// quietly, and those about problem reports, sign-ins and newer versions,
+/// which older phones can't read and aren't sent. A phone that chooses by type
 /// (`types`) keeps the person's choices itself, and says which of its
 /// notifications were handled.
 #[derive(Debug, Clone, Copy)]
@@ -49,12 +49,17 @@ struct Takes {
     quiet: bool,
     reports: bool,
     sign_in: bool,
+    new_version: bool,
+    agent_updates: bool,
     types: bool,
 }
 impl Takes {
     /// The phone can read an alert of this kind.
     fn kind(self, alert: &Alert) -> bool {
-        (self.reports || alert.report.is_none()) && (self.sign_in || alert.sign_in.is_none())
+        (self.reports || alert.report.is_none())
+            && (self.sign_in || alert.sign_in.is_none())
+            && (self.new_version || alert.new_version.is_none())
+            && (self.agent_updates || alert.agent_update.is_none())
     }
     /// The phone is sent this alert.
     fn alert(self, alert: &Alert) -> bool {
@@ -79,6 +84,8 @@ pub(crate) async fn run(
         quiet,
         reports,
         sign_in,
+        new_version,
+        agent_updates,
         types,
         handled,
     } = first
@@ -95,6 +102,8 @@ pub(crate) async fn run(
         quiet,
         reports,
         sign_in,
+        new_version,
+        agent_updates,
         types,
     };
     // What the phone handled while it couldn't say so is recorded before
@@ -289,6 +298,8 @@ async fn change(
     let alert: Option<Alert> = deps.hub.alert(caller, attention_id, takes.types).await?;
     Ok(alert.filter(|a| takes.alert(a)).map(|alert| {
         listed.open.insert(attention_id);
-        AlertServerFrame::Raised { alert }
+        AlertServerFrame::Raised {
+            alert: Box::new(alert),
+        }
     }))
 }

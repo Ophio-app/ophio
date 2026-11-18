@@ -88,3 +88,34 @@ pub(crate) fn carry(probed: &mut [HarnessInfo], stored: &[HarnessInfo], now: Tim
             .filter(|l| l.resets_at.is_none_or(|at| at > now));
     }
 }
+
+/// Remember notices with the conversation, not the native process: each reply
+/// may start a new process, and all phones must see the same saved timeline.
+/// A UTC calendar day is used so the rule doesn't depend on a device's zone.
+/// This record and the timeline note are written in the same transaction.
+pub(crate) fn notice_once(
+    tx: &mut store::Write<'_>,
+    task: protocol::ids::TaskId,
+    text: &str,
+    now: Timestamp,
+) -> store::Result<bool> {
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct Notices {
+        day: i64,
+        wording: std::collections::BTreeSet<String>,
+    }
+    let day = now.0.div_euclid(86_400_000);
+    let mut notices: Notices = tx
+        .read()
+        .get("usage_notices", task)?
+        .filter(|n: &Notices| n.day == day)
+        .unwrap_or_else(|| Notices {
+            day,
+            wording: Default::default(),
+        });
+    if !notices.wording.insert(text.to_owned()) {
+        return Ok(false);
+    }
+    tx.put("usage_notices", task, &notices)?;
+    Ok(true)
+}

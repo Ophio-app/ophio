@@ -27,6 +27,7 @@ import {
 import { useApp } from "../../app/context";
 import type { OwnershipInfo } from "../../design/Ownership";
 import { useRailOpen } from "../../shell/focus";
+import { usePane } from "../../shell/pane";
 import type { Task } from "../../protocol/types";
 import type { PictureTools } from "./LivePicture";
 import { useRail } from "./SafetyStrip";
@@ -36,10 +37,17 @@ import "./fullControl.css";
 const wide = () => (typeof matchMedia === "function" ? matchMedia("(orientation: landscape)") : null);
 /** Whether the phone is on its side, where a display is always shown full screen. */
 export function useLandscape(): boolean {
-  return useSyncExternalStore(
-    (changed) => { const q = wide(); q?.addEventListener("change", changed); return () => q?.removeEventListener("change", changed); },
+  const pane = usePane();
+  const deviceLandscape = useSyncExternalStore(
+    (changed) => {
+      if (pane) return () => {};
+      const q = wide();
+      q?.addEventListener("change", changed);
+      return () => q?.removeEventListener("change", changed);
+    },
     () => wide()?.matches ?? false,
   );
+  return pane ? pane.width > pane.height : deviceLandscape;
 }
 
 export function Tool({ icon: Icon, label, short, pressed, disabled, onClick }: {

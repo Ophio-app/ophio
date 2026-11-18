@@ -122,13 +122,13 @@ export class TalkSim {
     item.authorization_expires_at = Date.now() + PERMIT_MS;
     this.#permits.set(item.item_id, { task: task.revision, queue: queue.revision, expires: item.authorization_expires_at });
   }
-  enqueue(task: Task, prompt: string, bundle: AnnotationBundle | null, placement: Extract<TaskPlacement, { mode: "queue" }>): string {
+  enqueue(task: Task, prompt: string, bundle: AnnotationBundle | null, placement: Extract<TaskPlacement, { mode: "queue" }>, dependsOn: string[] = []): string {
     const queue = this.queue(task.project_id);
     // As on the host: adding keeps what may start by itself, and one to start by itself resumes Next up.
     this.bump(queue);
     if (placement.authorization === "auto_start") { queue.paused = false; queue.pause_reason = undefined; }
     const item: QueueItem = { item_id: uuidv7(Date.now()), task_id: task.task_id, position: placement.position ?? queue.items.length,
-      authorization: placement.authorization, state: { state: "waiting" }, depends_on: [], added_by: task.created_by, added_at: Date.now(), request: { prompt, bundle } };
+      authorization: placement.authorization, state: { state: "waiting" }, depends_on: [...dependsOn], added_by: task.created_by, added_at: Date.now(), request: { prompt, bundle } };
     queue.items.splice(item.position, 0, item); queue.items.forEach((i, p) => i.position = p);
     if (item.authorization === "auto_start") this.authorize(queue, item, task);
     this.refresh(queue); this.put(queue);

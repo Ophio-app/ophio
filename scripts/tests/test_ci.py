@@ -13,7 +13,9 @@ SCRIPT = Path(__file__).resolve().parents[1] / "ci.sh"
 
 class CiTests(unittest.TestCase):
     def run_ci(self, stages, *, cargo_status=0, allow_skip=False, hosted=False,
-               audit_tool="path", audit_status=0, yanked=()):
+               audit_tool="path", audit_status=0, yanked=(), missing_tool=None,
+               rust_std=True, clippy_status=0, trace_env=False, windows_archiver=False,
+               allowed_yanked=None):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             tools = root / "bin"
@@ -21,13 +23,19 @@ class CiTests(unittest.TestCase):
             trace = root / "calls"
             fakes = {
                 "cargo": 'printf "%s\\n" "$*" >> "$CI_TEST_TRACE"\n'
-                + f'case "$1" in fmt|check) exit {cargo_status} ;; esac\n'
+                + ('printf "env|%s|%s|%s\\n" "$CC_aarch64_apple_darwin" '
+                   '"$AR_aarch64_apple_darwin" "$CARGO_TARGET_DIR" >> "$CI_TEST_TRACE"\n'
+                   if trace_env else '')
+                + f'case "$1" in fmt|check|metadata) exit {cargo_status} ;; clippy) exit {clippy_status} ;; esac\n'
                 + 'case "$1" in audit) printf "%s\\n" "$PWD" >> "$CI_TEST_TRACE" ;; esac\n'
                 + f'case "$1" in audit) [ {audit_status} = 0 ] || exit {audit_status} ;; esac\n'
                 + 'case "$*" in "audit --json") printf "%s" "$CI_TEST_AUDIT_JSON" ;; esac\n',
                 "rustc": 'printf "%s\\n" "$CI_TEST_LIBDIR"\n',
                 "pkg-config": 'exit 1\n',
                 "fixture-linker": 'exit 0\n',
+                "fixture-archiver": 'exit 0\n',
+                "clang": 'exit 0\n',
+                "llvm-ar": 'exit 0\n',
                 "npm": 'printf "npm %s\\n%s\\n" "$*" "$PWD" >> "$CI_TEST_TRACE"\n',
             }
             if audit_tool == "path":
@@ -38,16 +46,24 @@ class CiTests(unittest.TestCase):
                 audit_bin.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
                 audit_bin.chmod(0o755)
             for name, body in fakes.items():
+                if name == missing_tool:
+                    continue
                 path = tools / name
                 path.write_text("#!/bin/sh\n" + body, encoding="utf-8")
                 path.chmod(0o755)
             libdir = root / "lib"
             libdir.mkdir()
-            (libdir / "libstd-fixture.rlib").touch()
+            if rust_std:
+                (libdir / "libstd-fixture.rlib").touch()
             env = dict(os.environ)
             env.pop("BUILD_TOOLS_HOME", None)
+            env.pop("CC_aarch64_apple_darwin", None)
+            env.pop("AR_aarch64_apple_darwin", None)
+            env.pop("AR_x86_64_pc_windows_gnullvm", None)
+            if windows_archiver:
+                env["AR_x86_64_pc_windows_gnullvm"] = str(tools / "fixture-archiver")
             host_path = env["PATH"]
-            if audit_tool is None:
+            if audit_tool is None or missing_tool:
                 # Expose only the utilities ci.sh needs, so a host install of
                 # cargo-audit cannot hide a missing-tool failure.
                 host = root / "host"
@@ -68,8 +84,23 @@ class CiTests(unittest.TestCase):
                 CI_ALLOW_MISSING_TOOLS="1" if allow_skip else "0",
                 CI="true" if hosted else "false",
             )
+            script = SCRIPT
+            if allowed_yanked is not None:
+                # Exercise the allowlist policy independently of whichever
+                # dependencies the real workspaces currently need to allow.
+                repo = root / "fixture"
+                script = repo / "scripts/ci.sh"
+                script.parent.mkdir(parents=True)
+                shutil.copyfile(SCRIPT, script)
+                for workspace in (repo, repo / "client/src-tauri"):
+                    config = workspace / ".cargo"
+                    config.mkdir(parents=True)
+                    (config / "audit-yanked.txt").write_text(
+                        "".join(f"{name} {version}\n" for name, version in allowed_yanked),
+                        encoding="utf-8",
+                    )
             result = subprocess.run(
-                ["bash", str(SCRIPT), *stages], env=env,
+                ["bash", str(script), *stages], env=env,
                 capture_output=True, text=True, timeout=30,
                 encoding="utf-8",
             )
@@ -80,13 +111,78 @@ class CiTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("fmt\tFAIL\t17", result.stdout)
         self.assertIn("test\tPASS\t0", result.stdout)
-        self.assertIn("test --locked --workspace", calls)
+        self.assertIn("test --locked --workspace --no-fail-fast", calls)
+
+    def test_quick_checks_the_phone_lock_before_any_build(self):
+        result, calls = self.run_ci(["quick"], cargo_status=17)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("quick\tFAIL", result.stdout)
+        self.assertEqual(calls.splitlines(), [
+            "metadata --locked --offline --format-version 1 --manifest-path client/src-tauri/Cargo.toml",
+        ])
+        self.assertIn("regenerate and commit client/src-tauri/Cargo.lock", result.stdout)
+        self.assertIn("cargo fetch --locked", result.stdout)
 
     def test_first_failure_stops_commands_inside_a_stage(self):
         result, calls = self.run_ci(["windows"], cargo_status=19)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(len(calls.splitlines()), 1)
         self.assertIn("windows\tFAIL\t19", result.stdout)
+
+    def test_macos_commands_are_strict_and_environment_is_scoped(self):
+        result, calls = self.run_ci(["clippy", "macos", "clippy"], trace_env=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        lines = calls.splitlines()
+        flags = "--locked --workspace --exclude platform-linux --all-targets --target aarch64-apple-darwin"
+        self.assertEqual(lines[::2], [
+            "clippy --locked --workspace --all-targets -- -D warnings",
+            f"check {flags}", f"clippy {flags} -- -D warnings",
+            "clippy --locked --workspace --all-targets -- -D warnings",
+        ])
+        before, check, clippy, after = [line.split("|") for line in lines[1::2]]
+        self.assertEqual(before[1:3], ["", ""])
+        self.assertEqual(after, before)
+        self.assertEqual(check, clippy)
+        self.assertEqual(check[1:3], [str(SCRIPT.parent / "macos-check-cc.sh"), "llvm-ar"])
+        self.assertEqual(check[3], before[3] + "/macos-check-only")
+
+    def test_macos_reuses_ci_windows_llvm_archiver(self):
+        result, calls = self.run_ci(
+            ["macos"], trace_env=True, windows_archiver=True, missing_tool="llvm-ar",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        environments = [line.split("|") for line in calls.splitlines()[1::2]]
+        self.assertEqual(len(environments), 2)
+        self.assertEqual(environments[0], environments[1])
+        self.assertTrue(environments[0][2].endswith("/bin/fixture-archiver"))
+
+    def test_macos_failures_are_not_hidden(self):
+        for check_status, clippy_status, expected_calls in [(19, 0, 1), (0, 23, 2)]:
+            with self.subTest(check=check_status, clippy=clippy_status):
+                result, calls = self.run_ci(
+                    ["macos"], cargo_status=check_status, clippy_status=clippy_status,
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(len(calls.splitlines()), expected_calls)
+                self.assertIn(f"macos\tFAIL\t{check_status or clippy_status}", result.stdout)
+
+    def test_macos_requires_target_and_both_native_tools(self):
+        for missing_tool, rust_std, message in [
+            (None, False, "Rust target aarch64-apple-darwin"),
+            ("clang", True, "Required tool: clang"),
+            ("llvm-ar", True, "Required tool: llvm-ar"),
+        ]:
+            for allow, hosted, expected in [(False, False, 1), (True, False, 0), (True, True, 1)]:
+                with self.subTest(tool=missing_tool, std=rust_std, allow=allow, hosted=hosted):
+                    result, calls = self.run_ci(
+                        ["macos"], missing_tool=missing_tool, rust_std=rust_std,
+                        allow_skip=allow, hosted=hosted,
+                    )
+                    self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                    self.assertIn(f"MISSING: {message}", result.stdout)
+                    label = "SKIP\t77" if expected == 0 else "FAIL"
+                    self.assertIn(f"macos\t{label}", result.stdout)
+                    self.assertEqual(calls, "")
 
     def test_missing_prerequisite_requires_explicit_local_opt_in(self):
         for allow, hosted, expected in [(False, False, 1), (True, False, 0), (True, True, 1)]:
@@ -132,19 +228,22 @@ class CiTests(unittest.TestCase):
             self.assertTrue((directory / ".cargo/audit.toml").is_file(), directory)
 
     def test_advisories_accept_only_the_yanked_crates_each_workspace_lists(self):
-        result, _ = self.run_ci(["advisories"], yanked=[("zip", "7.2.0")])
+        allowed = [("fixture-crate", "1.0.0")]
+        result, _ = self.run_ci(["advisories"], yanked=allowed, allowed_yanked=allowed)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertNotIn("no longer yanked", result.stdout)
-        result, calls = self.run_ci(["advisories"], yanked=[("zip", "7.2.0"), ("left-pad", "1.0.0")])
+        result, calls = self.run_ci(
+            ["advisories"], yanked=[*allowed, ("left-pad", "1.0.0")], allowed_yanked=allowed,
+        )
         self.assertEqual(result.returncode, 1)
         self.assertIn("yanked: left-pad 1.0.0", result.stdout + result.stderr)
         self.assertIn("advisories\tFAIL", result.stdout)
         self.assertNotIn("npm audit", calls)
 
     def test_advisories_point_out_a_yanked_entry_that_no_longer_applies(self):
-        result, _ = self.run_ci(["advisories"])
+        result, _ = self.run_ci(["advisories"], allowed_yanked=[("fixture-crate", "1.0.0")])
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("note: zip 7.2.0 is no longer yanked or locked", result.stdout)
+        self.assertIn("note: fixture-crate 1.0.0 is no longer yanked or locked", result.stdout)
 
     def test_advisories_find_cargo_audit_under_build_tools_home(self):
         result, _ = self.run_ci(["advisories"], audit_tool="build-tools")

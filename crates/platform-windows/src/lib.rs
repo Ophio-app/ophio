@@ -7,10 +7,14 @@ pub mod desktop;
 pub mod dpapi;
 pub mod environment;
 pub mod fs;
+#[cfg(any(windows, test))]
+mod gpu;
+pub mod launch;
 pub mod open_url;
 pub mod pipe;
 pub mod protection;
 pub mod security;
+pub mod servers;
 pub mod started;
 pub mod startup;
 pub mod system;

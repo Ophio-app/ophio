@@ -1523,8 +1523,13 @@ impl CompanionHub {
                 }
                 self.issue_closed(*project_id, &repo_key(&owner, &name), *number)?;
             }
-            GithubAction::RunIssues { project_id, step } => {
-                self.run_issues(caller, *project_id, *step).await?;
+            GithubAction::RunIssues {
+                project_id,
+                step,
+                origin,
+            } => {
+                self.run_issues(caller, *project_id, *step, origin.as_ref())
+                    .await?;
             }
             GithubAction::SetGroup {
                 project_id,

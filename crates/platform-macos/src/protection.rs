@@ -92,20 +92,28 @@ impl LocalIndicator for Indicator {
     }
 }
 
+/// Start `program` as the indicator, while nothing private is being made, as
+/// other starts do. It runs for as long as protection is on, so a pipe it kept
+/// from another start would never close: a keychain read waiting for
+/// `security` to finish would wait until protection ended.
+fn start(program: &std::path::Path) -> std::io::Result<Child> {
+    containment::inherit::tokio_spawn(
+        tokio::process::Command::new(program)
+            .arg(INDICATOR_ROLE)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .kill_on_drop(true),
+    )
+}
+
 /// Starts the indicator. It says it is ready only once it is in the menu bar's
 /// reach, so a session with no screen fails here and control stays off.
 pub async fn connect() -> Result<IndicatorSession, PlatformError> {
     let unavailable =
         |why: &str| PlatformError::TemporarilyUnavailable(format!("Local Stop indicator: {why}"));
     let program = std::env::current_exe().map_err(|_| unavailable("no program to start"))?;
-    let mut child = tokio::process::Command::new(program)
-        .arg(INDICATOR_ROLE)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .kill_on_drop(true)
-        .spawn()
-        .map_err(|_| unavailable("it could not start"))?;
+    let mut child = start(&program).map_err(|_| unavailable("it could not start"))?;
     let input = child.stdin.take().ok_or_else(|| unavailable("no input"))?;
     let output = child
         .stdout
@@ -268,6 +276,35 @@ mod tests {
             request(&show_line("a\nhide")),
             Some(Request::Show("ahide".into()))
         );
+    }
+
+    /// The indicator starts only while nothing private is being made, so it
+    /// keeps none of the pipes another start is making.
+    #[tokio::test]
+    async fn the_indicator_starts_only_between_private_steps() {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+            mpsc,
+        };
+        let ended = Arc::new(AtomicBool::new(false));
+        let (inside, is_inside) = mpsc::channel();
+        let step = {
+            let ended = ended.clone();
+            std::thread::spawn(move || {
+                containment::inherit::private(|| {
+                    inside.send(()).unwrap();
+                    std::thread::sleep(Duration::from_millis(300));
+                    ended.store(true, Ordering::SeqCst);
+                })
+            })
+        };
+        is_inside.recv().unwrap();
+        let started = start(std::path::Path::new("/usr/bin/true"));
+        let started_after = ended.load(Ordering::SeqCst);
+        step.join().unwrap();
+        started.unwrap().wait().await.unwrap();
+        assert!(started_after, "the indicator started during a private step");
     }
 
     #[test]

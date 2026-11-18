@@ -328,7 +328,7 @@ async fn the_pause_outlasts_a_restart() {
     }
     clock.advance(Duration::from_secs(60));
     hub.shutdown().await.unwrap();
-    drop(hub);
+    crate::testing::drop_hub_and_wait(hub, WAIT).await;
 
     let hub = hub_at(&path, desktop.clone(), clock.clone()).await;
     let paused = unlock(&hub, PASSWORD).await.unwrap_err();
@@ -349,7 +349,7 @@ async fn the_pause_outlasts_a_restart() {
 
     // The wrong try before a right one outlasts one too.
     hub.shutdown().await.unwrap();
-    drop(hub);
+    crate::testing::drop_hub_and_wait(hub, WAIT).await;
     let hub = hub_at(&path, desktop.clone(), clock).await;
     desktop.lock_session().await.unwrap();
     for _ in 0..2 {

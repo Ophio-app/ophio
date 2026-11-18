@@ -4,16 +4,21 @@
 //! with word to finish what doesn't depend on it and end its turn, and the
 //! project is free once it has. The request stays open: an answer given
 //! later reaches the agent as its next message, and starts the task again
-//! if its turn has ended.
+//! if its turn has ended. One its agent stops waiting for sooner (its tool
+//! call gave up, its turn ended, or its connection to Ophio closed) stays
+//! open the same way, unless the person stopped the turn. A private
+//! question is never kept open: its answer may only go to the live
+//! question, so it expires instead, as a login does.
 
 use crate::{CompanionHub, api::Caller, error, followups::Followup};
 use ports::{MessageRef, PromptInput};
 use protocol::{
     ApprovalId, CommandId, ErrorCode, Event, ProtocolError,
+    capability::HarnessKind,
     command::{ApprovalDecision, MessageDelivery},
     model::{
-        Approval, ApprovalDelivery, ApprovalKind, ApprovalState, Run, RunState, Task, TaskState,
-        TimelineBody, TimelineItem,
+        Approval, ApprovalAction, ApprovalDelivery, ApprovalKind, ApprovalState, Run, RunState,
+        Task, TaskState, TimelineBody, TimelineItem,
     },
     time::Timestamp,
 };
@@ -24,15 +29,28 @@ use std::time::Duration;
 pub(crate) const CARRY_ON_AFTER: Duration = Duration::from_secs(10 * 60);
 /// When each request went back to its agent unanswered, by approval.
 pub(crate) const CARRIED_ON: &str = "approval_carried_on";
+/// Advances only on an actual agent change, so answers created before it
+/// cannot be reintroduced after switching back to the earlier agent.
+pub(crate) const AGENT_GENERATION: &str = "task_agent_generation";
+
+pub(crate) fn agent_generation(
+    r: &store::Read<'_>,
+    task_id: protocol::TaskId,
+) -> store::Result<u64> {
+    Ok(r.get::<u64>(AGENT_GENERATION, task_id)?.unwrap_or(0))
+}
 pub(crate) const PRIVATE_ANSWER_EXPIRED: &str =
     "This private question is no longer waiting. Ask the agent to request it again.";
 
 /// What the agent is told in place of an answer.
 pub(crate) const GUIDANCE: &str = "Nobody has answered yet, and Ophio doesn't let a run wait on a person while it holds the project. Don't ask again in this turn. Finish everything that doesn't depend on the answer, then end your turn with a short summary that says exactly what you still need. The answer will come as your next message.";
+/// What the agent is told in place of an answer to a private question,
+/// which can't be answered later.
+pub(crate) const PRIVATE_GUIDANCE: &str = "Nobody has answered this private question, and it can't be answered after this. Don't ask again in this turn. Finish everything that doesn't depend on it, then end your turn with a short summary that says exactly what you still need, so the person can give it when you ask again.";
 
-/// What may be answered after its agent has moved on. A login, a code, a
-/// post on GitHub and the computer specialist's requests each keep their
-/// own time limit.
+/// What may be answered after its agent has moved on, a request for more
+/// access included. A login, a code, a post on GitHub and the computer
+/// specialist's requests each keep their own time limit.
 pub(crate) fn carries_on(kind: ApprovalKind) -> bool {
     matches!(
         kind,
@@ -43,6 +61,18 @@ pub(crate) fn carries_on(kind: ApprovalKind) -> bool {
             | ApprovalKind::Question
             | ApprovalKind::Other
     )
+}
+
+/// Whether `a` may be answered after its agent has moved on. A private
+/// question may not: its answer goes only to the live question, so it
+/// expires as a login does, rather than stay open with nothing to answer.
+pub(crate) fn outlives(a: &Approval) -> bool {
+    carries_on(a.kind) && !private(a)
+}
+
+/// Whether `a` asks for something secret, a password say.
+pub(crate) fn private(a: &Approval) -> bool {
+    a.questions.iter().any(|q| q.secret)
 }
 
 /// Whether `a` still holds its run up: asked, unanswered, and not yet given
@@ -58,6 +88,52 @@ pub(crate) fn carried_on(r: &store::Read<'_>, id: ApprovalId) -> store::Result<b
 /// Whether anything of `run`'s still holds it up.
 pub(crate) fn run_blocked(r: &store::Read<'_>, run: protocol::RunId) -> store::Result<bool> {
     r.run_has_blocking_approval(run)
+}
+
+/// Withdraws unanswered requests from a different agent before a chat changes
+/// agents. The old agent's questions and access requests must not become the
+/// new agent's answers or permissions. A switch to the same agent keeps them.
+pub(crate) fn withdraw_for_agent_switch(
+    tx: &mut store::Write<'_>,
+    task_id: protocol::TaskId,
+    new_harness: HarnessKind,
+    now: Timestamp,
+) -> store::Result<()> {
+    let generation = agent_generation(&tx.read(), task_id)?.saturating_add(1);
+    tx.put(AGENT_GENERATION, task_id, &generation)?;
+    crate::followups::cancel_for_agent_switch(tx, task_id, now)?;
+    crate::asking::let_go(tx, task_id)?;
+    for mut a in tx.read().list::<Approval>("approval")? {
+        if a.task_id != task_id || a.state != ApprovalState::Pending {
+            continue;
+        }
+        let old: Option<Run> = tx.read().get("run", a.run_id)?;
+        if old.as_ref().is_some_and(|run| run.harness == new_harness) {
+            continue;
+        }
+        tx.delete(CARRIED_ON, a.approval_id)?;
+        a.state = ApprovalState::Cancelled;
+        a.revision += 1;
+        a.resolved_at = Some(now);
+        tx.put("approval", a.approval_id, &a)?;
+        tx.emit(Event::ApprovalUpserted {
+            approval: a.clone(),
+        })?;
+        crate::runs::resolve_attention(tx, a.approval_id, now)?;
+    }
+    // A one-time Allow is scoped to its original run's agent, never to the
+    // task id alone. Remove old and legacy passes at the agent boundary.
+    crate::switch_work::let_go(tx, task_id)?;
+    crate::runs::recount_attention(tx, task_id)
+}
+
+/// Whether a carried-over request still belongs to this task's agent.
+/// A missing original run fails closed instead of handing its answer to an
+/// unrelated agent.
+pub(crate) fn same_agent_as_task(r: &store::Read<'_>, a: &Approval) -> store::Result<bool> {
+    let task: Task = r.require("task", a.task_id)?;
+    let asked: Option<Run> = r.get("run", a.run_id)?;
+    Ok(asked.is_some_and(|run| run.harness == task.harness))
 }
 
 /// Withdraws `task_id`'s requests that its agent went on without, as the
@@ -87,6 +163,159 @@ pub(crate) fn let_go(
     Ok(())
 }
 
+/// Withdraws `task_id`'s requests that its agent went on without and that
+/// offer to switch it to Work (or turn it into a task), but `except`, as the
+/// task switches: nothing could take them forward after. The agent asks
+/// again in Work if it still needs them.
+pub(crate) fn let_go_switched(
+    tx: &mut store::Write<'_>,
+    task_id: protocol::TaskId,
+    except: Option<ApprovalId>,
+    now: Timestamp,
+) -> store::Result<()> {
+    for mut a in tx.read().list::<Approval>("approval")? {
+        if a.task_id != task_id
+            || Some(a.approval_id) == except
+            || a.state != ApprovalState::Pending
+            || !carried_on(&tx.read(), a.approval_id)?
+        {
+            continue;
+        }
+        let actions = match &a.actions {
+            Some(actions) => actions.clone(),
+            None => crate::approval_rule::Asked::of(&tx.read(), &a)?.actions(),
+        };
+        if !actions.iter().any(|action| {
+            matches!(
+                action,
+                ApprovalAction::SwitchToWork | ApprovalAction::TurnIntoTask
+            )
+        }) {
+            continue;
+        }
+        tx.delete(CARRIED_ON, a.approval_id)?;
+        a.state = ApprovalState::Cancelled;
+        a.revision += 1;
+        a.resolved_at = Some(now);
+        tx.put("approval", a.approval_id, &a)?;
+        tx.emit(Event::ApprovalUpserted {
+            approval: a.clone(),
+        })?;
+        crate::runs::resolve_attention(tx, a.approval_id, now)?;
+        note(
+            tx,
+            &a,
+            now,
+            format!(
+                "“{}” was withdrawn as the task switched to Work: the agent asks again there if it still needs it.",
+                a.title
+            ),
+        )?;
+    }
+    Ok(())
+}
+
+/// Keeps open what `run_id`'s agent asked through Ophio's bridge and
+/// stopped waiting for, as if it had gone back to the agent: its tool call
+/// gave up, its turn ended, or its connection to Ophio closed. Only requests
+/// that carry on, and only from a turn nobody stopped. Its native requests
+/// are the agent's own to end. The ids kept open.
+pub(crate) fn outlive_wait(
+    tx: &mut store::Write<'_>,
+    run_id: protocol::RunId,
+    now: Timestamp,
+) -> store::Result<Vec<ApprovalId>> {
+    let mut kept = Vec::new();
+    for a in tx.read().run_pending_approvals(run_id)? {
+        if keep(tx, &a, now)? {
+            kept.push(a.approval_id);
+        }
+    }
+    if !kept.is_empty() {
+        back_to_work(tx, run_id, now)?;
+    }
+    Ok(kept)
+}
+
+/// Keeps `a` open as [`outlive_wait`] does, if it may be. An answer given
+/// as its agent stopped waiting is settled as it is handed over: one that
+/// no longer reaches the wait becomes the agent's next message
+/// ([`CompanionHub::resolve_approval`]).
+pub(crate) fn keep(tx: &mut store::Write<'_>, a: &Approval, now: Timestamp) -> store::Result<bool> {
+    // A person's Stop withdrew what it asked; Ophio's own gate before a
+    // turn starts asks again each turn.
+    if (tx.read())
+        .get::<bool>("stopped", a.run_id)?
+        .unwrap_or(false)
+        || !outlives(a)
+        || !same_agent_as_task(&tx.read(), a)?
+        || !blocks(&tx.read(), a)?
+        || crate::approval_rule::gate(&tx.read(), a)?
+        || !(tx.read())
+            .get::<bool>("bridge_approval", a.approval_id)?
+            .unwrap_or(false)
+    {
+        return Ok(false);
+    }
+    tx.put(CARRIED_ON, a.approval_id, &now)?;
+    let answering = (tx.read())
+        .get::<protocol::CommandId>("approval_claim", a.approval_id)?
+        .is_some();
+    let text = match answering {
+        true => format!(
+            "The agent stopped waiting just as “{}” was answered. If the answer didn't reach it, it goes to it as its next message.",
+            a.title
+        ),
+        false => format!(
+            "The agent stopped waiting before anyone answered, so the request stays open. Answering still reaches it: “{}”",
+            a.title
+        ),
+    };
+    note(tx, a, now, text)?;
+    Ok(true)
+}
+
+/// `run_id`, if it waited on the person and nothing else holds it, is
+/// working again.
+pub(crate) fn back_to_work(
+    tx: &mut store::Write<'_>,
+    run_id: protocol::RunId,
+    now: Timestamp,
+) -> store::Result<()> {
+    let mut run: Run = tx.read().require("run", run_id)?;
+    if run.state != RunState::AwaitingApproval || run_blocked(&tx.read(), run_id)? {
+        return Ok(());
+    }
+    let mut task: Task = tx.read().require("task", run.task_id)?;
+    run.state = RunState::Working;
+    task.state = TaskState::Working;
+    task.revision += 1;
+    task.updated_at = now;
+    tx.put("run", run.run_id, &run)?;
+    tx.emit(Event::RunUpserted { run: Box::new(run) })?;
+    tx.put("task", task.task_id, &task)?;
+    tx.emit(Event::TaskUpserted { task })?;
+    Ok(())
+}
+
+pub(crate) fn note(
+    tx: &mut store::Write<'_>,
+    a: &Approval,
+    now: Timestamp,
+    text: String,
+) -> store::Result<()> {
+    tx.emit(Event::TimelineAppended {
+        task_id: a.task_id,
+        item: TimelineItem {
+            seq: 0,
+            at: now,
+            run_id: Some(a.run_id),
+            item: TimelineBody::Note { text },
+        },
+    })?;
+    Ok(())
+}
+
 impl CompanionHub {
     /// Gives back to their agents the requests of running turns that nobody
     /// has answered in [`CARRY_ON_AFTER`].
@@ -101,10 +330,7 @@ impl CompanionHub {
             let mut due = Vec::new();
             for run in &live {
                 for a in r.run_pending_approvals(*run)? {
-                    if carries_on(a.kind)
-                        && a.access_request.is_none()
-                        && now.0.saturating_sub(a.requested_at.0) >= after
-                    {
+                    if carries_on(a.kind) && now.0.saturating_sub(a.requested_at.0) >= after {
                         due.push(a);
                     }
                 }
@@ -126,7 +352,8 @@ impl CompanionHub {
 
     /// Tells the agent to go on without an answer to `a`. Marked first, so
     /// an answer given meanwhile is kept for the agent's next message rather
-    /// than handed to a wait that has just ended.
+    /// than handed to a wait that has just ended. A private question isn't
+    /// kept: it expires once its agent has been told.
     async fn carry_on(&self, a: &Approval) -> Result<bool, ProtocolError> {
         if self.run_stopped(a.run_id)? {
             return Ok(false);
@@ -144,8 +371,10 @@ impl CompanionHub {
         if !marked {
             return Ok(false);
         }
+        let private = private(a);
+        let guidance = if private { PRIVATE_GUIDANCE } else { GUIDANCE };
         let deny = ApprovalDecision::Deny {
-            reason: Some(GUIDANCE.into()),
+            reason: Some(guidance.into()),
         };
         let wait = self.inner.waits.lock().await.remove(&id);
         let handed = match wait {
@@ -157,7 +386,7 @@ impl CompanionHub {
                 false
             }
             None => {
-                self.decline_natively(a.run_id, &a.native_request_id, GUIDANCE)
+                self.decline_natively(a.run_id, &a.native_request_id, guidance)
                     .await
             }
         };
@@ -166,35 +395,41 @@ impl CompanionHub {
                 tx.delete(CARRIED_ON, id)?;
                 return Ok(false);
             }
-            let mut run: Run = tx.read().require("run", a.run_id)?;
-            if run.state == RunState::AwaitingApproval && !run_blocked(&tx.read(), a.run_id)? {
-                let mut task: Task = tx.read().require("task", run.task_id)?;
-                run.state = RunState::Working;
-                task.state = TaskState::Working;
-                task.revision += 1;
-                task.updated_at = now;
-                tx.put("run", run.run_id, &run)?;
-                tx.emit(Event::RunUpserted {
-                    run: Box::new(run),
-                })?;
-                tx.put("task", task.task_id, &task)?;
-                tx.emit(Event::TaskUpserted { task })?;
+            if private {
+                tx.delete(CARRIED_ON, id)?;
+                let mut stored: Approval = tx.read().require("approval", id)?;
+                if stored.state == ApprovalState::Pending {
+                    stored.state = ApprovalState::Expired;
+                    stored.revision += 1;
+                    tx.put("approval", id, &stored)?;
+                    tx.emit(Event::ApprovalUpserted { approval: stored })?;
+                    crate::runs::resolve_attention(tx, id, now)?;
+                    crate::runs::recount_attention(tx, a.task_id)?;
+                }
+                back_to_work(tx, a.run_id, now)?;
+                note(
+                    tx,
+                    a,
+                    now,
+                    format!(
+                        "Nobody answered the private question “{}” in {} minutes, so it expired and Ophio told the agent to carry on without it. It asks again if it still needs the answer.",
+                        a.title,
+                        CARRY_ON_AFTER.as_secs() / 60
+                    ),
+                )?;
+                return Ok(true);
             }
-            tx.emit(Event::TimelineAppended {
-                task_id: a.task_id,
-                item: TimelineItem {
-                    seq: 0,
-                    at: now,
-                    run_id: Some(a.run_id),
-                    item: TimelineBody::Note {
-                        text: format!(
-                            "Nobody answered “{}” in {} minutes, so Ophio told the agent to carry on without it and end its turn. Answering still reaches it.",
-                            a.title,
-                            CARRY_ON_AFTER.as_secs() / 60
-                        ),
-                    },
-                },
-            })?;
+            back_to_work(tx, a.run_id, now)?;
+            note(
+                tx,
+                a,
+                now,
+                format!(
+                    "Nobody answered “{}” in {} minutes, so Ophio told the agent to carry on without it and end its turn. Answering still reaches it.",
+                    a.title,
+                    CARRY_ON_AFTER.as_secs() / 60
+                ),
+            )?;
             Ok(true)
         })?;
         Ok(carried)
@@ -255,6 +490,13 @@ impl CompanionHub {
             if a.state != ApprovalState::Pending {
                 return Err(error(ErrorCode::AlreadyResolved, "Approval already resolved").into());
             }
+            if !same_agent_as_task(&tx.read(), &a)? {
+                return Err(error(
+                    ErrorCode::Expired,
+                    "This request came from a different agent. Ask the current agent again.",
+                )
+                .into());
+            }
             // A follow-up becomes durable conversation history. A secret may
             // only go through its original, still-live native question.
             if a.questions.iter().any(|q| q.secret)
@@ -285,6 +527,15 @@ impl CompanionHub {
             })?;
             crate::runs::resolve_attention(tx, id, now)?;
             tx.delete(CARRIED_ON, id)?;
+            // Told it may, the agent asks again: the same request is
+            // allowed then without a second card, once. Told no, it isn't.
+            match decision {
+                ApprovalDecision::Allow if crate::switch_work::passes_on(&tx.read(), &a)? => {
+                    crate::switch_work::preapprove(tx, &a, caller.principal, true, now)?;
+                }
+                ApprovalDecision::Deny { .. } => crate::switch_work::declined(tx, &a)?,
+                _ => {}
+            }
             Followup::answer(a.task_id, id, later_text(&a, decision), now).put(tx)?;
             Ok(false)
         })?;

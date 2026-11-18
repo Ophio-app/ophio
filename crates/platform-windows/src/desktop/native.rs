@@ -319,6 +319,7 @@ impl Driver for NativeDriver {
             integrity: integrity(unsafe { GetCurrentProcess() })?,
             layout: None,
             deadline: None,
+            clipboard_sequence: None,
             typing: Default::default(),
             shortcuts: Default::default(),
             virtual_keys: Default::default(),
@@ -343,6 +344,7 @@ struct NativeInjector {
     integrity: u32,
     layout: Option<Layout>,
     deadline: Option<Instant>,
+    clipboard_sequence: Option<u32>,
     /// Keys still down for a character typed as keys, in press order.
     typing: std::collections::BTreeMap<u16, Vec<(u16, u16)>>,
     /// The physical key and borrowed layout modifiers for each shortcut character.
@@ -351,6 +353,36 @@ struct NativeInjector {
     added_modifiers: std::collections::BTreeMap<u16, usize>,
 }
 impl Injector for NativeInjector {
+    fn set_clipboard(&mut self, text: &str) -> Result<(), PlatformError> {
+        self.clipboard_sequence = None;
+        session_ready()?;
+        if self
+            .deadline
+            .is_none_or(|end| SystemClock.monotonic() >= end)
+        {
+            return Err(unavailable());
+        }
+        if self.layout.as_ref() != Some(&Layout::new(monitors()?)?) {
+            return Err(PlatformError::GeometryChanged);
+        }
+        // SAFETY: read-only checks; never write a clipboard for an elevated target.
+        unsafe {
+            window_allowed(GetForegroundWindow(), self.integrity)?;
+        }
+        if held_at_the_computer(&self.typing) {
+            return Err(PlatformError::TemporarilyUnavailable(
+                "a key is held down at the computer".into(),
+            ));
+        }
+        self.clipboard_sequence = Some(super::clipboard::replace(
+            text,
+            self.deadline.ok_or_else(unavailable)?,
+        )?);
+        Ok(())
+    }
+    fn check_clipboard(&mut self) -> Result<(), PlatformError> {
+        super::clipboard::check(self.clipboard_sequence)
+    }
     fn check_layout(&mut self, layout: &Layout, deadline: Instant) -> Result<(), PlatformError> {
         self.deadline = Some(deadline);
         if &Layout::new(monitors()?)? != layout {
@@ -513,7 +545,7 @@ impl NativeInjector {
             return Err(unsupported_shortcut());
         }
         let mask = (found as u16) >> 8;
-        let modifiers = input::character_modifiers(mask, |vk| {
+        let modifiers = keys::character_modifiers(mask, |vk| {
             self.virtual_keys.contains_key(&vk) || self.added_modifiers.contains_key(&vk)
         })
         .ok_or_else(unsupported_shortcut)?;
@@ -620,7 +652,7 @@ fn mapped_key(vk: u16, extended: bool) -> (u16, KEYBD_EVENT_FLAGS) {
 fn mapped_key_in_layout(vk: u16, extended: bool, layout: HKL) -> (u16, KEYBD_EVENT_FLAGS) {
     // SAFETY: read-only virtual-key mapping in the selected keyboard layout.
     let mapped = unsafe { MapVirtualKeyExW(vk.into(), MAPVK_VK_TO_VSC_EX, Some(layout)) };
-    let (scan, extended) = input::mapped_scan(vk, mapped, extended);
+    let (scan, extended) = keys::mapped_scan(vk, mapped, extended);
     (
         scan,
         if extended {
@@ -725,7 +757,7 @@ fn console_keys(unit: u16) -> Option<(Vec<(u16, u16)>, bool)> {
         let caps_toggle = GetKeyState(VK_CAPITAL.0.into()) & 1 != 0;
         // CapsLock turns some keys' case over, and Shift turns it back.
         for mask in [mask, mask ^ 1] {
-            let state = input::console_keyboard_state(mask, caps_toggle);
+            let state = keys::console_keyboard_state(mask, caps_toggle);
             let mut typed = [0; 4];
             // Flag 4 leaves the keyboard state, a pending dead key included, alone.
             let count = ToUnicodeEx(

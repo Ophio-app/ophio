@@ -7,20 +7,23 @@ use hyper_util::rt::TokioIo;
 use ports::sandbox::{RelayProvider, RelaySignal, RelaySpec, RelayTotals};
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde_json::{Value, json};
+#[cfg(target_os = "linux")]
+use std::path::PathBuf;
 use std::{
     convert::Infallible,
     fs::{File, OpenOptions},
     io::{self, Write},
     os::unix::fs::{MetadataExt, OpenOptionsExt},
-    path::{Path, PathBuf},
+    path::Path,
     pin::Pin,
     sync::{Arc, Mutex},
     task::{Context, Poll},
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+#[cfg(target_os = "linux")]
+use tokio::net::UnixListener;
 use tokio::{
-    net::UnixListener,
     sync::{mpsc, watch},
     task::JoinSet,
 };
@@ -38,6 +41,9 @@ struct Accounting {
 struct Shared {
     spec: RelaySpec,
     key: HeaderValue,
+    /// A run-local capability, never the provider credential. Required on shared
+    /// host loopback; Linux's production transport retains its private UDS.
+    local_auth: Option<HeaderValue>,
     upstream: String,
     client: reqwest::Client,
     accounting: Mutex<Accounting>,
@@ -80,9 +86,15 @@ impl Shared {
 
 /// One host relay per run. Drop stops its connections and joins its worker.
 pub struct Relay {
+    #[cfg(target_os = "linux")]
     directory: tempfile::TempDir,
+    #[cfg(target_os = "macos")]
+    port: u16,
+    /// Pin the IPv6 spelling too: Seatbelt's localhost rule covers both.
+    #[cfg(target_os = "macos")]
+    _v6: Option<containment::inherit::Private<std::net::TcpListener>>,
     stop: watch::Sender<bool>,
-    worker: Option<thread::JoinHandle<()>>,
+    worker: Mutex<Option<thread::JoinHandle<()>>>,
     shared: Arc<Shared>,
 }
 impl std::fmt::Debug for Relay {
@@ -98,19 +110,45 @@ impl Relay {
             if !address.ip().is_loopback() {
                 return Err(io::Error::other("test provider must be loopback"));
             }
-            return Self::start_inner(state, spec, &format!("http://{address}"));
+            return Self::start_inner(
+                state,
+                spec,
+                &format!("http://{address}"),
+                cfg!(target_os = "macos"),
+            );
         }
         let upstream = match spec.provider {
             RelayProvider::Anthropic => "https://api.anthropic.com",
             RelayProvider::OpenAi => "https://api.openai.com",
         };
-        Self::start_inner(state, spec, upstream)
+        Self::start_inner(state, spec, upstream, cfg!(target_os = "macos"))
     }
     #[cfg(test)]
     fn test_upstream(state: &Path, spec: RelaySpec, upstream: &str) -> io::Result<Self> {
-        Self::start_inner(state, spec, upstream)
+        Self::start_inner(state, spec, upstream, cfg!(target_os = "macos"))
     }
-    fn start_inner(state: &Path, spec: RelaySpec, upstream: &str) -> io::Result<Self> {
+    fn start_inner(
+        state: &Path,
+        spec: RelaySpec,
+        upstream: &str,
+        authenticate: bool,
+    ) -> io::Result<Self> {
+        let local_auth = if authenticate {
+            use std::io::Read;
+            let mut random = [0u8; 32];
+            File::open("/dev/urandom")?.read_exact(&mut random)?;
+            let capability: String = random.iter().map(|b| format!("{b:02x}")).collect();
+            let value = if spec.provider == RelayProvider::OpenAi {
+                format!("Bearer {capability}")
+            } else {
+                capability
+            };
+            let mut header = HeaderValue::from_str(&value).expect("random capability is ASCII");
+            header.set_sensitive(true);
+            Some(header)
+        } else {
+            None
+        };
         let raw = std::fs::read_to_string(&spec.key_file)?;
         let mut key = HeaderValue::from_str(raw.trim())
             .map_err(|_| io::Error::other("invalid relay credential"))?;
@@ -139,10 +177,19 @@ impl Relay {
                 "relay credential and log must be separate regular files",
             ));
         }
+        #[cfg(target_os = "linux")]
         let directory = tempfile::Builder::new()
             .prefix("relay-")
             .tempdir_in(state)?;
+        #[cfg(target_os = "linux")]
         let listener = crate::sys::bind_unix(directory.path(), "model.sock")?;
+        #[cfg(target_os = "macos")]
+        let (listener, v6) = {
+            let _ = state;
+            crate::proxy::loopback_port()?
+        };
+        #[cfg(target_os = "macos")]
+        let port = listener.local_addr()?.port();
         listener.set_nonblocking(true)?;
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -150,7 +197,13 @@ impl Relay {
         let shared = Arc::new(Shared {
             spec,
             key,
+            local_auth,
             upstream: upstream.to_owned(),
+            // On the Mac its sockets to the provider are made outside
+            // `containment::inherit::private`: the client offers no way to
+            // make them under it and still connect outside. An agent started
+            // at that moment could keep one; TLS keeps the sign-in and the
+            // traffic in it from that agent, though not from spoiling it.
             client: reqwest::Client::builder()
                 .use_rustls_tls()
                 .no_proxy()
@@ -167,7 +220,10 @@ impl Relay {
         let server = shared.clone();
         let worker = thread::Builder::new().name("sandbox-relay".into()).spawn(move || {
             runtime.block_on(async move {
+                #[cfg(target_os = "linux")]
                 let Ok(listener) = UnixListener::from_std(listener) else { return };
+                #[cfg(target_os = "macos")]
+                let Ok(listener) = containment::inherit::Accepting::new(listener) else { return };
                 let mut tasks = JoinSet::new();
                 loop {
                     tokio::select! {
@@ -193,25 +249,51 @@ impl Relay {
             runtime.shutdown_timeout(Duration::from_secs(1));
         })?;
         Ok(Self {
+            #[cfg(target_os = "linux")]
             directory,
+            #[cfg(target_os = "macos")]
+            port,
+            #[cfg(target_os = "macos")]
+            _v6: v6,
             stop,
-            worker: Some(worker),
+            worker: Mutex::new(Some(worker)),
             shared,
         })
     }
+    #[cfg(target_os = "linux")]
     pub fn socket(&self) -> PathBuf {
         self.directory.path().join("model.sock")
+    }
+    #[cfg(target_os = "macos")]
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+    /// For the wrapped environment only, never command arguments or audit data.
+    #[cfg(any(target_os = "macos", test))]
+    pub(crate) fn local_key(&self) -> Option<&str> {
+        self.shared.local_auth.as_ref().map(|value| {
+            let value = value.to_str().expect("random capability is ASCII");
+            value.strip_prefix("Bearer ").unwrap_or(value)
+        })
     }
     pub fn totals(&self) -> RelayTotals {
         self.shared.accounting.lock().unwrap().totals
     }
+    /// Close admission, cancel active connections and wait for the server to end.
+    /// Kept separate from Drop so a retained sandbox cannot keep serving a run
+    /// that has already finished. Safe to repeat.
+    pub fn shutdown(&self) {
+        self.shared.accounting.lock().unwrap().closed = true;
+        let mut worker = self.worker.lock().unwrap();
+        self.stop.send_replace(true);
+        if let Some(worker) = worker.take() {
+            let _ = worker.join();
+        }
+    }
 }
 impl Drop for Relay {
     fn drop(&mut self) {
-        self.stop.send_replace(true);
-        if let Some(worker) = self.worker.take() {
-            let _ = worker.join();
-        }
+        self.shutdown();
     }
 }
 
@@ -483,6 +565,27 @@ async fn handle(
     request: Request<Incoming>,
     shared: Arc<Shared>,
 ) -> Result<Response<Body>, Infallible> {
+    if let Some(expected) = &shared.local_auth {
+        let name = match shared.spec.provider {
+            RelayProvider::Anthropic => "x-api-key",
+            RelayProvider::OpenAi => "authorization",
+        };
+        let mut values = request.headers().get_all(name).iter();
+        let authenticated = values.next().is_some_and(|provided| {
+            let (provided, expected) = (provided.as_bytes(), expected.as_bytes());
+            provided.len() == expected.len()
+                && provided
+                    .iter()
+                    .zip(expected)
+                    .fold(0u8, |difference, (a, b)| difference | (a ^ b))
+                    == 0
+        }) && values.next().is_none();
+        if !authenticated {
+            // Host port probes are not actions by this run. Do not inspect,
+            // charge, audit or signal them as an agent's attempted bypass.
+            return Ok(empty(401));
+        }
+    }
     let method = match request.method().as_str() {
         "POST" => "POST",
         "GET" => "GET",

@@ -845,6 +845,11 @@ impl Running {
             else {
                 return true;
             };
+            // Navigation can leave the discovery event with the old title;
+            // Chromium need not announce its final title separately. Publish
+            // the live metadata we already queried, including for background
+            // tabs that no subsequent agent operation will refresh.
+            self.info_changed(&info["targetInfo"]);
             let shows = origin_host(info["targetInfo"]["url"].as_str().unwrap_or_default());
             let has = self.lock().sites_of(target);
             if !on(&shows) && !has.iter().any(|site| on(site)) {
@@ -965,9 +970,9 @@ impl Running {
             .unwrap_or_default()
     }
 
-    /// Brings the tab's address and title up to date; the browser doesn't
-    /// announce a page's title once it has loaded.
-    async fn refresh(&self, target: &str) {
+    /// Brings the tab's address and title up to date; target discovery need
+    /// not announce a page's final title after navigation.
+    pub(super) async fn refresh(&self, target: &str) {
         if let Ok(info) = self
             .pipe
             .call(None, "Target.getTargetInfo", json!({"targetId":target}))

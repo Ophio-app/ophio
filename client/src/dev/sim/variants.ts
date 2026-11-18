@@ -35,9 +35,9 @@ export function variantCapabilities(base: HostCapabilities, name: HostVariant, i
     unlock_session: variant.os === "windows"
       ? { state: "unsupported", reason: "Windows can’t be unlocked from Ophio" }
       : { state: "available" },
-    // Only Linux holds a conversation's agent to what it may reach, so far.
+    // Linux and a Mac hold a conversation's agent to what it may reach; Windows can't yet.
     conversation_access: variant.os === "windows"
-      ? { state: "unsupported", reason: "Windows can’t keep a conversation to what it may reach yet" }
+      ? { state: "unsupported", reason: "Limited chats aren’t available on Windows yet, so Øphio can’t keep a chat to one project or off the internet on this computer." }
       : base.conversation_access,
     features: [...new Set([...base.features, "durable_admission", "journal_resume", "channel_link_review", "task_history"])],
   };

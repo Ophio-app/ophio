@@ -241,6 +241,8 @@ async fn bound(f: &Fixture, browser: Option<bool>) -> (TaskId, BridgeBinding) {
         .submit(
             &Caller::local_owner(),
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: None,
@@ -347,7 +349,8 @@ async fn a_browsing_run_fills_a_login_it_never_sees() {
     assert!(binding.browser);
     let downloads = browser.browsing.lock().unwrap()[&task].downloads.clone();
     let project = std::fs::canonicalize(f.project_dir()).unwrap();
-    assert_eq!(downloads, project.join("downloads"));
+    // The browser's internal download directory may use Windows' extended spelling.
+    crate::testing::assert_path_eq(&downloads, project.join("downloads"), false);
     let listed = ask(f, &binding, BrowserAction::ListLogins).await.unwrap();
     assert!(listed.contains(&login_id) && listed.contains("agent@example.com"));
     assert!(!listed.contains("pässword"), "{listed}");
@@ -490,6 +493,8 @@ async fn a_later_run_is_asked_again_however_late_the_last_one_lets_go() {
         .unwrap();
     let current: Task = f.hub.read(|r| r.require("task", task)).unwrap();
     let mut resume = CommandEnvelope::new(Command::ResumeTask {
+        observed_reply: None,
+        harness: None,
         mode: None,
         task_id: task,
         text: Some("Post the rest".into()),
@@ -566,6 +571,8 @@ async fn a_request_held_up_as_its_run_is_replaced_does_nothing() {
         .unwrap();
     let current: Task = f.hub.read(|r| r.require("task", task)).unwrap();
     let mut resume = CommandEnvelope::new(Command::ResumeTask {
+        observed_reply: None,
+        harness: None,
         mode: None,
         task_id: task,
         text: Some("Post the rest".into()),

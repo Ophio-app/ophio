@@ -1,5 +1,53 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
+use protocol::capability::HarnessKind;
+
+/// A complete recipient snapshot, not a patch against the task's future choices.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct AgentChoice {
+    pub harness: HarnessKind,
+    pub model: Option<String>,
+    pub effort: Option<String>,
+}
+
+impl AgentChoice {
+    pub(crate) fn of(task: &Task) -> Self {
+        Self {
+            harness: task.harness,
+            model: task.model.clone(),
+            effort: task.effort.clone(),
+        }
+    }
+
+    pub(crate) fn selected(
+        task: &Task,
+        harness: Option<HarnessKind>,
+        model: &Option<String>,
+        effort: &Option<String>,
+    ) -> Self {
+        // Explicitly choosing an agent means its defaults, even when choosing
+        // the same agent again. Never inherit the previous recipient's model.
+        let (model, effort) = if harness.is_some() || model.is_some() {
+            (model.clone(), effort.clone())
+        } else {
+            (
+                task.model.clone(),
+                effort.clone().or_else(|| task.effort.clone()),
+            )
+        };
+        Self {
+            harness: harness.unwrap_or(task.harness),
+            model,
+            effort,
+        }
+    }
+
+    pub(crate) fn apply(&self, task: &mut Task) {
+        task.harness = self.harness;
+        task.model = self.model.clone();
+        task.effort = self.effort.clone();
+    }
+}
 
 /// The next message a task that had stopped is to get, waiting in Next up
 /// until its turn there comes: task id → the message.
@@ -37,6 +85,9 @@ impl CompanionHub {
         task_id: TaskId,
         seq: u64,
     ) -> store::Result<(RunId, MessageRef)> {
+        if let Some(held) = self.held_chat_turn(&tx.read(), task_id, seq)? {
+            return Ok(held);
+        }
         let task: Task = tx.read().require("task", task_id)?;
         let catalog: Vec<protocol::capability::HarnessInfo> =
             tx.read().get("meta", "harnesses")?.unwrap_or_default();
@@ -74,6 +125,9 @@ impl CompanionHub {
         seq: u64,
         revoked: bool,
     ) -> Result<(), ProtocolError> {
+        if self.write(|tx| self.cancel_chat_turn(tx, task_id, seq, revoked))? {
+            return Ok(());
+        }
         let (run_id, _) = self.write(|tx| self.held_message(tx, task_id, seq))?;
         let lock = self.message_lock(run_id);
         let _guard = lock.lock().await;
@@ -132,6 +186,7 @@ impl CompanionHub {
         identity_id: ChannelIdentityId,
     ) -> Result<(), ProtocolError> {
         let sender = protocol::auth::Principal::Channel { identity_id };
+        self.write(|tx| self.withdraw_chat_turns(tx, sender))?;
         // A message the chat is sending now is recorded before its run's lock
         // is released, and one it sends later is refused. Wait for those.
         let runs: Vec<RunId> = self.inner.runs.lock().await.keys().copied().collect();
@@ -194,6 +249,27 @@ impl CompanionHub {
         authorization: QueueAuthorization,
         request: QueuedRequest,
     ) -> store::Result<QueueItemId> {
+        self.enqueue_after(
+            tx,
+            caller,
+            task,
+            (position, authorization),
+            request,
+            Vec::new(),
+        )
+    }
+
+    /// [`Self::enqueue`], waiting for the items in `depends_on` to finish
+    /// well before it starts.
+    pub(crate) fn enqueue_after(
+        &self,
+        tx: &mut store::Write<'_>,
+        caller: &Caller,
+        task: &Task,
+        (position, authorization): (Option<u32>, QueueAuthorization),
+        request: QueuedRequest,
+        depends_on: Vec<QueueItemId>,
+    ) -> store::Result<QueueItemId> {
         let now = self.inner.clock.now();
         let mut q: QueueView = tx.read().require("queue", task.project_id)?;
         let position = position.unwrap_or(q.items.len() as u32) as usize;
@@ -238,7 +314,7 @@ impl CompanionHub {
                 item_id,
                 task_id: task.task_id,
                 position: position as u32,
-                depends_on: Vec::new(),
+                depends_on,
                 authorization,
                 state: QueueItemState::Waiting,
                 added_by: caller.principal,
@@ -269,6 +345,7 @@ impl CompanionHub {
         bundle: Option<&AnnotationBundle>,
         authorization: QueueAuthorization,
         expected: Option<u64>,
+        from_person: bool,
     ) -> store::Result<()> {
         let text = text.trim();
         // Markup alone is a complete message, as it is sent to a task.
@@ -342,6 +419,9 @@ impl CompanionHub {
                 },
             },
         })?;
+        // The saved sequence follows this message through Next up, including
+        // a restart; its origin must not come from whoever starts it later.
+        crate::turned_from_chat::record_message_origin(tx, task_id, seq, from_person)?;
         self.track_start_message(tx, task_id, None, seq)
     }
 
@@ -351,6 +431,7 @@ impl CompanionHub {
         item_id: QueueItemId,
         prompt: &str,
         expected: Option<u64>,
+        from_person: bool,
     ) -> store::Result<()> {
         if prompt.trim().is_empty() {
             return Err(error(
@@ -411,6 +492,7 @@ impl CompanionHub {
                 },
             })?;
             if is_message {
+                crate::turned_from_chat::record_message_origin(tx, task.task_id, seq, from_person)?;
                 self.track_start_message(tx, task.task_id, None, seq)?;
             }
         }

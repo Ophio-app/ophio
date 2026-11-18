@@ -76,6 +76,7 @@ export class Handoffs extends Store<RetainedControl[]> {
   readonly sessions = new Map<string, HostSession>();
   #offs = new Map<string, () => void>();
   activeProfileId: string | null = null;
+  visibleProfileIds: ReadonlySet<string> = new Set();
   /** `source` hands out the session the app keeps for each computer; without
    * it, sessions made here are this store's to stop. */
   constructor(readonly platform: Platform, public profiles: HostProfile[], readonly source?: (profileId: string) => HostSession) {
@@ -193,7 +194,7 @@ export class Handoffs extends Store<RetainedControl[]> {
         return;
       }
       risk = remainingRisk(risk, snap, profile.deviceId);
-      if (!hasRisk(risk)) this.dismiss(profileId, profileId !== this.activeProfileId);
+      if (!hasRisk(risk)) this.dismiss(profileId, profileId !== this.activeProfileId && !this.visibleProfileIds.has(profileId));
       else this.update(profileId, { risk, detail: risk.privateTargets.length ? "A private step is still open. Return to it to review what was typed and confirm it." : "The computer hasn’t confirmed all controls or Stop requests are settled." });
     } catch { /* Keep the last known unresolved state; lack of a reply is not success. */ }
     finally { this.#refreshing.delete(profileId); }

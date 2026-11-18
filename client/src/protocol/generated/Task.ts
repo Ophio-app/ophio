@@ -10,17 +10,31 @@ import type { RunId } from "./RunId";
 import type { StartedFrom } from "./StartedFrom";
 import type { TargetId } from "./TargetId";
 import type { TaskBranch } from "./TaskBranch";
+import type { TaskChecking } from "./TaskChecking";
 import type { TaskGithub } from "./TaskGithub";
 import type { TaskId } from "./TaskId";
 import type { TaskKind } from "./TaskKind";
 import type { TaskMode } from "./TaskMode";
+import type { TaskOrigin } from "./TaskOrigin";
 import type { TaskReport } from "./TaskReport";
 import type { TaskReview } from "./TaskReview";
 import type { TaskState } from "./TaskState";
 import type { TaskWake } from "./TaskWake";
 import type { Timestamp } from "./Timestamp";
 
-export type Task = { task_id: TaskId, project_id: ProjectId, kind: TaskKind, 
+export type Task = { 
+/**
+ * Remains Working for older phones; only checks_v1 clients display progress.
+ */
+checking?: TaskChecking, task_id: TaskId, project_id: ProjectId, kind: TaskKind, 
+/**
+ * Chat turn and suggested-work position this task was started from.
+ */
+origin?: TaskOrigin, 
+/**
+ * The conversation this task was turned from; its first turn is told what was said there.
+ */
+from_chat?: TaskId, 
 /**
  * Kept by resumed runs. Carrying out a finished Plan is the one change,
  * to Work; each run records its own in `Run::mode`.

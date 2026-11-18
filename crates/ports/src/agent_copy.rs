@@ -71,6 +71,12 @@ pub struct CopyState {
     pub harness: HarnessKind,
     /// The version tasks start with, `None` with no copy.
     pub version: Option<String>,
+    /// The newest release reported by the maker, without downloading a program.
+    pub latest_version: Option<String>,
+    /// This installation can be updated by Øphio (not an explicitly pinned path).
+    pub update_supported: bool,
+    /// Validated model IDs from official newer release notes. Use model_name for display.
+    pub released_models: Vec<String>,
     /// The agent's maker was asked for its newest release, and answered.
     pub checked: bool,
     /// Why the check or download didn't finish, in words for the owner.
@@ -81,18 +87,96 @@ pub struct CopyState {
 pub trait AgentUpdater: Send + Sync + std::fmt::Debug + 'static {
     /// Whether the agents' makers publish programs for this computer's system.
     fn supported(&self) -> bool;
-    /// Brings the copies in line with the setting. On, each agent installed
-    /// on the computer, or copied before, gets its maker's newest release;
-    /// off, tasks go back to the computer's programs and the copies go.
+    /// Supplies versions already observed by the harnesses; never launches a program.
+    fn observe_versions(&self, _versions: &[(HarnessKind, String)]) {}
+    /// Reads release metadata only, retaining every existing copy.
+    async fn check(&self) -> Vec<CopyState> {
+        Vec::new()
+    }
+    /// Updates only the requested agent, without changing the owner's update mode.
+    async fn update(&self, kind: HarnessKind) -> Vec<CopyState> {
+        vec![CopyState {
+            harness: kind,
+            version: None,
+            latest_version: None,
+            update_supported: false,
+            released_models: Vec::new(),
+            checked: false,
+            problem: Some(
+                "Update this agent on the computer; this installation cannot be updated by Øphio."
+                    .into(),
+            ),
+        }]
+    }
+    /// With `keep`, installs newer releases automatically. Without it, retains
+    /// all copies and does not contact the network.
     async fn apply(&self, keep: bool) -> Vec<CopyState>;
     /// The program and environment that start Øphio's copy of an agent in a
     /// terminal, when there is one.
     fn program(&self, kind: HarnessKind) -> Option<(PathBuf, Vec<(String, String)>)>;
 }
 
+/// A stable release version, either bare or in the maker's exact CLI format.
+/// Unknown output is not evidence of an installed version.
+pub fn normalized_version(kind: HarnessKind, raw: &str) -> Option<String> {
+    if raw.len() > 96 {
+        return None;
+    }
+    let raw = raw.trim();
+    let version = match kind {
+        HarnessKind::ClaudeCode => raw.strip_suffix(" (Claude Code)").unwrap_or(raw),
+        HarnessKind::Codex => raw.strip_prefix("codex-cli ").unwrap_or(raw),
+        _ => return None,
+    };
+    let pieces: Vec<_> = version.split('.').collect();
+    (pieces.len() == 3
+        && pieces.iter().all(|part| {
+            !part.is_empty()
+                && part.bytes().all(|b| b.is_ascii_digit())
+                && (part.len() == 1 || !part.starts_with('0'))
+                && part.parse::<u64>().is_ok()
+        }))
+    .then(|| version.to_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn normalizes_only_known_version_output() {
+        for (kind, raw, want) in [
+            (
+                HarnessKind::ClaudeCode,
+                "2.1.321 (Claude Code)\n",
+                "2.1.321",
+            ),
+            (HarnessKind::Codex, "codex-cli 0.161.0\n", "0.161.0"),
+            (HarnessKind::ClaudeCode, "2.1.321", "2.1.321"),
+        ] {
+            assert_eq!(normalized_version(kind, raw).as_deref(), Some(want));
+        }
+        for raw in [
+            "warning 2.1.321",
+            "2.1.321 extra",
+            "2.01.321",
+            "2.1",
+            "2.1.321-beta",
+            "codex-cli 2.1.321",
+            "2.1.321\nmore",
+            "999999999999999999999999.1.0",
+        ] {
+            assert_eq!(
+                normalized_version(HarnessKind::ClaudeCode, raw),
+                None,
+                "{raw}"
+            );
+        }
+        assert_eq!(
+            normalized_version(HarnessKind::Codex, "2.1.321 (Claude Code)"),
+            None
+        );
+    }
 
     #[test]
     fn current_names_only_a_program_inside_the_folder() {

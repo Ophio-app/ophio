@@ -7,6 +7,10 @@ rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[features]
+# Synthetic CLI fixtures only. Enable from dev-dependencies, never a product build.
+test-fixtures = []
+
 [dependencies]
 protocol.workspace = true
 ports.workspace = true

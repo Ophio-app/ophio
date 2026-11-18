@@ -46,7 +46,11 @@ impl Repo {
     }
     async fn run_all(&self, step: RunStep) -> Result<(), ErrorCode> {
         let project_id = self.project_id;
-        let action = GithubAction::RunIssues { project_id, step };
+        let action = GithubAction::RunIssues {
+            project_id,
+            step,
+            origin: None,
+        };
         self.act(&Caller::local_owner(), action).await
     }
     fn issue_run(&self) -> IssueRun {
@@ -693,5 +697,497 @@ async fn stopped_before_anything_came_of_it_run_all_tells_nothing() {
     .await;
     r.tell_run_all();
     assert_eq!(r.run_all_told(), []);
+    r.f.close().await;
+}
+
+/// Run all offered on a chat's card starts from that card once, only by the
+/// person, and never from a chat that has been archived since.
+#[tokio::test]
+async fn run_all_from_a_chats_card_starts_once_and_not_from_an_archived_chat() {
+    use protocol::work_cards::TaskOrigin;
+    let r = repo(true).await;
+    r.set(agents()).await.unwrap();
+    r.issues(&[(4, Some(TriageGroup::AgentCanTake))]);
+    let owner = Caller::local_owner();
+    // A chat whose answer offered to fix every issue, and one that offered a task.
+    let mut chats = vec![];
+    for all_issues in [true, false] {
+        let (chat, _) = (r.f)
+            .task(r.project_id, TaskPlacement::StartNow, &owner, false)
+            .await;
+        let task: Task = r.f.hub.read(|x| x.require("task", chat)).unwrap();
+        let run = task.current_run.unwrap();
+        (r.f.hub)
+            .write(|tx| {
+                let mut task: Task = tx.read().require("task", chat)?;
+                task.conversation = true;
+                tx.put("task", chat, &task)
+            })
+            .unwrap();
+        let task: Task = r.f.hub.read(|x| x.require("task", chat)).unwrap();
+        let tasks = if all_issues {
+            vec![]
+        } else {
+            vec![json!("Something else")]
+        };
+        let call = ports::bridge::WorkCall::Propose {
+            tasks,
+            in_order: false,
+            all_issues,
+        };
+        r.f.hub
+            .work_request(run, &task, call.clone())
+            .await
+            .unwrap();
+        if all_issues {
+            // Once a turn: the chat hears one Run all report for it.
+            let again = r.f.hub.work_request(run, &task, call).await.unwrap_err();
+            assert!(
+                again
+                    .message
+                    .contains("already proposed fixing every issue"),
+                "{again:?}"
+            );
+        }
+        r.f.hub.finish_run(run, RunState::Completed, None).unwrap();
+        chats.push((chat, run));
+    }
+    let start = |origin: TaskOrigin| GithubAction::RunIssues {
+        project_id: r.project_id,
+        step: RunStep::Start,
+        origin: Some(origin),
+    };
+    let card = |(chat, run): (TaskId, RunId)| TaskOrigin {
+        chat,
+        run,
+        index: 0,
+        auto: false,
+        reviewed: false,
+    };
+    // Only the person, and only what the card offered.
+    let auto = TaskOrigin {
+        auto: true,
+        reviewed: false,
+        ..card(chats[0])
+    };
+    assert_eq!(
+        r.act(&owner, start(auto)).await,
+        Err(ErrorCode::InvalidRequest)
+    );
+    assert_eq!(
+        r.act(&owner, start(card(chats[1]))).await,
+        Err(ErrorCode::InvalidRequest)
+    );
+    // An archived chat's card starts nothing.
+    let archive = |state| {
+        let chat = chats[0].0;
+        (r.f.hub)
+            .write(move |tx| {
+                let mut task: Task = tx.read().require("task", chat)?;
+                task.state = state;
+                tx.put("task", chat, &task)
+            })
+            .unwrap();
+    };
+    archive(TaskState::Archived);
+    assert_eq!(
+        r.act(&owner, start(card(chats[0]))).await,
+        Err(ErrorCode::InvalidRequest)
+    );
+    assert!(
+        r.f.hub
+            .read(|x| crate::github_run::issue_run(x, r.project_id))
+            .unwrap()
+            .is_none()
+    );
+    archive(TaskState::Completed);
+    r.act(&owner, start(card(chats[0]))).await.unwrap();
+    assert_eq!(r.issue_run().origin, Some(card(chats[0])));
+    // Started once: its card can't start it again.
+    assert_eq!(
+        r.act(&owner, start(card(chats[0]))).await,
+        Err(ErrorCode::Conflict)
+    );
+    r.f.close().await;
+}
+
+/// A finished but untold run is folded into the next one. The chat that
+/// started it must hear the combined result even if Tasks starts the next.
+#[tokio::test]
+async fn an_untold_chats_run_follows_a_later_tasks_run_into_its_chat() {
+    let r = repo(true).await;
+    r.set(agents()).await.unwrap();
+    let origin = run_all_card(&r).await;
+    r.issues(&[(4, Some(TriageGroup::AgentCanTake))]);
+    start_from_card(&r, origin.clone()).await;
+    let (first, first_run) = r.next_fix().await;
+    r.run_all(RunStep::Stop).await.unwrap();
+    r.issues(&[(5, Some(TriageGroup::AgentCanTake))]);
+    r.run_all(RunStep::Start).await.unwrap();
+    r.exits(first_run, ports::RunExit::Interrupted).await;
+    r.until("the first fix didn't stop", |r| {
+        r.get(first).state == TaskState::Interrupted
+    })
+    .await;
+    r.f.hub.advance_queues().await.unwrap();
+    let (second, second_run) = r.next_fix().await;
+    r.ends(second, second_run, Some("Done.")).await;
+    r.until("the second run didn't end", |r| {
+        r.issue_run().ended_at.is_some()
+    })
+    .await;
+    r.tell_run_all();
+    r.tell_run_all();
+    assert_eq!(run_all_notes(&r, origin.chat).len(), 1);
+    assert!(run_all_notes(&r, origin.chat)[0].contains("#4"));
+    assert!(run_all_notes(&r, origin.chat)[0].contains("#5"));
+    let news =
+        r.f.hub
+            .read(|x| crate::chat_news::pending(x, origin.chat))
+            .unwrap();
+    assert_eq!(news.len(), 1);
+    assert_eq!(news[0].text, run_all_notes(&r, origin.chat)[0]);
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn two_chats_hear_the_same_combined_run_all_report_once_each() {
+    let r = repo(true).await;
+    r.set(agents()).await.unwrap();
+    let first_chat = run_all_card(&r).await;
+    let second_chat = run_all_card(&r).await;
+    r.issues(&[(4, Some(TriageGroup::AgentCanTake))]);
+    start_from_card(&r, first_chat.clone()).await;
+    let (first, first_run) = r.next_fix().await;
+    r.run_all(RunStep::Stop).await.unwrap();
+    r.issues(&[(5, Some(TriageGroup::AgentCanTake))]);
+    start_from_card(&r, second_chat.clone()).await;
+    r.exits(first_run, ports::RunExit::Interrupted).await;
+    r.until("the first fix didn't stop", |r| {
+        r.get(first).state == TaskState::Interrupted
+    })
+    .await;
+    r.f.hub.advance_queues().await.unwrap();
+    let (second, second_run) = r.next_fix().await;
+    r.ends(second, second_run, Some("Done.")).await;
+    r.until("the second run didn't end", |r| {
+        r.issue_run().ended_at.is_some()
+    })
+    .await;
+    r.tell_run_all();
+    r.tell_run_all();
+    let first_notes = run_all_notes(&r, first_chat.chat);
+    let second_notes = run_all_notes(&r, second_chat.chat);
+    assert_eq!(first_notes, second_notes);
+    assert_eq!(first_notes.len(), 1);
+    assert!(first_notes[0].contains("#4") && first_notes[0].contains("#5"));
+    for origin in [first_chat, second_chat] {
+        let news =
+            r.f.hub
+                .read(|x| crate::chat_news::pending(x, origin.chat))
+                .unwrap();
+        assert_eq!(news.len(), 1);
+        assert_eq!(news[0].text, first_notes[0]);
+    }
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn tasks_only_run_all_does_not_post_to_any_chat() {
+    let r = repo(true).await;
+    r.set(agents()).await.unwrap();
+    let chat = run_all_card(&r).await;
+    r.issues(&[(4, Some(TriageGroup::AgentCanTake))]);
+    r.run_all(RunStep::Start).await.unwrap();
+    let (fix, fix_run) = r.next_fix().await;
+    r.ends(fix, fix_run, Some("Done.")).await;
+    r.until("the run didn't end", |r| r.issue_run().ended_at.is_some())
+        .await;
+    r.tell_run_all();
+    assert!(run_all_notes(&r, chat.chat).is_empty());
+    assert!(
+        r.f.hub
+            .read(|x| crate::chat_news::pending(x, chat.chat))
+            .unwrap()
+            .is_empty()
+    );
+    r.f.close().await;
+}
+
+async fn run_all_card(r: &Repo) -> protocol::work_cards::TaskOrigin {
+    let owner = Caller::local_owner();
+    let (chat, _) =
+        r.f.task(r.project_id, TaskPlacement::StartNow, &owner, false)
+            .await;
+    let task: Task = r.f.hub.read(|x| x.require("task", chat)).unwrap();
+    let run = task.current_run.unwrap();
+    r.f.hub
+        .write(|tx| {
+            let mut task: Task = tx.read().require("task", chat)?;
+            task.conversation = true;
+            tx.put("task", chat, &task)
+        })
+        .unwrap();
+    let task: Task = r.f.hub.read(|x| x.require("task", chat)).unwrap();
+    r.f.hub
+        .work_request(
+            run,
+            &task,
+            ports::bridge::WorkCall::Propose {
+                tasks: vec![],
+                in_order: false,
+                all_issues: true,
+            },
+        )
+        .await
+        .unwrap();
+    r.f.hub.finish_run(run, RunState::Completed, None).unwrap();
+    protocol::work_cards::TaskOrigin {
+        chat,
+        run,
+        index: 0,
+        auto: false,
+        reviewed: false,
+    }
+}
+
+async fn start_from_card(r: &Repo, origin: protocol::work_cards::TaskOrigin) {
+    r.act(
+        &Caller::local_owner(),
+        GithubAction::RunIssues {
+            project_id: r.project_id,
+            step: RunStep::Start,
+            origin: Some(origin),
+        },
+    )
+    .await
+    .unwrap();
+}
+
+fn run_all_notes(r: &Repo, chat: TaskId) -> Vec<String> {
+    let (items, _) = r.f.hub.read(|x| x.timeline(chat, None, 500)).unwrap();
+    items
+        .into_iter()
+        .filter_map(|item| match item.item {
+            TimelineBody::Note { text } if text.starts_with("Run all") => Some(text),
+            _ => None,
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn run_all_card_failed_admission_can_be_retried_successfully() {
+    let r = repo(true).await;
+    r.set(agents()).await.unwrap();
+    r.issues(&[(4, Some(TriageGroup::AgentCanTake))]);
+    let origin = run_all_card(&r).await;
+    r.gh.refuse("GET /repos/octo/app/issues/4", 502);
+    let caller = Caller::local_owner();
+    let failed =
+        r.f.hub
+            .run_issues(&caller, r.project_id, RunStep::Start, Some(&origin))
+            .await
+            .unwrap_err();
+    assert_eq!(failed.code, ErrorCode::NativeFailure);
+    let key = format!("{}/{}/{}", origin.chat, origin.run, origin.index);
+    assert!(
+        r.f.hub
+            .read(|x| x.get::<TaskId>("task_origin", &key))
+            .unwrap()
+            .is_none()
+    );
+    assert!(r.issue_run().origin.is_none());
+    assert!(r.issue_run().ended_at.is_some());
+    r.tell_run_all();
+    assert!(run_all_notes(&r, origin.chat).is_empty());
+    r.mine(4, "Item 4");
+    // No clock advance: the retry must not replay the rejected fix command.
+    start_from_card(&r, origin.clone()).await;
+    assert_eq!(r.issue_run().origin, Some(origin));
+    assert_eq!(r.issue_run().fixes.len(), 1);
+    assert!(r.fix(4).is_some());
+    assert!(
+        r.f.hub
+            .read(|x| x.get::<TaskId>("task_origin", &key))
+            .unwrap()
+            .is_some()
+    );
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn run_all_card_empty_result_can_be_retried_without_a_chat_completion() {
+    let r = repo(true).await;
+    r.set(agents()).await.unwrap();
+    r.issues(&[]);
+    let origin = run_all_card(&r).await;
+    let caller = Caller::local_owner();
+    let empty =
+        r.f.hub
+            .run_issues(&caller, r.project_id, RunStep::Start, Some(&origin))
+            .await
+            .unwrap_err();
+    assert_eq!(empty.code, ErrorCode::InvalidRequest);
+    assert!(empty.message.starts_with("Nothing to fix:"));
+    let key = format!("{}/{}/{}", origin.chat, origin.run, origin.index);
+    assert!(
+        r.f.hub
+            .read(|x| x.get::<TaskId>("task_origin", &key))
+            .unwrap()
+            .is_none()
+    );
+    assert!(r.issue_run().origin.is_none());
+    r.tell_run_all();
+    r.tell_run_all();
+    assert!(run_all_notes(&r, origin.chat).is_empty());
+    assert!(r.run_all_told().is_empty());
+    r.issues(&[(4, Some(TriageGroup::AgentCanTake))]);
+    start_from_card(&r, origin.clone()).await;
+    assert_eq!(r.issue_run().origin, Some(origin));
+    assert_eq!(r.issue_run().fixes.len(), 1);
+    assert!(r.fix(4).is_some());
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn run_all_card_concurrent_starts_consume_it_once() {
+    let r = repo(true).await;
+    r.set(agents()).await.unwrap();
+    r.issues(&[(4, Some(TriageGroup::AgentCanTake)), (5, None)]);
+    let origin = run_all_card(&r).await;
+    let (arrived, release) = r.gh.pause("/issues/4");
+    let caller = Caller::local_owner();
+    let first =
+        r.f.hub
+            .run_issues(&caller, r.project_id, RunStep::Start, Some(&origin));
+    let second = async {
+        arrived.await.unwrap();
+        let result =
+            r.f.hub
+                .run_issues(&caller, r.project_id, RunStep::Start, Some(&origin))
+                .await;
+        release.send(()).unwrap();
+        result
+    };
+    let (first, second) = tokio::join!(first, second);
+    let results = [first, second];
+    assert_eq!(
+        results.iter().filter(|r| r.is_ok()).count(),
+        1,
+        "{results:?}"
+    );
+    let refused = results.iter().find_map(|r| r.as_ref().err()).unwrap();
+    assert_eq!(refused.code, ErrorCode::Conflict);
+    assert_eq!(refused.message, "This was already started.");
+    assert_eq!(r.issue_run().origin, Some(origin.clone()));
+    assert_eq!(r.issue_run().fixes.len(), 1);
+    let tasks = r.f.hub.read(|x| x.list::<Task>("task")).unwrap();
+    assert_eq!(
+        tasks
+            .iter()
+            .filter(|t| t.github.as_deref().is_some_and(|g| g.link
+                == GithubLink::Issue {
+                    number: 4,
+                    review_with: Some(claude()),
+                    when_green: None
+                }))
+            .count(),
+        1
+    );
+    let sorts: Vec<_> = tasks
+        .iter()
+        .filter(|t| {
+            t.github
+                .as_deref()
+                .is_some_and(|g| g.link == GithubLink::Triage)
+        })
+        .collect();
+    assert_eq!(
+        sorts.len(),
+        1,
+        "A refused start must not admit another Sort"
+    );
+    assert_eq!(r.issue_run().sorting, Some(sorts[0].task_id));
+    let again =
+        r.f.hub
+            .run_issues(&caller, r.project_id, RunStep::Start, Some(&origin))
+            .await
+            .unwrap_err();
+    assert_eq!(again.code, ErrorCode::Conflict);
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn a_run_all_fix_and_its_chat_survive_restart_before_start_finishes() {
+    let r = repo(true).await;
+    r.set(agents()).await.unwrap();
+    r.issues(&[
+        (4, Some(TriageGroup::AgentCanTake)),
+        (5, Some(TriageGroup::AgentCanTake)),
+    ]);
+    let origin = run_all_card(&r).await;
+    let first;
+    {
+        // The first task has been admitted, but the second is still being
+        // prepared. Dropping Start here models losing the process before
+        // start_run_all's final membership write.
+        let (arrived, _release) = r.gh.pause("GET /repos/octo/app/issues/5");
+        let caller = Caller::local_owner();
+        let start =
+            r.f.hub
+                .run_issues(&caller, r.project_id, RunStep::Start, Some(&origin));
+        tokio::pin!(start);
+        tokio::select! {
+            result = arrived => result.unwrap(),
+            result = &mut start => panic!("Start finished before the second admission: {result:?}"),
+        }
+        let tasks = r.f.hub.read(|x| x.list::<Task>("task")).unwrap();
+        first = tasks
+            .iter()
+            .find(|t| {
+                t.github
+                    .as_deref()
+                    .is_some_and(|g| matches!(g.link, GithubLink::Issue { number: 4, .. }))
+            })
+            .unwrap()
+            .task_id;
+        assert_eq!(r.issue_run().fixes.len(), 1);
+        assert_eq!(r.issue_run().fixes[0].task_id, first);
+        assert_eq!(r.issue_run().origin, Some(origin.clone()));
+        let run = run_started(&r.f, first).await;
+        r.f.hub.finish_run(run, RunState::Completed, None).unwrap();
+    }
+    let Repo { f, gh, project_id } = r;
+    let port = gh.clone();
+    let r = Repo {
+        f: f.reopened(|b| b.github(port)).await,
+        gh,
+        project_id,
+    };
+    assert_eq!(r.issue_run().fixes.len(), 1);
+    assert_eq!(r.issue_run().fixes[0].task_id, first);
+    assert_eq!(r.issue_run().origin, Some(origin.clone()));
+    // Work really was started, so this card is used; its admitted work must
+    // be in the report even though Start never reached its final write.
+    let again =
+        r.f.hub
+            .run_issues(
+                &Caller::local_owner(),
+                project_id,
+                RunStep::Start,
+                Some(&origin),
+            )
+            .await
+            .unwrap_err();
+    assert_eq!(again.code, ErrorCode::Conflict);
+    r.f.clock.advance(Duration::from_secs(11 * 60));
+    r.f.hub.advance_queues().await.unwrap();
+    assert!(r.issue_run().ended_at.is_some());
+    r.tell_run_all();
+    r.tell_run_all();
+    let notes = run_all_notes(&r, origin.chat);
+    assert_eq!(notes.len(), 1, "{notes:?}");
+    assert!(notes[0].contains("#4"), "{notes:?}");
+    assert!(!notes[0].contains("#5"), "{notes:?}");
     r.f.close().await;
 }

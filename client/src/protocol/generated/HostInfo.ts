@@ -2,6 +2,7 @@
 import type { BootEpoch } from "./BootEpoch";
 import type { HostCapabilities } from "./HostCapabilities";
 import type { HostId } from "./HostId";
+import type { ReleaseCheckView } from "./ReleaseCheckView";
 import type { Timestamp } from "./Timestamp";
 
 export type HostInfo = { 
@@ -17,4 +18,12 @@ name: string,
  * The owner chose `name` (`Command::RenameComputer`); otherwise it is
  * the computer's hostname.
  */
-renamed?: boolean, os_label: string, companion_version: string, boot_epoch: BootEpoch, started_at: Timestamp, capabilities: HostCapabilities, };
+renamed?: boolean, os_label: string, companion_version: string, boot_epoch: BootEpoch, started_at: Timestamp, capabilities: HostCapabilities, 
+/**
+ * Whether a newer Øphio is out for this computer, as
+ * [`crate::Query::ReleaseCheck`] answers, kept current here so a
+ * change shows on every phone at once. None from a computer that
+ * doesn't check. One a newer computer kept in a form this version
+ * can't read reads as none, so the host record still reads.
+ */
+release_check?: ReleaseCheckView, };

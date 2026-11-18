@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{CompanionHub, error, internal};
 use protocol::{ErrorCode, ProtocolError};
-use std::path::{Component, Path, PathBuf};
+#[cfg(not(windows))]
+use std::path::Component;
+use std::path::{Path, PathBuf};
 
 /// Resolve existing symlinks without creating the destination. New directories
 /// are created only when receiving the first file, using normal filesystem permissions.
 pub fn outside_data(path: &Path, data: &Path) -> Result<PathBuf, ProtocolError> {
+    #[cfg(not(windows))]
     fn resolve(path: &Path) -> std::io::Result<PathBuf> {
         let path = if path.is_absolute() {
             path.to_owned()
@@ -29,7 +32,16 @@ pub fn outside_data(path: &Path, data: &Path) -> Result<PathBuf, ProtocolError> 
         }
         Ok(result)
     }
+    // Resolving a Windows drive prefix on its own can expand a SUBST drive
+    // before RootDir is appended, losing the mapped folder. Resolve the whole
+    // path instead, and compare both sides in the same non-display spelling.
+    #[cfg(windows)]
+    let folder = ports::library::comparison(path).map_err(internal)?;
+    #[cfg(windows)]
+    let data = ports::library::comparison(data).map_err(internal)?;
+    #[cfg(not(windows))]
     let folder = resolve(path).map_err(internal)?;
+    #[cfg(not(windows))]
     let data = resolve(data).map_err(internal)?;
     if folder.starts_with(&data) {
         return Err(error(
@@ -43,6 +55,8 @@ pub fn outside_data(path: &Path, data: &Path) -> Result<PathBuf, ProtocolError> 
             "Received-files destination must be a directory with a UTF-8 path",
         ));
     }
+    #[cfg(windows)]
+    let folder = ports::library::plain(folder);
     Ok(folder)
 }
 

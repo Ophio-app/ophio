@@ -43,5 +43,5 @@ it("opens the failed run's own receipt from its review row after a later run fin
   fireEvent.click(row);
   // The row names run 1's failure, so it must open run 1's receipt, not the
   // newest run's (which would also clear this failure alert unseen).
-  expect(app.ui.route()).toEqual({ screen: "receipt", taskId: task.task_id, runId: failed.run_id });
+  expect(app.ui.route()).toEqual({ screen: "receipt", taskId: task.task_id, runId: failed.run_id, taskEntry: true });
 });

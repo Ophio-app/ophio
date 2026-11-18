@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //! CONNECT-only proxy. Host policy is checked before DNS and throughout tunnels.
+#[cfg(target_os = "macos")]
+use containment::inherit::{Accepting, Private, private};
 use ports::sandbox::{Blocked, OnBlocked};
 use protocol::capability::HarnessKind;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
 use std::{io, path::Path, thread};
-#[cfg(target_os = "macos")]
-use tokio::net::TcpListener;
 #[cfg(target_os = "linux")]
 use tokio::net::UnixListener;
 #[cfg(all(test, target_os = "linux"))]
@@ -63,7 +63,7 @@ pub(crate) struct Proxy {
     /// The same port on IPv6, held so that no other program can answer there:
     /// a Mac's sandbox can name only `localhost`, which means both.
     #[cfg(target_os = "macos")]
-    _v6: Option<std::net::TcpListener>,
+    _v6: Option<Private<std::net::TcpListener>>,
     policy: watch::Sender<Option<Policy>>,
     worker: Option<thread::JoinHandle<()>>,
 }
@@ -115,7 +115,7 @@ impl Proxy {
             #[cfg(target_os = "linux")]
             let Ok(listener) = UnixListener::from_std(listener) else { return };
             #[cfg(target_os = "macos")]
-            let Ok(listener) = TcpListener::from_std(listener) else { return };
+            let Ok(listener) = Accepting::new(listener) else { return };
             let mut tasks = JoinSet::new();
             loop {
                 tokio::select! {
@@ -169,21 +169,54 @@ impl Drop for Proxy {
 }
 
 /// A loopback port free on both IPv4 and IPv6. A computer with no IPv6 loopback
-/// has nothing there to hold.
+/// has nothing there to hold. Both listeners are made and closed while no
+/// process is being started, so none started meanwhile keeps either.
 #[cfg(target_os = "macos")]
-fn loopback_port() -> io::Result<(std::net::TcpListener, Option<std::net::TcpListener>)> {
+pub(crate) fn loopback_port() -> io::Result<(
+    Private<std::net::TcpListener>,
+    Option<Private<std::net::TcpListener>>,
+)> {
     use std::net::TcpListener;
     let mut last = None;
     for _ in 0..32 {
-        let listener = TcpListener::bind(("127.0.0.1", 0))?;
+        let listener = Private::new(private(|| TcpListener::bind(("127.0.0.1", 0)))?);
         let port = listener.local_addr()?.port();
-        match TcpListener::bind(("::1", port)) {
+        match private(|| TcpListener::bind(("::1", port))).map(Private::new) {
             Ok(v6) => return Ok((listener, Some(v6))),
             Err(e) if e.kind() == io::ErrorKind::AddrNotAvailable => return Ok((listener, None)),
             Err(e) => last = Some(e),
         }
     }
     Err(last.unwrap_or_else(|| io::Error::other("no free loopback port")))
+}
+
+/// Connect to the first of `addresses` that answers, as
+/// [`TcpStream::connect`] does. On the Mac each socket is made under
+/// [`private`], so no agent started meanwhile keeps another run's tunnel; the
+/// connect itself waits outside it.
+async fn connect(addresses: &[std::net::SocketAddr]) -> io::Result<TcpStream> {
+    #[cfg(target_os = "macos")]
+    {
+        let mut last = None;
+        for &address in addresses {
+            let socket = private(|| match address {
+                std::net::SocketAddr::V4(_) => tokio::net::TcpSocket::new_v4(),
+                std::net::SocketAddr::V6(_) => tokio::net::TcpSocket::new_v6(),
+            });
+            match async { socket?.connect(address).await }.await {
+                Ok(stream) => return Ok(stream),
+                Err(e) => last = Some(e),
+            }
+        }
+        Err(last.unwrap_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "could not resolve to any address",
+            )
+        }))
+    }
+    #[cfg(not(target_os = "macos"))]
+    TcpStream::connect(addresses).await
 }
 
 fn authority(text: &str) -> io::Result<(String, u16)> {
@@ -271,7 +304,7 @@ async fn serve(
         if local && !local_allowed {
             return Err(Refused::Local);
         }
-        let upstream = TcpStream::connect(addresses.as_slice()).await?;
+        let upstream = connect(&addresses).await?;
         Ok((upstream, local))
     });
     tokio::pin!(connection);

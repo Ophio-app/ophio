@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { carriedPlan, sentPlan, useCarryPlan, type CarryPlan } from "./carryPlan";
 import { continuationSelection, planReviewSelection } from "./continuationSelection";
+import { StepsMark } from "./StepsMark";
 import { ToolInput, toolInput, toolLabel } from "./toolInput";
 import { unstartedQueueItem } from "../work/queueStatus";
 import { taskActivity, taskStatus } from "../work/taskActivity";
@@ -11,7 +12,7 @@ import { ReproductionReceipt } from "../annotate/ReproductionReview";
 // tool steps fold into quiet groups that open on demand; approvals are
 // answered where they appear; each message says how far it really got.
 
-import { ChevronDown, CircleCheck, CircleHelp, CircleSlash, CircleX, Paperclip, ReceiptText, ScrollText, ShieldCheck, ShieldQuestion, ShieldX, Wrench } from "lucide-react";
+import { ChevronDown, CircleCheck, CircleHelp, CircleSlash, CircleX, Paperclip, ReceiptText, ScrollText, ShieldCheck, ShieldQuestion, ShieldX } from "lucide-react";
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { describeError, shallowEqual, useApp, useHost, useLink } from "../../app/context";
 import { projectFileLink } from "./fileLink";
@@ -22,19 +23,22 @@ import { Markdown } from "../../design/Markdown";
 import { Notice } from "../../design/Notice";
 import { StateLine, type DeliveryPhase } from "../../design/StateLine";
 import { clockTime, useNow } from "../../design/time";
-import type { Approval, DeliveryState, QueueItem, Task, TaskMode } from "../../protocol/types";
+import type { Approval, DeliveryState, Project, QueueItem, Task, TaskMode } from "../../protocol/types";
 import { UnsavedAnswer, useApprovalDecision } from "../work/shared";
 import { withoutOutcome } from "../../state/outcomeReport";
-import { isTaskRunning, liveTextForTask, pendingApprovals, taskRuns } from "../../state/projection";
+import { isTaskRunning, liveTextForTask, pendingApprovals, taskRuns, timelineForTask } from "../../state/projection";
 import { HeldMessage } from "./HeldMessage";
+import { WorkCard } from "./WorkCard";
 import { ShownCard } from "./Shown";
 import { useStore } from "../../state/store";
 import { handBackHistory, withHandBacks } from "./handBackHistory";
 import { NotAllowed, useMay } from "../../shell/NotAllowed";
 import { modelName } from "./catalog";
+import { agentLabel } from "./intent";
 import { CONVERSATION_SUMMARY_PROMPT } from "./conversation";
 import { SUMMARY_PROMPT } from "./summarize";
-import { bundleSummary, keepUnchanged, NOT_RUN, rows, runEnd, stepSummary, stepsSummary, type ActivityItem, type Row, type Step } from "./timeline";
+import { SentFiles } from "./SentFiles";
+import { bundleSummary, hasMarkup, keepUnchanged, NOT_RUN, rows, runEnd, stepSummary, stepsSummary, type ActivityItem, type Row, type Step } from "./timeline";
 
 // Only plan steps need the earlier text; every other row keeps a stable prop so RowView stays memoized.
 const NO_PLANS: string[] = [];
@@ -67,18 +71,33 @@ export function Transcript({ task, agent }: { task: Task; agent: string }) {
   const approvalBlocked = blocking.length > 0;
   const waiting = approvalBlocked || !!waitingStatus || task.state === "awaiting_decision" || currentRun?.state === "awaiting_input" || currentRun?.state === "awaiting_approval";
   const runs = useHost(s => taskRuns(s, taskId), shallowEqual);
-  const harness = useHost(s => s.harnesses.find(h => h.kind === task.harness));
+  const harnesses = useHost(s => s.harnesses);
   const queue = useHost(s => s.queues[task.project_id]);
   const queued = unstartedQueueItem(task, runs, queue);
   // Before any run the first message has reached only the computer; the
   // queue item, when there is one, says where it waits.
   const unstarted = task.state === "accepted" && !task.current_run && runs.length === 0;
-  const timeline = useHost((s) => s.timelines[taskId]);
+  const timeline = useHost((s) => timelineForTask(s, taskId));
+  const project = useHost((s) => s.projects[task.project_id]);
   // Rows keep their identity until the timeline or runs change, so the clock and streamed text leave RowView memoized,
   // and a new item leaves every row it does not change as it was, so only that row renders.
   const loadedItems = timeline?.loaded ? timeline.items : null;
   const shownRows = useRef<Row[]>([]);
-  const timelineRows = useMemo(() => shownRows.current = keepUnchanged(shownRows.current, loadedItems ? rows(loadedItems, runs) : []), [loadedItems, runs]);
+  const timelineRows = useMemo(() => shownRows.current = keepUnchanged(shownRows.current, loadedItems ? rows(loadedItems, runs, !!task.conversation) : []), [loadedItems, runs, task.conversation]);
+  // Each reply names its agent only once two agents have replied here. The
+  // runs that replied are found when the rows change, not on every event.
+  const repliedRuns = useMemo(() => [...new Set(timelineRows.flatMap(r => r.kind === "agent" && r.runId ? [r.runId] : []))], [timelineRows]);
+  const showSpeakers = useHost(s => {
+    if (!task.conversation) return false;
+    const agents = new Set<string>();
+    for (const id of repliedRuns) { const run = s.runs[id]; if (run) agents.add(run.harness); }
+    if (agents.size > 1) return true;
+    for (const l of liveTextForTask(s, taskId)) {
+      const run = s.runs[l.runId];
+      if (run && !agents.has(run.harness) && withoutOutcome(l.text).trim()) agents.add(run.harness);
+    }
+    return agents.size > 1;
+  });
   const [error, setError] = useState<string | null>(null);
   const [older, setOlder] = useState(false);
   const allowed = useMay("tasks");
@@ -122,7 +141,7 @@ export function Transcript({ task, agent }: { task: Task; agent: string }) {
 
   const all = withHandBacks(timelineRows, handBacks.filter(r => r.taskId === taskId && session.sameCommandHistory(r.history)));
   // In a conversation each message is a run; the person's words mark it.
-  const list = task.conversation ? all.filter(r => r.kind !== "run_started" || r.number === 1) : all;
+  const list = task.conversation ? all.filter(r => r.kind !== "run_started" || r.number === 1 || !!runs.find(run => run.run_id === r.runId)?.chat_handover) : all;
   // The model can change between a conversation's messages, so a reply from
   // another model than the one before it says which.
   const switched = new Map<string, string>();
@@ -132,7 +151,7 @@ export function Transcript({ task, agent }: { task: Task; agent: string }) {
       if (r.kind !== "run_ended") continue;
       const run = runs.find(x => x.run_id === r.runId);
       const model = run ? run.actual_model ?? run.requested_model : null;
-      if (before !== null && model && model !== before) switched.set(r.runId, modelName(model, harness));
+      if (before !== null && model && model !== before) switched.set(r.runId, modelName(model, harnesses.find(h => h.kind === run?.harness)));
       if (model) before = model;
     }
   }
@@ -163,11 +182,13 @@ export function Transcript({ task, agent }: { task: Task; agent: string }) {
         {list.map((r, i) => (
           <li key={r.key} className={`talk-log__item talk-log__item--${r.kind}`}>
             {inlinePlan && i === planPosition && planMessage < 0 && <FinishedPlan task={task} plan={inlinePlan} showText />}
-            <RowView row={r} carries={carries(r)} shownPlans={r.kind === "steps" && r.steps.some(st => st.item.tool === "ExitPlanMode") ? list.slice(0, i).flatMap(row => row.kind === "agent" ? [row.text] : []).concat(inlinePlan && i >= planPosition && planMessage < 0 ? [inlinePlan.text] : []) : NO_PLANS} showDelivery={r.kind === "user" && (i === lastUser || r.delivery === "failed" || r.delivery === "unknown" || r.delivery === "queued_for_boundary" || r.delivery === "cancelled")} agent={agent} taskId={taskId} conversation={!!task.conversation} replyModel={r.kind === "run_ended" ? switched.get(r.runId) : undefined} currentMode={r.kind === "run_ended" && r.runId === task.current_run ? task.mode ?? "work" : undefined} unstarted={i === firstUser && unstarted} queued={i === firstUser ? queued : undefined} />
+            <RowView row={r} carries={carries(r)} shownPlans={r.kind === "steps" && r.steps.some(st => st.item.tool === "ExitPlanMode") ? list.slice(0, i).flatMap(row => row.kind === "agent" ? [row.text] : []).concat(inlinePlan && i >= planPosition && planMessage < 0 ? [inlinePlan.text] : []) : NO_PLANS} showDelivery={r.kind === "user" && (i === lastUser || r.delivery === "failed" || r.delivery === "unknown" || r.delivery === "queued_for_boundary" || r.delivery === "cancelled")} agent={agent} taskId={taskId} conversation={!!task.conversation} showSpeaker={showSpeakers} replyModel={r.kind === "run_ended" ? switched.get(r.runId) : undefined} currentMode={r.kind === "run_ended" && r.runId === task.current_run ? task.mode ?? "work" : undefined} unstarted={i === firstUser && unstarted} queued={i === firstUser ? queued : undefined} />
             {inlinePlan && i === planPosition && planMessage >= 0 && <FinishedPlan task={task} plan={inlinePlan} showText={false} />}
+            {/* A chat's suggested work, under the turn that suggested it. */}
+            {task.conversation && project && r.kind === "run_ended" && <TurnWork task={task} runId={r.runId} project={project} />}
           </li>
         ))}
-        <LiveReplies taskId={taskId} />
+        <LiveReplies taskId={taskId} showSpeaker={showSpeakers} />
       </ol>
       {inlinePlan && list.length === 0 && <FinishedPlan task={task} plan={inlinePlan} showText />}
       {/* A paused agent's bar, just below, says so with its Resume. */}
@@ -176,14 +197,21 @@ export function Transcript({ task, agent }: { task: Task; agent: string }) {
   );
 }
 
+/** The work card for one of a chat's turns, read from its run. */
+function TurnWork({ task, runId, project }: { task: Task; runId: string; project: Project }) {
+  const run = useHost((s) => s.runs[runId]);
+  return run ? <WorkCard chat={task} run={run} project={project} /> : null;
+}
+
 // Streamed text, live activity and the clock change many times a second; each
 // is read by the small part that shows it, so the conversation above stays put.
 
-function LiveReplies({ taskId }: { taskId: string }) {
+function LiveReplies({ taskId, showSpeaker }: { taskId: string; showSpeaker: boolean }) {
   const live = useHost((s) => liveTextForTask(s, taskId), shallowEqual);
   return live.map((l) => (
     <li key={l.key} className="talk-log__item talk-log__item--agent">
       <div className="talk-agent talk-agent--live" aria-live="off">
+        {showSpeaker && <RunSpeaker runId={l.runId} />}
         <Markdown text={withoutOutcome(l.text)} />
       </div>
     </li>
@@ -212,7 +240,7 @@ function Unstarted({ queued, computer }: { queued?: QueueItem; computer: string 
 /** A request Øphio words for the person: the bubble says what they asked, and opens to the words sent. */
 const ASKED: Record<string, string> = { [CONVERSATION_SUMMARY_PROMPT]: "Sum up so far", [SUMMARY_PROMPT]: "Summarize what happened" };
 
-const RowView = memo(function RowView({ row, carries, showDelivery, agent, taskId, conversation, replyModel, currentMode, unstarted, queued, shownPlans }: { row: Row; carries?: string; showDelivery: boolean; agent: string; taskId: string; conversation: boolean; replyModel?: string; currentMode?: TaskMode; unstarted: boolean; queued?: QueueItem; shownPlans: string[] }) {
+const RowView = memo(function RowView({ row, carries, showDelivery, agent, taskId, conversation, showSpeaker, replyModel, currentMode, unstarted, queued, shownPlans }: { row: Row; carries?: string; showDelivery: boolean; agent: string; taskId: string; conversation: boolean; showSpeaker: boolean; replyModel?: string; currentMode?: TaskMode; unstarted: boolean; queued?: QueueItem; shownPlans: string[] }) {
   const { profile, platform, ui } = useApp();
   // A stable handler keeps Markdown memoized, so a reply is parsed again only when its text changes.
   // A file in the project's folder opens in Ophio; anything else outside it.
@@ -237,12 +265,13 @@ const RowView = memo(function RowView({ row, carries, showDelivery, agent, taskI
             </details>
           ) : <p className="talk-user__text">{carried?.message ?? row.text}</p>)}
           {carried && <PlanFigure carried={carried} />}
-          {row.bundle && (
+          {row.bundle && hasMarkup(row.bundle) && (
             <p className={`talk-user__attach${alone ? " talk-user__attach--alone" : ""}`}>
               <Paperclip aria-hidden strokeWidth={2.1} />
-              {bundleSummary(row.bundle)}
+              {bundleSummary({ ...row.bundle, files: [] })}
             </p>
           )}
+          {!!row.bundle?.files?.length && <SentFiles files={row.bundle.files} />}
           {row.bundle && <ReproductionReceipt bundle={row.bundle} delivery={row.delivery} />}
           {unstarted && row.delivery === "host_accepted"
             ? <Unstarted queued={queued} computer={profile.name} />
@@ -256,15 +285,16 @@ const RowView = memo(function RowView({ row, carries, showDelivery, agent, taskI
     case "agent":
       return (
         <div className="talk-agent">
+          {showSpeaker && <RunSpeaker runId={row.runId} />}
           <Markdown text={row.text} onLink={openLink} />
         </div>
       );
     case "steps":
-      return <Steps steps={row.steps} ended={row.ended} shownPlans={shownPlans} />;
+      return <Steps steps={row.steps} ended={row.ended} stopped={row.stopped} shownPlans={shownPlans} />;
     case "approval":
       return <InlineApproval approvalId={row.approvalId} runId={row.runId} agent={agent} />;
     case "run_started":
-      return (
+      return conversation ? <ChatHandover runId={row.runId} startedAt={row.number === 1 ? row.at : undefined} /> : (
         <p className="talk-divider">
           <span>{`${row.number > 1 ? `Continued · run ${row.number}` : "Started"} · ${clockTime(row.at)}`}</span>
         </p>
@@ -275,10 +305,10 @@ const RowView = memo(function RowView({ row, carries, showDelivery, agent, taskI
       return <p className="talk-divider"><span>{`Marked ${row.decision.resolution === "mark_failed" ? "failed" : "completed"} ${row.decision.by.kind === "device" && row.decision.by.device_id === profile.deviceId ? "by you" : "by a person"} · ${clockTime(row.at)} · not verified by the computer`}</span></p>;
     case "run_ended":
       return (
-        <p className={`talk-divider talk-divider--${row.state}`}>
+        <p className={`talk-divider talk-divider--${row.cutOff ? "cut_off" : row.state}`}>
           {/* One text node: a phone screen reader stops on each node beside the link. */}
           <span>
-            {`${runEnd(row.state, row.mode ?? currentMode, conversation)}${replyModel ? ` · ${replyModel}` : ""} · ${clockTime(row.at)}${row.withdrawn > 0 ? ` · ${row.withdrawn === 1 ? "1 held message" : `${row.withdrawn} held messages`} withdrawn` : ""}`}
+            {`${row.cutOff ? "Cut off" : runEnd(row.state, row.mode ?? currentMode, conversation)}${replyModel ? ` · ${replyModel}` : ""} · ${clockTime(row.at)}${row.withdrawn > 0 ? ` · ${row.withdrawn === 1 ? "1 held message" : `${row.withdrawn} held messages`} withdrawn` : ""}`}
           </span>
           <button type="button" className="linklike talk-divider__link" onClick={() => ui.push({ screen: "receipt", taskId, runId: row.runId })}>
             <ReceiptText aria-hidden strokeWidth={2.1} />
@@ -329,7 +359,7 @@ function StepIcon({ status, notRun, ended }: { status: ActivityItem["item"]["sta
   }
 }
 
-export function Steps({ steps, ended, shownPlans = [] }: { steps: Step[]; ended: boolean; shownPlans?: string[] }) {
+export function Steps({ steps, ended, stopped = false, shownPlans = [] }: { steps: Step[]; ended: boolean; stopped?: boolean; shownPlans?: string[] }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const summary = stepsSummary(steps, ended);
@@ -338,7 +368,7 @@ export function Steps({ steps, ended, shownPlans = [] }: { steps: Step[]; ended:
   return (
     <div className={`talk-steps${open ? " is-open" : ""}`}>
       <button type="button" className="talk-steps__head" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-        {s.running && online ? <span className="stateline__spinner talk-steps__spin" aria-hidden /> : <Wrench className="talk-steps__lead" aria-hidden strokeWidth={2.1} />}
+        <StepsMark running={s.running} online={online} stopped={stopped || s.notRun.stopped > 0} />
         <span className="talk-steps__latest">{s.latest}{s.running && !online && <> · last reported <Age at={steps.at(-1)?.at ?? 0} suffix=" ago" /></>}</span>
         <span className="talk-steps__count">
           {s.count}
@@ -355,7 +385,8 @@ export function Steps({ steps, ended, shownPlans = [] }: { steps: Step[]; ended:
               <div className="talk-steps__body">
                 <p className="talk-steps__summary">{stepSummary(st, ended)}</p>
                 <p className="talk-steps__tool">
-                  {toolLabel(st.item.tool)} · {clockTime(st.at)}
+                  {/* The tool's name, unless the line above already is it. */}
+                  {toolLabel(st.item.tool) === stepSummary(st, ended) ? clockTime(st.at) : `${toolLabel(st.item.tool)} · ${clockTime(st.at)}`}
                 </p>
                 {st.item.detail && (planAlreadyShown(st, shownPlans)
                   ? <p className="talk-steps__detail">Plan shown above.</p>
@@ -370,10 +401,31 @@ export function Steps({ steps, ended, shownPlans = [] }: { steps: Step[]; ended:
   );
 }
 
+/** Labels come from the historical run, never today's next-message choice. */
+function RunSpeaker({ runId }: { runId?: string | null }) {
+  const run = useHost(s => s.runs[runId ?? ""]);
+  const harnesses = useHost(s => s.harnesses);
+  if (!run) return null;
+  return <p className="talk-agent__speaker">{agentLabel(harnesses, { harness: run.harness, model: run.actual_model ?? run.requested_model, effort: null })}</p>;
+}
+
+/** Only a durable handover record claims that context was supplied. */
+function ChatHandover({ runId, startedAt }: { runId: string; startedAt?: number }) {
+  const run = useHost(s => s.runs[runId]);
+  const harnesses = useHost(s => s.harnesses);
+  if (!run?.chat_handover) return startedAt === undefined ? null : <p className="talk-divider"><span>{`Started · ${clockTime(startedAt)}`}</span></p>;
+  const name = harnesses.find(h => h.kind === run.harness)?.display_name ?? "The agent";
+  return <p className="talk-note talk-handover">{name} {run.chat_handover.resumed ? "returns" : "takes over"} with the recent conversation, not the other agent’s own memory.</p>;
+}
+
 function InlineApproval({ approvalId, runId, agent }: { approvalId: string; runId: string | null; agent: string }) {
   const { session } = useApp();
   const link = useLink();
   const approval = useHost((s) => s.approvals[approvalId]);
+  const actualAgent = useHost(s => {
+    const run = s.runs[approval?.run_id ?? runId ?? ""];
+    return run ? s.harnesses.find(h => h.kind === run.harness)?.display_name ?? "The agent" : agent;
+  });
   const held = !!approval;
   const readable = useHost((s) => s.grants?.approvals === true);
   // A decision on an earlier run of a long task is read with that run.
@@ -382,7 +434,7 @@ function InlineApproval({ approvalId, runId, agent }: { approvalId: string; runI
     void session.loadRun(runId).catch(() => undefined);
   }, [held, runId, readable, link.state, session]);
   if (!approval) return <p className="talk-note">An approval request that this device can’t see.</p>;
-  return <InlineDecision key={`${approval.approval_id}/${approval.requested_at}`} approval={approval} agent={agent} />;
+  return <InlineDecision key={`${approval.approval_id}/${approval.requested_at}`} approval={approval} agent={actualAgent} />;
 }
 
 function InlineDecision({ approval, agent }: { approval: Approval; agent: string }) {

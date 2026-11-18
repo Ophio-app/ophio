@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Read-only discovery. No daemon configuration or credentials are accessed.
 use crate::{Result, config::Config, server::Addresses};
+use containment::inherit::TcpListener;
 use serde::Deserialize;
 use std::{
     net::{IpAddr, SocketAddr},
     time::Duration,
 };
-use tokio::{net::TcpListener, sync::mpsc};
+use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Debug, Clone, Default)]
@@ -40,7 +41,11 @@ impl Discovery {
             .kill_on_drop(true);
         #[cfg(windows)]
         command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW: Øphio may run without a console.
-        if let Ok(Ok(output)) = tokio::time::timeout(Duration::from_secs(3), command.output()).await
+        if let Ok(Ok(output)) = tokio::time::timeout(
+            Duration::from_secs(3),
+            containment::inherit::tokio_output(&mut command),
+        )
+        .await
             && output.status.success()
             && output.stdout.len() <= 4 * 1024 * 1024
             && let Ok(status) = serde_json::from_slice::<TailStatus>(&output.stdout)
@@ -243,14 +248,12 @@ mod tailscale_tests {
     async fn the_tailnet_address_is_read_from_a_program_that_needs_telling_it_is_a_cli() {
         let dir = tempfile::tempdir().unwrap();
         let program = dir.path().join("Tailscale");
-        std::fs::write(
+        test_support::executable(
             &program,
             "#!/bin/sh\n[ \"$TAILSCALE_BE_CLI\" = 1 ] || { echo 'The Tailscale GUI failed to start' >&2; exit 1; }\n\
              echo '{\"BackendState\":\"Running\",\"Self\":{\"TailscaleIPs\":[\"100.64.0.7\"],\"DNSName\":\"studio.example.ts.net.\"}}'\n",
         )
         .unwrap();
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
         let found = Discovery::detect_with(Some(program)).await;
         assert_eq!(
             found.tailscale_ips,

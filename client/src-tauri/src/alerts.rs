@@ -31,6 +31,7 @@ use futures_util::StreamExt;
 use protocol::{
     ApprovalId, AttentionId, ClientFrame, Command, CommandEnvelope, CommandId, ErrorCode,
     ProjectId, Query, QueryData, QueryEnvelope, QueryId, ReceiptStatus, ServerFrame,
+    agent_updates::{AgentUpdateNoticeKind, FEATURE as AGENT_UPDATE_FEATURE},
     alerts::{Alert, AlertClientFrame, AlertServerFrame, MAX_OPEN_ALERTS, MAX_SHOWING},
     auth::ConnectionKind,
     capability::{AppOffer, HarnessKind},
@@ -223,6 +224,10 @@ pub trait Shade: Send + Sync {
     /// Shows `note`. Given `since`, the shade's count of clears when its
     /// alert was learned of, shows nothing if it was cleared after then.
     fn post(&self, note: &Note, since: Option<i64>) -> Result<Posted>;
+    /// An individual may be posted as its project's summary. Check clears of
+    /// both identities, reuse visible members' places, and remove individuals
+    /// only after a successful post. An urgent replacement may alert in place.
+    fn post_member(&self, note: &Note, since: i64, member: &str, realert: bool) -> Result<Posted>;
     fn cancel(&self, tag: &str);
     /// How many alerts the app and the watcher have cleared, by the shade's count.
     fn clears(&self) -> i64;
@@ -414,12 +419,19 @@ impl Book {
             let Some((profile_id, id)) = t.split_once('/') else {
                 continue;
             };
-            let (Some(seen), Ok(id)) = (
-                self.computers.get_mut(profile_id),
-                id.parse::<AttentionId>(),
-            ) else {
+            let Ok(id) = id.parse::<AttentionId>() else {
                 continue;
             };
+            let seen = self
+                .computers
+                .entry(profile_id.to_owned())
+                .or_insert_with(|| Seen::began(Timestamp::now()));
+            // Also blocks an app post still waiting for the ledger. Grouping
+            // cancellations happen inside the posting transaction, not here.
+            seen.notified.insert(id);
+            seen.waiting.remove(&id);
+            seen.held.retain(|r| r.alert.attention_id != id);
+            seen.restore.remove(&id);
             seen.raised.remove(&id);
             seen.missing.remove(&id);
             seen.shown_last.remove(&id);
@@ -503,11 +515,64 @@ impl Book {
     /// The app raised this alert itself, as the watcher would have.
     fn raised_by_app(&mut self, profile_id: &str, id: AttentionId) {
         if let Some(seen) = self.computers.get_mut(profile_id) {
-            seen.waiting.remove(&id);
+            if let Some((alert, _)) = seen.waiting.remove(&id) {
+                seen.alerts.insert(id, alert);
+            }
             seen.held.retain(|r| r.alert.attention_id != id);
             seen.notified.insert(id);
             seen.raised.insert(id);
         }
+    }
+    /// Account only for an actually shown post, whichever producer made it.
+    fn posted(&mut self, note: &Note, outcome: Posted, since: i64, now: i64) {
+        match outcome {
+            Posted::Shown => {
+                if !self.quiet.contains(&note.tag) {
+                    self.quiet.push(note.tag.clone());
+                }
+            }
+            Posted::Sounded => {
+                self.quiet.retain(|t| *t != note.tag);
+                if let Some((profile, _)) = note.tag.split_once('/') {
+                    self.sounded.insert(profile.to_owned(), now);
+                }
+            }
+            _ => return,
+        }
+        let tags = if note.handles.is_empty() {
+            std::slice::from_ref(&note.tag)
+        } else {
+            &note.handles
+        };
+        for t in tags {
+            if let Some((profile, id)) = t.split_once('/')
+                && let Ok(id) = id.parse::<AttentionId>()
+                && let Some(seen) = self.computers.get_mut(profile)
+                && seen.raised.contains(&id)
+            {
+                seen.posted.insert(id, since);
+                seen.missing.remove(&id);
+            }
+        }
+    }
+    /// Snapshot the real shade after posting, cancellation and recount. A
+    /// fold counts only while its successfully posted summary actually shows.
+    fn snapshot(&mut self, shown: &[String]) {
+        for (profile, seen) in &mut self.computers {
+            let counted: BTreeSet<_> = seen
+                .folds
+                .iter()
+                .filter(|(project, f)| f.folded && shown.contains(&folded_tag(profile, project)))
+                .flat_map(|(_, f)| f.members.keys().copied())
+                .collect();
+            seen.shown_last = seen
+                .raised
+                .iter()
+                .filter(|id| counted.contains(id) || shown.contains(&tag(profile, id)))
+                .copied()
+                .collect();
+        }
+        self.quiet.retain(|t| shown.contains(t));
     }
     /// The alerts from a computer this phone shows, or keeps to show or
     /// for the app: those `shown` first, then those waiting for room or for
@@ -586,11 +651,30 @@ impl Book {
             MAX_SHOWN.saturating_sub(shown.iter().filter(|t| *t != MORE && *t != CALM).count());
         let mut post = Vec::new();
         let mut refused = Vec::new();
+        let mut projects = BTreeSet::new();
         for raise in raises {
-            if showing(&raise.tag()) {
-                post.push(raise);
-            } else if room > 0 {
-                room -= 1;
+            let profile = &raise.computer.profile_id;
+            let project = raise.alert.project_id;
+            // Folding replaces the project's visible members, not another
+            // place. Include a project already admitted in this same batch.
+            let reuses_project = raise.alert.bundle
+                && (projects.contains(&(profile.clone(), project))
+                    || self.computers.get(profile).is_some_and(|s| {
+                        s.folds.get(&project).is_some_and(|f| {
+                            f.members.keys().any(|id| {
+                                s.raised.contains(id)
+                                    && ((f.folded && showing(&folded_tag(profile, &project)))
+                                        || showing(&tag(profile, id)))
+                            })
+                        })
+                    }));
+            if showing(&raise.tag()) || reuses_project || room > 0 {
+                if !showing(&raise.tag()) && !reuses_project {
+                    room -= 1;
+                }
+                if raise.alert.bundle {
+                    projects.insert((profile.clone(), project));
+                }
                 post.push(raise);
             } else {
                 refused.push(raise);
@@ -608,15 +692,29 @@ impl Book {
         let Some((profile_id, id)) = tag.split_once('/') else {
             return;
         };
-        let (Some(seen), Ok(id)) = (
-            self.computers.get_mut(profile_id),
-            id.parse::<AttentionId>(),
-        ) else {
+        let Some(seen) = self.computers.get_mut(profile_id) else {
             return;
         };
-        seen.raised.remove(&id);
-        seen.missing.remove(&id);
-        seen.shown_last.remove(&id);
+        if let Some(project) = id
+            .strip_prefix(FOLDED)
+            .and_then(|p| p.parse::<ProjectId>().ok())
+        {
+            // A quiet summary occupies one place but represents every member.
+            // Making room is not handling them, and must not restore them later.
+            if let Some(fold) = seen.folds.remove(&project) {
+                for member in fold.members.keys() {
+                    seen.raised.remove(member);
+                    seen.missing.remove(member);
+                    seen.shown_last.remove(member);
+                    seen.posted.remove(member);
+                }
+            }
+        } else if let Ok(id) = id.parse::<AttentionId>() {
+            seen.raised.remove(&id);
+            seen.missing.remove(&id);
+            seen.shown_last.remove(&id);
+            seen.posted.remove(&id);
+        }
     }
     /// Counts `raises` as raised without showing them, for the note of
     /// those without room.
@@ -913,6 +1011,12 @@ impl Calm {
 /// Whether an alert's notification needs the person or is to look at;
 /// none for one that raises no notification.
 fn category(alert: &Alert) -> Option<Category> {
+    if alert.agent_update.is_some() {
+        return Some(Category::Finished);
+    }
+    if alert.new_version.is_some() {
+        return Some(Category::Finished);
+    }
     if alert.sign_in.is_some() {
         return Some(Category::NeedsYou);
     }
@@ -951,11 +1055,7 @@ struct Fold {
     types: BTreeMap<AttentionId, (AlertType, Option<Tier>)>,
 }
 impl Fold {
-    fn note(&self, profile_id: &str, project_id: &ProjectId) -> Note {
-        // It shows as its loudest member would.
-        let lead = (self.members.keys())
-            .filter_map(|m| self.types.get(m).copied())
-            .max_by_key(|(t, w)| (w.unwrap_or(t.default_tier()), std::cmp::Reverse(*t)));
+    fn note(&self, shade: &dyn Shade, profile_id: &str, project_id: &ProjectId) -> Note {
         let needs_you = self.members.values().filter(|n| **n).count();
         let other = self.members.len() - needs_you;
         let mut body = self.computer.clone();
@@ -970,7 +1070,7 @@ impl Fold {
             body.push_str(" · ");
             body.push_str(&parts.join(", "));
         }
-        Note {
+        let mut note = Note {
             tag: folded_tag(profile_id, project_id),
             category: if needs_you > 0 {
                 Category::NeedsYou
@@ -991,11 +1091,27 @@ impl Fold {
             }),
             question: None,
             silent: false,
-            alert_type: lead.map(|(t, _)| t),
-            want: lead.and_then(|(_, w)| w),
+            alert_type: None,
+            want: None,
             // A swipe handles what the note counted as the person saw it.
             handles: (self.members.keys()).map(|m| tag(profile_id, m)).collect(),
-        }
+        };
+        // Compare actual device routing, including blocked channels and raw
+        // project/task overrides, before applying the shared quiet budget.
+        // Resolve each distinct choice once, not once per member.
+        let choices: BTreeSet<_> = self
+            .members
+            .keys()
+            .filter_map(|id| self.types.get(id).copied())
+            .collect();
+        let lead = choices.into_iter().max_by_key(|(kind, want)| {
+            note.alert_type = Some(*kind);
+            note.want = *want;
+            (shade.effective(&note), std::cmp::Reverse(*kind))
+        });
+        note.alert_type = lead.map(|(kind, _)| kind);
+        note.want = lead.and_then(|(_, want)| want);
+        note
     }
 }
 
@@ -1037,7 +1153,12 @@ fn future_types(book: &mut Book, computer: &Computer, frame: AlertServerFrame) -
     let typed =
         |book: &Book| (book.computers.get(&computer.profile_id)).is_some_and(|s| s.takes_handled);
     let future = |alert: &mut Alert| {
-        if alert.alert_type.is_none() && alert.sign_in.is_none() && alert.report.is_none() {
+        if alert.alert_type.is_none()
+            && alert.sign_in.is_none()
+            && alert.new_version.is_none()
+            && alert.agent_update.is_none()
+            && alert.report.is_none()
+        {
             alert.project_tier = alert.project_tier.or(Some(Tier::Silent));
         }
     };
@@ -1183,7 +1304,7 @@ fn receive(
         AlertServerFrame::Raised { alert } => {
             let seen = (book.computers.entry(id.clone())).or_insert_with(|| Seen::began(at));
             if seen.knows(&alert.attention_id) {
-                seen.heard(std::slice::from_ref(&alert), clears);
+                seen.heard(std::slice::from_ref(alert.as_ref()), clears);
             } else {
                 changes
                     .post
@@ -1274,6 +1395,76 @@ fn note(computer: &Computer, alert: &Alert, detail: Detail) -> Option<Note> {
             route: serde_json::json!({ "kind": "sign_in", "profileId": computer.profile_id, "accountId": sign_in.account_id }),
         });
     }
+    if let Some(update) = &alert.agent_update {
+        let name = agent(update.harness);
+        let version = update
+            .version
+            .as_deref()
+            .map(safe_update_label)
+            .filter(|s| !s.is_empty());
+        let models = named_models(&update.models);
+        let single = if update.models.len() == 1 {
+            models.as_deref()
+        } else {
+            None
+        };
+        let title = match (update.kind, single) {
+            (AgentUpdateNoticeKind::Behind, _) => format!("{name} has an update"),
+            (AgentUpdateNoticeKind::UpdateForModels, Some(model)) => {
+                format!("{model} needs newer {name}")
+            }
+            (AgentUpdateNoticeKind::NewModelsAvailable, Some(model)) => {
+                format!("{model} is now available on {}", computer.name)
+            }
+            (AgentUpdateNoticeKind::UpdateForModels, _) => format!("Update {name} for new models"),
+            (AgentUpdateNoticeKind::NewModelsAvailable, _) => format!("New models in {name}"),
+        };
+        let detail = match update.kind {
+            AgentUpdateNoticeKind::Behind => "An update is available".to_owned(),
+            AgentUpdateNoticeKind::UpdateForModels => format!(
+                "An update announces {}. Availability depends on your account",
+                models.unwrap_or_else(|| model_count_label(update.models.len()))
+            ),
+            AgentUpdateNoticeKind::NewModelsAvailable => format!(
+                "The updated agent now lists {} for your account",
+                models.unwrap_or_else(|| model_count_label(update.models.len()))
+            ),
+        };
+        let detail = version.map_or(detail.clone(), |v| format!("Version {v} · {detail}"));
+        return Some(Note {
+            tag: tag(&computer.profile_id, &alert.attention_id),
+            category: Category::Finished,
+            title,
+            body: format!("{} · {detail}. Tap to see agent updates.", computer.name),
+            group: None,
+            group_title: None,
+            question: None,
+            silent: false,
+            alert_type: Some(AlertType::AgentUpdate),
+            want: want(alert, AlertType::AgentUpdate),
+            handles: Vec::new(),
+            route: serde_json::json!({ "kind": "agent_updates", "profileId": computer.profile_id }),
+        });
+    }
+    if let Some(version) = &alert.new_version {
+        return Some(Note {
+            tag: tag(&computer.profile_id, &alert.attention_id),
+            category: Category::Finished,
+            title: format!("Øphio {} is available", version.version),
+            body: format!(
+                "{} · Tap to see what’s new and how to update.",
+                computer.name
+            ),
+            group: None,
+            group_title: None,
+            question: None,
+            silent: false,
+            alert_type: Some(AlertType::NewVersion),
+            want: want(alert, AlertType::NewVersion),
+            handles: Vec::new(),
+            route: serde_json::json!({ "kind": "new_version", "profileId": computer.profile_id }),
+        });
+    }
     if let Some(report) = &alert.report {
         return Some(Note {
             tag: tag(&computer.profile_id, &alert.attention_id),
@@ -1347,11 +1538,65 @@ fn note(computer: &Computer, alert: &Alert, detail: Detail) -> Option<Note> {
     })
 }
 
+/// Keep external version identifiers short and free of control characters in the shade.
+fn safe_update_label(value: &str) -> String {
+    value
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '+'))
+        .take(40)
+        .collect()
+}
+
+/// Name at most three model ids from structured host data, never release prose.
+/// Unknown or unexpectedly long ids fall back to a count rather than being
+/// echoed into the phone's notification shade.
+fn named_models(ids: &[String]) -> Option<String> {
+    if ids.is_empty()
+        || ids.iter().any(|id| {
+            id.is_empty()
+                || id.len() > 72
+                || !id
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"-._@[]/".contains(&b))
+        })
+    {
+        return None;
+    }
+    let names: Vec<String> = ids
+        .iter()
+        .take(3)
+        .map(|id| ports::model_name::model_name(id))
+        .filter(|name| name.len() <= 60)
+        .collect();
+    if names.len() != ids.len().min(3) {
+        return None;
+    }
+    let mut text = names.join(", ");
+    if ids.len() > 3 {
+        text.push_str(&format!(" and {} more", ids.len() - 3));
+    }
+    Some(text)
+}
+
+fn model_count_label(count: usize) -> String {
+    if count == 1 {
+        "1 new model".into()
+    } else {
+        format!("{count} new models")
+    }
+}
+
 /// What an alert is about: as the computer labels it, or, from an older
 /// computer, as its kind and topic say.
 fn alert_type(alert: &Alert) -> AlertType {
     if let Some(t) = alert.alert_type {
         return t;
+    }
+    if alert.agent_update.is_some() {
+        return AlertType::AgentUpdate;
+    }
+    if alert.new_version.is_some() {
+        return AlertType::NewVersion;
     }
     if alert.sign_in.is_some() {
         return AlertType::SignIn;
@@ -1381,6 +1626,8 @@ fn alert_type(alert: &Alert) -> AlertType {
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        new_version: None,
+        agent_update: None,
     };
     AlertType::of(&item, false).unwrap_or(AlertType::Decision)
 }
@@ -1601,6 +1848,288 @@ pub fn raised_by_app(tag: &str) -> Result<()> {
     with_book(|book| book.raised_by_app(profile_id, id))
 }
 
+/// Optional local IPC metadata: Android, not the page, owns this project's fold.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppFold {
+    project_id: ProjectId,
+    project: String,
+    computer: String,
+}
+
+/// Compatibility posts have no native project metadata.
+#[cfg(test)]
+fn post_from_app_with(
+    shade: &dyn Shade,
+    note: Note,
+    since: i64,
+    now: impl FnOnce() -> i64,
+) -> Result<()> {
+    post_from_app_fold_with(shade, note, None, since, now)
+}
+
+#[cfg(any(target_os = "android", test))]
+fn post_from_app_fold_with(
+    shade: &dyn Shade,
+    mut note: Note,
+    project: Option<AppFold>,
+    since: i64,
+    now: impl FnOnce() -> i64,
+) -> Result<()> {
+    let mut guard = lock(&LEDGER);
+    let ledger = guard.as_mut().ok_or(Error::Storage)?;
+    if note.handles.len() > MAX_SHOWING
+        || note.handles.iter().any(|tag| {
+            let Some((profile, id)) = tag.split_once('/') else {
+                return true;
+            };
+            tag.len() > 256
+                || !note.tag.starts_with(&format!("{profile}/"))
+                || id.parse::<AttentionId>().is_err()
+        })
+    {
+        return Err(Error::Invalid("Invalid notification members."));
+    }
+    let now = now();
+    let source = note.tag.clone();
+    let profile_id = note.tag.split_once('/').map(|(p, _)| p.to_owned());
+    let mut adopted = None;
+    let mut replace_to_alert = false;
+    // A settings refresh is not new work, with or without project grouping.
+    // Keep non-attention/legacy tags compatible, and accept genuinely new IDs.
+    if let Some((profile, id)) = source.split_once('/')
+        && let Ok(id) = id.parse::<AttentionId>()
+        && ledger
+            .book
+            .computers
+            .get(profile)
+            .is_some_and(|seen| seen.notified.contains(&id) && !seen.raised.contains(&id))
+    {
+        return Ok(());
+    }
+    if let Some(project) = project {
+        let Some((profile, id)) = note.tag.split_once('/') else {
+            return Err(Error::Invalid("Invalid notification member."));
+        };
+        let id = id
+            .parse::<AttentionId>()
+            .map_err(|_| Error::Invalid("Invalid notification member."))?;
+        if note.tag.len() > 256
+            || project.project.len() > 256
+            || project.computer.len() > 256
+            || !note.handles.is_empty()
+        {
+            return Err(Error::Invalid("Invalid notification project."));
+        }
+        let seen = ledger
+            .book
+            .computers
+            .entry(profile.to_owned())
+            .or_insert_with(|| Seen::began(Timestamp(now)));
+        if seen
+            .alerts
+            .get(&id)
+            .or_else(|| seen.waiting.get(&id).map(|(a, _)| a))
+            .is_some_and(|a| a.project_id != project.project_id)
+        {
+            return Err(Error::Invalid("Notification belongs to another project."));
+        }
+        // An Off incoming member must not borrow an active member's channel
+        // and enter its count. Leave other visible members intact.
+        let choice = Note {
+            silent: false,
+            ..note.clone()
+        };
+        if shade.effective(&choice) == Tier::Off {
+            seen.hush(id);
+            if shade.shown().contains(&source) {
+                shade.cancel(&source);
+            }
+            recount(&mut ledger.book, shade, &shade.shown());
+            ledger.book.snapshot(&shade.shown());
+            if let Err(error) = ledger.save() {
+                tracing::warn!(%error, "alerts: could not record an alert turned off");
+            }
+            return Ok(());
+        }
+        seen.name.clone_from(&project.computer);
+        let shown = shade.shown();
+        let summary = folded_tag(profile, &project.project_id);
+        let mut fold = seen
+            .folds
+            .get(&project.project_id)
+            .cloned()
+            .unwrap_or_else(|| Fold {
+                project: project.project.clone(),
+                computer: project.computer.clone(),
+                members: BTreeMap::new(),
+                folded: false,
+                counted: 0,
+                types: BTreeMap::new(),
+            });
+        let folded = fold.folded && shown.contains(&summary);
+        fold.members
+            .retain(|m, _| seen.raised.contains(m) && (folded || shown.contains(&tag(profile, m))));
+        fold.types.retain(|m, _| fold.members.contains_key(m));
+        fold.project = project.project;
+        fold.computer = project.computer;
+        fold.members.insert(id, note.category == Category::NeedsYou);
+        if fold.members.len() > MAX_SHOWING {
+            return Err(Error::Invalid("Too many notification members."));
+        }
+        if let Some(kind) = note.alert_type {
+            fold.types.insert(id, (kind, note.want));
+        }
+        fold.folded = folded || fold.members.len() > 1;
+        if fold.folded {
+            replace_to_alert = folded && note.category == Category::NeedsYou;
+            let silent = note.silent || (folded && note.category != Category::NeedsYou);
+            note = fold.note(shade, profile, &project.project_id);
+            note.silent = silent;
+        }
+        adopted = Some((project.project_id, fold));
+    }
+    if let Some(profile) = &profile_id {
+        note.silent |= burst_quiet(&ledger.book, profile, now);
+    }
+    let realert = replace_to_alert && !note.silent && shade.effective(&note) == Tier::Alert;
+    // Check the original member and summary before deliberately replacing a
+    // summary to alert. A refused stale source must leave the old summary alone.
+    let outcome = shade.post_member(&note, since, &source, realert)?;
+    match outcome {
+        Posted::NoRoom => {
+            return Err(Error::Native(
+                "There is no room for another notification.".into(),
+            ));
+        }
+        Posted::Cleared => return Ok(()),
+        Posted::Off => {
+            // Off is known, but never recorded as successfully shown.
+            for t in if note.handles.is_empty() {
+                std::slice::from_ref(&note.tag)
+            } else {
+                &note.handles
+            } {
+                if let Some((profile, id)) = t.split_once('/')
+                    && let Ok(id) = id.parse::<AttentionId>()
+                {
+                    ledger.book.begin(profile, Timestamp(now));
+                    ledger.book.computers.get_mut(profile).unwrap().hush(id);
+                }
+            }
+        }
+        Posted::Shown | Posted::Sounded => {
+            if let Some(profile) = &profile_id {
+                ledger.book.begin(profile, Timestamp(now));
+            }
+            if let Some((project, mut fold)) = adopted {
+                let profile = profile_id.as_ref().expect("validated member");
+                for id in fold.members.keys() {
+                    ledger.book.raised_by_app(profile, *id);
+                }
+                fold.counted = fold.members.len();
+                ledger
+                    .book
+                    .computers
+                    .get_mut(profile)
+                    .unwrap()
+                    .folds
+                    .insert(project, fold);
+            } else {
+                record_app_note(&mut ledger.book, &note);
+            }
+            ledger.book.posted(&note, outcome, shade.clears(), now);
+        }
+    }
+    ledger.book.snapshot(&shade.shown());
+    if let Err(error) = ledger.save() {
+        tracing::warn!(%error, "alerts: could not record an alert the app raised");
+    }
+    Ok(())
+}
+
+#[cfg(any(target_os = "android", test))]
+fn record_app_note(book: &mut Book, note: &Note) {
+    let Some((profile, id)) = note.tag.split_once('/') else {
+        return;
+    };
+    if let Ok(id) = id.parse::<AttentionId>() {
+        book.raised_by_app(profile, id);
+        return;
+    }
+    let Some(project) = id
+        .strip_prefix(FOLDED)
+        .and_then(|id| id.parse::<ProjectId>().ok())
+    else {
+        return;
+    };
+    // Older pages have no membership to adopt; leave their existing behavior.
+    if note.handles.is_empty() {
+        return;
+    }
+    let ids: BTreeSet<AttentionId> = note
+        .handles
+        .iter()
+        .filter_map(|tag| {
+            let (p, id) = tag.split_once('/')?;
+            (p == profile).then(|| id.parse().ok()).flatten()
+        })
+        .collect();
+    for id in &ids {
+        book.raised_by_app(profile, *id);
+    }
+    let Some(seen) = book.computers.get_mut(profile) else {
+        return;
+    };
+    // The producer's title has this exact suffix. Metadata normally comes
+    // from waiting alerts; this fallback also covers the UI arriving first.
+    let suffix = format!(
+        " has {} notification{}",
+        ids.len(),
+        if ids.len() == 1 { "" } else { "s" }
+    );
+    let mut fold = Fold {
+        project: note
+            .title
+            .strip_suffix(&suffix)
+            .unwrap_or(&note.title)
+            .to_owned(),
+        computer: seen.name.clone(),
+        members: BTreeMap::new(),
+        folded: true,
+        counted: ids.len(),
+        types: BTreeMap::new(),
+    };
+    for id in ids {
+        let alert = seen.alerts.get(&id);
+        if let Some(alert) = alert {
+            if alert.project_id != project {
+                continue;
+            }
+            fold.project.clone_from(&alert.project);
+        }
+        let kind = alert.map(alert_type).or(note.alert_type);
+        let needs_you = alert.and_then(category).unwrap_or(note.category) == Category::NeedsYou;
+        fold.members.insert(id, needs_you);
+        if let Some(kind) = kind {
+            fold.types.insert(
+                id,
+                (kind, alert.map(|a| want(a, kind)).unwrap_or(note.want)),
+            );
+        }
+    }
+    seen.folds.insert(project, fold);
+}
+
+fn burst_quiet(book: &Book, profile: &str, now: i64) -> bool {
+    book.sounded
+        .get(profile)
+        .is_some_and(|at| (0..BURST_MS).contains(&(now - at)))
+}
+
+#[cfg(target_os = "android")]
+pub use android::{clear_from_app, handle_from_app, post_from_app};
+
 /// Each paired computer's connection, while the watcher runs.
 pub fn statuses() -> BTreeMap<String, Status> {
     lock(&STATUS).clone()
@@ -1705,11 +2234,43 @@ pub fn dismissed(data: &Path, tags: &str, shade: &dyn Shade) -> Result<()> {
             by_computer.entry(profile_id).or_default().push(id);
         }
     }
-    for (profile_id, ids) in by_computer {
-        for t in handled(profile_id, &ids)? {
-            shade.cancel(&t);
+    with_book(|book| {
+        for (profile_id, ids) in by_computer {
+            for t in book.handle(profile_id, &ids, false) {
+                shade.cancel(&t);
+            }
         }
-    }
+        recount(book, shade, &shade.shown());
+        book.snapshot(&shade.shown());
+    })?;
+    tell();
+    Ok(())
+}
+
+/// Android cancellations and recounts are one ledger/shade transaction too.
+#[cfg(any(target_os = "android", test))]
+fn clear_from_app_with(shade: &dyn Shade, tags: &[String]) -> Result<()> {
+    with_book(|book| {
+        book.cleared_by_app(tags);
+        for tag in tags {
+            shade.cancel(tag);
+        }
+        recount(book, shade, &shade.shown());
+        book.snapshot(&shade.shown());
+    })
+}
+
+#[cfg(any(target_os = "android", test))]
+fn handle_from_app_with(shade: &dyn Shade, profile: &str, ids: &[AttentionId]) -> Result<()> {
+    with_book(|book| {
+        book.begin(profile, Timestamp::now());
+        for tag in book.handle(profile, ids, false) {
+            shade.cancel(&tag);
+        }
+        recount(book, shade, &shade.shown());
+        book.snapshot(&shade.shown());
+    })?;
+    tell();
     Ok(())
 }
 
@@ -2008,6 +2569,16 @@ fn after(ended: &Result<Ended>, failures: &mut usize) -> Option<(Status, Duratio
     })
 }
 
+fn supports_agent_updates(features: &[String]) -> bool {
+    features.iter().any(|f| f == AGENT_UPDATE_FEATURE)
+}
+
+fn supports_new_version(features: &[String]) -> bool {
+    features
+        .iter()
+        .any(|f| f == protocol::releases::RELEASE_CHECK_FEATURE)
+}
+
 /// The connection to a computer ended, unless the watcher that made it
 /// was stopped meanwhile: its replacement's may be live.
 fn connection_ended(profile_id: &str, watcher: u64) -> Result<()> {
@@ -2062,6 +2633,9 @@ async fn session(
         .features
         .iter()
         .any(|f| f == protocol::accounts::SIGN_IN_ON_PHONE_FEATURE);
+    // Only a computer that checks releases knows when a new version is available;
+    // an older one would refuse the field anyway.
+    let new_version = supports_new_version(&signed_in.capabilities.features);
     // Rung from here on, so nothing handled meanwhile is missed.
     let mut rung = told().subscribe();
     // What was handled here while the computer couldn't be told.
@@ -2072,6 +2646,8 @@ async fn session(
         showing,
         quiet: true,
         sign_in,
+        new_version,
+        agent_updates: supports_agent_updates(&signed_in.capabilities.features),
         types: true,
         handled: backlog.clone(),
     };
@@ -2348,34 +2924,65 @@ fn update<T>(
         shade.cancel(tag);
     }
     shown.retain(|t| !changes.cancel.contains(t));
-    let (mut post, refused) = ledger.book.fit(changes.post, &shown, in_app);
     let detail = ledger.book.detail();
     let mut unshown = Vec::new();
     let mut no_room = Vec::new();
     let mut off = Vec::new();
-    // With the shade full, one that alerts takes the place of the oldest
-    // showing silently, which the app clears: it isn't handled.
-    for raise in refused {
-        let alerts = raise
-            .note(detail)
-            .is_some_and(|n| !n.silent && shade.effective(&n) == Tier::Alert);
-        match ledger.book.oldest_quiet(&shown).filter(|_| alerts) {
-            Some(victim) => {
-                shade.cancel(&victim);
-                shown.retain(|t| *t != victim);
-                ledger.book.make_room(&victim);
-                post.push(raise);
-            }
-            None => no_room.push(raise),
-        }
-    }
-    for raise in post {
+    // Only notes already quiet before this batch may be displaced. Do not
+    // rotate newly posted members of the same burst out of the shade.
+    let mut replaceable = ledger.book.quiet.clone();
+    for raise in changes.post {
+        replaceable.retain(|t| shown.contains(t));
+        // Admit and post one item at a time. A later eviction may remove a
+        // project summary, so its place cannot be promised to a pending item.
+        let (mut post, mut refused) = ledger.book.fit(vec![raise], &shown, in_app);
+        let raise = if let Some(raise) = post.pop() {
+            raise
+        } else {
+            let raise = refused.pop().expect("one candidate was fitted");
+            let alerts = raise
+                .note(detail)
+                .is_some_and(|n| !n.silent && shade.effective(&n) == Tier::Alert);
+            // A new alert takes the oldest silent notification's place:
+            // making room and consuming it stay together, under this lock.
+            let Some(victim) = ledger.book.oldest_quiet(&replaceable).filter(|_| alerts) else {
+                no_room.push(raise);
+                continue;
+            };
+            shade.cancel(&victim);
+            shown.retain(|t| *t != victim);
+            replaceable.retain(|t| *t != victim);
+            ledger.book.make_room(&victim);
+            raise
+        };
         // One sound for a burst from a computer: the rest show silently.
-        let hush = (ledger.book.sounded.get(&raise.computer.profile_id))
-            .is_some_and(|at| (0..BURST_MS).contains(&(now - at)));
+        let hush = burst_quiet(&ledger.book, &raise.computer.profile_id, now);
+        // A first summary inherits a pre-existing quiet individual's place,
+        // but a wholly new quiet notification is not a victim in this batch.
+        let quiet_replacement = ledger
+            .book
+            .computers
+            .get(&raise.computer.profile_id)
+            .and_then(|s| s.folds.get(&raise.alert.project_id))
+            .filter(|f| {
+                raise.alert.bundle
+                    && f.members.keys().any(|id| {
+                        let member = tag(&raise.computer.profile_id, id);
+                        replaceable.contains(&member) && ledger.book.quiet.contains(&member)
+                    })
+            })
+            .map(|_| folded_tag(&raise.computer.profile_id, &raise.alert.project_id));
         let raise = match fold(&mut ledger.book, shade, raise, &mut shown, hush) {
             Folding::Alone(raise) => raise,
-            Folding::Shown => continue,
+            Folding::Shown => {
+                if let Some(summary) = quiet_replacement
+                    && ledger.book.quiet.contains(&summary)
+                    && !replaceable.contains(&summary)
+                {
+                    replaceable.push(summary);
+                }
+                continue;
+            }
             Folding::NoRoom(raise) => {
                 no_room.push(raise);
                 continue;
@@ -2392,26 +2999,11 @@ fn update<T>(
         let Some(mut note) = raise.note(detail) else {
             continue;
         };
-        let profile_id = &raise.computer.profile_id;
         note.silent |= hush;
-        let stamp = |book: &mut Book| {
-            if let Some(seen) = book.computers.get_mut(profile_id) {
-                seen.posted.insert(raise.alert.attention_id, book_clears);
-            }
-        };
         match shade.post(&note, Some(raise.since)) {
-            Ok(Posted::Shown) => {
-                stamp(&mut ledger.book);
-                if !ledger.book.quiet.contains(&note.tag) {
-                    ledger.book.quiet.push(note.tag.clone());
-                }
-                shown.push(note.tag);
-            }
-            Ok(Posted::Sounded) => {
-                stamp(&mut ledger.book);
-                ledger.book.sounded.insert(profile_id.clone(), now);
-                ledger.book.quiet.retain(|t| *t != note.tag);
-                shown.push(note.tag);
+            Ok(outcome @ (Posted::Shown | Posted::Sounded)) => {
+                ledger.book.posted(&note, outcome, book_clears, now);
+                shown = shade.shown();
             }
             // Put back, but cleared by the app since it last showed: it
             // stays gone, and whether it is open is the computer's to say.
@@ -2452,19 +3044,7 @@ fn update<T>(
         Some(Err(tag)) => shade.cancel(tag),
         None => {}
     }
-    // What shows now, for what a cleared shade puts back.
-    for (profile_id, seen) in &mut ledger.book.computers {
-        let counted: BTreeSet<AttentionId> = (seen.folds.values())
-            .filter(|f| f.folded)
-            .flat_map(|f| f.members.keys().copied())
-            .collect();
-        let showed: BTreeSet<AttentionId> = (seen.raised.iter())
-            .filter(|id| counted.contains(id) || shown.contains(&tag(profile_id, id)))
-            .copied()
-            .collect();
-        seen.shown_last = showed;
-    }
-    ledger.book.quiet.retain(|t| shown.contains(t));
+    ledger.book.snapshot(&shade.shown());
     if let Err(error) = ledger.save() {
         tracing::warn!(%error, "alerts: could not save which alerts were shown");
     }
@@ -2501,85 +3081,65 @@ fn fold(
     let Some(seen) = book.computers.get_mut(&profile_id) else {
         return Folding::Alone(raise);
     };
+    if raise.note(Detail::Minimal).is_some_and(|mut n| {
+        n.silent = false;
+        shade.effective(&n) == Tier::Off
+    }) {
+        return Folding::Off(raise);
+    }
     let (id, project_id) = (raise.alert.attention_id, raise.alert.project_id);
-    let needs_you = heading(raise.alert.kind).is_some_and(|(c, _)| c == Category::NeedsYou);
+    let needs_you = category(&raise.alert) == Some(Category::NeedsYou);
     let note_tag = folded_tag(&profile_id, &project_id);
-    let fold = seen.folds.entry(project_id).or_insert_with(|| Fold {
-        project: String::new(),
-        computer: String::new(),
-        members: BTreeMap::new(),
-        folded: false,
-        counted: 0,
-        types: BTreeMap::new(),
-    });
+    // Keep the last accepted membership until posting accepts this candidate.
+    let mut fold = seen
+        .folds
+        .get(&project_id)
+        .cloned()
+        .unwrap_or_else(|| Fold {
+            project: String::new(),
+            computer: String::new(),
+            members: BTreeMap::new(),
+            folded: false,
+            counted: 0,
+            types: BTreeMap::new(),
+        });
     let kind = alert_type(&raise.alert);
-    fold.types.insert(id, (kind, want(&raise.alert, kind)));
     fold.project.clone_from(&raise.alert.project);
     fold.computer.clone_from(&raise.computer.name);
-    if fold.folded && !shown.contains(&note_tag) {
-        fold.members.clear();
-        fold.folded = false;
-    }
-    let folded = fold.folded;
-    let raised = &seen.raised;
+    let folded = fold.folded && shown.contains(&note_tag);
     fold.members.retain(|m, _| {
-        *m != id && raised.contains(m) && (folded || shown.contains(&tag(&profile_id, m)))
+        *m != id && seen.raised.contains(m) && (folded || shown.contains(&tag(&profile_id, m)))
     });
-    if fold.members.is_empty() {
+    fold.types.retain(|m, _| fold.members.contains_key(m));
+    fold.types.insert(id, (kind, want(&raise.alert, kind)));
+    fold.members.insert(id, needs_you);
+    if fold.members.len() > MAX_SHOWING {
+        return Folding::NoRoom(raise);
+    }
+    if !folded && fold.members.len() == 1 {
         fold.folded = false;
-        fold.members.insert(id, needs_you);
+        seen.folds.insert(project_id, fold);
         return Folding::Alone(raise);
     }
-    fold.members.insert(id, needs_you);
-    let note = fold.note(&profile_id, &project_id);
-    // Posted again, a note changes quietly: one that needs the person
-    // alerts as a new one would.
-    if folded && needs_you {
-        shade.cancel(&note_tag);
-        shown.retain(|t| *t != note_tag);
-    }
-    let mut note = note;
-    // As the alert itself would: silent when put back, or in a burst.
-    note.silent |= raise.silent || hush;
-    let posted = shade.post(&note, None);
-    if matches!(posted, Ok(Posted::Sounded)) {
-        book.sounded
-            .insert(profile_id.clone(), Timestamp::now().millis());
-    }
-    let Some(seen) = book.computers.get_mut(&profile_id) else {
-        return Folding::Failed(raise);
-    };
-    let Some(fold) = seen.folds.get_mut(&project_id) else {
-        return Folding::Failed(raise);
-    };
-    match posted {
-        Ok(Posted::Off) => {
-            fold.members.remove(&id);
-            Folding::Off(raise)
-        }
-        Ok(Posted::Shown | Posted::Sounded) => {
-            if !folded {
-                for m in fold.members.keys().filter(|m| **m != id) {
-                    let alone = tag(&profile_id, m);
-                    shade.cancel(&alone);
-                    shown.retain(|t| *t != alone);
-                }
-            }
+    let mut note = fold.note(shade, &profile_id, &project_id);
+    note.silent = raise.silent || hush || (folded && !needs_you);
+    let realert = folded && needs_you && !note.silent && shade.effective(&note) == Tier::Alert;
+    match shade.post_member(&note, raise.since, &raise.tag(), realert) {
+        Ok(outcome @ (Posted::Shown | Posted::Sounded)) => {
             fold.folded = true;
             fold.counted = fold.members.len();
-            if !shown.contains(&note_tag) {
-                shown.push(note_tag);
-            }
+            book.computers
+                .get_mut(&profile_id)
+                .unwrap()
+                .folds
+                .insert(project_id, fold);
+            *shown = shade.shown();
+            book.posted(&note, outcome, shade.clears(), Timestamp::now().millis());
             Folding::Shown
         }
-        Ok(Posted::NoRoom) => {
-            fold.members.remove(&id);
-            Folding::NoRoom(raise)
-        }
-        Ok(Posted::Cleared) | Err(_) => {
-            fold.members.remove(&id);
-            Folding::Failed(raise)
-        }
+        Ok(Posted::NoRoom) => Folding::NoRoom(raise),
+        Ok(Posted::Off) => Folding::Off(raise),
+        Ok(Posted::Cleared) | Err(_) => Folding::Failed(raise),
     }
 }
 
@@ -2588,10 +3148,12 @@ fn fold(
 /// A note the person swiped away, or the first alert's own, counts none
 /// from then on.
 fn recount(book: &mut Book, shade: &dyn Shade, shown: &[String]) {
+    let mut posts = Vec::new();
     for (profile_id, seen) in &mut book.computers {
         let raised = &seen.raised;
         seen.folds.retain(|project_id, fold| {
             fold.members.retain(|m, _| raised.contains(m));
+            fold.types.retain(|m, _| fold.members.contains_key(m));
             let note_tag = folded_tag(profile_id, project_id);
             if fold.members.is_empty() {
                 if fold.folded {
@@ -2600,22 +3162,49 @@ fn recount(book: &mut Book, shade: &dyn Shade, shown: &[String]) {
                 return false;
             }
             if !fold.folded {
-                return (fold.members.keys()).any(|m| shown.contains(&tag(profile_id, m)));
+                return fold
+                    .members
+                    .keys()
+                    .any(|m| shown.contains(&tag(profile_id, m)));
             }
             if !shown.contains(&note_tag) {
                 return false;
             }
             if fold.counted != fold.members.len() {
-                fold.counted = fold.members.len();
-                let mut note = fold.note(profile_id, project_id);
-                // A count that changes is no news.
+                let mut note = fold.note(shade, profile_id, project_id);
                 note.silent = true;
-                if let Err(error) = shade.post(&note, None) {
-                    tracing::warn!(%error, "alerts: Android did not show a project's new count");
-                }
+                posts.push((profile_id.clone(), *project_id, note));
             }
             true
         });
+    }
+    for (profile, project, note) in posts {
+        match shade.post(&note, None) {
+            Ok(outcome @ (Posted::Shown | Posted::Sounded)) => {
+                if let Some(fold) = book
+                    .computers
+                    .get_mut(&profile)
+                    .and_then(|s| s.folds.get_mut(&project))
+                {
+                    fold.counted = fold.members.len();
+                }
+                book.posted(&note, outcome, shade.clears(), Timestamp::now().millis());
+            }
+            Ok(Posted::Off) => {
+                shade.cancel(&note.tag);
+                if let Some(seen) = book.computers.get_mut(&profile)
+                    && let Some(fold) = seen.folds.remove(&project)
+                {
+                    for id in fold.members.keys() {
+                        seen.hush(*id);
+                    }
+                }
+            }
+            Err(error) => {
+                tracing::warn!(%error, "alerts: Android did not show a project's new count")
+            }
+            _ => {}
+        }
     }
 }
 
@@ -2689,6 +3278,8 @@ mod tests {
             quiet: false,
             bundle: false,
             sign_in: None,
+            new_version: None,
+            agent_update: None,
             alert_type: typed(kind),
             project_tier: None,
             follow: false,
@@ -2779,6 +3370,62 @@ mod tests {
         old_summaries: std::sync::atomic::AtomicBool,
     }
     impl FakeShade {
+        fn post_note(
+            &self,
+            note: &Note,
+            since: Option<i64>,
+            replacements: &[String],
+            realert: bool,
+        ) -> Result<Posted> {
+            assert!(LEDGER.try_lock().is_err());
+            if self.refuse.load(Ordering::SeqCst) {
+                return Err(Error::Native("blocked".into()));
+            }
+            if lock(&self.racing).as_ref() == Some(&note.tag) {
+                self.cancel(&note.tag);
+            }
+            if let Some(since) = since
+                && lock(&self.cleared)
+                    .iter()
+                    .enumerate()
+                    .any(|(n, t)| *t == note.tag && n as i64 + 1 > since)
+            {
+                return Ok(Posted::Cleared);
+            }
+            let (wanted, loud) = self.tier_of(note);
+            if wanted == Tier::Off {
+                return Ok(Posted::Off);
+            }
+            let mut shown = lock(&self.shown);
+            if note.tag != MORE
+                && !shown.contains(&note.tag)
+                && (self.full.load(Ordering::SeqCst)
+                    || shown
+                        .iter()
+                        .filter(|t| *t != MORE && !replacements.contains(t))
+                        .count()
+                        >= MAX_SHOWN)
+            {
+                return Ok(Posted::NoRoom);
+            }
+            let replacing = shown.contains(&note.tag);
+            if !replacing {
+                shown.push(note.tag.clone());
+            }
+            if let Some(group) = &note.group {
+                let mut groups = lock(&self.groups);
+                groups.insert(note.tag.clone(), group.clone());
+                if groups.values().filter(|g| *g == group).count() >= 2 {
+                    lock(&self.summaries).insert(group.clone());
+                }
+            }
+            lock(&self.posted).push(note.clone());
+            if loud && wanted == Tier::Alert && !note.silent && (!replacing || realert) {
+                self.sounds.fetch_add(1, Ordering::SeqCst);
+                return Ok(Posted::Sounded);
+            }
+            Ok(Posted::Shown)
+        }
         fn tier(&self, alert_type: AlertType, tier: Tier) {
             lock(&self.tiers).insert(alert_type, tier);
         }
@@ -2811,52 +3458,47 @@ mod tests {
         }
     }
     impl Shade for FakeShade {
-        fn post(&self, note: &Note, since: Option<i64>) -> Result<Posted> {
-            // Nothing saves the book, or turns alerts off, as one is raised.
-            assert!(LEDGER.try_lock().is_err());
-            if self.refuse.load(std::sync::atomic::Ordering::SeqCst) {
-                return Err(Error::Native("blocked".into()));
+        fn post_member(
+            &self,
+            note: &Note,
+            since: i64,
+            member: &str,
+            realert: bool,
+        ) -> Result<Posted> {
+            if lock(&self.racing)
+                .as_deref()
+                .is_some_and(|t| t == member || t == note.tag)
+            {
+                self.cancel(lock(&self.racing).as_deref().unwrap());
             }
-            if lock(&self.racing).as_ref() == Some(&note.tag) {
-                self.cancel(&note.tag);
-            }
-            if let Some(since) = since
-                && (lock(&self.cleared).iter().enumerate())
-                    .any(|(n, t)| *t == note.tag && n as i64 + 1 > since)
+            if lock(&self.cleared)
+                .iter()
+                .enumerate()
+                .any(|(n, t)| (t == member || *t == note.tag) && n as i64 + 1 > since)
             {
                 return Ok(Posted::Cleared);
             }
-            let mut shown = lock(&self.shown);
-            if note.tag != MORE
-                && !shown.contains(&note.tag)
-                && self.full.load(std::sync::atomic::Ordering::SeqCst)
-            {
-                return Ok(Posted::NoRoom);
-            }
-            // As Android's category for the type, and the choice over it.
-            let (wanted, mut loud) = self.tier_of(note);
-            if wanted == Tier::Off {
-                return Ok(Posted::Off);
-            }
-            loud &= wanted == Tier::Alert;
-            let replacing = shown.contains(&note.tag);
-            if !replacing {
-                shown.push(note.tag.clone());
-            }
-            if let Some(group) = &note.group {
-                let mut groups = lock(&self.groups);
-                groups.insert(note.tag.clone(), group.clone());
-                if groups.values().filter(|g| *g == group).count() >= 2 {
-                    lock(&self.summaries).insert(group.clone());
+            let replacements = if note.tag != member
+                && member.split_once('/').is_some_and(|(profile, id)| {
+                    id.parse::<AttentionId>().is_ok()
+                        && note.tag.starts_with(&format!("{profile}/{FOLDED}"))
+                        && note.handles.iter().any(|t| t == member)
+                }) {
+                note.handles.as_slice()
+            } else {
+                &[]
+            };
+            let posted = self.post_note(note, Some(self.clears()), replacements, realert)?;
+            if matches!(posted, Posted::Shown | Posted::Sounded) {
+                let shown = self.shown();
+                for tag in replacements.iter().filter(|t| shown.contains(t)) {
+                    self.cancel(tag);
                 }
             }
-            lock(&self.posted).push(note.clone());
-            if loud && !note.silent && !replacing {
-                self.sounds
-                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                return Ok(Posted::Sounded);
-            }
-            Ok(Posted::Shown)
+            Ok(posted)
+        }
+        fn post(&self, note: &Note, since: Option<i64>) -> Result<Posted> {
+            self.post_note(note, since, &[], false)
         }
         fn cancel(&self, tag: &str) {
             lock(&self.cleared).push(tag.to_owned());
@@ -2881,10 +3523,11 @@ mod tests {
             }
         }
         fn effective(&self, note: &Note) -> Tier {
-            if note.silent {
-                return Tier::Silent;
+            match self.tier_of(note).0 {
+                Tier::Off => Tier::Off,
+                _ if note.silent => Tier::Silent,
+                tier => tier,
             }
-            self.tier_of(note).0
         }
         fn clears(&self) -> i64 {
             lock(&self.cleared).len() as i64
@@ -2960,6 +3603,179 @@ mod tests {
     }
 
     #[test]
+    fn a_new_version_alert_names_the_version_and_computer_and_opens_versions() {
+        let computer = Computer {
+            profile_id: "phone".into(),
+            name: "Desk".into(),
+        };
+        let mut alert = alert(AttentionKind::Completed, 1);
+        alert.project_id = "00000000-0000-0000-0000-000000000000".parse().unwrap();
+        alert.task_id = "00000000-0000-0000-0000-000000000000".parse().unwrap();
+        alert.project.clear();
+        alert.task.clear();
+        alert.alert_type = None;
+        alert.new_version = Some(Box::new(protocol::alerts::NewVersionAlert {
+            version: "0.2.0".into(),
+        }));
+        let note = note(&computer, &alert, Detail::TaskTitle).unwrap();
+        assert_eq!(note.title, "Øphio 0.2.0 is available");
+        assert_eq!(note.body, "Desk · Tap to see what’s new and how to update.");
+        assert_eq!(note.category, Category::Finished);
+        assert_eq!(category(&alert), Some(Category::Finished));
+        assert_eq!(note.alert_type, Some(AlertType::NewVersion));
+        assert_eq!(alert_type(&alert), AlertType::NewVersion);
+        assert_eq!(
+            note.route,
+            serde_json::json!({ "kind": "new_version", "profileId": "phone" })
+        );
+        assert_eq!(note.tag, tag("phone", &alert.attention_id));
+        assert!(note.group.is_none());
+        assert!(note.group_title.is_none());
+        assert!(note.question.is_none());
+        assert!(note.handles.is_empty());
+        assert!(!note.silent);
+    }
+
+    #[test]
+    fn the_watcher_asks_for_new_versions_only_when_the_computer_checks_releases() {
+        assert!(!supports_new_version(&[]));
+        assert!(!supports_new_version(&["reports_v1".into()]));
+        assert!(supports_new_version(&[
+            protocol::releases::RELEASE_CHECK_FEATURE.into()
+        ]));
+    }
+
+    #[test]
+    fn agent_update_watch_is_gated_by_the_host_feature() {
+        assert!(!supports_agent_updates(&[]));
+        assert!(!supports_agent_updates(&["reports_v1".into()]));
+        assert!(supports_agent_updates(&[AGENT_UPDATE_FEATURE.into()]));
+    }
+
+    fn agent_update(kind: AgentUpdateNoticeKind) -> Alert {
+        let mut alert = alert(AttentionKind::Completed, 1);
+        alert.project.clear();
+        alert.task.clear();
+        alert.alert_type = None;
+        alert.agent_update = Some(Box::new(protocol::agent_updates::AgentUpdateNotice {
+            harness: HarnessKind::ClaudeCode,
+            kind,
+            version: Some("2.1.3".into()),
+            models: vec!["claude-fable-5-2".into()],
+        }));
+        alert
+    }
+
+    #[test]
+    fn agent_news_opens_accounts_without_task_details_or_release_text() {
+        for (kind, title, body) in [
+            (
+                AgentUpdateNoticeKind::Behind,
+                "Claude Code has an update",
+                "Version 2.1.3 · An update is available",
+            ),
+            (
+                AgentUpdateNoticeKind::UpdateForModels,
+                "Claude Fable 5.2 needs newer Claude Code",
+                "Version 2.1.3 · An update announces Claude Fable 5.2. Availability depends on your account",
+            ),
+            (
+                AgentUpdateNoticeKind::NewModelsAvailable,
+                "Claude Fable 5.2 is now available on Studio",
+                "Version 2.1.3 · The updated agent now lists Claude Fable 5.2 for your account",
+            ),
+        ] {
+            let mut alert = agent_update(kind);
+            alert.headline = Some("untrusted release text".into());
+            alert.task = "private task title".into();
+            let note = note(&computer(), &alert, Detail::TaskTitle).unwrap();
+            assert_eq!(note.title, title);
+            assert!(note.body.contains(body), "{}", note.body);
+            assert!(!note.body.contains("private task"));
+            assert!(!note.body.contains("untrusted"));
+            assert!(!note.body.contains("claude-fable-5-2"));
+            assert_eq!(note.alert_type, Some(AlertType::AgentUpdate));
+            assert_eq!(alert_type(&alert), AlertType::AgentUpdate);
+            assert_eq!(category(&alert), Some(Category::Finished));
+            assert_eq!(
+                note.route,
+                serde_json::json!({ "kind": "agent_updates", "profileId": "p1" })
+            );
+            assert!(note.question.is_none());
+            assert!(note.group.is_none());
+            assert!(note.handles.is_empty());
+        }
+    }
+
+    #[test]
+    fn model_names_are_bounded_and_unknown_identifiers_are_not_echoed() {
+        let mut alert = agent_update(AgentUpdateNoticeKind::NewModelsAvailable);
+        alert.agent_update.as_mut().unwrap().models = vec![
+            "claude-fable-5-2".into(),
+            "claude-sonnet-5-5".into(),
+            "claude-opus-5-5".into(),
+            "claude-haiku-5-5".into(),
+        ];
+        let named = note(&computer(), &alert, Detail::Minimal).unwrap();
+        assert_eq!(named.title, "New models in Claude Code");
+        assert!(
+            named
+                .body
+                .contains("Claude Fable 5.2, Claude Sonnet 5.5, Claude Opus 5.5 and 1 more")
+        );
+        assert!(!named.body.contains("Claude Haiku"));
+        alert.agent_update.as_mut().unwrap().models = vec!["unexpected\nrelease text".into()];
+        let note = note(&computer(), &alert, Detail::Minimal).unwrap();
+        assert_eq!(note.title, "New models in Claude Code");
+        assert!(note.body.contains("1 new model"));
+        assert!(!note.body.contains("release text"));
+    }
+
+    #[test]
+    fn agent_news_is_not_treated_as_an_unknown_future_type_and_is_removed_when_resolved() {
+        let alert = agent_update(AgentUpdateNoticeKind::Behind);
+        let id = alert.attention_id;
+        let mut book = Book::default();
+        book.begin("p1", Timestamp(0));
+        let first = rx(&mut book, open(&[alert], 1), false, &[]);
+        assert_eq!(first.post.len(), 1);
+        assert_eq!(first.post[0].alert.project_tier, None);
+        let gone = rx(
+            &mut book,
+            open_gone(&[], 2, vec![id]),
+            false,
+            &[tag("p1", &id)],
+        );
+        assert_eq!(gone.cancel, vec![tag("p1", &id)]);
+        assert!(gone.post.is_empty());
+    }
+
+    #[test]
+    fn agent_update_version_is_bounded_for_native_notifications() {
+        let mut alert = agent_update(AgentUpdateNoticeKind::Behind);
+        alert.agent_update.as_mut().unwrap().version =
+            Some(format!("{}\nprivate", "X".repeat(200)));
+        let note = note(&computer(), &alert, Detail::TaskTitle).unwrap();
+        assert!(note.body.contains(&"X".repeat(40)));
+        assert!(!note.body.contains(&"X".repeat(41)));
+        assert!(!note.body.contains("private"));
+    }
+
+    #[test]
+    fn a_new_version_is_not_treated_as_an_unknown_future_type() {
+        let mut alert = alert(AttentionKind::Completed, 1);
+        alert.alert_type = None;
+        alert.new_version = Some(Box::new(protocol::alerts::NewVersionAlert {
+            version: "0.2.0".into(),
+        }));
+        let frame = future_types(&mut Book::default(), &computer(), open(&[alert], 1));
+        let AlertServerFrame::Open { alerts, .. } = frame else {
+            panic!("expected the open alerts");
+        };
+        assert_eq!(alerts[0].project_tier, None);
+    }
+
+    #[test]
     fn an_alert_about_no_task_names_none() {
         let mut alert = alert(AttentionKind::WaitingForYou, 1);
         alert.project = "Problem reports".into();
@@ -2993,13 +3809,13 @@ mod tests {
             alert(AttentionKind::Approval, 3),
         );
         frame(AlertServerFrame::Raised {
-            alert: shown.clone(),
+            alert: Box::new(shown.clone()),
         });
         shade
             .refuse
             .store(true, std::sync::atomic::Ordering::SeqCst);
         frame(AlertServerFrame::Raised {
-            alert: refused.clone(),
+            alert: Box::new(refused.clone()),
         });
         // Saved as raised only once Android showed it.
         let book = saved(dir.path());
@@ -3021,7 +3837,7 @@ mod tests {
             .store(false, std::sync::atomic::Ordering::SeqCst);
         let later = alert(AttentionKind::Question, 4);
         frame(AlertServerFrame::Raised {
-            alert: later.clone(),
+            alert: Box::new(later.clone()),
         });
         assert_eq!(
             shade.shown(),
@@ -3060,7 +3876,7 @@ mod tests {
         frame(open(&[quiet(&merged)], 1), false);
         frame(
             AlertServerFrame::Raised {
-                alert: question.clone(),
+                alert: Box::new(question.clone()),
             },
             false,
         );
@@ -3073,7 +3889,7 @@ mod tests {
         let waiting = alert(AttentionKind::Question, 4);
         frame(
             AlertServerFrame::Raised {
-                alert: waiting.clone(),
+                alert: Box::new(waiting.clone()),
             },
             true,
         );
@@ -3090,7 +3906,12 @@ mod tests {
         assert!(lock(&shade.posted).len() == 1);
         // One turned off while the app shows the computer never waits.
         let later = quiet(&alert(AttentionKind::Approval, 7));
-        frame(AlertServerFrame::Raised { alert: later }, true);
+        frame(
+            AlertServerFrame::Raised {
+                alert: Box::new(later),
+            },
+            true,
+        );
         assert!(seen().waiting.is_empty());
         lock(&LEDGER).take();
     }
@@ -3118,7 +3939,9 @@ mod tests {
             ..alert(kind, at)
         };
         let raise = |a: &Alert| {
-            frame(AlertServerFrame::Raised { alert: a.clone() });
+            frame(AlertServerFrame::Raised {
+                alert: Box::new(a.clone()),
+            });
         };
         let note_tag = folded_tag("p1", &project);
         let last = || lock(&shade.posted).last().unwrap().clone();
@@ -3144,13 +3967,14 @@ mod tests {
         // One that needs the person alerts again; another finished counts quietly.
         let question = folds(AttentionKind::Question, 4);
         raise(&question);
-        assert_eq!(cleared(&note_tag), 1);
+        // Urgent members alert in place, rather than clearing the summary.
+        assert_eq!(cleared(&note_tag), 0);
         assert_eq!(last().title, "Site has 3 notifications");
         assert_eq!(last().body, "Studio · 1 need you, 2 to look at");
         assert_eq!(last().category, Category::NeedsYou);
         let fourth = folds(AttentionKind::Completed, 5);
         raise(&fourth);
-        assert_eq!(cleared(&note_tag), 1);
+        assert_eq!(cleared(&note_tag), 0);
         assert_eq!(last().title, "Site has 4 notifications");
         // Another project's alert, or one not folded, shows on its own.
         let elsewhere = alert(AttentionKind::Completed, 6);
@@ -3219,7 +4043,15 @@ mod tests {
         assert!(live());
         // Nor does what the old one still reads raise anything.
         let late = alert(AttentionKind::Question, 2);
-        assert!(frame(old, AlertServerFrame::Raised { alert: late }).is_none());
+        assert!(
+            frame(
+                old,
+                AlertServerFrame::Raised {
+                    alert: Box::new(late)
+                }
+            )
+            .is_none()
+        );
         assert!(shade.shown().is_empty());
         connection_ended("p1", new).unwrap();
         assert!(!live());
@@ -3322,7 +4154,9 @@ mod tests {
         ];
         let mut posted = Vec::new();
         for a in &waiting {
-            let frame = AlertServerFrame::Raised { alert: a.clone() };
+            let frame = AlertServerFrame::Raised {
+                alert: Box::new(a.clone()),
+            };
             let changes = rx(&mut book, frame, false, &full);
             posted.extend(fit_hold(&mut book, changes.post, &full, &BTreeSet::new()));
         }
@@ -3341,7 +4175,7 @@ mod tests {
         let changes = rx(
             &mut book,
             AlertServerFrame::Raised {
-                alert: alert(AttentionKind::Completed, 4),
+                alert: Box::new(alert(AttentionKind::Completed, 4)),
             },
             false,
             &full,
@@ -3376,7 +4210,9 @@ mod tests {
         for a in [&question, &done] {
             let changes = rx(
                 &mut book,
-                AlertServerFrame::Raised { alert: a.clone() },
+                AlertServerFrame::Raised {
+                    alert: Box::new(a.clone()),
+                },
                 false,
                 &full,
             );
@@ -3401,7 +4237,7 @@ mod tests {
         rx(
             &mut book,
             AlertServerFrame::Raised {
-                alert: raised.clone(),
+                alert: Box::new(raised.clone()),
             },
             false,
             &[],
@@ -3411,7 +4247,7 @@ mod tests {
         let changes = rx(
             &mut book,
             AlertServerFrame::Raised {
-                alert: held.clone(),
+                alert: Box::new(held.clone()),
             },
             false,
             &full,
@@ -3451,7 +4287,7 @@ mod tests {
         let full: Vec<String> = (0..MAX_SHOWN).map(|i| format!("p9/{i}")).collect();
         let approval = alert(AttentionKind::Approval, 2);
         let frame = AlertServerFrame::Raised {
-            alert: approval.clone(),
+            alert: Box::new(approval.clone()),
         };
         let changes = rx(&mut book, frame, false, &full);
         assert!(fit_hold(&mut book, changes.post, &full, &none).is_empty());
@@ -3485,7 +4321,7 @@ mod tests {
         rx(&mut book, open(&[], 1), false, &[]);
         let question = alert(AttentionKind::Question, 2);
         let frame = AlertServerFrame::Raised {
-            alert: question.clone(),
+            alert: Box::new(question.clone()),
         };
         assert!(rx(&mut book, frame, true, &[]).post.is_empty());
         assert_eq!(book.showing("p1", &[]), vec![question.attention_id]);
@@ -3504,7 +4340,7 @@ mod tests {
         // raises it again if it is still open.
         let other = alert(AttentionKind::Question, 6);
         let frame = AlertServerFrame::Raised {
-            alert: other.clone(),
+            alert: Box::new(other.clone()),
         };
         rx(&mut book, frame, true, &[]);
         let many: Vec<String> = (0..MAX_SHOWING)
@@ -3559,7 +4395,7 @@ mod tests {
         shade.full.store(true, std::sync::atomic::Ordering::SeqCst);
         let question = alert(AttentionKind::Question, 2);
         assert!(frame(AlertServerFrame::Raised {
-            alert: question.clone(),
+            alert: Box::new(question.clone()),
         }));
         assert_eq!(shade.shown(), vec![MORE.to_owned()]);
         assert!(saved(dir.path()).computers["p1"].knows(&question.attention_id));
@@ -3600,7 +4436,7 @@ mod tests {
         let question = alert(AttentionKind::Question, 2);
         *lock(&shade.racing) = Some(tag("p1", &question.attention_id));
         assert!(!frame(AlertServerFrame::Raised {
-            alert: question.clone(),
+            alert: Box::new(question.clone()),
         }));
         assert!(shade.shown().is_empty());
         // Neither shown nor waiting for room: the next open list says.
@@ -3632,7 +4468,7 @@ mod tests {
         shade.full.store(true, std::sync::atomic::Ordering::SeqCst);
         let question = alert(AttentionKind::Question, 2);
         assert!(frame(AlertServerFrame::Raised {
-            alert: question.clone(),
+            alert: Box::new(question.clone()),
         }));
         // The app hears it answered first, on its own connection.
         shade.cancel(&tag("p1", &question.attention_id));
@@ -3672,7 +4508,7 @@ mod tests {
         let question = alert(AttentionKind::Question, 2);
         frame(
             AlertServerFrame::Raised {
-                alert: question.clone(),
+                alert: Box::new(question.clone()),
             },
             true,
         );
@@ -3709,7 +4545,7 @@ mod tests {
         frame(open(&[], 1));
         let approval = alert(AttentionKind::Approval, 2);
         let raised = AlertServerFrame::Raised {
-            alert: approval.clone(),
+            alert: Box::new(approval.clone()),
         };
         frame(raised.clone());
         let shown = vec![tag("p1", &approval.attention_id)];
@@ -3752,7 +4588,7 @@ mod tests {
         assert!(frame(
             &computer(),
             AlertServerFrame::Raised {
-                alert: question.clone(),
+                alert: Box::new(question.clone()),
             }
         ));
         // Watching stops and starts again in this process, and the question
@@ -3788,7 +4624,7 @@ mod tests {
         for f in [
             open(&[], 1),
             AlertServerFrame::Raised {
-                alert: question.clone(),
+                alert: Box::new(question.clone()),
             },
         ] {
             update(
@@ -3866,7 +4702,7 @@ mod tests {
         rx(&mut book, open(&[], 1), false, &[]);
         let question = alert(AttentionKind::Question, 2);
         let raised = AlertServerFrame::Raised {
-            alert: question.clone(),
+            alert: Box::new(question.clone()),
         };
         let first = rx(&mut book, raised.clone(), false, &[]);
         assert_eq!(first.post.len(), 1);
@@ -3901,7 +4737,9 @@ mod tests {
             alert(AttentionKind::Approval, 4),
         );
         for a in [&seen, &missed] {
-            let frame = AlertServerFrame::Raised { alert: a.clone() };
+            let frame = AlertServerFrame::Raised {
+                alert: Box::new(a.clone()),
+            };
             assert!(rx(&mut book, frame, true, &[]).post.is_empty());
         }
         assert!(book.waiting("p1"));
@@ -3925,7 +4763,7 @@ mod tests {
         rx(&mut book, open(&[], 1), false, &[]);
         let approval = alert(AttentionKind::Approval, 2);
         let frame = AlertServerFrame::Raised {
-            alert: approval.clone(),
+            alert: Box::new(approval.clone()),
         };
         let posted = rx(&mut book, frame, false, &[]);
         book.unraise(&tags(&posted));
@@ -4012,7 +4850,9 @@ mod tests {
             alert(AttentionKind::WaitingForYou, 4),
         );
         for a in [&kept, &swiped, &seen] {
-            frame(AlertServerFrame::Raised { alert: a.clone() });
+            frame(AlertServerFrame::Raised {
+                alert: Box::new(a.clone()),
+            });
         }
         assert_eq!(shade.shown().len(), 3);
         // The person swipes one away, which Android tells the app, and sees
@@ -4071,7 +4911,9 @@ mod tests {
         assert_eq!(posted(&shade), before + 1);
         // Something new still alerts.
         let new = alert(AttentionKind::Question, 11);
-        frame(AlertServerFrame::Raised { alert: new.clone() });
+        frame(AlertServerFrame::Raised {
+            alert: Box::new(new.clone()),
+        });
         assert_eq!(shade.shown(), vec![tag("p1", &new.attention_id)]);
         lock(&LEDGER).take();
     }
@@ -4108,7 +4950,7 @@ mod tests {
         frame(open(&[], 1));
         let question = alert(AttentionKind::Question, 2);
         frame(AlertServerFrame::Raised {
-            alert: question.clone(),
+            alert: Box::new(question.clone()),
         });
         let t = tag("p1", &question.attention_id);
         // Android removes it, as for a force stop or a category replaced:
@@ -4171,7 +5013,9 @@ mod tests {
             let mut second = alert(AttentionKind::Approval, 3);
             second.project_id = first.project_id;
             for a in [&first, &second] {
-                frame(AlertServerFrame::Raised { alert: a.clone() });
+                frame(AlertServerFrame::Raised {
+                    alert: Box::new(a.clone()),
+                });
             }
             assert_eq!(lock(&shade.summaries).len(), 1);
             // The first is answered at the computer.
@@ -4213,7 +5057,9 @@ mod tests {
         for a in [&loud, &followed] {
             rx(
                 &mut book,
-                AlertServerFrame::Raised { alert: a.clone() },
+                AlertServerFrame::Raised {
+                    alert: Box::new(a.clone()),
+                },
                 false,
                 &[],
             );
@@ -4263,19 +5109,21 @@ mod tests {
             .map(|i| alert(AttentionKind::Completed, 10 + i))
             .collect();
         for a in &quiet {
-            frame(AlertServerFrame::Raised { alert: a.clone() });
+            frame(AlertServerFrame::Raised {
+                alert: Box::new(a.clone()),
+            });
         }
         assert_eq!(shade.shown().len(), MAX_SHOWN);
         // One more to look at waits behind the note.
         let another = alert(AttentionKind::Completed, 50);
         frame(AlertServerFrame::Raised {
-            alert: another.clone(),
+            alert: Box::new(another.clone()),
         });
         assert!(!shade.shown().contains(&tag("p1", &another.attention_id)));
         // A question takes the oldest quiet one's place.
         let question = alert(AttentionKind::Question, 60);
         frame(AlertServerFrame::Raised {
-            alert: question.clone(),
+            alert: Box::new(question.clone()),
         });
         let shown = shade.shown();
         assert!(shown.contains(&tag("p1", &question.attention_id)));
@@ -4304,10 +5152,10 @@ mod tests {
         let changes = rx(
             &mut book,
             AlertServerFrame::Raised {
-                alert: Alert {
+                alert: Box::new(Alert {
                     attention_id: AttentionId::new(),
                     ..future.clone()
-                },
+                }),
             },
             false,
             &[],
@@ -4325,7 +5173,9 @@ mod tests {
         rx(&mut older, frame, false, &[]);
         let changes = rx(
             &mut older,
-            AlertServerFrame::Raised { alert: future },
+            AlertServerFrame::Raised {
+                alert: Box::new(future),
+            },
             false,
             &[],
         );
@@ -4348,7 +5198,7 @@ mod tests {
         let silent = imported_tiers(&old(&[("finished", 2)]));
         assert_eq!(silent.get(&AlertType::Failed), Some(&Tier::Silent));
         assert_eq!(silent.get(&AlertType::Finished), None);
-        assert_eq!(silent.get(&AlertType::Reply), None);
+        assert_eq!(silent.get(&AlertType::Reply), Some(&Tier::Silent));
         assert_eq!(silent.get(&AlertType::Question), None);
         // Needs you switched off: every type under it is off.
         let off = imported_tiers(&old(&[("needs-you", 0), ("updates", 0)]));
@@ -4403,7 +5253,7 @@ mod tests {
             frame(
                 &computer(),
                 AlertServerFrame::Raised {
-                    alert: question.clone(),
+                    alert: Box::new(question.clone()),
                 },
             );
             let t = tag("p1", &question.attention_id);
@@ -4418,14 +5268,14 @@ mod tests {
             frame(
                 &laptop,
                 AlertServerFrame::Raised {
-                    alert: alert(AttentionKind::Completed, 3),
+                    alert: Box::new(alert(AttentionKind::Completed, 3)),
                 },
             );
             age_missing();
             frame(
                 &laptop,
                 AlertServerFrame::Raised {
-                    alert: alert(AttentionKind::Completed, 4),
+                    alert: Box::new(alert(AttentionKind::Completed, 4)),
                 },
             );
             assert!(!shade.shown().contains(&t), "told: {told}");
@@ -4467,8 +5317,12 @@ mod tests {
             project_id: a.project_id,
             ..bundled(AttentionKind::Approval, 4)
         };
-        frame(AlertServerFrame::Raised { alert: a.clone() });
-        frame(AlertServerFrame::Raised { alert: b.clone() });
+        frame(AlertServerFrame::Raised {
+            alert: Box::new(a.clone()),
+        });
+        frame(AlertServerFrame::Raised {
+            alert: Box::new(b.clone()),
+        });
         let note_tag = folded_tag("p1", &a.project_id);
         let swiped = (lock(&shade.posted).iter().rev())
             .find(|n| n.tag == note_tag)
@@ -4478,7 +5332,9 @@ mod tests {
         assert_eq!(swiped.len(), 2);
         // The person swipes the note; before Android says so, C comes in.
         shade.swipe(&note_tag);
-        frame(AlertServerFrame::Raised { alert: c.clone() });
+        frame(AlertServerFrame::Raised {
+            alert: Box::new(c.clone()),
+        });
         dismissed(dir.path(), &swiped.join("\n"), &shade).unwrap();
         let book = saved(dir.path());
         let seen = &book.computers["p1"];
@@ -4520,10 +5376,10 @@ mod tests {
             ..second
         };
         frame(AlertServerFrame::Raised {
-            alert: first.clone(),
+            alert: Box::new(first.clone()),
         });
         frame(AlertServerFrame::Raised {
-            alert: second.clone(),
+            alert: Box::new(second.clone()),
         });
         // The second folds the two into one note, in the same burst: silent.
         let note_tag = folded_tag("p1", &first.project_id);
@@ -4569,10 +5425,10 @@ mod tests {
         };
         frame(open(&[], 1));
         frame(AlertServerFrame::Raised {
-            alert: Alert {
+            alert: Box::new(Alert {
                 alert_type: Some(AlertType::PrReady),
                 ..alert(AttentionKind::Completed, 2)
-            },
+            }),
         });
         assert_eq!(shade.shown(), vec![MORE.to_owned()]);
         let note = lock(&shade.posted).last().cloned().unwrap();
@@ -4600,7 +5456,7 @@ mod tests {
         assert_eq!(frame(open(&[], 1)), None);
         let question = alert(AttentionKind::Question, 2);
         frame(AlertServerFrame::Raised {
-            alert: question.clone(),
+            alert: Box::new(question.clone()),
         });
         let t = tag("p1", &question.attention_id);
         // Gone, as for a force stop: the watcher asks to look again soon,
@@ -4636,7 +5492,7 @@ mod tests {
         rx(
             &mut book,
             AlertServerFrame::Raised {
-                alert: showing.clone(),
+                alert: Box::new(showing.clone()),
             },
             false,
             &[],
@@ -4683,7 +5539,7 @@ mod tests {
         shade.tier(AlertType::Finished, Tier::Off);
         let done = alert(AttentionKind::Completed, 2);
         frame(AlertServerFrame::Raised {
-            alert: done.clone(),
+            alert: Box::new(done.clone()),
         });
         assert!(shade.shown().is_empty());
         shade.tier(AlertType::Finished, Tier::Alert);
@@ -4693,7 +5549,7 @@ mod tests {
         shade.tier(AlertType::Finished, Tier::Silent);
         let quiet = alert(AttentionKind::Completed, 4);
         frame(AlertServerFrame::Raised {
-            alert: quiet.clone(),
+            alert: Box::new(quiet.clone()),
         });
         assert_eq!(shade.sounded(), 0);
         assert_eq!(last(&shade).unwrap().tag, tag("p1", &quiet.attention_id));
@@ -4701,7 +5557,7 @@ mod tests {
         let mut muted = alert(AttentionKind::Question, 5);
         muted.project_tier = Some(Tier::Off);
         frame(AlertServerFrame::Raised {
-            alert: muted.clone(),
+            alert: Box::new(muted.clone()),
         });
         assert!(!shade.shown().contains(&tag("p1", &muted.attention_id)));
         // A task the person asked to hear about alerts, whatever the phone's
@@ -4710,13 +5566,1873 @@ mod tests {
         let mut followed = alert(AttentionKind::Completed, 6);
         followed.follow = true;
         frame(AlertServerFrame::Raised {
-            alert: followed.clone(),
+            alert: Box::new(followed.clone()),
         });
         let note = last(&shade).unwrap();
         assert_eq!(note.tag, tag("p1", &followed.attention_id));
         assert_eq!(note.want, Some(Tier::Alert));
         assert_eq!(shade.sounded(), 1);
         lock(&LEDGER).take();
+    }
+
+    fn app_reply(profile: &str) -> Note {
+        Note {
+            tag: tag(profile, &AttentionId::new()),
+            category: Category::Finished,
+            title: "A reply".into(),
+            body: "An agent replied".into(),
+            group: None,
+            group_title: None,
+            route: serde_json::Value::Null,
+            question: None,
+            silent: false,
+            alert_type: Some(AlertType::Reply),
+            want: None,
+            handles: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn foreground_sound_budget_respects_computers_minute_and_quiet_posts() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        shade.tier(AlertType::Finished, Tier::Off);
+        shade.tier(AlertType::Reply, AlertType::Reply.default_tier());
+        let post = |note, now| post_from_app_with(&shade, note, shade.clears(), || now).unwrap();
+        let mut quiet = app_reply("p1");
+        quiet.silent = true;
+        post(quiet, 100);
+        let mut silent = app_reply("p1");
+        silent.want = Some(Tier::Silent);
+        post(silent, 200);
+        let mut off = app_reply("p1");
+        off.want = Some(Tier::Off);
+        post(off, 300);
+        assert_eq!(shade.sounded(), 0);
+        assert!(lock(&LEDGER).as_ref().unwrap().book.sounded.is_empty());
+        post(app_reply("p1"), 1_000);
+        post(app_reply("p1"), 1_001);
+        assert_eq!(shade.sounded(), 1);
+        post(app_reply("p2"), 1_002);
+        assert_eq!(shade.sounded(), 2);
+        post(app_reply("p1"), 60_999);
+        assert_eq!(shade.sounded(), 2);
+        post(app_reply("p1"), 61_000);
+        assert_eq!(shade.sounded(), 3);
+        assert_eq!(lock(&LEDGER).as_ref().unwrap().book.sounded["p1"], 61_000);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn foreground_members_are_bounded_same_computer_and_optional() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        for handles in [
+            vec![tag("p2", &AttentionId::new())],
+            vec!["p1/not-an-id".into()],
+            vec![tag("p1", &AttentionId::new()); MAX_SHOWING + 1],
+        ] {
+            let mut summary = app_reply("p1");
+            summary.tag = folded_tag("p1", &ProjectId::new());
+            summary.handles = handles;
+            assert!(post_from_app_with(&shade, summary, shade.clears(), || 100).is_err());
+        }
+        assert!(shade.shown().is_empty());
+        // Legacy producers omit handles; neither individual nor summary posts fail.
+        post_from_app_with(&shade, app_reply("p1"), shade.clears(), || 100).unwrap();
+        let mut legacy = app_reply("p1");
+        legacy.tag = folded_tag("p1", &ProjectId::new());
+        post_from_app_with(&shade, legacy, shade.clears(), || 101).unwrap();
+        assert_eq!(shade.shown().len(), 2);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn foreground_fold_handoff_keeps_members_and_swipe_handles_only_that_summary() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        configure(ON).unwrap();
+        let shade = FakeShade::default();
+        let mut first = alert(AttentionKind::Completed, 2);
+        first.alert_type = Some(AlertType::Reply);
+        first.bundle = true;
+        let mut second = first.clone();
+        second.attention_id = AttentionId::new();
+        second.created_at = Timestamp(3);
+        with_book(|book| {
+            rx(book, open(&[], 1), true, &[]);
+            for alert in [&first, &second] {
+                rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(alert.clone()),
+                    },
+                    true,
+                    &[],
+                );
+            }
+            assert_eq!(book.computers["p1"].waiting.len(), 2);
+        })
+        .unwrap();
+        let single = note(&computer(), &first, Detail::Minimal).unwrap();
+        post_from_app_with(&shade, single.clone(), shade.clears(), || 1_000).unwrap();
+        // The frontend removes individual notes before posting the summary.
+        cleared_by_app(std::slice::from_ref(&single.tag)).unwrap();
+        shade.cancel(&single.tag);
+        let mut summary = single;
+        summary.tag = folded_tag("p1", &first.project_id);
+        summary.title = "Site has 2 notifications".into();
+        summary.handles = vec![
+            tag("p1", &first.attention_id),
+            tag("p1", &second.attention_id),
+        ];
+        post_from_app_with(&shade, summary.clone(), shade.clears(), || 1_001).unwrap();
+        let sounds = shade.sounded();
+        with_book(|book| {
+            let seen = &book.computers["p1"];
+            assert!(seen.waiting.is_empty());
+            let fold = &seen.folds[&first.project_id];
+            assert!(fold.folded);
+            assert_eq!(
+                fold.members.keys().copied().collect::<BTreeSet<_>>(),
+                BTreeSet::from([first.attention_id, second.attention_id])
+            );
+            assert!(unwatched(book, &computer()).post.is_empty());
+            assert!(
+                book.missing(&shade.shown(), 10_000, shade.clears())
+                    .is_empty()
+            );
+            assert!(
+                book.missing(&shade.shown(), 10_000 + MISSING_MS, shade.clears())
+                    .is_empty()
+            );
+        })
+        .unwrap();
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, _| unwatched(book, &computer()),
+            |_| (),
+        )
+        .unwrap();
+        assert_eq!(shade.shown(), vec![summary.tag.clone()]);
+        assert_eq!(shade.sounded(), sounds);
+        // A newer reply not represented by this posted summary is not handled.
+        let mut third = second.clone();
+        third.attention_id = AttentionId::new();
+        with_book(|book| {
+            rx(
+                book,
+                AlertServerFrame::Raised {
+                    alert: Box::new(third.clone()),
+                },
+                true,
+                &shade.shown(),
+            );
+        })
+        .unwrap();
+        shade.swipe(&summary.tag);
+        dismissed(dir.path(), &summary.handles.join("\n"), &shade).unwrap();
+        with_book(|book| {
+            let seen = &book.computers["p1"];
+            for id in [first.attention_id, second.attention_id] {
+                assert!(seen.unsent.contains(&id));
+                assert!(!seen.raised.contains(&id));
+            }
+            assert!(!seen.unsent.contains(&third.attention_id));
+            assert!(seen.waiting.contains_key(&third.attention_id));
+        })
+        .unwrap();
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn foreground_background_handoffs_share_one_sound_budget() {
+        for app_first in [true, false] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            configure(ON).unwrap();
+            let shade = FakeShade::default();
+            let frame = |frame| {
+                update(
+                    current_watcher(),
+                    &shade,
+                    &BTreeSet::new(),
+                    |book, shown| rx(book, frame, false, shown),
+                    |_| (),
+                )
+                .unwrap();
+            };
+            frame(open(&[], 1));
+            let foreground = || {
+                post_from_app_with(&shade, app_reply("p1"), shade.clears(), || {
+                    Timestamp::now().0
+                })
+                .unwrap();
+            };
+            let background = || {
+                frame(AlertServerFrame::Raised {
+                    alert: Box::new(alert(AttentionKind::Approval, 2)),
+                })
+            };
+            if app_first {
+                foreground();
+                background();
+            } else {
+                background();
+                foreground();
+            }
+            assert_eq!(shade.sounded(), 1, "app_first={app_first}");
+            assert_eq!(shade.shown().len(), 2);
+            lock(&LEDGER).take();
+        }
+    }
+
+    #[test]
+    fn foreground_cleared_full_or_failed_posts_do_not_consume_sound_budget() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        let note = app_reply("p1");
+        *lock(&shade.racing) = Some(note.tag.clone());
+        post_from_app_with(&shade, note, 0, || 100).unwrap();
+        shade.full.store(true, Ordering::SeqCst);
+        assert!(post_from_app_with(&shade, app_reply("p1"), shade.clears(), || 200).is_err());
+        shade.refuse.store(true, Ordering::SeqCst);
+        assert!(post_from_app_with(&shade, app_reply("p1"), shade.clears(), || 300).is_err());
+        assert!(lock(&LEDGER).as_ref().unwrap().book.sounded.is_empty());
+        lock(&LEDGER).take();
+    }
+
+    fn round4_capacity_batch(
+        folded: bool,
+        urgent_first: bool,
+        other_quiet: bool,
+        urgent_count: usize,
+        shared_project: bool,
+        refused_reply: bool,
+    ) {
+        let label = format!(
+            "folded={folded}, urgent_first={urgent_first}, other_quiet={other_quiet}, \
+             urgent_count={urgent_count}, shared_project={shared_project}, refused_reply={refused_reply}"
+        );
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        with_book(|book| {
+            book.started("shade");
+            rx(book, open(&[], 1), false, &[]);
+        })
+        .unwrap();
+        let first = Alert {
+            bundle: true,
+            alert_type: Some(AlertType::Reply),
+            project_tier: Some(Tier::Silent),
+            ..alert(AttentionKind::Completed, 2)
+        };
+        let mut all = vec![first.clone()];
+        if folded {
+            all.push(Alert {
+                attention_id: AttentionId::new(),
+                created_at: Timestamp(3),
+                ..first.clone()
+            });
+        }
+        for a in &all {
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), a, Detail::Minimal).unwrap(),
+                Some(app_fold_for(a)),
+                shade.clears(),
+                || 1_000,
+            )
+            .unwrap();
+        }
+        let summary = folded_tag("p1", &first.project_id);
+        for i in 1..MAX_SHOWN {
+            // Separate computers keep loud fillers outside each other's budget.
+            let mut n = app_reply(&format!("other-{i}"));
+            n.want = Some(if other_quiet {
+                Tier::Silent
+            } else {
+                Tier::Alert
+            });
+            post_from_app_with(&shade, n, shade.clears(), || 1_000).unwrap();
+        }
+        assert_eq!(shade.shown().len(), MAX_SHOWN);
+        assert_eq!(
+            saved(dir.path()).quiet.first(),
+            Some(&if folded {
+                summary.clone()
+            } else {
+                tag("p1", &first.attention_id)
+            })
+        );
+        let reply = Alert {
+            attention_id: AttentionId::new(),
+            created_at: Timestamp(if urgent_first { 20 } else { 4 }),
+            ..first.clone()
+        };
+        let project = ProjectId::new();
+        let urgent: Vec<_> = (0..urgent_count)
+            .map(|i| Alert {
+                project_id: if shared_project {
+                    project
+                } else {
+                    ProjectId::new()
+                },
+                bundle: shared_project,
+                ..alert(AttentionKind::Approval, 5 + i as i64)
+            })
+            .collect();
+        all.push(reply.clone());
+        all.extend(urgent.iter().cloned());
+        let sounds = shade.sounded();
+        if refused_reply {
+            *lock(&shade.racing) = Some(tag("p1", &reply.attention_id));
+        }
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| rx(book, open(&all, 30), false, shown),
+            |_| (),
+        )
+        .unwrap();
+        let showing = shade.shown();
+        let mut book = saved(dir.path());
+        let seen = &book.computers["p1"];
+        for a in &urgent {
+            let represented = showing.contains(&tag("p1", &a.attention_id))
+                || seen.folds.get(&a.project_id).is_some_and(|f| {
+                    f.members.contains_key(&a.attention_id)
+                        && showing.contains(&folded_tag("p1", &a.project_id))
+                });
+            assert!(
+                represented,
+                "a reused project must not take an urgent item's place: {label}"
+            );
+            assert!(seen.raised.contains(&a.attention_id), "{label}");
+            assert!(seen.shown_last.contains(&a.attention_id), "{label}");
+        }
+        assert_eq!(
+            showing.iter().filter(|t| *t != MORE).count(),
+            MAX_SHOWN,
+            "{label}"
+        );
+        assert!(
+            seen.held
+                .iter()
+                .all(|r| r.alert.attention_id == reply.attention_id),
+            "{label}"
+        );
+        assert_eq!(shade.sounded(), sounds + 1, "{label}");
+        // Displacing a summary is final, not handling or a restart candidate.
+        let displaced: Vec<_> = all
+            .iter()
+            .filter(|a| {
+                a.project_id == first.project_id
+                    && !showing.contains(&tag("p1", &a.attention_id))
+                    && !seen.folds.get(&first.project_id).is_some_and(|f| {
+                        f.members.contains_key(&a.attention_id) && showing.contains(&summary)
+                    })
+            })
+            .map(|a| a.attention_id)
+            .collect();
+        for id in &displaced {
+            assert!(!seen.raised.contains(id), "{label}");
+            assert!(!seen.shown_last.contains(id), "{label}");
+            assert!(!seen.unsent.contains(id), "{label}");
+        }
+        book.started("after");
+        assert!(
+            displaced
+                .iter()
+                .all(|id| !book.computers["p1"].restore.contains(id)),
+            "{label}"
+        );
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round4_project_reuse_cannot_take_an_urgent_items_place_after_eviction() {
+        round4_capacity_batch(true, false, true, 1, false, false);
+    }
+
+    #[test]
+    fn round4_capacity_ordering_keeps_each_urgent_project_visible() {
+        for folded in [false, true] {
+            for urgent_first in [false, true] {
+                for shared in [false, true] {
+                    round4_capacity_batch(folded, urgent_first, true, 2, shared, false);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn round4_a_quiet_projects_only_place_remains_available_to_urgent_work() {
+        for folded in [false, true] {
+            for urgent_first in [false, true] {
+                round4_capacity_batch(folded, urgent_first, false, 1, false, false);
+                round4_capacity_batch(folded, urgent_first, false, 2, true, false);
+            }
+        }
+    }
+
+    #[test]
+    fn round4_refused_project_reuse_never_spends_the_urgent_items_budget_or_place() {
+        for folded in [false, true] {
+            for urgent_first in [false, true] {
+                round4_capacity_batch(folded, urgent_first, true, 1, false, true);
+            }
+        }
+    }
+
+    #[test]
+    fn round4_an_individual_refresh_does_not_consume_another_place() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        with_book(|book| {
+            rx(book, open(&[], 1), false, &[]);
+        })
+        .unwrap();
+        let existing = Alert {
+            alert_type: Some(AlertType::Reply),
+            project_tier: Some(Tier::Silent),
+            ..alert(AttentionKind::Completed, 2)
+        };
+        post_from_app_with(
+            &shade,
+            note(&computer(), &existing, Detail::Minimal).unwrap(),
+            shade.clears(),
+            || 1_000,
+        )
+        .unwrap();
+        for _ in 1..MAX_SHOWN - 1 {
+            let mut n = app_reply("p2");
+            n.want = Some(Tier::Silent);
+            post_from_app_with(&shade, n, shade.clears(), || 1_000).unwrap();
+        }
+        let urgent = alert(AttentionKind::Approval, 3);
+        let since = shade.clears();
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| {
+                let mut changes = rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(urgent.clone()),
+                    },
+                    false,
+                    shown,
+                );
+                // A queued update can find the identity already posted by
+                // the foreground producer. It uses no additional place.
+                changes.post.insert(
+                    0,
+                    Raise {
+                        computer: computer(),
+                        alert: existing.clone(),
+                        since,
+                        silent: true,
+                    },
+                );
+                changes
+            },
+            |_| (),
+        )
+        .unwrap();
+        assert_eq!(shade.shown().len(), MAX_SHOWN);
+        assert!(shade.shown().contains(&tag("p1", &urgent.attention_id)));
+        assert!(
+            lock(&shade.cleared).is_empty(),
+            "the free place needed no eviction"
+        );
+        assert!(saved(dir.path()).computers["p1"].held.is_empty());
+        assert_eq!(shade.sounded(), 1);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round3_first_fold_reuses_the_individual_slot_at_actual_capacity() {
+        for background in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            let shade = FakeShade::default();
+            let first = Alert {
+                bundle: true,
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2)
+            };
+            let second = Alert {
+                attention_id: AttentionId::new(),
+                created_at: Timestamp(3),
+                ..first.clone()
+            };
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), &first, Detail::Minimal).unwrap(),
+                Some(app_fold_for(&first)),
+                shade.clears(),
+                || 1_000,
+            )
+            .unwrap();
+            for _ in 1..MAX_SHOWN {
+                post_from_app_with(&shade, app_reply("p2"), shade.clears(), || 1_000).unwrap();
+            }
+            assert_eq!(shade.shown().len(), MAX_SHOWN);
+            if background {
+                update(
+                    current_watcher(),
+                    &shade,
+                    &BTreeSet::new(),
+                    |book, shown| {
+                        rx(
+                            book,
+                            AlertServerFrame::Raised {
+                                alert: Box::new(second.clone()),
+                            },
+                            false,
+                            shown,
+                        )
+                    },
+                    |_| (),
+                )
+                .unwrap();
+            } else {
+                post_from_app_fold_with(
+                    &shade,
+                    note(&computer(), &second, Detail::Minimal).unwrap(),
+                    Some(app_fold_for(&second)),
+                    shade.clears(),
+                    || 1_001,
+                )
+                .expect("the summary replaces A rather than requiring a 25th place");
+            }
+            assert_eq!(shade.shown().len(), MAX_SHOWN, "background={background}");
+            assert!(!shade.shown().contains(&tag("p1", &first.attention_id)));
+            assert!(
+                shade.shown().contains(&folded_tag("p1", &first.project_id)),
+                "background={background}"
+            );
+            let book = saved(dir.path());
+            assert_eq!(
+                book.computers["p1"].folds[&first.project_id].members.len(),
+                2
+            );
+            assert!(book.computers["p1"].raised.contains(&second.attention_id));
+            lock(&LEDGER).take();
+        }
+    }
+
+    #[test]
+    fn round3_mixed_producer_fold_uses_actual_device_tiers_and_shared_budget() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        shade.tier(AlertType::Question, Tier::Silent);
+        shade.tier(AlertType::Reply, Tier::Alert);
+        let question = Alert {
+            bundle: true,
+            ..alert(AttentionKind::Question, 2)
+        };
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| {
+                rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(question.clone()),
+                    },
+                    false,
+                    shown,
+                )
+            },
+            |_| (),
+        )
+        .unwrap();
+        assert_eq!(shade.sounded(), 0);
+        let reply = Alert {
+            attention_id: AttentionId::new(),
+            kind: AttentionKind::Completed,
+            alert_type: Some(AlertType::Reply),
+            ..question.clone()
+        };
+        let mut outgoing = note(&computer(), &reply, Detail::Minimal).unwrap();
+        outgoing.want = Some(Tier::Alert);
+        post_from_app_fold_with(
+            &shade,
+            outgoing,
+            Some(app_fold_for(&reply)),
+            shade.clears(),
+            || Timestamp::now().0,
+        )
+        .unwrap();
+        assert_eq!(
+            shade.sounded(),
+            1,
+            "the Alert reply must not use the Silent Question channel"
+        );
+        let summary = lock(&shade.posted).last().unwrap().clone();
+        assert_eq!(summary.alert_type, Some(AlertType::Reply));
+        assert_eq!(summary.handles.len(), 2);
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| {
+                rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(alert(AttentionKind::Approval, 4)),
+                    },
+                    false,
+                    shown,
+                )
+            },
+            |_| (),
+        )
+        .unwrap();
+        assert_eq!(
+            shade.sounded(),
+            1,
+            "background work shares the foreground sound budget"
+        );
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round3_ungrouped_settings_refresh_never_restores_displaced_or_handled_work() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        with_book(|book| {
+            book.started("before");
+            rx(book, open(&[], 1), true, &[]);
+        })
+        .unwrap();
+        let replies: Vec<_> = (0..MAX_SHOWN)
+            .map(|i| Alert {
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2 + i as i64)
+            })
+            .collect();
+        for a in &replies {
+            post_from_app_with(
+                &shade,
+                note(&computer(), a, Detail::Minimal).unwrap(),
+                shade.clears(),
+                || 1_000,
+            )
+            .unwrap();
+        }
+        let urgent = alert(AttentionKind::Approval, 100);
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| {
+                rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(urgent.clone()),
+                    },
+                    false,
+                    shown,
+                )
+            },
+            |_| (),
+        )
+        .unwrap();
+        let displaced = tag("p1", &replies[1].attention_id);
+        let handled = tag("p1", &replies[2].attention_id);
+        assert!(!shade.shown().contains(&displaced));
+        handle_from_app_with(&shade, "p1", &[replies[2].attention_id]).unwrap();
+        assert_eq!(shade.shown().len(), MAX_SHOWN - 1);
+        // This is the silent, no-project routing refresh emitted by the page
+        // when grouping is off and Replies changes from Alert to Silent.
+        for a in [&replies[1], &replies[2], &replies[3]] {
+            let mut refresh = note(&computer(), a, Detail::Minimal).unwrap();
+            refresh.silent = true;
+            refresh.want = Some(Tier::Silent);
+            post_from_app_with(&shade, refresh, shade.clears(), || 2_000).unwrap();
+            assert!(
+                !shade.shown().contains(&displaced),
+                "settings must not summon displaced work"
+            );
+        }
+        assert!(
+            !shade.shown().contains(&displaced),
+            "settings must not summon displaced work"
+        );
+        assert!(!shade.shown().contains(&handled));
+        let mut book = saved(dir.path());
+        assert!(
+            book.computers["p1"]
+                .notified
+                .contains(&replies[1].attention_id)
+        );
+        assert!(
+            !book.computers["p1"]
+                .unsent
+                .contains(&replies[1].attention_id)
+        );
+        book.started("after");
+        assert!(
+            !book.computers["p1"]
+                .restore
+                .contains(&replies[1].attention_id)
+        );
+        assert!(
+            !book.computers["p1"]
+                .restore
+                .contains(&replies[2].attention_id)
+        );
+        lock(&shade.shown).clear();
+        with_book(|b| *b = book).unwrap();
+        let mut all = replies.clone();
+        all.push(urgent);
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| rx(book, open(&all, 101), false, shown),
+            |_| (),
+        )
+        .unwrap();
+        assert!(!shade.shown().contains(&displaced));
+        assert!(!shade.shown().contains(&handled));
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round3_refused_replacements_preserve_the_last_accepted_individual_or_summary() {
+        for background in [false, true] {
+            for folded in [false, true] {
+                for mode in ["cleared", "failed", "off", "full"] {
+                    // Updating an already-visible tag needs no capacity, so
+                    // FULL only applies to a new summary tag.
+                    if folded && mode == "full" {
+                        continue;
+                    }
+                    let dir = tempfile::tempdir().unwrap();
+                    let _one = ledger(dir.path());
+                    let shade = FakeShade::default();
+                    with_book(|b| b.started("before")).unwrap();
+                    let first = Alert {
+                        bundle: true,
+                        alert_type: Some(AlertType::Reply),
+                        ..alert(AttentionKind::Completed, 2)
+                    };
+                    for _ in 0..if folded { 2 } else { 1 } {
+                        let a = if lock(&shade.posted).is_empty() {
+                            first.clone()
+                        } else {
+                            Alert {
+                                attention_id: AttentionId::new(),
+                                ..first.clone()
+                            }
+                        };
+                        post_from_app_fold_with(
+                            &shade,
+                            note(&computer(), &a, Detail::Minimal).unwrap(),
+                            Some(app_fold_for(&a)),
+                            shade.clears(),
+                            || 1_000,
+                        )
+                        .unwrap();
+                    }
+                    for _ in 1..MAX_SHOWN {
+                        post_from_app_with(&shade, app_reply("p2"), shade.clears(), || 1_000)
+                            .unwrap();
+                    }
+                    let previous = shade.shown();
+                    let accepted =
+                        saved(dir.path()).computers["p1"].folds[&first.project_id].clone();
+                    let mut candidate = Alert {
+                        project_id: first.project_id,
+                        bundle: true,
+                        ..alert(AttentionKind::Approval, 3)
+                    };
+                    match mode {
+                        "cleared" => {
+                            *lock(&shade.racing) = Some(tag("p1", &candidate.attention_id))
+                        }
+                        "failed" => shade.refuse.store(true, Ordering::SeqCst),
+                        "off" => candidate.project_tier = Some(Tier::Off),
+                        _ => shade.full.store(true, Ordering::SeqCst),
+                    }
+                    if background {
+                        update(
+                            current_watcher(),
+                            &shade,
+                            &BTreeSet::new(),
+                            |book, shown| {
+                                rx(
+                                    book,
+                                    AlertServerFrame::Raised {
+                                        alert: Box::new(candidate.clone()),
+                                    },
+                                    false,
+                                    shown,
+                                )
+                            },
+                            |_| (),
+                        )
+                        .unwrap();
+                    } else {
+                        let _ = post_from_app_fold_with(
+                            &shade,
+                            note(&computer(), &candidate, Detail::Minimal).unwrap(),
+                            Some(app_fold_for(&candidate)),
+                            shade.clears(),
+                            || 61_000,
+                        );
+                    }
+                    let label = format!("background={background}, folded={folded}, mode={mode}");
+                    assert_eq!(
+                        shade
+                            .shown()
+                            .into_iter()
+                            .filter(|t| t != MORE)
+                            .collect::<Vec<_>>(),
+                        previous,
+                        "{label}"
+                    );
+                    let mut book = saved(dir.path());
+                    let seen = &book.computers["p1"];
+                    assert_eq!(seen.folds[&first.project_id], accepted, "{label}");
+                    assert!(!seen.raised.contains(&candidate.attention_id), "{label}");
+                    for id in accepted.members.keys() {
+                        assert!(seen.raised.contains(id), "{label}");
+                        assert!(seen.shown_last.contains(id), "{label}");
+                    }
+                    book.started("after");
+                    assert!(
+                        !book.computers["p1"]
+                            .restore
+                            .contains(&candidate.attention_id),
+                        "{label}"
+                    );
+                    assert!(
+                        accepted
+                            .members
+                            .keys()
+                            .all(|id| book.computers["p1"].restore.contains(id)),
+                        "{label}"
+                    );
+                    lock(&LEDGER).take();
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn round3_fold_lead_resolves_off_and_overrides_without_freezing_device_choices() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        let q = AttentionId::new();
+        let r = AttentionId::new();
+        let project = ProjectId::new();
+        for (question, q_want, reply, r_want, lead, tier) in [
+            (
+                Tier::Silent,
+                None,
+                Tier::Alert,
+                Some(Tier::Alert),
+                AlertType::Reply,
+                Tier::Alert,
+            ),
+            (
+                Tier::Off,
+                None,
+                Tier::Silent,
+                None,
+                AlertType::Reply,
+                Tier::Silent,
+            ),
+            (
+                Tier::Alert,
+                Some(Tier::Off),
+                Tier::Silent,
+                None,
+                AlertType::Reply,
+                Tier::Silent,
+            ),
+            (
+                Tier::Alert,
+                Some(Tier::Silent),
+                Tier::Alert,
+                None,
+                AlertType::Reply,
+                Tier::Alert,
+            ),
+            (
+                Tier::Off,
+                Some(Tier::Alert),
+                Tier::Silent,
+                None,
+                AlertType::Question,
+                Tier::Alert,
+            ),
+            (
+                Tier::Off,
+                None,
+                Tier::Off,
+                None,
+                AlertType::Question,
+                Tier::Off,
+            ),
+        ] {
+            shade.tier(AlertType::Question, question);
+            shade.tier(AlertType::Reply, reply);
+            let fold = Fold {
+                project: "Site".into(),
+                computer: "Studio".into(),
+                members: BTreeMap::from([(q, true), (r, false)]),
+                folded: true,
+                counted: 2,
+                types: BTreeMap::from([
+                    (q, (AlertType::Question, q_want)),
+                    (r, (AlertType::Reply, r_want)),
+                ]),
+            };
+            let note = fold.note(&shade, "p1", &project);
+            assert_eq!(note.alert_type, Some(lead));
+            assert_eq!(shade.effective(&note), tier);
+            assert_eq!(
+                note.want,
+                if lead == AlertType::Question {
+                    q_want
+                } else {
+                    r_want
+                }
+            );
+        }
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round3_off_incoming_members_do_not_borrow_a_visible_members_channel() {
+        for background in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            let shade = FakeShade::default();
+            let first = Alert {
+                bundle: true,
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2)
+            };
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), &first, Detail::Minimal).unwrap(),
+                Some(app_fold_for(&first)),
+                shade.clears(),
+                || 1_000,
+            )
+            .unwrap();
+            let off = Alert {
+                project_id: first.project_id,
+                bundle: true,
+                ..alert(AttentionKind::Question, 3)
+            };
+            shade.tier(AlertType::Question, Tier::Off);
+            if background {
+                update(
+                    current_watcher(),
+                    &shade,
+                    &BTreeSet::new(),
+                    |b, shown| {
+                        rx(
+                            b,
+                            AlertServerFrame::Raised {
+                                alert: Box::new(off.clone()),
+                            },
+                            false,
+                            shown,
+                        )
+                    },
+                    |_| (),
+                )
+                .unwrap();
+            } else {
+                post_from_app_fold_with(
+                    &shade,
+                    note(&computer(), &off, Detail::Minimal).unwrap(),
+                    Some(app_fold_for(&off)),
+                    shade.clears(),
+                    || 61_000,
+                )
+                .unwrap();
+            }
+            assert_eq!(shade.shown(), vec![tag("p1", &first.attention_id)]);
+            let book = saved(dir.path());
+            assert!(book.computers["p1"].notified.contains(&off.attention_id));
+            assert!(!book.computers["p1"].raised.contains(&off.attention_id));
+            assert_eq!(
+                book.computers["p1"].folds[&first.project_id].members.len(),
+                1
+            );
+            lock(&LEDGER).take();
+        }
+    }
+
+    #[test]
+    fn round3_background_batch_reuses_one_project_slot_and_stays_bounded() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        with_book(|b| {
+            rx(b, open(&[], 1), false, &[]);
+        })
+        .unwrap();
+        for _ in 1..MAX_SHOWN {
+            post_from_app_with(&shade, app_reply("p2"), shade.clears(), || 1_000).unwrap();
+        }
+        let first = Alert {
+            bundle: true,
+            ..alert(AttentionKind::Question, 2)
+        };
+        let batch: Vec<_> = (0..MAX_SHOWING)
+            .map(|i| Alert {
+                attention_id: AttentionId::new(),
+                created_at: Timestamp(2 + i as i64),
+                ..first.clone()
+            })
+            .collect();
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |b, shown| rx(b, open(&batch, 300), false, shown),
+            |_| (),
+        )
+        .unwrap();
+        assert_eq!(shade.shown().len(), MAX_SHOWN);
+        let summary = folded_tag("p1", &first.project_id);
+        assert!(shade.shown().contains(&summary));
+        assert_eq!(
+            saved(dir.path()).computers["p1"].folds[&first.project_id]
+                .members
+                .len(),
+            MAX_SHOWING
+        );
+        let extra = Alert {
+            attention_id: AttentionId::new(),
+            ..first
+        };
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |b, shown| {
+                rx(
+                    b,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(extra.clone()),
+                    },
+                    false,
+                    shown,
+                )
+            },
+            |_| (),
+        )
+        .unwrap();
+        let book = saved(dir.path());
+        assert_eq!(
+            book.computers["p1"].folds[&extra.project_id].members.len(),
+            MAX_SHOWING
+        );
+        assert!(!book.computers["p1"].raised.contains(&extra.attention_id));
+        let captured = lock(&shade.posted)
+            .iter()
+            .rev()
+            .find(|n| n.tag == summary)
+            .unwrap()
+            .handles
+            .clone();
+        assert_eq!(captured.len(), MAX_SHOWING);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round2_foreground_individual_and_fold_restore_without_a_native_update() {
+        for bundled in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            let shade = FakeShade::default();
+            let first = Alert {
+                bundle: bundled,
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2)
+            };
+            let second = Alert {
+                attention_id: AttentionId::new(),
+                created_at: Timestamp(3),
+                ..first.clone()
+            };
+            let alerts = if bundled {
+                vec![first.clone(), second]
+            } else {
+                vec![first.clone()]
+            };
+            with_book(|book| {
+                book.started("before-update");
+                rx(book, open(&[], 1), true, &[]);
+                for a in &alerts {
+                    rx(
+                        book,
+                        AlertServerFrame::Raised {
+                            alert: Box::new(a.clone()),
+                        },
+                        true,
+                        &[],
+                    );
+                }
+            })
+            .unwrap();
+            let mut note = note(&computer(), &first, Detail::Minimal).unwrap();
+            if bundled {
+                note.tag = folded_tag("p1", &first.project_id);
+                note.title = "Site has 2 notifications".into();
+                note.handles = alerts.iter().map(|a| tag("p1", &a.attention_id)).collect();
+            }
+            post_from_app_with(&shade, note.clone(), shade.clears(), || 1_000).unwrap();
+            let mut book = saved(dir.path());
+            assert_eq!(
+                book.computers["p1"].shown_last.len(),
+                alerts.len(),
+                "bundled={bundled}"
+            );
+            lock(&shade.shown).clear();
+            book.restarted();
+            book.started("after-update");
+            with_book(|b| *b = book).unwrap();
+            let before = lock(&shade.posted).len();
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| rx(book, open(&alerts, 4), false, shown),
+                |_| (),
+            )
+            .unwrap();
+            let restored = lock(&shade.posted)[before..].to_vec();
+            assert!(!restored.is_empty(), "bundled={bundled}");
+            assert!(restored.iter().all(|n| n.silent));
+            assert_eq!(shade.shown(), vec![note.tag]);
+            assert_eq!(
+                saved(dir.path()).computers["p1"].shown_last.len(),
+                alerts.len()
+            );
+            lock(&LEDGER).take();
+        }
+    }
+
+    #[test]
+    fn round2_foreground_silent_replies_make_room_for_background_urgent_alerts() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        with_book(|book| {
+            book.started("shade");
+            rx(book, open(&[], 1), true, &[]);
+        })
+        .unwrap();
+        let replies: Vec<_> = (0..MAX_SHOWN)
+            .map(|i| Alert {
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2 + i as i64)
+            })
+            .collect();
+        for (i, reply) in replies.iter().enumerate() {
+            let note = note(&computer(), reply, Detail::Minimal).unwrap();
+            post_from_app_with(&shade, note, shade.clears(), || 1_000 + i as i64).unwrap();
+        }
+        assert_eq!(shade.shown().len(), MAX_SHOWN);
+        assert_eq!(shade.sounded(), 1);
+        // Actual capacity refusal, not the fixture's force-full switch.
+        assert!(post_from_app_with(&shade, app_reply("p1"), shade.clears(), || 2_000).is_err());
+        // Native receipt of the same replies must neither repost nor lose their quiet order.
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| rx(book, open(&replies, 100), false, shown),
+            |_| (),
+        )
+        .unwrap();
+        let urgent = alert(AttentionKind::Approval, 101);
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| {
+                rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(urgent.clone()),
+                    },
+                    false,
+                    shown,
+                )
+            },
+            |_| (),
+        )
+        .unwrap();
+        let shown = shade.shown();
+        assert!(shown.contains(&tag("p1", &urgent.attention_id)));
+        assert!(shown.contains(&tag("p1", &replies[0].attention_id)));
+        assert!(!shown.contains(&tag("p1", &replies[1].attention_id)));
+        assert_eq!(shown.len(), MAX_SHOWN);
+        let book = saved(dir.path());
+        assert!(book.computers["p1"].unsent.is_empty());
+        assert!(
+            !book.computers["p1"]
+                .raised
+                .contains(&replies[1].attention_id)
+        );
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round2_foreground_quiet_folds_make_room_without_restoring_their_members() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        with_book(|book| {
+            book.started("shade");
+            rx(book, open(&[], 1), true, &[]);
+        })
+        .unwrap();
+        let mut replies = Vec::new();
+        for i in 0..MAX_SHOWN - 1 {
+            let first = Alert {
+                project_id: ProjectId::new(),
+                bundle: true,
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2 + i as i64 * 2)
+            };
+            let second = Alert {
+                attention_id: AttentionId::new(),
+                created_at: Timestamp(first.created_at.0 + 1),
+                ..first.clone()
+            };
+            for a in [first, second] {
+                with_book(|book| {
+                    rx(
+                        book,
+                        AlertServerFrame::Raised {
+                            alert: Box::new(a.clone()),
+                        },
+                        true,
+                        &shade.shown(),
+                    );
+                })
+                .unwrap();
+                post_from_app_fold_with(
+                    &shade,
+                    note(&computer(), &a, Detail::Minimal).unwrap(),
+                    Some(app_fold_for(&a)),
+                    shade.clears(),
+                    || 1_000,
+                )
+                .unwrap();
+                replies.push(a);
+            }
+        }
+        post_from_app_with(&shade, app_reply("p2"), shade.clears(), || 1_000).unwrap();
+        assert_eq!(shade.shown().len(), MAX_SHOWN);
+        let victim = folded_tag("p1", &replies[0].project_id);
+        let urgent = alert(AttentionKind::Approval, 101);
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| {
+                rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(urgent.clone()),
+                    },
+                    false,
+                    shown,
+                )
+            },
+            |_| (),
+        )
+        .unwrap();
+        assert!(shade.shown().contains(&tag("p1", &urgent.attention_id)));
+        assert!(!shade.shown().contains(&victim));
+        let mut book = saved(dir.path());
+        let seen = &book.computers["p1"];
+        assert!(seen.unsent.is_empty());
+        for a in &replies[..2] {
+            assert!(!seen.raised.contains(&a.attention_id));
+        }
+        assert!(!seen.folds.contains_key(&replies[0].project_id));
+        assert!(
+            book.missing(&shade.shown(), 100_000, shade.clears())
+                .is_empty()
+        );
+        assert!(
+            book.missing(&shade.shown(), 120_000, shade.clears())
+                .is_empty()
+        );
+        lock(&LEDGER).take();
+    }
+
+    fn app_fold_for(alert: &Alert) -> AppFold {
+        AppFold {
+            project_id: alert.project_id,
+            project: alert.project.clone(),
+            computer: computer().name,
+        }
+    }
+
+    #[test]
+    fn round2_reverse_handoff_recounts_native_members_and_swipes_exactly_them() {
+        for handle in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            let shade = FakeShade::default();
+            let first = Alert {
+                bundle: true,
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2)
+            };
+            let second = Alert {
+                attention_id: AttentionId::new(),
+                created_at: Timestamp(3),
+                ..first.clone()
+            };
+            let third = Alert {
+                attention_id: AttentionId::new(),
+                created_at: Timestamp(4),
+                ..first.clone()
+            };
+            with_book(|book| {
+                book.started("shade");
+                rx(book, open(&[], 1), true, &[]);
+            })
+            .unwrap();
+            for a in [&first, &second] {
+                with_book(|book| {
+                    rx(
+                        book,
+                        AlertServerFrame::Raised {
+                            alert: Box::new(a.clone()),
+                        },
+                        true,
+                        &shade.shown(),
+                    );
+                })
+                .unwrap();
+                post_from_app_fold_with(
+                    &shade,
+                    note(&computer(), a, Detail::Minimal).unwrap(),
+                    Some(app_fold_for(a)),
+                    shade.clears(),
+                    || 1_000,
+                )
+                .unwrap();
+            }
+            let summary = folded_tag("p1", &first.project_id);
+            assert_eq!(shade.shown(), vec![summary.clone()]);
+            // Hidden JavaScript skips C; the native producer extends the same fold.
+            update(
+                current_watcher(),
+                &shade,
+                &BTreeSet::new(),
+                |book, shown| {
+                    rx(
+                        book,
+                        AlertServerFrame::Raised {
+                            alert: Box::new(third.clone()),
+                        },
+                        false,
+                        shown,
+                    )
+                },
+                |_| (),
+            )
+            .unwrap();
+            let before = shade.sounded();
+            if handle {
+                handle_from_app_with(&shade, "p1", &[first.attention_id]).unwrap();
+            } else {
+                clear_from_app_with(&shade, &[tag("p1", &first.attention_id)]).unwrap();
+            }
+            let current = lock(&shade.posted).last().unwrap().clone();
+            assert_eq!(current.title, "Site has 2 notifications");
+            assert!(current.silent);
+            assert_eq!(
+                current.handles.iter().cloned().collect::<BTreeSet<_>>(),
+                BTreeSet::from([
+                    tag("p1", &second.attention_id),
+                    tag("p1", &third.attention_id)
+                ])
+            );
+            assert_eq!(shade.sounded(), before);
+            // A stale queued individual, not just a stale aggregate, cannot resurrect A.
+            let posts = lock(&shade.posted).len();
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), &first, Detail::Minimal).unwrap(),
+                Some(app_fold_for(&first)),
+                shade.clears(),
+                || 2_000,
+            )
+            .unwrap();
+            assert_eq!(lock(&shade.posted).len(), posts);
+            // Swipe membership is captured before a newer D arrives.
+            shade.swipe(&summary);
+            let fourth = Alert {
+                attention_id: AttentionId::new(),
+                created_at: Timestamp(5),
+                ..first.clone()
+            };
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), &fourth, Detail::Minimal).unwrap(),
+                Some(app_fold_for(&fourth)),
+                shade.clears(),
+                || 2_001,
+            )
+            .unwrap();
+            dismissed(dir.path(), &current.handles.join("\n"), &shade).unwrap();
+            let book = saved(dir.path());
+            let seen = &book.computers["p1"];
+            assert!(!seen.raised.contains(&first.attention_id));
+            assert!(seen.unsent.contains(&second.attention_id));
+            assert!(seen.unsent.contains(&third.attention_id));
+            assert!(!seen.unsent.contains(&fourth.attention_id));
+            assert!(seen.raised.contains(&fourth.attention_id));
+            assert_eq!(shade.shown(), vec![tag("p1", &fourth.attention_id)]);
+            lock(&LEDGER).take();
+        }
+    }
+
+    #[test]
+    fn round2_native_managed_foreground_fold_restores_and_checks_original_member_clears() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        let first = Alert {
+            bundle: true,
+            alert_type: Some(AlertType::Reply),
+            ..alert(AttentionKind::Completed, 2)
+        };
+        let second = Alert {
+            attention_id: AttentionId::new(),
+            ..first.clone()
+        };
+        with_book(|book| {
+            book.started("before");
+            rx(book, open(&[], 1), true, &[]);
+        })
+        .unwrap();
+        for a in [&first, &second] {
+            with_book(|book| {
+                rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(a.clone()),
+                    },
+                    true,
+                    &shade.shown(),
+                );
+            })
+            .unwrap();
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), a, Detail::Minimal).unwrap(),
+                Some(app_fold_for(a)),
+                shade.clears(),
+                || 1_000,
+            )
+            .unwrap();
+        }
+        let third = Alert {
+            attention_id: AttentionId::new(),
+            ..first.clone()
+        };
+        let since = shade.clears();
+        *lock(&shade.racing) = Some(tag("p1", &third.attention_id));
+        post_from_app_fold_with(
+            &shade,
+            note(&computer(), &third, Detail::Minimal).unwrap(),
+            Some(app_fold_for(&third)),
+            since,
+            || 1_001,
+        )
+        .unwrap();
+        *lock(&shade.racing) = None;
+        let mut book = saved(dir.path());
+        assert_eq!(
+            book.computers["p1"].shown_last,
+            BTreeSet::from([first.attention_id, second.attention_id])
+        );
+        assert!(!book.computers["p1"].raised.contains(&third.attention_id));
+        book.restarted();
+        book.started("after");
+        lock(&shade.shown).clear();
+        with_book(|b| *b = book).unwrap();
+        update(
+            current_watcher(),
+            &shade,
+            &BTreeSet::new(),
+            |book, shown| {
+                rx(
+                    book,
+                    open(&[first.clone(), second.clone()], 5),
+                    false,
+                    shown,
+                )
+            },
+            |_| (),
+        )
+        .unwrap();
+        let restored = lock(&shade.posted).last().unwrap().clone();
+        assert_eq!(restored.tag, folded_tag("p1", &first.project_id));
+        assert_eq!(restored.handles.len(), 2);
+        assert!(restored.silent);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round2_urgent_foreground_member_checks_clears_before_realerting_the_summary() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        let first = Alert {
+            bundle: true,
+            alert_type: Some(AlertType::Reply),
+            ..alert(AttentionKind::Completed, 2)
+        };
+        let second = Alert {
+            attention_id: AttentionId::new(),
+            ..first.clone()
+        };
+        for a in [&first, &second] {
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), a, Detail::Minimal).unwrap(),
+                Some(app_fold_for(a)),
+                shade.clears(),
+                || 1_000,
+            )
+            .unwrap();
+        }
+        let summary = folded_tag("p1", &first.project_id);
+        let urgent = Alert {
+            project_id: first.project_id,
+            bundle: true,
+            ..alert(AttentionKind::Approval, 4)
+        };
+        let stamp = shade.clears();
+        *lock(&shade.racing) = Some(tag("p1", &urgent.attention_id));
+        post_from_app_fold_with(
+            &shade,
+            note(&computer(), &urgent, Detail::Minimal).unwrap(),
+            Some(app_fold_for(&urgent)),
+            stamp,
+            || 61_000,
+        )
+        .unwrap();
+        assert_eq!(shade.shown(), vec![summary.clone()]);
+        assert_eq!(shade.sounded(), 1);
+        assert_eq!(
+            saved(dir.path()).computers["p1"].folds[&first.project_id]
+                .members
+                .len(),
+            2
+        );
+        *lock(&shade.racing) = None;
+        // A new call after the clear can show the still-open item, and one
+        // urgent replacement after the minute may alert, not every replacement.
+        post_from_app_fold_with(
+            &shade,
+            note(&computer(), &urgent, Detail::Minimal).unwrap(),
+            Some(app_fold_for(&urgent)),
+            shade.clears(),
+            || 61_001,
+        )
+        .unwrap();
+        assert_eq!(shade.sounded(), 2);
+        let next = Alert {
+            attention_id: AttentionId::new(),
+            ..urgent.clone()
+        };
+        post_from_app_fold_with(
+            &shade,
+            note(&computer(), &next, Detail::Minimal).unwrap(),
+            Some(app_fold_for(&next)),
+            shade.clears(),
+            || 61_002,
+        )
+        .unwrap();
+        assert_eq!(shade.sounded(), 2);
+        assert_eq!(shade.shown(), vec![summary]);
+        let posted = lock(&shade.posted).last().unwrap().clone();
+        assert!(posted.silent);
+        assert_eq!(posted.handles.len(), 4);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round2_native_fold_validates_metadata_and_early_handling_blocks_queued_posts() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        let first = alert(AttentionKind::Completed, 2);
+        handle_from_app_with(&shade, "p1", &[first.attention_id]).unwrap();
+        post_from_app_fold_with(
+            &shade,
+            note(&computer(), &first, Detail::Minimal).unwrap(),
+            Some(app_fold_for(&first)),
+            shade.clears(),
+            || 1_000,
+        )
+        .unwrap();
+        assert!(shade.shown().is_empty());
+        let second = alert(AttentionKind::Completed, 3);
+        with_book(|book| {
+            rx(
+                book,
+                AlertServerFrame::Raised {
+                    alert: Box::new(second.clone()),
+                },
+                true,
+                &[],
+            );
+        })
+        .unwrap();
+        let original = note(&computer(), &second, Detail::Minimal).unwrap();
+        for (note, fold) in [
+            (
+                original.clone(),
+                AppFold {
+                    project_id: ProjectId::new(),
+                    ..app_fold_for(&second)
+                },
+            ),
+            (
+                original.clone(),
+                AppFold {
+                    project: "x".repeat(257),
+                    ..app_fold_for(&second)
+                },
+            ),
+            (
+                original.clone(),
+                AppFold {
+                    computer: "x".repeat(257),
+                    ..app_fold_for(&second)
+                },
+            ),
+            (
+                Note {
+                    tag: "p1/not-an-id".into(),
+                    ..original.clone()
+                },
+                app_fold_for(&second),
+            ),
+            (
+                Note {
+                    handles: vec![tag("p2", &first.attention_id)],
+                    ..original.clone()
+                },
+                app_fold_for(&second),
+            ),
+        ] {
+            assert!(
+                post_from_app_fold_with(&shade, note, Some(fold), shade.clears(), || 1_000)
+                    .is_err()
+            );
+        }
+        assert!(shade.shown().is_empty());
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round2_native_fold_members_stay_bounded_and_separate_by_computer() {
+        let dir = tempfile::tempdir().unwrap();
+        let _one = ledger(dir.path());
+        let shade = FakeShade::default();
+        let first = Alert {
+            bundle: true,
+            alert_type: Some(AlertType::Reply),
+            ..alert(AttentionKind::Completed, 2)
+        };
+        for _ in 0..MAX_SHOWING {
+            let a = Alert {
+                attention_id: AttentionId::new(),
+                ..first.clone()
+            };
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), &a, Detail::Minimal).unwrap(),
+                Some(app_fold_for(&a)),
+                shade.clears(),
+                || 1_000,
+            )
+            .unwrap();
+        }
+        assert!(
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), &first, Detail::Minimal).unwrap(),
+                Some(app_fold_for(&first)),
+                shade.clears(),
+                || 1_000
+            )
+            .is_err()
+        );
+        let p1 = lock(&shade.posted).last().unwrap().clone();
+        assert_eq!(p1.handles.len(), MAX_SHOWING);
+        assert!(p1.handles.iter().all(|tag| tag.starts_with("p1/")));
+        let other = Computer {
+            profile_id: "p2".into(),
+            name: "Laptop".into(),
+        };
+        post_from_app_fold_with(
+            &shade,
+            note(&other, &first, Detail::Minimal).unwrap(),
+            Some(AppFold {
+                computer: other.name.clone(),
+                ..app_fold_for(&first)
+            }),
+            shade.clears(),
+            || 1_000,
+        )
+        .unwrap();
+        assert_eq!(shade.shown().len(), 2);
+        let book = saved(dir.path());
+        assert_eq!(
+            book.computers["p1"].folds[&first.project_id].members.len(),
+            MAX_SHOWING
+        );
+        assert_eq!(
+            book.computers["p2"].folds[&first.project_id].members.len(),
+            1
+        );
+        assert_eq!(shade.sounded(), 2);
+        lock(&LEDGER).take();
+    }
+
+    #[test]
+    fn round2_failed_native_fold_candidates_never_commit_new_members() {
+        for mode in ["off", "cleared", "full", "failed"] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            let shade = FakeShade::default();
+            with_book(|book| book.started("before")).unwrap();
+            let first = Alert {
+                bundle: true,
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2)
+            };
+            let second = Alert {
+                attention_id: AttentionId::new(),
+                ..first.clone()
+            };
+            post_from_app_fold_with(
+                &shade,
+                note(&computer(), &first, Detail::Minimal).unwrap(),
+                Some(app_fold_for(&first)),
+                shade.clears(),
+                || 1_000,
+            )
+            .unwrap();
+            match mode {
+                "off" => shade.tier(AlertType::Reply, Tier::Off),
+                "cleared" => *lock(&shade.racing) = Some(tag("p1", &second.attention_id)),
+                "full" => shade.full.store(true, Ordering::SeqCst),
+                _ => shade.refuse.store(true, Ordering::SeqCst),
+            }
+            let _ = post_from_app_fold_with(
+                &shade,
+                note(&computer(), &second, Detail::Minimal).unwrap(),
+                Some(app_fold_for(&second)),
+                shade.clears(),
+                || 1_001,
+            );
+            let mut book = saved(dir.path());
+            let seen = &book.computers["p1"];
+            assert!(!seen.raised.contains(&second.attention_id), "{mode}");
+            assert!(!seen.shown_last.contains(&second.attention_id), "{mode}");
+            assert!(
+                !seen.folds[&first.project_id]
+                    .members
+                    .contains_key(&second.attention_id),
+                "{mode}"
+            );
+            book.started("after");
+            assert!(
+                !book.computers["p1"].restore.contains(&second.attention_id),
+                "{mode}"
+            );
+            assert_eq!(shade.sounded(), 1);
+            lock(&LEDGER).take();
+        }
+    }
+
+    #[test]
+    fn round2_unsuccessful_foreground_posts_are_not_restorable() {
+        for mode in ["off", "cleared", "full", "failed"] {
+            let dir = tempfile::tempdir().unwrap();
+            let _one = ledger(dir.path());
+            let shade = FakeShade::default();
+            let a = Alert {
+                alert_type: Some(AlertType::Reply),
+                ..alert(AttentionKind::Completed, 2)
+            };
+            with_book(|book| {
+                book.started("before");
+                rx(book, open(&[], 1), true, &[]);
+                rx(
+                    book,
+                    AlertServerFrame::Raised {
+                        alert: Box::new(a.clone()),
+                    },
+                    true,
+                    &[],
+                );
+            })
+            .unwrap();
+            match mode {
+                "off" => shade.tier(AlertType::Reply, Tier::Off),
+                "cleared" => *lock(&shade.racing) = Some(tag("p1", &a.attention_id)),
+                "full" => shade.full.store(true, Ordering::SeqCst),
+                _ => shade.refuse.store(true, Ordering::SeqCst),
+            }
+            let _ = post_from_app_with(
+                &shade,
+                note(&computer(), &a, Detail::Minimal).unwrap(),
+                shade.clears(),
+                || 1_000,
+            );
+            let mut book = saved(dir.path());
+            assert!(book.computers["p1"].raised.is_empty(), "{mode}");
+            assert!(book.computers["p1"].shown_last.is_empty(), "{mode}");
+            book.started("after");
+            assert!(book.computers["p1"].restore.is_empty(), "{mode}");
+            if mode == "off" {
+                assert!(book.computers["p1"].notified.contains(&a.attention_id));
+            }
+            lock(&LEDGER).take();
+        }
     }
 
     #[test]
@@ -4738,7 +7454,7 @@ mod tests {
         frame(open(&[], 1));
         for i in 0..10 {
             frame(AlertServerFrame::Raised {
-                alert: alert(AttentionKind::Approval, 2 + i),
+                alert: Box::new(alert(AttentionKind::Approval, 2 + i)),
             });
         }
         assert_eq!(shade.shown().len(), 10);
@@ -4760,7 +7476,7 @@ mod tests {
         };
         other(open(&[], 1));
         other(AlertServerFrame::Raised {
-            alert: alert(AttentionKind::Approval, 50),
+            alert: Box::new(alert(AttentionKind::Approval, 50)),
         });
         assert_eq!(shade.sounded(), 2);
         lock(&LEDGER).take();
@@ -4777,7 +7493,7 @@ mod tests {
             rx(
                 book,
                 AlertServerFrame::Raised {
-                    alert: question.clone(),
+                    alert: Box::new(question.clone()),
                 },
                 false,
                 &[],
@@ -4824,7 +7540,7 @@ mod tests {
         rx(
             &mut old,
             AlertServerFrame::Raised {
-                alert: swiped.clone(),
+                alert: Box::new(swiped.clone()),
             },
             false,
             &[],
@@ -4991,7 +7707,7 @@ mod tests {
             let changes = rx(
                 &mut book,
                 AlertServerFrame::Raised {
-                    alert: alert(kind, 1),
+                    alert: Box::new(alert(kind, 1)),
                 },
                 false,
                 &[],
@@ -5005,7 +7721,7 @@ mod tests {
         let none = rx(
             &mut book,
             AlertServerFrame::Raised {
-                alert: alert(AttentionKind::ConnectionIssue, 1),
+                alert: Box::new(alert(AttentionKind::ConnectionIssue, 1)),
             },
             false,
             &[],
@@ -5257,7 +7973,7 @@ mod tests {
         with_book(|book| {
             rx(book, open(&[], 1), false, &[]);
             let frame = AlertServerFrame::Raised {
-                alert: question.clone(),
+                alert: Box::new(question.clone()),
             };
             rx(book, frame, false, &[]);
         })

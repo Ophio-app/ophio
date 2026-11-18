@@ -184,13 +184,13 @@ describe("draft integrity", () => {
       </AppProvider>
     );
     const mounted = render(content);
-    fireEvent.click(screen.getByRole("button", { name: "Decline…" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reject with a reason" }));
     fireEvent.change(screen.getByLabelText("Reason (optional)"), {
       target: { value: "Keep the test isolated" },
     });
     mounted.unmount();
     render(content);
-    fireEvent.click(screen.getByRole("button", { name: "Decline…" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reject with a reason" }));
     expect(
       (screen.getByLabelText("Reason (optional)") as HTMLTextAreaElement).value,
     ).toBe("Keep the test isolated");

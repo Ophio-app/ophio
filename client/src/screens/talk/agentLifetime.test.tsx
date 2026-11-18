@@ -11,6 +11,8 @@ import Review from "./Review";
 
 let app: App;
 const tick = async () => act(async () => { await vi.advanceTimersByTimeAsync(900); });
+/** Opens Review's folded sections, as a person taps them open. */
+const unfold = () => document.querySelectorAll<HTMLButtonElement>('.fold__head[aria-expanded="false"]').forEach((b) => fireEvent.click(b));
 beforeEach(async () => {
   localStorage.clear(); vi.useFakeTimers();
   HTMLDialogElement.prototype.showModal = function () { this.open = true; };
@@ -30,10 +32,10 @@ function review(projectId: string) {
   return render(<AppProvider app={app}><RouteProvider value={{ tab: "talk", depth: 1, active: true, route }}><Review route={route} /></RouteProvider></AppProvider>);
 }
 
-it.each([false, true])("a queued task keeps its own agent; new tasks honor only saved defaults (%s)", async remember => {
+it.each([false, true])("a queued task keeps its own agent; the next change starts with the person’s usual pick (%s)", async remember => {
   const mounted = review(ids.pTide);
-  await tick();
-  fireEvent.click(screen.getByRole("button", { name: /Claude Code · Opus/ }));
+  await tick(); unfold();
+  fireEvent.click(screen.getByRole("button", { name: /^Claude Code · Opus/ }));
   fireEvent.click(screen.getByRole("button", { name: /^Codex/ }));
   fireEvent.click(screen.getByRole("button", { name: "Medium" }));
   if (remember) fireEvent.click(screen.getByRole("button", { name: "Also use this agent, model and effort for new tasks in tidewater-api" }));
@@ -46,10 +48,12 @@ it.each([false, true])("a queued task keeps its own agent; new tasks honor only 
   expect(queued).toMatchObject({ harness: "codex", effort: "medium", state: "accepted" });
   mounted.unmount();
   const next = review(ids.pTide);
-  await tick();
-  expect(screen.getByRole("button", { name: remember ? /Codex ·/ : /Claude Code ·/ })).toBeTruthy();
+  await tick(); unfold();
+  // The pick is remembered for this kind of task, here and as the last choice
+  // anywhere; the project's saved default is a separate, explicit choice.
+  expect(screen.getByRole("button", { name: /^Codex · .* · Medium/ })).toBeTruthy();
   next.unmount();
   review(ids.pGarden);
-  await tick();
-  expect(screen.getByRole("button", { name: /Claude Code ·/ })).toBeTruthy();
+  await tick(); unfold();
+  expect(screen.getByRole("button", { name: /^Codex · .* · Medium/ })).toBeTruthy();
 });

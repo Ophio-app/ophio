@@ -25,7 +25,7 @@ import { createSimPlatform } from "../../dev/sim/platform";
 import { ids } from "../../dev/sim/scenario";
 import { HostSession } from "../../host/session";
 import type { TimelineItem } from "../../protocol/types";
-import { applyEvent, applyLive, applyTimelinePage } from "../../state/projection";
+import { applyEvent, applyLive, applyReplay, applyTimelinePage, interruptLive } from "../../state/projection";
 import { withHandBacks } from "./handBackHistory";
 import { rows, stepsSummary } from "./timeline";
 import { Transcript } from "./Transcript";
@@ -126,6 +126,30 @@ it("renders only the row a new timeline item adds", async () => {
   expect(screen.getByText("Checked")).toBeTruthy();
   expect(parsed).toEqual(["Checked"]);
   expect(stepsSummary).not.toHaveBeenCalled();
+});
+
+it("shows the newer exact cached tail once, in its original partial reply after reconnect", async () => {
+  const { session } = app;
+  vi.spyOn(session, "loadTimeline").mockResolvedValue();
+  const task = { ...session.state.get().tasks[ids.tHeaders]!, state: "working" as const, current_run: "cut-off-run" };
+  const text = "Sentence 41 finishes. Sentence 42 keeps its newest exact tail.";
+  const live = { kind: "agent_text_delta" as const, task_id: task.task_id, run_id: task.current_run, message_key: "generation", text_offset: 0, text };
+  session.state.set(s => applyLive(applyTimelinePage({ ...s, tasks: { ...s.tasks, [task.task_id]: task } }, task.task_id, [], false), live, 100));
+  const view = render(<AppProvider app={app}><Transcript task={task} agent="Codex" /></AppProvider>);
+  await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+  expect(screen.getAllByText(text)).toHaveLength(1);
+  const body = { kind: "agent_message" as const, partial: true, message_key: "generation", text_offset: 0, text: "Sentence 41 finishes. Sentence 42 keeps" };
+  const partial: TimelineItem = { seq: 100_002, at: 102, run_id: task.current_run, item: body };
+  act(() => session.state.set(s => applyReplay(interruptLive(s), [
+    { now: 101, env: { seq: 100_001, at: 101, source: { kind: "companion" }, provenance: "native", event: { type: "boot_epoch_changed", boot_epoch: "next" } } },
+    { now: 102, env: { seq: 100_002, at: 102, source: { kind: "companion" }, provenance: "native", event: { type: "timeline_appended", task_id: task.task_id, item: partial } } },
+    { now: 103, env: { seq: 100_003, at: 103, source: { kind: "companion" }, provenance: "native", event: { type: "timeline_appended", task_id: task.task_id, item: { seq: 100_003, at: 103, run_id: task.current_run, item: { kind: "run_ended", run_id: task.current_run, state: "reconciliation_required" } } } } },
+  ])));
+  expect(screen.getAllByText(text)).toHaveLength(1);
+  expect(view.container.querySelectorAll(".talk-log__item--agent")).toHaveLength(1);
+  act(() => session.state.set(s => applyTimelinePage(s, task.task_id, [partial], false)));
+  expect(screen.getAllByText(text)).toHaveLength(1);
+  expect(view.container.querySelectorAll(".talk-agent--live")).toHaveLength(0);
 });
 
 it("keeps earlier pages while reading and releases them when the transcript closes", () => {

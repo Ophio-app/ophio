@@ -11,8 +11,10 @@ import type { AttentionItem } from "./AttentionItem";
 import type { BranchListing } from "./BranchListing";
 import type { Catalog } from "./Catalog";
 import type { ChannelIdentity } from "./ChannelIdentity";
+import type { CheckJob } from "./CheckJob";
 import type { Checklist } from "./Checklist";
 import type { ChecklistSummary } from "./ChecklistSummary";
+import type { ChecksDraftView } from "./ChecksDraftView";
 import type { CommandReceipt } from "./CommandReceipt";
 import type { CommandResult } from "./CommandResult";
 import type { CommandStage } from "./CommandStage";
@@ -39,12 +41,15 @@ import type { NotificationSettings } from "./NotificationSettings";
 import type { ObservedSessions } from "./ObservedSessions";
 import type { PendingChannelLink } from "./PendingChannelLink";
 import type { PreviewEndpoint } from "./PreviewEndpoint";
+import type { ProjectChecks } from "./ProjectChecks";
+import type { ProjectChecksView } from "./ProjectChecksView";
 import type { ProjectFolderListing } from "./ProjectFolderListing";
 import type { ProjectId } from "./ProjectId";
 import type { ProjectStageHistory } from "./ProjectStageHistory";
 import type { ProtocolError } from "./ProtocolError";
 import type { QueueView } from "./QueueView";
 import type { ReadinessReport } from "./ReadinessReport";
+import type { ReleaseCheckView } from "./ReleaseCheckView";
 import type { ReportDetail } from "./ReportDetail";
 import type { ReportsView } from "./ReportsView";
 import type { ReusableFormat } from "./ReusableFormat";
@@ -63,7 +68,7 @@ import type { UploadDestinationCheck } from "./UploadDestinationCheck";
 import type { VoiceView } from "./VoiceView";
 import type { WindowCatalog } from "./WindowCatalog";
 
-export type QueryData = { "kind": "contribution_delivery", handoff_json: string, } | { "kind": "contribution_capabilities", capabilities: ContributionCapabilities, } | { "kind": "contribution_operation", operation: ContributionView, } | { "kind": "contribution_policy", document: ContributionPolicyDocument, } | { "kind": "snapshot" } & Snapshot | { "kind": "command_status", receipt: CommandReceipt | null, 
+export type QueryData = { "kind": "checks_list", projects: Array<ProjectChecksView>, projects_without_checks: number, } | { "kind": "checks_history", versions: Array<ProjectChecks>, } | { "kind": "task_checks", jobs: Array<CheckJob>, drafts: Array<ChecksDraftView>, } | { "kind": "check_job", job: CheckJob, } | { "kind": "contribution_delivery", handoff_json: string, } | { "kind": "contribution_capabilities", capabilities: ContributionCapabilities, } | { "kind": "contribution_operation", operation: ContributionView, } | { "kind": "contribution_policy", document: ContributionPolicyDocument, } | { "kind": "snapshot" } & Snapshot | { "kind": "command_status", receipt: CommandReceipt | null, 
 /**
  * Latest durable execution stage. The receipt remains the original
  * admission result, so command retries cannot change its meaning.
@@ -72,7 +77,7 @@ stage?: CommandStage, result?: CommandResult, error?: ProtocolError, } | { "kind
 /**
  * More were kept than are listed.
  */
-truncated: boolean, } | { "kind": "disabled_in_ophio", items: Array<DisabledItem>, } | { "kind": "library_trash_read", file: FileContent, } | { "kind": "reusable_draft", text: string, } | { "kind": "upload_destination", check: UploadDestinationCheck, } | { "kind": "task_artifacts", history: TaskArtifactHistory, } | { "kind": "project_shown", history: TaskArtifactHistory, } | { "kind": "agent_updates", view: AgentUpdatesView, } | { "kind": "agent_preferences", view: AgentPreferences, } | { "kind": "notification_settings", view: NotificationSettings, } | { "kind": "reports", view: ReportsView, } | { "kind": "report", detail: ReportDetail | null, } | { "kind": "inbox_report_code", code: InboxReportCode | null, } | { "kind": "report_task_project", project_id: ProjectId | null, } | { "kind": "report_preview", part: ComputerPart, } | { "kind": "voice", view: VoiceView, } | { "kind": "windows", catalog: WindowCatalog, } | { "kind": "observed_sessions", view: ObservedSessions, } | { "kind": "reusable_formats", native_version: string | null, formats: Array<ReusableFormat>, } | { "kind": "library_recovery_list", items: Array<LibraryRecoveryItem>, } | { "kind": "library_recovery_read", recovery: LibraryRecovery, } | { "kind": "project_stages", history: ProjectStageHistory, } | { "kind": "task_history", records: TaskRecords, 
+truncated: boolean, } | { "kind": "disabled_in_ophio", items: Array<DisabledItem>, } | { "kind": "library_trash_read", file: FileContent, } | { "kind": "reusable_draft", text: string, } | { "kind": "upload_destination", check: UploadDestinationCheck, } | { "kind": "task_artifacts", history: TaskArtifactHistory, } | { "kind": "project_shown", history: TaskArtifactHistory, } | { "kind": "agent_updates", view: AgentUpdatesView, } | { "kind": "agent_preferences", view: AgentPreferences, } | { "kind": "notification_settings", view: NotificationSettings, } | { "kind": "release_check", view: ReleaseCheckView, } | { "kind": "reports", view: ReportsView, } | { "kind": "report", detail: ReportDetail | null, } | { "kind": "inbox_report_code", code: InboxReportCode | null, } | { "kind": "report_task_project", project_id: ProjectId | null, } | { "kind": "report_preview", part: ComputerPart, } | { "kind": "voice", view: VoiceView, } | { "kind": "windows", catalog: WindowCatalog, } | { "kind": "observed_sessions", view: ObservedSessions, } | { "kind": "reusable_formats", native_version: string | null, formats: Array<ReusableFormat>, } | { "kind": "library_recovery_list", items: Array<LibraryRecoveryItem>, } | { "kind": "library_recovery_read", recovery: LibraryRecovery, } | { "kind": "project_stages", history: ProjectStageHistory, } | { "kind": "task_history", records: TaskRecords, 
 /**
  * Where the next page begins; absent after the oldest task.
  */

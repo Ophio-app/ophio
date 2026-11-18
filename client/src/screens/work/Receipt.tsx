@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { carriedPlan, sentPlan, useCarryPlan, reviewPlan } from "../talk/carryPlan";
+import { FromChatLink } from "../talk/FromChatLink";
 import { ApprovalReason, settledText } from "../../design/ApprovalCard";
 import { PlanFigure, Steps } from "../talk/Transcript";
 import { ModeSwitch } from "../talk/ModeSwitch";
@@ -73,7 +74,7 @@ import { RequestedChecks } from "./RequestedChecks";
 import PortableBrief from "./PortableBrief";
 import { useTaskArtifacts } from "./useTaskArtifacts";
 import { bundleSummary } from "../talk/timeline";
-import { effortLabel, runAgent } from "../talk/intent";
+import { CHAT_CARRY_ON_FEATURE, cutOff, effortLabel, runAgent } from "../talk/intent";
 import "./work.css";
 import "./results.css";
 import { runDuration } from "./runDuration";
@@ -92,6 +93,10 @@ import { CommandError } from "../../host/session";
 import { useWholeRun, withReportedDiffs } from "./wholeRun";
 import { useViewingTask } from "../../app/viewing";
 import { ReportLine } from "./ReportTask";
+import { useTaskChecks } from "./useTaskChecks";
+import { OphioCheckResults } from "./OphioCheckResults";
+import { SuggestedChecksCard } from "../checks/Checks";
+import { taskBadge } from "../talk/TaskBar";
 
 export default function Receipt({ route }: RouteProps<"receipt">) {
   const { session, profile } = useApp();
@@ -143,10 +148,13 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
   const link = useLink();
   const plan = useCarryPlan(task);
   const latest = useHost((s) => latestRun(task, s.runs));
+  const carriesOn = useHost((s) => !!s.capabilities?.features.includes(CHAT_CARRY_ON_FEATURE));
   const runs = useHost(s => Object.values(s.runs).filter(r => r.task_id === task.task_id).sort((a, b) => b.admitted_at - a.admitted_at), shallowEqual);
   const [selectedRun, selectRun] = useState<string | null>(initialRunId ?? null);
   useEffect(() => { selectRun(initialRunId ?? null); }, [initialRunId]);
   const run = selectedRun ? runs.find(r => r.run_id === selectedRun) : latest;
+  const checkEvidence = useTaskChecks(task, active);
+  const checkJobs = checkEvidence.data?.jobs.filter(job => job.purpose.kind === "after_run" && !!run && job.run_id === run.run_id) ?? [];
   const whole = useWholeRun(run, active);
   // A long task's earlier runs are not in the computer's lists; its
   // conversation names them, and they are read by id.
@@ -173,10 +181,12 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
   const now = useNow();
   const canWork = useCanWork();
   const uncheckedCommand = useUnconfirmedCommand(c => c.command === "check_helpers" && c.run_id === run?.run_id);
-  const working = !!run && ["admitted", "dispatching", "working", "awaiting_approval", "awaiting_input", "stopping"].includes(run.state);
+  const checking = task.state === "working" && !!task.checking && run?.run_id === task.current_run;
+  const working = checking || !!run && ["admitted", "dispatching", "working", "awaiting_approval", "awaiting_input", "stopping"].includes(run.state);
   const current = run?.run_id === latest?.run_id;
-  // What the latest run came to heads its receipt; an earlier one's is history.
-  const outcome = current ? runOutcome(task, run) : null;
+  const cutOffChat = carriesOn && cutOff(task, run ?? null);
+  // The agent ending its turn is not the task ending while Ophio checks it.
+  const outcome = current && !checking ? runOutcome(task, run) : null;
   const recorded = useJustRecorded(run);
   const timeline = useHost((s) => s.timelines[task.task_id]);
   const artifacts = useHost(
@@ -209,9 +219,13 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
     helpers: unsure ? run?.children.filter((c) => c.state === "active" || c.state === "unknown").length ?? 0 : 0,
   };
   const summarize = useSummarizable(task, run ?? null);
-  // Helpers that ended with the agent, one line however many there were.
-  const ended = [...(run?.children ?? []).filter(c => c.provenance === "observed" && c.stop?.state === "unsupported" && c.stop.reason === "Ended with the agent process")
-    .reduce((n, c) => n.set(c.label, (n.get(c.label) ?? 0) + 1), new Map<string, number>())];
+  // Helpers that ended with the agent, or with the run's processes after a
+  // restart: one line for each way of ending, however many there were.
+  const ended = (["Ended with the agent process", "Ended with the run's processes"] as const).map(reason => ({
+    reason: reason.replace("'", "’"),
+    labels: [...(run?.children ?? []).filter(c => c.provenance === "observed" && c.stop?.state === "unsupported" && c.stop.reason === reason)
+      .reduce((n, c) => n.set(c.label, (n.get(c.label) ?? 0) + 1), new Map<string, number>())],
+  })).filter(group => group.labels.length > 0);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -380,6 +394,56 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
       setBusy(false);
     }
   };
+  const checksSection = (
+    <Section title="Checks">
+      <OphioCheckResults jobs={checkJobs} />
+      {checkEvidence.error && <Notice tone="stop" action={<Button onClick={checkEvidence.refresh}>Reload check results</Button>}>{checkEvidence.error}</Notice>}
+      {checking && checkEvidence.reading && !checkEvidence.data && <p role="status">Loading check results…</p>}
+      {checkJobs.length > 0 && <h3>Agent-run commands</h3>}
+      {run && verificationLine(run) && <p className="work-caption">{verificationLine(run)}</p>}
+      {run?.outcome?.checks.length ? (
+        run.outcome.checks.map((c, i) => (
+          <div
+            key={i}
+            className={`work-check-result work-card ${c.provenance === "observed" ? "is-observed" : ""}`}
+          >
+            <div className="work-check-title">
+              {c.status === "passed" ? (
+                <CircleCheck aria-hidden />
+              ) : c.status === "failed" ? (
+                <CircleX aria-hidden />
+              ) : c.status === "not_run" ? (
+                <Minus aria-hidden />
+              ) : (
+                <CircleHelp aria-hidden />
+              )}
+              <h3>{c.name}</h3>
+              <Pill>
+                {c.status === "not_run"
+                  ? "Not run"
+                  : c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+              </Pill>
+            </div>
+            {c.command && <code className="work-command">{c.command}</code>}
+            <p className="work-caption">
+              {c.provenance === "observed"
+                ? "Run by the computer"
+                : c.provenance === "native"
+                  ? "Reported by the agent"
+                  : "Inferred, not confirmed"}
+            </p>
+            {c.after_last_change === false && <p className="work-caption">Ran before its last change</p>}
+            {c.detail && <p className="work-muted">{c.detail}</p>}
+            {c.output !== undefined && <details className="work-check-output"><summary>Output</summary><pre>{c.output}</pre></details>}
+          </div>
+        ))
+      ) : observed.commands.length ? (
+        <ObservedCommands commands={observed.commands} />
+      ) : (
+        <p className="work-muted">No checks reported.</p>
+      )}
+    </Section>
+  );
   return (
     <Screen
       title="Task receipt"
@@ -398,15 +462,18 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
     >
       <div className="work-stack">
         <ConnectionNote />
-        {working && outcome?.kind !== "waiting" && <Notice>This run is still working. You can review its result when it ends.</Notice>}
+        {working && outcome?.kind !== "waiting" && <Notice>{checking ? "Ophio is checking the agent’s work. Stop still stops this task." : "This run is still working. You can review its result when it ends."}</Notice>}
         <header className="work-receipt-head">
           <h1>{receiptTitle(task.title, timeline?.items ?? [])}</h1>
-          <p className="work-receipt-state">{receiptHeadline(task, run)}</p>
+          <p className="work-receipt-state">{checking ? taskBadge(task).label : receiptHeadline(task, run)}</p>
+          <FromChatLink task={task} className="work-receipt-from" />
           {task.report && <ReportLine task={task} />}
           {run && followUpLine(run) && <p className="work-caption">{followUpLine(run)}</p>}
+          {run?.carried_on && <p className="work-caption">Cut off, then carried on {run.carried_on.by.kind === "device" && run.carried_on.by.device_id === profile.deviceId ? "by you" : "by a person"} in the next reply · {new Date(run.carried_on.at).toLocaleString([], { dateStyle: "short", timeStyle: "short" })} · its result isn’t known</p>}
+          {current && cutOffChat && <p className="work-caption">The agent and what it started have stopped, so your next message carries on from there.</p>}
           {run?.human_resolution && <p className="work-caption">Marked {run.human_resolution.resolution === "mark_failed" ? "failed" : "completed"} {run.human_resolution.by.kind === "device" && run.human_resolution.by.device_id === profile.deviceId ? "by you" : "by a person"} · {new Date(run.human_resolution.at).toLocaleString([], { dateStyle: "short", timeStyle: "short" })} · not verified by the computer</p>}
         </header>
-        {current && task.state === "reconciliation_required" ? <>
+        {current && task.state === "reconciliation_required" && !cutOffChat ? <>
           <ReconcileNote task={task} parts={parts} onSee={see} />
           <div className="work-review">
             <ReconcileButtons task={task} />
@@ -469,6 +536,8 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
           </div>)}
           <Button onClick={() => ui.openTask(task.project_id, task.task_id)}>Open conversation and attachments</Button>
         </Section>}
+        {checkJobs.length > 0 && checksSection}
+        {checkEvidence.data && <SuggestedChecksCard projectId={task.project_id} drafts={checkEvidence.data.drafts} onChanged={checkEvidence.refresh} />}
         <Section title="Result">
           <div className="work-card work-stack">
             <p className="work-caption">Reported by the agent</p>
@@ -541,7 +610,7 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
           )}
         </Section>}
         {timeline && <Section title="Steps" id={stepsId}>
-          {steps.length ? steps.map(row => <Steps key={row.key} steps={row.steps} ended={row.ended} />)
+          {steps.length ? steps.map(row => <Steps key={row.key} steps={row.steps} ended={row.ended} stopped={row.stopped} />)
             : <p className="work-muted">{!timeline.loaded ? (link.state === "online" ? "Loading the steps…" : "Connect to load the steps.")
               : timeline.hasMore ? "No steps in the loaded history." : "No steps reported."}</p>}
         </Section>}
@@ -573,50 +642,7 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
             : <p className="work-muted">No changed files reported.</p>}
         </Section>
         <RequestedChecks requests={task.mission?.completion_checks ?? []} checks={run?.outcome?.checks ?? []} />
-        <Section title="Checks">
-          {run && verificationLine(run) && <p className="work-caption">{verificationLine(run)}</p>}
-          {run?.outcome?.checks.length ? (
-            run.outcome.checks.map((c, i) => (
-              <div
-                key={i}
-                className={`work-check-result work-card ${c.provenance === "observed" ? "is-observed" : ""}`}
-              >
-                <div className="work-check-title">
-                  {c.status === "passed" ? (
-                    <CircleCheck aria-hidden />
-                  ) : c.status === "failed" ? (
-                    <CircleX aria-hidden />
-                  ) : c.status === "not_run" ? (
-                    <Minus aria-hidden />
-                  ) : (
-                    <CircleHelp aria-hidden />
-                  )}
-                  <h3>{c.name}</h3>
-                  <Pill>
-                    {c.status === "not_run"
-                      ? "Not run"
-                      : c.status.charAt(0).toUpperCase() + c.status.slice(1)}
-                  </Pill>
-                </div>
-                {c.command && <code className="work-command">{c.command}</code>}
-                <p className="work-caption">
-                  {c.provenance === "observed"
-                    ? "Run by the computer"
-                    : c.provenance === "native"
-                      ? "Reported by the agent"
-                      : "Inferred, not confirmed"}
-                </p>
-                {c.after_last_change === false && <p className="work-caption">Ran before its last change</p>}
-                {c.detail && <p className="work-muted">{c.detail}</p>}
-                {c.output !== undefined && <details className="work-check-output"><summary>Output</summary><pre>{c.output}</pre></details>}
-              </div>
-            ))
-          ) : observed.commands.length ? (
-            <ObservedCommands commands={observed.commands} />
-          ) : (
-            <p className="work-muted">No checks reported.</p>
-          )}
-        </Section>
+        {checkJobs.length === 0 && checksSection}
         {unsure && <Section title="Still running / unknown" id={helpersId}>
           <Remaining run={run} stopped={stopUnknowns(stop)} />
         </Section>}
@@ -652,7 +678,7 @@ function TaskReceipt({ task, initialRunId, section }: { task: Task; initialRunId
               <dd>{run.outcome.usage.reported_cost ?? "No cost reported"}</dd>
             </div>}
           </dl>
-          {ended.length > 0 && <p className="work-caption">{ended.map(([label, n]) => n > 1 ? `${label} ×${n}` : label).join(", ")} · Ended with the agent process · Observed on the computer</p>}
+          {ended.map(group => <p key={group.reason} className="work-caption">{group.labels.map(([label, n]) => n > 1 ? `${label} ×${n}` : label).join(", ")} · {group.reason} · Observed on the computer</p>)}
         </details>}
         <Section title="Continue from this result">
           <div className="work-actions">

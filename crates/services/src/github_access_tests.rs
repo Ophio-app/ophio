@@ -128,9 +128,12 @@ async fn one_stranger_comment_holds_a_working_turn_to_its_project() {
         r.f.hub
             .read(|read| r.f.hub.access_reach(read, access))
             .unwrap();
-    assert_eq!(
-        reach.write,
-        vec![std::fs::canonicalize(r.f.project_dir()).unwrap()]
+    assert_eq!(reach.write.len(), 1);
+    // Internal sandbox grants may retain Windows' extended spelling.
+    crate::testing::assert_path_eq(
+        &reach.write[0],
+        std::fs::canonicalize(r.f.project_dir()).unwrap(),
+        false,
     );
     assert!(!reach.internet && !reach.whole_read && !reach.whole_write);
     assert!(
@@ -237,6 +240,7 @@ async fn held_turns_refuse_every_github_tool_before_making_api_calls() {
     let before = r.gh.calls.lock().unwrap().len();
     for call in [
         GithubCall::Pr {
+            branch: Some("replacement".into()),
             title: "A change".into(),
             body: "Body".into(),
         },
@@ -439,6 +443,8 @@ async fn taint_survives_removed_comments_and_the_owners_access_edit_survives_lat
     let task = r.get(id);
     let resume = edit(
         Command::ResumeTask {
+            observed_reply: None,
+            harness: None,
             task_id: id,
             text: Some("Continue".into()),
             bundle: None,
@@ -490,6 +496,8 @@ async fn a_native_session_without_a_trust_record_is_held_on_resume() {
                 &Caller::local_owner(),
                 edit(
                     Command::ResumeTask {
+                        observed_reply: None,
+                        harness: None,
                         task_id: id,
                         text: Some("Continue".into()),
                         bundle: None,

@@ -53,7 +53,7 @@ it("sets the command, pattern and path of a request as code in the Needs you row
 
   fireEvent.click(row);
   const sheet = within(screen.getByRole("dialog"));
-  expect(sheet.getByRole("heading", { name: "Use Grep" })).toBeTruthy();
+  expect(sheet.getByRole("heading", { name: "Search files" })).toBeTruthy();
   expect(codeIn(screen.getByRole("dialog").querySelector(".approval__detail")!)).toEqual(["TODO", "src"]);
 });
 

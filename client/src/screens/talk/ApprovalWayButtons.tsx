@@ -6,7 +6,7 @@
 // Work and allow" or "Turn into a task" where Allow can't work. They plug
 // into the card's `actions` slot, so they share its pending state, its
 // refusals and where focus goes once decided. A computer older than
-// switch_to_work_v1 keeps the card's own Decline and Allow.
+// switch_to_work_v1 keeps the card's own Reject and Allow.
 
 import { shallowEqual, useApp, useHost } from "../../app/context";
 import { AllowButton, DeclineButton, type ApprovalActions } from "../../design/ApprovalCard";
@@ -17,7 +17,7 @@ import { otherHolder, switchToWork } from "./switchToWork";
 
 
 /**
- * The card's buttons for `approval`, or undefined to keep its own Decline
+ * The card's buttons for `approval`, or undefined to keep its own Reject
  * and Allow (an older computer, or a question or code, which answer in the
  * card itself).
  */
@@ -36,7 +36,7 @@ export function useApprovalWayButtons(approval: Approval): ApprovalActions | und
   return (ctx) => <>
     {shown.map((way) => {
       switch (way.action) {
-        case "deny": return <DeclineButton key="deny" ctx={ctx} label={`${way.label}…`} />;
+        case "deny": return <DeclineButton key="deny" ctx={ctx} label={way.label} />;
         case "allow": return <AllowButton key="allow" ctx={ctx} label={way.label} />;
         case "switch_to_work":
         case "turn_into_task":

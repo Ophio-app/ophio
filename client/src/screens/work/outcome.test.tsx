@@ -31,6 +31,13 @@ describe("runOutcome", () => {
     expect(runOutcome(task, run)).toMatchObject({ kind: "done", reported: false, newWork: [] });
   });
 
+  it("keeps the current turn unfinished while checking, without hiding earlier runs", () => {
+    const checking = { ...task, state: "working" as const, current_run: run.run_id, checking: { job_id: "job", started_at: 1000, done: 2, total: 4 } };
+    const ended = { ...run, ended_at: 1000, cleanup_pending: true, holds_writer: true };
+    expect(runOutcome(checking, ended)).toBeNull();
+    expect(runOutcome(checking, { ...ended, run_id: "earlier" })).toMatchObject({ kind: "done" });
+  });
+
   it("calls a turn the agent said was done finished, needing a look, while a check failed or work is left", () => {
     const check = { name: "unit tests", command: "npm test", status: "failed" as const, detail: null, provenance: "observed" as const };
     const failed = { ...run, outcome: { ...run.outcome!, checks: [check], report: report({ status: "done" }) } };
@@ -100,9 +107,9 @@ describe("runOutcome", () => {
   });
 
   it("reads a turn that asked Ophio to wake it as watching, with nothing left to the person", () => {
-    const watching = { ...task, wake: { at: 2_000_000, reason: "the checks on PR #12" } } as Task;
+    const watching = { ...task, wake: { at: 2_000_000, reason: "the checks on PR #12", person_reason: "  I'm waiting for the checks to finish.  " } } as Task;
     const left = withReport({ status: "unfinished", remaining: ["Report once CI passes"] }, { run_id: task.current_run! });
-    expect(runOutcome(watching, left)).toMatchObject({ kind: "watching", title: "Watching", detail: "the checks on PR #12", items: [] });
+    expect(runOutcome(watching, left)).toMatchObject({ kind: "watching", title: "Watching", detail: "I'm waiting for the checks to finish.", items: [] });
     expect(reportLabel(watching, left)).toBeNull();
     expect(taskBadge(watching, left).label).toBe("Watching");
     // An earlier run's report, or one that asks something, still says so.
@@ -156,6 +163,33 @@ async function reported(r: Partial<RunReport>, talk = false) {
   await tick(600);
   return task;
 }
+
+describe.each([false, true])("Watching card in conversation: %s", (talk) => {
+  it.each([
+    { answer: false, person_reason: "  I'm waiting for the checks to finish.  ", detail: "I'm waiting for the checks to finish." },
+    { answer: false, person_reason: undefined, detail: "It's waiting to check back on its work." },
+    { answer: false, person_reason: " \n\t ", detail: "It's waiting to check back on its work." },
+    { answer: true, person_reason: "  I'm waiting for the reviewer's answer.  ", detail: "I'm waiting for the reviewer's answer." },
+    // A wait for an answer is Ophio's own wording, fine to show as it was.
+    { answer: true, person_reason: undefined, detail: "Codex’s answer to “Review the API”" },
+    { answer: true, person_reason: " \n\t ", detail: "Codex’s answer to “Review the API”" },
+  ])("shows only the person-facing detail for $answer with $person_reason", async ({ answer, person_reason, detail }) => {
+    const host = window.__sim!.host;
+    const task = host.tasks.find(t => t.task_id === workIds.receipt)!;
+    const reason = answer ? "Codex’s answer to “Review the API”" : "Resume with internal job 731; inspect /tmp/check-output and retry the agent.";
+    const watching = { ...task, wake: { at: Date.now() + 120_000, reason, person_reason, answer } };
+    host.tasks.splice(host.tasks.indexOf(task), 1, watching);
+    host.emit({ type: "task_upserted", task: watching });
+
+    await reported({ status: "unfinished", remaining: ["Check the result again"] }, talk);
+
+    const card = screen.getByRole("region", { name: answer ? "Waiting for an answer" : "Watching" });
+    expect(card.querySelector(".receipt-outcome__detail")?.textContent).toBe(detail);
+    if (detail === reason) return;
+    expect(within(card).queryByText(reason)).toBeNull();
+    expect(card.textContent).not.toContain(reason);
+  });
+});
 
 it("puts what the agent asks first, with the way to answer", async () => {
   await reported({ status: "needs_you", questions: ["Which port should it listen on?"] });

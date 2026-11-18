@@ -5,7 +5,7 @@ use crate::{
     state::Store,
 };
 use async_trait::async_trait;
-use ports::Clock;
+use ports::{Clock, tool_approval::plain_tool_title};
 use protocol::{
     auth::{ChannelIdentity, ChannelKind, Grants, Principal},
     command::{ApprovalDecision, CommandResult, CommandStage, MessageDelivery, TaskPlacement},
@@ -560,6 +560,8 @@ impl Core {
                             .await;
                     };
                     Command::CreateTask {
+                        origin: None,
+                        from_chat: None,
                         agent_chosen: None,
                         mode: None,
                         project_id: project,
@@ -712,6 +714,9 @@ impl Core {
                             .target(input, &identity, &snapshot, project, explicit)
                             .await?;
                         Command::SendMessage {
+                            harness: None,
+                            model: None,
+                            effort: None,
                             task_id: task.task_id,
                             text: prompt.into(),
                             bundle: None,
@@ -1344,7 +1349,10 @@ impl Core {
                         let mut text = if self.cfg.exposure == Exposure::Titles {
                             format!(
                                 "Needs attention: {}",
-                                latest.title.chars().take(200).collect::<String>()
+                                plain_tool_title(&latest.title)
+                                    .chars()
+                                    .take(200)
+                                    .collect::<String>()
                             )
                         } else {
                             format!("Task {task_id}: needs attention.")
@@ -1414,7 +1422,10 @@ impl Core {
         } else if self.cfg.exposure == Exposure::Titles {
             message.text = format!(
                 "Task {} — {}\nRequested effect: {}\nScope: {}",
-                a.task_id, task.title, a.title, a.scope
+                a.task_id,
+                task.title,
+                plain_tool_title(&a.title),
+                a.scope
             );
             if let Some(detail) = &a.detail {
                 message.text.push('\n');

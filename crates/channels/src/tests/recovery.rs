@@ -790,9 +790,19 @@ async fn mock_gateway() -> (
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let base = format!("ws://{}", listener.local_addr().unwrap());
     let (events, mut rx) = tokio::sync::mpsc::channel::<Value>(8);
+    // An ordinary HTTP probe and an abandoned connection must not consume
+    // the gateway session that the connector is about to establish.
+    use tokio::io::AsyncWriteExt;
+    let address = listener.local_addr().unwrap();
+    let mut probe = tokio::net::TcpStream::connect(address).await.unwrap();
+    probe
+        .write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\nAccept: text/html\r\n\r\n")
+        .await
+        .unwrap();
+    drop(probe);
+    drop(tokio::net::TcpStream::connect(address).await.unwrap());
     let worker = tokio::spawn(async move {
-        let (stream, _) = listener.accept().await.unwrap();
-        let mut socket = tokio_tungstenite::accept_async(stream).await.unwrap();
+        let mut socket = accept_gateway(&listener).await;
         socket
             .send(Ws::Text(
                 json!({"op":10,"d":{"heartbeat_interval":120000}})

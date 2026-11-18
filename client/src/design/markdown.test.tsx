@@ -7,6 +7,46 @@ import { Markdown } from "./Markdown";
 
 afterEach(cleanup);
 
+it("keeps ordered markers outside wrapped text with a digit-sized, text-scaled gutter", async () => {
+  // jsdom cannot measure layout. Pin the shared CSS contract here; actual
+  // narrow-screen rendering still needs a sandboxed browser/device check.
+  const fs = await vi.importActual<{ readFileSync(path: string, encoding: "utf8"): string }>("node:fs");
+  const css = fs.readFileSync("src/design/components.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  expect(css).toMatch(/\.md ol\s*\{\s*padding-inline-start:\s*max\(1\.3em, calc\(var\(--md-marker-width, 1ch\) \+ 0\.75em\)\);\s*\}/);
+  expect(css).toMatch(/\.md ol > li::marker\s*\{\s*font-variant-numeric:\s*tabular-nums;/);
+});
+
+it.each([100, 1000])("reserves a marker gutter for a list starting at %i without widening its nested list", (start) => {
+  const indent = " ".repeat(String(start).length + 2);
+  const { container } = render(<Markdown text={`${start}. Parent item with wrapping text\n${indent}1. Nested ordered item\n${indent}2. Another nested item\n\n${start + 1}. Next parent`} />);
+  const outer = container.querySelector("ol")!;
+  const inner = outer.querySelector("ol")!;
+  expect(outer.start).toBe(start);
+  expect(outer.style.getPropertyValue("--md-marker-width")).toBe(`${String(start).length}ch`);
+  expect(outer.querySelectorAll(":scope > li")).toHaveLength(2);
+  expect(inner.parentElement?.tagName).toBe("LI");
+  expect(inner.start).toBe(1);
+  expect(inner.style.getPropertyValue("--md-marker-width")).toBe("1ch");
+});
+
+it("preserves mixed nested lists and paragraph alignment", () => {
+  const { container } = render(<Markdown text={"1000. Parent paragraph\n\n      Another paragraph in the same item.\n\n      - Nested bullet\n        1. Nested ordered item\n\n1001. Next parent"} />);
+  const outer = container.querySelector("ol")!;
+  expect(outer.children).toHaveLength(2);
+  expect(outer.querySelectorAll(":scope > li:first-child > p")).toHaveLength(2);
+  expect(outer.querySelector("li > ul > li > ol")?.getAttribute("style")).toBe("--md-marker-width: 1ch;");
+});
+
+it.each([100, 1000])("grows the marker gutter as streamed items reach %i", (end) => {
+  const text = Array.from({ length: end - 1 }, (_, i) => `${i + 1}. Item`).join("\n");
+  const { container, rerender } = render(<Markdown text={text} />);
+  expect(container.querySelector("ol")!.style.getPropertyValue("--md-marker-width")).toBe(`${String(end - 1).length}ch`);
+  rerender(<Markdown text={`${text}\n${end}. Last item`} />);
+  const list = container.querySelector("ol")!;
+  expect(list.children).toHaveLength(end);
+  expect(list.style.getPropertyValue("--md-marker-width")).toBe(`${String(end).length}ch`);
+});
+
 it("keeps the same code block, and its scroll, when the screen around it changes", () => {
   const text = "Intro\n\n```\na very long line of code that runs off the side of a phone screen\n```\n\n| a | b |\n|---|---|\n| 1 | 2 |\n";
   const first = vi.fn();

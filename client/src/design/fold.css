@@ -1,0 +1,60 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* A folded section: its heading and current value on one tappable line. */
+
+.fold__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: var(--target);
+  padding: var(--s1) var(--s1);
+  text-align: left;
+  border-radius: var(--r-md);
+}
+.fold__head:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.fold__head:active {
+  background: var(--surface-pressed);
+}
+.fold__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.fold__title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--bloom);
+  letter-spacing: 0.035em;
+}
+.fold__value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+.fold__chevron {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--ink-3);
+  transition: transform var(--dur-1) var(--ease);
+}
+.fold.is-open .fold__chevron {
+  transform: rotate(180deg);
+}
+.fold__body {
+  display: grid;
+  gap: var(--s2);
+}
+.fold__body[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fold__chevron { transition: none; }
+}

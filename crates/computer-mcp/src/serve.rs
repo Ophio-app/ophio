@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The listener on Ophio's side. Shutdown closes connections and unbinds every run.
 use crate::{BridgeError, framing};
-use ports::bridge::{BridgeBinding, BridgeHandler, BridgeRequest, BridgeResponse};
+use ports::bridge::{BridgeBinding, BridgeHandler, BridgeRequest, BridgeResponse, ChecksCall};
 use std::{future::Future, path::Path, sync::Arc, time::Duration};
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufReader},
@@ -53,7 +53,7 @@ where
             _ = &mut shutdown => break Ok(()),
             _ = tasks.join_next(), if !tasks.is_empty() => {},
             accepted = async {
-                #[cfg(unix)] { listener.accept().await.map(|(stream, _)| stream) }
+                #[cfg(unix)] { listener.accept().await }
                 #[cfg(windows)] {
                     listener.accept().await
                 }
@@ -70,8 +70,14 @@ where
     result
 }
 
+/// The listener, and every connection it accepts, is made and closed so that
+/// no process started meanwhile on the Mac keeps it: a run's agent started as
+/// another run connects would otherwise hold the other end of that run's
+/// bridge, and could read its run token and tool calls or answer them.
 #[cfg(unix)]
-fn bind_unix(path: &Path) -> Result<(tokio::net::UnixListener, SocketCleanup), BridgeError> {
+fn bind_unix(
+    path: &Path,
+) -> Result<(containment::inherit::UnixListener, SocketCleanup), BridgeError> {
     use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
     let parent = path.parent().ok_or(BridgeError::PrivateDirectory)?;
     if !parent.exists() {
@@ -84,11 +90,10 @@ fn bind_unix(path: &Path) -> Result<(tokio::net::UnixListener, SocketCleanup), B
     {
         return Err(BridgeError::PrivateDirectory);
     }
-    let listener = std::os::unix::net::UnixListener::bind(path)?;
+    let listener = containment::inherit::UnixListener::bind(path)?;
     let cleanup = SocketCleanup(path.to_owned());
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
-    listener.set_nonblocking(true)?;
-    Ok((tokio::net::UnixListener::from_std(listener)?, cleanup))
+    Ok((listener, cleanup))
 }
 
 #[cfg(unix)]
@@ -139,6 +144,7 @@ where
                 github: binding.github,
                 checklist_answers: binding.checklist_answers,
                 read_only: binding.read_only,
+                checks: binding.checks,
             },
         )
         .await?;
@@ -178,6 +184,15 @@ where
 /// Why the run bound as `binding` may not make `request`, if it may not.
 fn refusal(binding: &BridgeBinding, request: &BridgeRequest) -> Option<&'static str> {
     match request {
+        BridgeRequest::Checks { .. }
+            if !binding.checks || binding.computer_use || binding.checklist_answers =>
+        {
+            Some("checks are not available for this run")
+        }
+        BridgeRequest::Checks {
+            action: ChecksCall::Propose { .. },
+        } if binding.read_only => Some("this turn only reads; drafting checks needs a Work task"),
+        BridgeRequest::Checks { .. } => None,
         BridgeRequest::PermissionPrompt { .. } => None,
         BridgeRequest::Browser { .. } if binding.browser && !binding.computer_use => None,
         BridgeRequest::Browser { .. } => Some("the agent browser is not enabled for this task"),
@@ -213,6 +228,32 @@ mod tests {
             github: false,
             checklist_answers: false,
             read_only,
+            checks: false,
+        }
+    }
+
+    #[test]
+    fn checks_are_project_bound_and_drafts_need_a_work_turn() {
+        let read = BridgeRequest::Checks {
+            action: ChecksCall::Read,
+        };
+        let propose = BridgeRequest::Checks {
+            action: ChecksCall::Propose {
+                base_version: 0,
+                items: vec![],
+            },
+        };
+        for checks in [false, true] {
+            for read_only in [false, true] {
+                for special in ["ordinary", "computer", "checklist"] {
+                    let mut binding = binding(special == "computer", read_only);
+                    binding.checklist_answers = special == "checklist";
+                    binding.checks = checks;
+                    let allowed = checks && special == "ordinary";
+                    assert_eq!(refusal(&binding, &read).is_none(), allowed);
+                    assert_eq!(refusal(&binding, &propose).is_none(), allowed && !read_only);
+                }
+            }
         }
     }
 

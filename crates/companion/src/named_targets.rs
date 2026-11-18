@@ -121,7 +121,7 @@ impl HarnessAdapter for NamedTarget {
 
 async fn version(cmd: &mut tokio::process::Command) -> Option<String> {
     use tokio::io::AsyncReadExt;
-    let mut child = cmd.spawn().ok()?;
+    let mut child = containment::inherit::tokio_spawn(cmd).ok()?;
     let result = tokio::time::timeout(Duration::from_secs(3), async {
         let mut bytes = Vec::new();
         child

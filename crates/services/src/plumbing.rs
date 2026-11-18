@@ -24,6 +24,7 @@ impl CompanionHub {
             boot_epoch: self.inner.epoch,
             started_at: self.inner.started,
             capabilities,
+            release_check: None,
         };
         let targets = if let Some(d) = self.desktop_option() {
             d.targets().await.unwrap_or_default()
@@ -39,6 +40,7 @@ impl CompanionHub {
             // Read here, so a rename committed meanwhile is never undone.
             (host.name, host.renamed) =
                 crate::computer_name::effective(&tx.read(), &self.inner.hostname)?;
+            host.release_check = self.release_check_for_host(&tx.read())?;
             // What the computer can do is announced as such whenever it
             // changes, as when desktop sharing is turned on or off.
             let changed = tx
@@ -66,6 +68,7 @@ impl CompanionHub {
     ) -> Result<QueryData, ProtocolError> {
         let caller = self.authorize(caller, |g| domain::grants::query(g, &query))?;
         match query {
+            query @ (Query::ChecksList { .. } | Query::ChecksHistory { .. } | Query::TaskChecks { .. } | Query::CheckJob { .. }) => self.checks_query(query),
             Query::ContributionDelivery { packet_json, handoff_url } => Ok(QueryData::ContributionDelivery { handoff_json: self.contribution_delivery(&caller, &packet_json, &handoff_url).await? }),
             Query::ContributionCapabilities => Ok(QueryData::ContributionCapabilities { capabilities: self.contribution_capabilities() }),
             Query::ContributionOperation { operation_id } => Ok(QueryData::ContributionOperation { operation: self.contribution_view(&caller, &operation_id)? }),
@@ -124,6 +127,7 @@ impl CompanionHub {
             Query::ProjectShown { project_id, before, limit } => Ok(QueryData::ProjectShown { history: self.project_shown(project_id, before, limit)? }),
             Query::Voice { session_id } => Ok(QueryData::Voice { view: Box::new(self.voice_view(&caller, session_id.as_deref()).await?) }),
             Query::AgentUpdates => Ok(QueryData::AgentUpdates { view: self.agent_updates_view()? }),
+            Query::ReleaseCheck => Ok(QueryData::ReleaseCheck { view: self.release_check_view()? }),
             Query::AgentPreferences => Ok(QueryData::AgentPreferences { view: self.agent_preferences_view()? }),
             Query::Checklists => Ok(QueryData::Checklists { checklists: self.checklists_view()? }),
             Query::Checklist { project_id } => Ok(QueryData::Checklist { checklist: self.checklist_view(project_id)? }),
@@ -1310,7 +1314,47 @@ fn timeline_page(mut items: Vec<TimelineItem>, has_more: bool) -> QueryData {
     QueryData::TaskTimeline { items, has_more }
 }
 pub(crate) fn library_error(e: ports::LibraryError) -> ProtocolError {
-    error(e.code(), "Library operation failed")
+    if matches!(e, ports::LibraryError::UnsupportedVolume) {
+        error(e.code(), e.to_string())
+    } else {
+        error(e.code(), "Library operation failed")
+    }
+}
+
+#[cfg(test)]
+mod library_error_tests {
+    use super::library_error;
+    use ports::LibraryError;
+    use protocol::ErrorCode;
+
+    #[test]
+    fn unsupported_volume_has_a_safe_actionable_message() {
+        let error = library_error(LibraryError::UnsupportedVolume);
+        assert_eq!(error.code, ErrorCode::Unsupported);
+        assert_eq!(
+            error.message,
+            "This drive's format does not support the safe saving Ophio needs. Reading still works."
+        );
+        assert!(error.detail.is_none());
+    }
+
+    #[test]
+    fn other_library_errors_never_expose_paths_or_native_details() {
+        for failure in [
+            LibraryError::PathNotAllowed("private-folder/secret.md".into()),
+            LibraryError::Io(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "private-folder native failure",
+            )),
+            LibraryError::ReadOnly,
+        ] {
+            let code = failure.code();
+            let error = library_error(failure);
+            assert_eq!(error.code, code);
+            assert_eq!(error.message, "Library operation failed");
+            assert!(error.detail.is_none());
+        }
+    }
 }
 pub(crate) fn terminal_error(e: ports::TerminalError) -> ProtocolError {
     if matches!(e, ports::TerminalError::Exited) {

@@ -234,7 +234,7 @@ mod tests {
             a_choices.tiers,
             [
                 tier(AlertType::Question, Tier::Alert),
-                tier(AlertType::Reply, Tier::Silent),
+                tier(AlertType::Reply, Tier::Alert),
                 tier(AlertType::PrReady, Tier::Off),
                 tier(AlertType::Batch, Tier::Silent),
             ]
@@ -253,9 +253,11 @@ mod tests {
             settings.project_tier(a, AlertType::Question),
             Some(Tier::Alert)
         );
+        // Opting a project back in keeps the current recommendation, including
+        // audible chat replies; a computer-wide Off choice still stays Off.
         assert_eq!(
             settings.project_tier(a, AlertType::Reply),
-            Some(Tier::Silent)
+            Some(Tier::Alert)
         );
 
         // Brought over already, nothing is left to bring.
@@ -306,6 +308,8 @@ mod tests {
             account_id: None,
             alert: None,
             alert_handled_at: None,
+            agent_update: None,
+            new_version: None,
         };
         for kind in [
             AttentionKind::Question,

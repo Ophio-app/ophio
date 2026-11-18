@@ -25,8 +25,9 @@ vi.mock("../../app/context", () => ({
 const grants = { view: true, tasks: true, admin: true, control_input: false, terminal: false, approvals: true, computer_use: false, library_read: true, library_write: false, transfers: false, accounts: false };
 beforeEach(() => {
   sim = new AgentUpdatesSim();
+  sim.view = { ...sim.view, enabled: true, mode: "automatic" };
   online = true;
-  state = { ...emptyHostState, capabilities: capabilities(), harnesses, grants };
+  state = { ...emptyHostState, capabilities: { ...capabilities(), features: capabilities().features.filter(f => f !== "agent_update_policy_v1") }, harnesses, grants };
   query.mockClear(); command.mockClear();
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -37,7 +38,7 @@ it("turns keeping the agents up to date off and on, with the revision it was sho
   render(<AgentUpdates />);
   await waitFor(() => expect(toggle().checked).toBe(true));
   expect(screen.getByText(/Claude Code 2\.4\.1 · Checked/)).toBeTruthy();
-  expect(screen.getByText("Couldn't reach the update site to check for a new version.")).toBeTruthy();
+  expect(screen.getByText("Couldn’t reach the update site to check for a new version.")).toBeTruthy();
   fireEvent.click(toggle());
   await waitFor(() => expect(toggle().checked).toBe(false));
   expect(command).toHaveBeenLastCalledWith({ command: "set_agent_updates", enabled: false }, expect.objectContaining({ expectedRevision: 1 }));
@@ -115,7 +116,7 @@ it("can't be changed without Manage access, offline, or where the agents publish
 });
 
 it("shows nothing for a computer that can't keep the agents up to date", () => {
-  state = { ...state, capabilities: { ...capabilities(), features: capabilities().features.filter((f) => f !== "agent_updates_v1") } };
+  state = { ...state, capabilities: { ...capabilities(), features: capabilities().features.filter((f) => f !== "agent_updates_v1" && f !== "agent_update_policy_v1") } };
   const { container } = render(<AgentUpdates />);
   expect(container.textContent).toBe("");
   expect(query).not.toHaveBeenCalled();

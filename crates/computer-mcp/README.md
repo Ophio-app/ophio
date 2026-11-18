@@ -9,7 +9,7 @@ Permission tool identity is `PERMISSION_TOOL`.
 
 The broker authenticates Hello, owns the run/target/lease binding, and supplies
 Welcome. No model argument can select a run, target, token, or lease. Welcome's
-`computer_use`, `browser` and `github` flags decide which tools the run gets, as
+`computer_use`, `browser`, `github` and `checks` flags decide which tools the run gets, as
 the table below shows. A call to a tool the run wasn't given is refused before
 it reaches the socket. The broker check in `serve.rs` refuses most of them
 again: computer actions from a run without computer use, `request_human` from a
@@ -47,10 +47,22 @@ are constants in `ports::bridge`.
 | Run | Tools listed |
 |---|---|
 | Computer specialist (`computer_use`) | `observe_target`, `pointer_action`, `key_action`, `type_text`, `scroll`, `open_app` and `request_human` (`COMPUTER_TOOLS`). Nothing else, not even `permission_prompt`, and the `browser` and `github` flags change nothing. |
-| Read-only run (`read_only`: Plan, Ask) | `request_access` (`ACCESS_TOOL`) alone, to ask the person for more. |
-| Any other run | `permission_prompt`; `request_access` (`ACCESS_TOOL`), to ask the person for more than it has; `show_person`, `show_preview`, `invite_person`, `wake_me`, `can_ask`, `checklist_read`, `checklist_add`, `checklist_remove` and `checklist_reply` (`PERSON_TOOLS`); `ophio_agents`, `ask_agent`, `github_new_issue`, `github_start_issue` and `github_start_review` (`WORK_TOOLS`). |
+| Read-only run (`read_only`: Plan, Ask) | `request_access` (`ACCESS_TOOL`) and `ophio_propose`, to ask for more access or put work in front of the person without starting it. |
+| Any other run | `permission_prompt`; `request_access` (`ACCESS_TOOL`), to ask the person for more than it has; `show_person`, `show_preview`, `invite_person`, `wake_me`, `can_ask`, `checklist_read`, `checklist_add`, `checklist_remove` and `checklist_reply` (`PERSON_TOOLS`); `ophio_agents`, `ophio_propose`, `ask_agent`, `github_new_issue`, `github_start_issue` and `github_start_review` (`WORK_TOOLS`). |
 | … with `browser` | Adds `browser_open`, `browser_back`, `browser_tabs`, `browser_switch_tab`, `browser_close_tab`, `browser_observe`, `browser_click`, `browser_type`, `browser_press`, `browser_scroll`, `list_logins`, `fill_login`, `fill_code` and `ask_owner_for_code` (`BROWSER_TOOLS`), and `request_human`. |
 | … with `github` | Adds `github_pr`, `github_comment`, `github_issue`, `github_ready`, `github_merge` and `github_cannot_reproduce` (`GITHUB_TOOLS`), and keeps only `ophio_agents` and `ask_agent` (`ASK_TOOLS`) of the work tools. |
+| … with `checks` (ordinary project runs only) | Adds `checks_read`, including when no checks exist yet. Ordinary Work runs also get `checks_propose`; read-only runs never do. Computer specialists and checklist-answer turns get neither. |
+
+`checks_read` reads the authenticated run's project's full approved definitions.
+`checks_propose` takes `base_version` and `items` and replaces only the task's
+open draft; it never changes approved checks. Neither accepts a project, task
+or run identity. The service validates the draft against the current project
+and returns mistakes as bridge errors, so the agent can correct them. Both
+MCP and the socket listener reject proposals from read-only bindings. The
+service must recheck persisted run mode and project ownership on every call.
+`ToolBridge.check_names` supplies the enabled approved names for conditional
+run instructions; an empty list adds no checks instructions. Claude Code's
+native Plan mode still has no MCP bridge, so it receives neither tool.
 
 `tools/call` still accepts the older names `observe`, `pointer` and `key` for
 `observe_target`, `pointer_action` and `key_action`, but they are never listed.
@@ -91,3 +103,9 @@ Dependencies: Unix rustix 1.1.2 (Apache-2.0 OR Apache-2.0 WITH LLVM-exception
 OR MIT), Windows interprocess 2.4.4 (0BSD OR Apache-2.0) and widestring 1.2.1
 (MIT OR Apache-2.0), and test-only tempfile
 3.23.0 (MIT OR Apache-2.0). Resolved versions are pinned by Cargo.lock.
+
+`wake_me` keeps two separate reasons. `reason` is the agent’s full reminder,
+returned when it wakes. `person_reason` is one short, plain sentence
+for the phone’s Watching card. The advertised tool requires both. Older calls
+without `person_reason` still work, but the phone shows a neutral sentence
+rather than the agent’s reminder.

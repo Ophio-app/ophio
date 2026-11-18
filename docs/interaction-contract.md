@@ -9,7 +9,7 @@ did.
 | Kind | Examples | On the tap | When the computer refuses |
 | --- | --- | --- | --- |
 | **Instant** | Notification choices, appearance, read and unread, pin, Next up order, agent defaults | The control shows the new choice at once and the request goes behind it. It stays usable meanwhile. | The control goes back to what the computer has, and a toast in the stop tone says what didn't change and why. |
-| **Safety** | What a conversation's agent may reach, a permission this device lacks, permission and skip-prompt defaults, GitHub on or off, voice control, app lock, taking over and handing back | The control keeps showing what is in force. A change that takes more than a moment shows as **Changing…** beside it, until the computer says the change is in force. | The control never showed the change, so nothing goes back; a toast says what didn't change and why. |
+| **Safety** | What a conversation's agent may reach and what new chats in a project start with, a permission this device lacks, permission and skip-prompt defaults, GitHub on or off, voice control, app lock, taking over and handing back | The control keeps showing what is in force. A change that takes more than a moment shows as **Changing…** beside it, until the computer says the change is in force. | The control never showed the change, so nothing goes back; a toast says what didn't change and why. |
 | **Destructive** | Delete a Library file (it goes to Recently deleted, so its toast has Undo), close an issue, archive | Where the computer can undo it, the change happens at once with **Undo** in a toast. Otherwise a confirmation names what will be lost. | As for instant. |
 
 ## In the code
@@ -55,10 +55,71 @@ controls: they may show their own request with a spinner until the computer
 answers. Sheets that draft a change and save it with one button (project
 defaults, a stage change, a connection) keep that shape.
 
+Start on work a chat suggested is an action that flips at once: the card's row
+says **Starting** on the tap, then **Started**, or **In Next up** when the
+project's writer holds it, as soon as the computer creates the task. A
+refusal puts the row back to Start and says why in a toast. The chip beside
+it is an instant choice that lives on the phone: a pick changes the card at
+once and is remembered, on this phone only, as the person's usual agent for
+that kind of work. A card opened in Review and started there is still that
+card's task: back in the chat its row is that task, and it has no Start left.
+Start in the message box, for a plain Work task, behaves the same way as
+Review's Start task.
+
+What a project's new chats start with is a safety control. It is remembered
+only once the computer has the chat's access in force, it is shown only as
+the computer holds it, and **Set back to read-only** waits for the computer
+before the line changes.
+
 A control may still be disabled for a reason that holds before the tap: the
 device lacks the permission, the computer is offline, or the computer is too
 old for the feature. It is never disabled only because its own request is on
 the way.
+
+## Dialogs and navigation
+
+Opening another screen or changing tabs dismisses dialogs on the screen being
+left, including the Capture inbox picture viewer when **Draw on it** opens the
+drawing screen. Back returns to the screen without reopening its old dialog.
+Dismissing a dialog never approves, sends or confirms an action. The shared
+sheet uses the shell's active-surface context so hidden, still-mounted screens
+cannot leave an invisible browser modal intercepting taps.
+
+A sheet holding something typed or chosen and not yet sent is the exception.
+When another screen covers it, for example **Defaults in Settings** in its
+agent sheet or a tapped notification, it steps out of the way without being
+dismissed, and Back brings it back exactly as it was left. It still never
+sends anything by itself. Three kinds of sheet stay dismissed instead:
+
+- a sheet holding a key, password, sign-in code or revealed secret, which
+  should not wait unseen behind another screen;
+- a confirmation or a viewer, which Back should not bring back;
+- a sheet whose choice the computer could overtake meanwhile, so that
+  applying it on return would undo the newer state. Such a sheet is kept only
+  while that state is unchanged (the access lists are kept until what the
+  agent may reach changes), and a computer let go of meanwhile is not
+  renamed.
+
+The shared sheet does this for a sheet marked `keepWhenHidden`.
+
+## Back returns to where you came from
+
+An opened task is one visit. Both the on-screen Back control and Android Back
+return to the screen that opened it, with that screen's list and filters kept.
+A finished task may open on its receipt first. Continuing or following that task
+in Chat replaces this entry view; Back does not make a second stop on the receipt.
+This applies to Tasks, Live agents, task links and result notifications. A task
+link opened from a chat returns to that chat, not the Tasks tab.
+
+A task started from a chat's card opens from that card, and Back returns to
+the chat. Wherever such a task shows, it says "From chat “…”": on its row in
+Tasks, in Next up, and on its heading and receipt, where one tap on that line
+opens the chat. The card's own line about the task changes in place as the
+work moves and never alerts.
+
+A receipt deliberately opened to inspect history or changes is different: it
+remains a previous screen. Opening a file from a receipt still returns to that
+receipt. Neither opening nor closing a task starts or restarts work.
 
 ## Checking it
 

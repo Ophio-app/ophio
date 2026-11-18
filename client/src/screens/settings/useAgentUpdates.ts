@@ -6,6 +6,7 @@ import type { AgentUpdatesView } from "../../protocol/types";
 
 /** The computer's word that it can keep its own copies of the agents up to date. */
 export const AGENT_UPDATES_FEATURE = "agent_updates_v1";
+export const AGENT_UPDATE_POLICY_FEATURE = "agent_update_policy_v1";
 /** How soon a check under way is looked at again. */
 export const CHECKING_POLL_MS = 3_000;
 const cache = new WeakMap<HostSession, AgentUpdatesView>();
@@ -13,7 +14,8 @@ const cache = new WeakMap<HostSession, AgentUpdatesView>();
 export function useAgentUpdates() {
   const { session, profile } = useApp();
   const link = useLink();
-  const supported = useHost((s) => s.capabilities?.features.includes(AGENT_UPDATES_FEATURE) ?? false);
+  const policySupported = useHost((s) => s.capabilities?.features.includes(AGENT_UPDATE_POLICY_FEATURE) ?? false);
+  const supported = useHost((s) => s.capabilities?.features.includes(AGENT_UPDATES_FEATURE) ?? false) || policySupported;
   // New copies change the agents' versions and models.
   const harnesses = useHost((s) => s.harnesses);
   const [view, setView] = useState<AgentUpdatesView | null>(cache.get(session) ?? null);
@@ -40,5 +42,5 @@ export function useAgentUpdates() {
     const timer = setTimeout(reload, CHECKING_POLL_MS);
     return () => clearTimeout(timer);
   }, [view, looked, link.state, reload]);
-  return { view, error, supported, reload };
+  return { view, error, supported, policySupported, reload };
 }

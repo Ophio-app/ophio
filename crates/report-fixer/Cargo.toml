@@ -22,7 +22,7 @@ thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 sha2 = "0.10"
-rusqlite = { version = "0.38.0", features = ["bundled"] }
+rusqlite = { version = "0.41.0", features = ["bundled"] }
 tempfile = "3.27.0"
 
 [dev-dependencies]

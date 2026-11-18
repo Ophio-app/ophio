@@ -35,7 +35,9 @@ struct Fixture {
     config: PathBuf,
 }
 fn fixture() -> Fixture {
-    let root = tempfile::tempdir().unwrap();
+    fixture_at(tempfile::tempdir().unwrap())
+}
+fn fixture_at(root: tempfile::TempDir) -> Fixture {
     let home = root.path().join("home");
     let data = root.path().join("share/applications");
     entry(
@@ -106,10 +108,14 @@ impl Fixture {
         if let Some(words) = terminal {
             preferences.terminal.insert(0, Pick::Command(words));
         }
-        catalog(desktops, &preferences)
-            .into_iter()
-            .map(|(_, app)| app)
-            .collect()
+        catalog(
+            desktops,
+            &preferences,
+            self.environment.get("HOME").map(Path::new),
+        )
+        .into_iter()
+        .map(|(_, app)| app)
+        .collect()
     }
 }
 fn one(phrase: &str, apps: &[LaunchApp]) -> String {
@@ -388,24 +394,77 @@ async fn real_session_opens_an_app_in_its_own_scope() {
 }
 #[test]
 fn a_flatpak_and_a_native_app_of_one_name_are_both_offered() {
-    let mut f = fixture();
-    let flatpak = f._root.path().join("flatpak/exports/share");
-    entry(
-        &flatpak.join("applications"),
-        "org.mozilla.firefox.desktop",
-        "Name=Firefox\nExec=/usr/bin/flatpak run org.mozilla.firefox %u\nCategories=Network;WebBrowser;",
+    let parent = tempfile::tempdir().unwrap();
+    let misleading = parent.path().join(".local/share");
+    std::fs::create_dir_all(&misleading).unwrap();
+    // The fixture's own HOME, not any ancestor of its temporary directory,
+    // determines which entries belong to the user.
+    for mut f in [
+        fixture(),
+        fixture_at(tempfile::tempdir_in(&misleading).unwrap()),
+    ] {
+        let flatpak = Path::new(&f.environment["HOME"]).join(".local/share/flatpak/exports/share");
+        entry(
+            &flatpak.join("applications"),
+            "org.mozilla.firefox.desktop",
+            "Name=Firefox\nExec=/usr/bin/flatpak run org.mozilla.firefox %u\nCategories=Network;WebBrowser;",
+        );
+        f.roots.push(flatpak.join("applications"));
+        let apps = f.catalog(None);
+        let Resolution::Several(both) = resolve("firefox", &apps) else {
+            panic!("{:?}", resolve("firefox", &apps))
+        };
+        let labels: Vec<String> = both
+            .iter()
+            .map(|a| voice_control::apps::label(a, &both))
+            .collect();
+        assert_eq!(labels, ["Firefox", "Firefox (Flatpak)"]);
+    }
+}
+#[test]
+fn source_labels_use_the_session_home_not_a_matching_ancestor() {
+    let home = Some(Path::new("/home/you"));
+    assert_eq!(
+        source(
+            Path::new("/home/you/.local/share/applications/x.desktop"),
+            home
+        ),
+        Some("in your home folder".into())
     );
-    f.roots.push(flatpak.join("applications"));
-    let apps = f.catalog(None);
-    let Resolution::Several(both) = resolve("firefox", &apps) else {
-        panic!("{:?}", resolve("firefox", &apps))
-    };
-    let labels: Vec<String> = both
-        .iter()
-        .map(|a| voice_control::apps::label(a, &both))
-        .collect();
-    assert_eq!(labels, ["Firefox", "Firefox (Flatpak)"]);
-    assert_eq!(source(Path::new("/usr/share/applications/x.desktop")), None);
+    for path in [
+        "/usr/share/applications/x.desktop",
+        "/tmp/.local/share/fixture/share/applications/x.desktop",
+        "/home/you/projects/.local/share/applications/x.desktop",
+        "/home/sam/.local/share/applications/x.desktop",
+        "/home/you/.local/share-other/applications/x.desktop",
+    ] {
+        assert_eq!(source(Path::new(path), home), None, "{path}");
+    }
+    assert_eq!(
+        source(
+            Path::new("/home/you/testing/.local/share/applications/x.desktop"),
+            Some(Path::new("/home/you/test")),
+        ),
+        None
+    );
+    let local = Path::new("/home/you/.local/share/applications/x.desktop");
+    for home in [None, Some(Path::new("")), Some(Path::new("relative"))] {
+        assert_eq!(source(local, home), None);
+    }
+    // Package-specific labels still take precedence over the home label.
+    for path in [
+        "/home/you/.local/share/flatpak/exports/share/applications/x.desktop",
+        "/var/lib/flatpak/exports/share/applications/x.desktop",
+    ] {
+        assert_eq!(source(Path::new(path), home), Some("Flatpak".into()));
+    }
+    assert_eq!(
+        source(
+            Path::new("/var/lib/snapd/desktop/applications/x.desktop"),
+            home
+        ),
+        Some("Snap".into())
+    );
 }
 /// A launch the desktop doesn't confirm in time is stopped, its helper and
 /// scope with it, before it is reported: nothing can open after voice
@@ -425,7 +484,7 @@ async fn a_launch_that_hangs_is_stopped_before_its_outcome_is_reported() {
     let tools = [
         (
             "gio",
-            format!("echo $$ > '{}'\nexec sleep 30", pid.display()),
+            format!("echo $$ > '{}'\nexec /bin/sleep 30", pid.display()),
         ),
         (
             "systemd-run",
@@ -540,7 +599,8 @@ async fn nothing_starts_once_authority_has_ended() {
     assert_eq!(std::fs::read_to_string(&log).unwrap().lines().count(), 1);
 }
 /// A stand-in `gio` that starts a descendant (the app it opens) and then
-/// hangs; both record their process ids.
+/// hangs; both record their process ids. Absolute utility paths keep the fake
+/// tool-only PATH usable when there is no desktop service manager (as in CI).
 #[cfg(unix)]
 fn hanging_gio(bin: &Path, root: &Path) -> (PathBuf, PathBuf) {
     use std::os::unix::fs::PermissionsExt;
@@ -549,7 +609,7 @@ fn hanging_gio(bin: &Path, root: &Path) -> (PathBuf, PathBuf) {
     std::fs::write(
         &path,
         format!(
-            "#!/bin/sh\necho $$ > '{}'\nsleep 31 &\necho $! > '{}'\nexec sleep 32\n",
+            "#!/bin/sh\necho $$ > '{}'\n/bin/sleep 31 &\necho $! > '{}'\nexec /bin/sleep 32\n",
             helper.display(),
             child.display()
         ),
@@ -795,7 +855,7 @@ async fn a_scope_not_confirmed_stopped_can_be_checked_again() {
         (
             "systemctl",
             format!(
-                "echo \"$2\" >> '{}'\n[ \"$2\" = is-active ] || exit 1\ncase $(cat '{}') in\nactive) echo active; exit 0 ;;\ninactive) echo inactive; exit 3 ;;\n*) echo 'Failed to connect to bus' >&2; exit 1 ;;\nesac",
+                "echo \"$2\" >> '{}'\n[ \"$2\" = is-active ] || exit 1\ncase $(/bin/cat '{}') in\nactive) echo active; exit 0 ;;\ninactive) echo inactive; exit 3 ;;\n*) echo 'Failed to connect to bus' >&2; exit 1 ;;\nesac",
                 calls.display(),
                 answer.display()
             ),

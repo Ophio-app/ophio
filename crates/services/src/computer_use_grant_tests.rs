@@ -105,6 +105,9 @@ async fn only_computer_use_holders_steer_or_answer_a_computer_use_run() {
     assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
     for envelope in [
         CommandEnvelope::new(Command::SendMessage {
+            harness: None,
+            model: None,
+            effort: None,
             task_id,
             text: "Open the banking site".into(),
             bundle: None,

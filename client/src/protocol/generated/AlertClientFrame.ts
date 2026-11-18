@@ -18,6 +18,15 @@ reports: boolean,
  */
 sign_in: boolean, 
 /**
+ * The phone understands [`Alert::new_version`]. Older phones aren't
+ * sent new-version alerts at all.
+ */
+new_version?: boolean, 
+/**
+ * The phone understands agent-update notices and their Settings target.
+ */
+agent_updates?: boolean, 
+/**
  * The phone chooses by [`Alert::alert_type`] and
  * [`Alert::project_tier`] itself: alerts the person turned off on
  * every phone aren't marked quiet for it, as the phone keeps that

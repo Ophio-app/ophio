@@ -9,11 +9,11 @@ import time
 import unittest
 
 SCRIPTS = Path(__file__).resolve().parents[1]
-ORDER = ["fmt", "clippy", "test", "parallel", "windows", "client", "intake-e2e", "tauri", "python",
+ORDER = ["quick", "fmt", "clippy", "test", "parallel", "windows", "macos", "client", "intake-e2e", "tauri", "python",
          "source", "licenses", "package-linux", "package-windows"]
-ALWAYS = ["python", "source", "licenses"]
+ALWAYS = ["quick", "python", "source", "licenses"]
 CLIENT = ["client", "tauri", "intake-e2e"]
-RUST = ["fmt", "clippy", "test", "windows", "tauri", "intake-e2e"]
+RUST = ["fmt", "clippy", "test", "windows", "macos", "tauri", "intake-e2e"]
 REPEATS = ["parallel"]
 PACKAGES = ["package-linux", "package-windows"]
 

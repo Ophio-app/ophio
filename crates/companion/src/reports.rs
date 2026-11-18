@@ -205,9 +205,19 @@ mod tests {
     #[test]
     fn panic_hook_writes_a_scrubbed_record_and_chains_the_existing_hook() {
         let dir = tempfile::tempdir().unwrap();
-        install_panic_hook(dir.path().to_owned(), "fixture-build".into());
-        let result = std::panic::catch_unwind(|| panic!("open /workspace/private failed 'secret'"));
-        assert!(result.is_err());
+        // Hooks belong to the whole process. Installing one alongside setup's
+        // terminal tests can replace either hook between take_hook and set_hook.
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "reports::tests::panic_hook_child"])
+            .env("OPHIO_PANIC_HOOK_TEST_DIRECTORY", dir.path())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "panic-hook child failed: {}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
         let records = services::reports::read_crashes(dir.path());
         assert_eq!(records.len(), 1);
         let record = &records[0];
@@ -218,11 +228,37 @@ mod tests {
                 .starts_with("panic:crates/companion/src/reports.rs:")
         );
         assert_eq!(record.message.as_deref(), Some("open <path> failed \"…\""));
+        assert_eq!(record.build, "fixture-build");
         assert!(record.frames.len() <= MAX_FRAMES);
         assert!(record.frames.iter().all(|f| f.file.starts_with("crates/")));
-        if let Ok(mut target) = TARGET.write() {
-            *target = None;
-        }
+    }
+    #[test]
+    fn panic_hook_child() {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+        let Some(directory) = std::env::var_os("OPHIO_PANIC_HOOK_TEST_DIRECTORY") else {
+            return;
+        };
+        let directory = PathBuf::from(directory);
+        let chained = Arc::new(AtomicUsize::new(0));
+        let written_before_chaining = Arc::new(AtomicUsize::new(0));
+        let calls = chained.clone();
+        let written = written_before_chaining.clone();
+        let data = directory.clone();
+        std::panic::set_hook(Box::new(move |_| {
+            calls.fetch_add(1, Ordering::SeqCst);
+            written.store(
+                services::reports::read_crashes(&data).len(),
+                Ordering::SeqCst,
+            );
+        }));
+        install_panic_hook(directory, "fixture-build".into());
+        let result = std::panic::catch_unwind(|| panic!("open /workspace/private failed 'secret'"));
+        assert!(result.is_err());
+        assert_eq!(chained.load(Ordering::SeqCst), 1);
+        assert_eq!(written_before_chaining.load(Ordering::SeqCst), 1);
     }
     #[test]
     fn only_a_gone_output_reader_is_not_a_crash() {

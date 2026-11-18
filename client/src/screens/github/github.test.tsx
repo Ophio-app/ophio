@@ -10,6 +10,7 @@ import { SIM_DESKTOP_PASSWORD } from "../../dev/sim/host";
 import { Toasts } from "../../design/Toast";
 import { HostSession } from "../../host/session";
 import type { Command, Project, Task } from "../../protocol/types";
+import { SurfaceActive } from "../../design/surface";
 import { RouteProvider } from "../../shell/Screen";
 import { Composer } from "../talk/Composer";
 import Review from "../talk/Review";
@@ -28,6 +29,8 @@ const astra = { harness: "codex" as const, model: "gpt-6-astra", effort: "high" 
 // The sim's Codex can't promise Plan changes nothing, so read-only work goes to Claude Code.
 const opus = { harness: "claude_code" as const, model: "claude-opus-5-5", effort: null };
 const tick = async () => act(async () => { await vi.advanceTimersByTimeAsync(900); });
+/** Opens Review's folded sections, as a person taps them open. */
+const unfold = () => document.querySelectorAll<HTMLButtonElement>('.fold__head[aria-expanded="false"]').forEach((b) => fireEvent.click(b));
 beforeEach(async () => {
   localStorage.clear(); vi.useFakeTimers();
   HTMLDialogElement.prototype.showModal = function () { this.open = true; };
@@ -67,7 +70,7 @@ const chooseLink = async (name: RegExp) => {
 
 it("links new Work to a draft pull request while the project's workflow is on", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Add a retry budget header", agent: astra, mode: "work" });
-  review(); await tick();
+  review(); await tick(); unfold();
   expect(screen.getByRole("button", { name: "GitHub: New pull request" })).toBeTruthy();
   expect(screen.getByText("You mark it ready and merge it.")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Branch: A new branch" })).toBeTruthy();
@@ -81,7 +84,7 @@ it("says in Review what an issue's own choice does with its pull request, over t
   roles({ fix: astra });
   app.ui.saveDraft(ids.pTide, null, { text: "Fix #219: Retry flake in the orders webhook test", mode: "work", agent: astra,
     review: { title: "", stopWhen: "", placement: null, authorization: "ask_before_start", github: { type: "issue", number: 219, when_green: "merge" } } });
-  review(); await tick();
+  review(); await tick(); unfold();
   expect(screen.getByText("It merges into main by itself once its checks pass and any review is clear, unless it needs your approval.")).toBeTruthy();
   expect(screen.queryByText("You mark it ready and merge it.")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
@@ -90,12 +93,12 @@ it("says in Review what an issue's own choice does with its pull request, over t
 
 it("leaves Ask and Plan unlinked, and a project with the workflow off shows no GitHub row", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Explain the limiter", agent: astra, mode: "ask" });
-  const mounted = review(); await tick();
+  const mounted = review(); await tick(); unfold();
   expect(screen.getByRole("button", { name: "GitHub: Not linked" })).toBeTruthy();
   mounted.unmount();
   window.__sim!.host.github.settings.delete(ids.pTide);
   app.ui.saveDraft(ids.pTide, null, { mode: "work" });
-  review(); await tick();
+  review(); await tick(); unfold();
   expect(screen.queryByRole("button", { name: /^GitHub: / })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
   expect(created()).not.toHaveProperty("github");
@@ -103,7 +106,7 @@ it("leaves Ask and Plan unlinked, and a project with the workflow off shows no G
 
 it("takes over a pull request on its own branch", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Answer the question about Reset", agent: astra, mode: "work" });
-  review(); await tick();
+  review(); await tick(); unfold();
   await chooseLink(/^Take over a pull request/);
   fireEvent.change(screen.getByLabelText("The pull request’s number or link"), { target: { value: "https://github.com/someone/else/pull/214" } });
   expect(screen.getByText(/Type #12, 12, or a link to a pull request in samrivera\/tidewater-api/)).toBeTruthy();
@@ -121,10 +124,10 @@ it("takes over a pull request on its own branch", async () => {
 
 it("keeps sorting issues in Plan, and won't start it in Work", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Sort the backlog", agent: opus, mode: "work" });
-  review(); await tick();
+  review(); await tick(); unfold();
   await chooseLink(/^Sort issues/);
   expect(screen.getByRole("button", { name: "GitHub: Sort issues" })).toBeTruthy();
-  expect(screen.getByRole("heading", { name: "Sort with" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /^Sort with/ })).toBeTruthy();
   expect(screen.getByRole<HTMLInputElement>("radio", { name: "Plan" }).checked).toBe(true);
   fireEvent.click(screen.getByRole("radio", { name: /^Work/ })); await tick();
   expect(screen.getByText("Sorting issues only reads, so it runs in Plan. Choose Plan, or another GitHub link.")).toBeTruthy();
@@ -235,7 +238,7 @@ it("says starting a Find resumes a paused Next up, so its fixes can start", asyn
   host.queue = { ...host.queue, paused: true, pause_reason: "Next up is paused. Resume it to let tasks start.", revision: host.queue.revision + 1 };
   host.emit({ type: "queue_changed", queue: host.queue });
   app.ui.saveDraft(ids.pTide, null, { text: "Find issues in the project", mode: "plan", agent: opus, review: { title: "", stopWhen: "", placement: null, authorization: "ask_before_start", github: { type: "find", scope: { scope: "project" }, fix_with: opus } } });
-  review(); await tick();
+  review(); await tick(); unfold();
   expect(screen.getByText(/Each issue it files becomes/).textContent).toBe("It files up to 5. Each issue it files becomes “Fix #N” in Next up with this agent. They start one after another by themselves. Next up is paused, so starting this Find resumes it.");
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
   expect(created()).toMatchObject({ mode: "plan", github: { type: "find" }, placement: { mode: "start_now" } });
@@ -244,7 +247,7 @@ it("says starting a Find resumes a paused Next up, so its fixes can start", asyn
 
 it("starts a Find's fixes with this phone's launch defaults, or the flags chosen for them", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Find issues in the project", mode: "plan", agent: opus, review: { title: "", stopWhen: "", placement: null, authorization: "ask_before_start", github: { type: "find", scope: { scope: "project" }, fix_with: opus } } });
-  review(); await tick();
+  review(); await tick(); unfold();
   const fix = within(screen.getByText("Fix with").closest("section")!);
   expect(fix.getByText("Permission prompts: Skip permissions")).toBeTruthy();
   expect(fix.getByRole("note").textContent).toMatch(/won’t ask before running commands or changing files/);
@@ -266,7 +269,7 @@ it("sends a Find's fixes without launch flags to a computer that can't apply the
   const caps = app.session.state.get().capabilities!;
   app.session.state.set(s => ({ ...s, capabilities: { ...caps, features: caps.features.filter(f => f !== "fix_launch_v1") } }));
   app.ui.saveDraft(ids.pTide, null, { text: "Find issues in the project", mode: "plan", agent: opus, review: { title: "", stopWhen: "", placement: null, authorization: "ask_before_start", github: { type: "find", scope: { scope: "project" }, fix_with: { ...opus, launch_policy: "bypass_permissions" } } } });
-  review(); await tick();
+  review(); await tick(); unfold();
   const fix = within(screen.getByText("Fix with").closest("section")!);
   expect(fix.getByText(/the fixes ask for approval as before/)).toBeTruthy();
   fireEvent.click(fix.getByRole("button", { name: /Claude Code/ })); await tick();
@@ -287,7 +290,7 @@ it("doesn't remember this phone's launch defaults as the fixer's flags when the 
   const caps = app.session.state.get().capabilities!;
   app.session.state.set(s => ({ ...s, capabilities: { ...caps, features: caps.features.filter(f => f !== "fix_launch_v1") } }));
   app.ui.saveDraft(ids.pTide, null, { text: "Find issues in the project", mode: "plan", agent: opus, review: { title: "", stopWhen: "", placement: null, authorization: "ask_before_start", github: { type: "find", scope: { scope: "project" }, fix_with: opus } } });
-  review(); await tick();
+  review(); await tick(); unfold();
   fireEvent.click(within(screen.getByText("Fix with").closest("section")!).getByRole("button", { name: /Claude Code/ })); await tick();
   fireEvent.click(within(screen.getByRole("dialog", { name: "Agent for this task" })).getByRole("button", { name: "Use this agent" })); await tick();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
@@ -570,6 +573,27 @@ it("asks an issue's agent only to work it, with any direction added, and another
   const made = Object.values(app.session.state.get().tasks).find((t) => t.github?.issue === 219)!;
   expect(made.github?.check_with).toMatchObject({ harness: "claude_code" });
   expect(JSON.parse(localStorage.getItem(`github.roles.${app.profile.profileId}`)!)[ids.pTide].review).toMatchObject({ harness: "claude_code" });
+});
+
+it("keeps an issue's typed direction through Defaults in Settings, and has it back on Back", async () => {
+  roles({ fix: astra });
+  const route = { screen: "github", projectId: ids.pTide, view: "issues" } as const;
+  // The shell hides the issue list, without unmounting it, while Settings is in front.
+  const tree = (active: boolean) => <AppProvider app={app}><SurfaceActive.Provider value={active}><RouteProvider value={{ tab: "talk", depth: 1, active, route }}><Github route={route} /><Toasts /></RouteProvider></SurfaceActive.Provider></AppProvider>;
+  const mounted = render(tree(true)); await tick(); await tick();
+  fireEvent.click(screen.getByText("#219 Retry flake in the orders webhook test")); await tick();
+  const sheet = () => within(screen.getByRole("dialog", { name: /^#219/ }));
+  fireEvent.change(sheet().getByLabelText("More direction"), { target: { value: "Keep the fix inside the test." } });
+  fireEvent.click(sheet().getByRole("button", { name: /^Worked by/ })); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Defaults in Settings" })); await tick();
+  expect(app.ui.get().stacks.talk.at(-1)).toMatchObject({ screen: "settings", section: "launch-flags" });
+  mounted.rerender(tree(false)); await tick();
+  // Nothing left open over Settings to catch its taps.
+  expect(document.querySelector("dialog[open]")).toBeNull();
+  mounted.rerender(tree(true)); await tick();
+  expect(sheet().getByLabelText<HTMLTextAreaElement>("More direction").value).toBe("Keep the fix inside the test.");
+  fireEvent.click(sheet().getByRole("button", { name: "Start" })); await tick();
+  expect(created()).toMatchObject({ prompt: "Fix #219: Retry flake in the orders webhook test\n\nKeep the fix inside the test." });
 });
 
 it("leaves an issue's review to the project setting while the computer can't take a reviewer", async () => {
@@ -1486,7 +1510,7 @@ it("keeps a saved explicit merge choice unsent to a computer that cannot honor i
     review: { ...freshReview(), github: { type: "issue", number: 219, when_green: "leave" } } });
   const caps = app.session.state.get().capabilities!;
   app.session.state.set(s => ({ ...s, capabilities: { ...caps, features: caps.features.filter(f => f !== "github_when_green_v1") } }));
-  review(); await tick();
+  review(); await tick(); unfold();
   expect(screen.getByText("Update Øphio on this computer to start a task with its own choice about merging.")).toBeTruthy();
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Start task" }).disabled).toBe(true);
   expect(created()).toBeUndefined();
@@ -1496,7 +1520,7 @@ it("refuses creating an automatically merging task after approval permission is 
   app.ui.saveDraft(ids.pTide, null, { text: "Fix the retry", mode: "work", agent: astra,
     review: { ...freshReview(), github: { type: "issue", number: 219, when_green: "merge" } } });
   window.__sim!.permissions({ approvals: false }); await tick(); await tick();
-  review(); await tick();
+  review(); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
   expect(created()).toMatchObject({ github: { when_green: "merge" } });
   expect(window.__sim!.host.tasks.some(t => t.github?.issue === 219)).toBe(false);

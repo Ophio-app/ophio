@@ -6,6 +6,7 @@ import type { ProjectId } from "./ProjectId";
 import type { RunStep } from "./RunStep";
 import type { SensitiveArea } from "./SensitiveArea";
 import type { TaskId } from "./TaskId";
+import type { TaskOrigin } from "./TaskOrigin";
 import type { TriageGroup } from "./TriageGroup";
 import type { WhenGreen } from "./WhenGreen";
 
@@ -23,7 +24,11 @@ repo: string, keep_through_merge: boolean, } | { "action": "protect_branch", pro
  * nothing was. Merging approves only that: a need with anything
  * else asks them to look again. Older phones leave it out.
  */
-approval_shown?: Array<SensitiveArea>, } | { "action": "run_issues", project_id: ProjectId, step: RunStep, } | { "action": "close_issue", project_id: ProjectId, repo: string, number: number, 
+approval_shown?: Array<SensitiveArea>, } | { "action": "run_issues", project_id: ProjectId, step: RunStep, 
+/**
+ * A Start from a chat's card for it: the chat hears how it went.
+ */
+origin?: TaskOrigin, } | { "action": "close_issue", project_id: ProjectId, repo: string, number: number, 
 /**
  * Closed as done, not as not planned.
  */

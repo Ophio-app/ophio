@@ -515,6 +515,8 @@ fn sync_attention(
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     };
     let report = ReportAlert {
         report_id: summary.report_id,

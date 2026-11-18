@@ -30,6 +30,7 @@ pub mod annotation;
 pub mod auth;
 pub mod capability;
 pub mod checklist;
+pub mod checks;
 pub mod command;
 pub mod contribution;
 pub mod control;
@@ -48,6 +49,7 @@ pub mod observed;
 pub mod preview;
 pub mod project_folders;
 pub mod queue;
+pub mod releases;
 pub mod reports;
 pub mod review;
 pub mod system;
@@ -56,6 +58,7 @@ pub mod time;
 pub mod transfer;
 pub mod version;
 pub mod windows;
+pub mod work_cards;
 
 pub use command::{Command, CommandEnvelope, CommandReceipt, ReceiptStatus};
 pub use error::{ErrorCode, ProtocolError};
@@ -179,6 +182,19 @@ pub struct QueryEnvelope {
 #[serde(tag = "kind", rename_all = "snake_case")]
 #[ts(export)]
 pub enum Query {
+    /// Approved Library checks and open suggestions; None lists all projects.
+    ChecksList {
+        project_id: Option<ProjectId>,
+    },
+    ChecksHistory {
+        project_id: ProjectId,
+    },
+    TaskChecks {
+        task_id: TaskId,
+    },
+    CheckJob {
+        job_id: CheckJobId,
+    },
     /// Resolve a user-opened contribution reference through the paired host.
     /// Neither record grants trust or execution authority.
     ContributionDelivery {
@@ -345,6 +361,9 @@ pub enum Query {
     /// Which alerts reach the person's phones. Advertised as
     /// `notification_settings_v1`.
     NotificationSettings,
+    /// Whether a newer Øphio is out for this computer, and whether it
+    /// checks. Advertised as `release_check_v1`.
+    ReleaseCheck,
     /// The person's problem reports, their settings and how the intake is
     /// reached. Advertised as `reports_v1`.
     Reports,
@@ -470,6 +489,20 @@ pub struct QueryResult {
 // high-rate queue item and does not warrant reshaping existing receipt fields.
 #[allow(clippy::large_enum_variant)]
 pub enum QueryData {
+    ChecksList {
+        projects: Vec<checks::ProjectChecksView>,
+        projects_without_checks: u32,
+    },
+    ChecksHistory {
+        versions: Vec<checks::ProjectChecks>,
+    },
+    TaskChecks {
+        jobs: Vec<checks::CheckJob>,
+        drafts: Vec<checks::ChecksDraftView>,
+    },
+    CheckJob {
+        job: checks::CheckJob,
+    },
     ContributionDelivery {
         handoff_json: String,
     },
@@ -606,6 +639,9 @@ pub enum QueryData {
     NotificationSettings {
         view: notifications::NotificationSettings,
     },
+    ReleaseCheck {
+        view: releases::ReleaseCheckView,
+    },
     Reports {
         view: reports::ReportsView,
     },
@@ -693,8 +729,28 @@ mod tests {
     use crate::ids::{RunId, TaskId};
 
     #[test]
+    fn task_wake_accepts_older_computers_and_round_trips_the_person_reason() {
+        let old = serde_json::json!({"at": 1234, "reason": "CI on PR #12"});
+        let mut wake: model::TaskWake = serde_json::from_value(old.clone()).unwrap();
+        assert_eq!(wake.person_reason, None);
+        assert_eq!(serde_json::to_value(&wake).unwrap(), old);
+        wake.person_reason = Some("It’s waiting for the checks to finish.".into());
+        let wire = serde_json::to_value(&wake).unwrap();
+        assert_eq!(wire["reason"], "CI on PR #12");
+        assert_eq!(
+            wire["person_reason"],
+            "It’s waiting for the checks to finish."
+        );
+        assert_eq!(
+            serde_json::from_value::<model::TaskWake>(wire).unwrap(),
+            wake
+        );
+    }
+
+    #[test]
     fn live_frame_keeps_both_tags() {
         let frame = ServerFrame::Live(LiveEvent::AgentTextDelta {
+            text_offset: None,
             task_id: TaskId::new(),
             run_id: RunId::new(),
             message_key: "m1".into(),

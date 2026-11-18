@@ -4,7 +4,7 @@
 #![allow(unsafe_code)]
 
 use super::native::{self, CGPoint};
-use platform_windows::desktop::{
+use platform_desktop::{
     geometry::Layout,
     input::{Button, Event, Injector, Key},
 };
@@ -19,6 +19,7 @@ use std::{
 #[link(name = "CoreGraphics", kind = "framework")]
 unsafe extern "C" {
     fn CGEventSourceCreate(state: i32) -> *const c_void;
+    fn CGEventSourceFlagsState(state: i32) -> u64;
     fn CGEventCreateMouseEvent(
         source: *const c_void,
         kind: u32,
@@ -53,16 +54,19 @@ const CLICK_WITHIN: Duration = Duration::from_millis(500);
 const CLICK_NEAR: f64 = 4.0;
 const WHEEL_NOTCH: i32 = 120;
 
-const FLAG_SHIFT: u64 = 0x0002_0000;
+mod characters;
+#[cfg(test)]
+use characters::CharacterChoice;
+use characters::{
+    CHARACTER_MODIFIERS, CharacterTable, FLAG_COMMAND, FLAG_OPTION, FLAG_SHIFT,
+    carbon_modifier_state,
+};
 const FLAG_CONTROL: u64 = 0x0004_0000;
-const FLAG_OPTION: u64 = 0x0008_0000;
-const FLAG_COMMAND: u64 = 0x0010_0000;
 
 const KEYCODE_LEFT_SHIFT: u16 = 0x38;
 const KEYCODE_LEFT_OPTION: u16 = 0x3a;
 const MODIFIER_FLAGS: [u64; 2] = [FLAG_SHIFT, FLAG_OPTION];
 const MODIFIER_KEYCODES: [u16; 2] = [KEYCODE_LEFT_SHIFT, KEYCODE_LEFT_OPTION];
-const CHARACTER_MODIFIERS: [u64; 4] = [0, FLAG_SHIFT, FLAG_OPTION, FLAG_SHIFT | FLAG_OPTION];
 /// F1 through F20 on a Mac keyboard. F21 through F24 have no Mac equivalent.
 const FUNCTIONS: [u16; 20] = [
     0x7a, 0x78, 0x63, 0x76, 0x60, 0x61, 0x62, 0x64, 0x65, 0x6d, 0x67, 0x6f, 0x69, 0x6b, 0x71, 0x6a,
@@ -127,65 +131,6 @@ pub(crate) fn mac_key(virtual_key: u16) -> Result<(u16, u64), PlatformError> {
     }
 }
 
-/// Each key's output in the current layout, at no modifier, Shift, Option, and
-/// Shift+Option. Kept independent of Carbon so lookup and choice can be tested.
-#[derive(Debug, Clone)]
-struct CharacterTable {
-    output: [[Option<char>; 4]; 128],
-}
-impl Default for CharacterTable {
-    fn default() -> Self {
-        Self {
-            output: [[None; 4]; 128],
-        }
-    }
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct CharacterChoice {
-    keycode: u16,
-    modifiers: u64,
-}
-impl CharacterTable {
-    fn set(&mut self, keycode: u16, modifiers: u64, character: char) {
-        let Some(row) = self.output.get_mut(usize::from(keycode)) else {
-            return;
-        };
-        if let Some(index) = CHARACTER_MODIFIERS
-            .iter()
-            .position(|&candidate| candidate == modifiers)
-        {
-            row[index] = Some(character);
-        }
-    }
-
-    /// Prefer fewer layout modifiers, then reuse held modifiers, then choose the
-    /// lowest key code for a stable result when a character has several sources.
-    fn choose(&self, character: char, held: u64) -> Option<CharacterChoice> {
-        let mut best: Option<((u32, u32, u16, usize), CharacterChoice)> = None;
-        for (keycode, row) in self.output.iter().enumerate() {
-            for (index, &modifiers) in CHARACTER_MODIFIERS.iter().enumerate() {
-                if row[index] != Some(character) {
-                    continue;
-                }
-                let choice = CharacterChoice {
-                    keycode: keycode as u16,
-                    modifiers,
-                };
-                let rank = (
-                    modifiers.count_ones(),
-                    (modifiers & !held).count_ones(),
-                    choice.keycode,
-                    index,
-                );
-                if best.map_or(true, |(best_rank, _)| rank < best_rank) {
-                    best = Some((rank, choice));
-                }
-            }
-        }
-        best.map(|(_, choice)| choice)
-    }
-}
-
 #[link(name = "Carbon", kind = "framework")]
 unsafe extern "C" {
     fn TISCopyCurrentKeyboardLayoutInputSource() -> *const c_void;
@@ -213,8 +158,6 @@ unsafe extern "C" {
 
 const KEY_ACTION_DISPLAY: u16 = 3;
 const TRANSLATE_NO_DEAD_KEYS: u32 = 1;
-const CARBON_SHIFT_KEY: u32 = 0x0200;
-const CARBON_OPTION_KEY: u32 = 0x0800;
 
 /// Text Input Sources is not safe to call from multiple threads at once.
 static KEYBOARD_LAYOUT_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -227,9 +170,9 @@ impl Drop for RetainedKeyboardLayoutSource {
     }
 }
 
-/// Read the current input source and translate every Mac key in the four
-/// requested modifier states. The retained input source keeps its layout bytes
-/// alive throughout the calls to UCKeyTranslate.
+/// Read the current input source and translate every Mac key with and without
+/// Command, Shift, and Option. The retained source keeps its layout bytes alive
+/// throughout the calls to UCKeyTranslate.
 fn current_character_table() -> Result<CharacterTable, PlatformError> {
     // Recover a poisoned mutex so a previous panic cannot let concurrent TIS
     // calls through. The guard covers source lookup, all layout use, and release.
@@ -268,15 +211,7 @@ fn current_character_table() -> Result<CharacterTable, PlatformError> {
         let mut table = CharacterTable::default();
         for keycode in 0u16..128 {
             for modifiers in CHARACTER_MODIFIERS {
-                let carbon_modifiers = (if modifiers & FLAG_SHIFT != 0 {
-                    CARBON_SHIFT_KEY
-                } else {
-                    0
-                }) | (if modifiers & FLAG_OPTION != 0 {
-                    CARBON_OPTION_KEY
-                } else {
-                    0
-                });
+                let carbon_modifiers = carbon_modifier_state(modifiers);
                 let mut dead_key_state = 0u32;
                 let mut actual_length = 0u32;
                 let mut output = [0u16; 8];
@@ -418,6 +353,9 @@ pub(crate) struct MacInjector {
     held: Option<Button>,
     clicks: Clicks,
     surrogates: Surrogates,
+    deadline: Option<Instant>,
+    layout: Option<Layout>,
+    clipboard_generation: Option<isize>,
 }
 // SAFETY: the event source is a thread-safe system object that only this owner
 // releases, and every use is through `&mut self`.
@@ -442,6 +380,9 @@ impl MacInjector {
             held: None,
             clicks: Clicks::default(),
             surrogates: Surrogates::default(),
+            deadline: None,
+            layout: None,
+            clipboard_generation: None,
         })
     }
 
@@ -640,7 +581,65 @@ impl Drop for MacInjector {
 }
 
 impl Injector for MacInjector {
+    fn set_clipboard(&mut self, text: &str) -> Result<(), PlatformError> {
+        self.clipboard_generation = None;
+        let deadline = self.deadline.ok_or_else(|| {
+            PlatformError::TemporarilyUnavailable("The Mac input execution window has ended".into())
+        })?;
+        let layout = self.layout.clone().ok_or(PlatformError::GeometryChanged)?;
+        self.check_layout(&layout, deadline)?;
+        // SAFETY: read-only modifier flags; never release a person's held keys.
+        let local_modifiers = unsafe { CGEventSourceFlagsState(HID_SYSTEM_STATE) }
+            & (FLAG_SHIFT | FLAG_CONTROL | FLAG_OPTION | FLAG_COMMAND);
+        if !self.held_modifiers.is_empty()
+            || !self.held_characters.is_empty()
+            || local_modifiers != 0
+        {
+            return Err(PlatformError::TemporarilyUnavailable(
+                "A Mac input key is still held".into(),
+            ));
+        }
+        // Refuse a layout without a native Command-V before replacing anything.
+        // The key-down resolves the current Command layer again; a later layout
+        // change still uses the existing uncertain-outcome and release paths.
+        if current_character_table()?
+            .choose('v', FLAG_COMMAND)
+            .is_none()
+        {
+            return Err(PlatformError::Unsupported(
+                "The current Mac keyboard layout has no Command-V shortcut".into(),
+            ));
+        }
+        self.clipboard_generation = Some(super::clipboard::replace(text, deadline)?);
+        Ok(())
+    }
+    fn check_clipboard(&mut self) -> Result<(), PlatformError> {
+        let layout = self.layout.clone().ok_or(PlatformError::GeometryChanged)?;
+        let deadline = self.deadline.ok_or_else(|| {
+            PlatformError::TemporarilyUnavailable("The Mac input execution window has ended".into())
+        })?;
+        self.check_layout(&layout, deadline)?;
+        super::clipboard::check(self.clipboard_generation)
+    }
+    fn paste_modifier(&self) -> Key {
+        Key::Virtual {
+            code: 0x5b,
+            extended: true,
+        }
+    }
+    fn paste_key(&self) -> Key {
+        Key::Character('v')
+    }
     fn check_layout(&mut self, layout: &Layout, deadline: Instant) -> Result<(), PlatformError> {
+        self.deadline = Some(deadline);
+        if !native::permissions().1 {
+            return Err(PlatformError::PermissionMissing(
+                super::ACCESSIBILITY.into(),
+            ));
+        }
+        if native::asleep() {
+            return Err(PlatformError::ScreenAsleep(native::ASLEEP.into()));
+        }
         if Instant::now() >= deadline {
             return Err(PlatformError::TemporarilyUnavailable(
                 "The Mac is taking too long to accept input".into(),
@@ -655,6 +654,7 @@ impl Injector for MacInjector {
         if now != layout.monitors() {
             return Err(PlatformError::GeometryChanged);
         }
+        self.layout = Some(layout.clone());
         Ok(())
     }
 
@@ -883,10 +883,7 @@ mod tests {
     fn current_keyboard_layout_can_be_read_without_sending_input() {
         let table = current_character_table().expect("Mac keyboard layout should be readable");
         assert!(
-            table
-                .output
-                .iter()
-                .any(|row| row.iter().any(Option::is_some)),
+            table.has_characters(),
             "the current layout should provide at least one character"
         );
     }

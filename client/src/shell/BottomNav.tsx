@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BookOpen, ListChecks, ListTodo, MessageSquare, Monitor, type LucideIcon } from "lucide-react";
+import { SplitControl } from "../app/SplitControl";
 import { useApp, useHost, useLink, useUi } from "../app/context";
 import { useTodoBadge } from "../app/checklist";
 import { navigationInputState } from "../screens/control/ownership";
@@ -64,6 +65,7 @@ function Nav({ attention, todo }: { attention: number; todo: number }) {
           </button>
         );
       })}
+      <SplitControl rail />
     </nav>
   );
 }

@@ -9,7 +9,7 @@
 // running or an unknown is finished, and needs a look, not done.
 
 import { readOnlyLink } from "../../app/github";
-import type { CheckResult, NewWork, Run, Shown, Task, TimelineItem } from "../../protocol/types";
+import type { CheckResult, NewWork, Run, Shown, Task, TaskWake, TimelineItem } from "../../protocol/types";
 import { runDoubts } from "./logic";
 
 export type OutcomeKind = "waiting" | "needs_you" | "watching" | "unfinished" | "stopped" | "failed" | "done";
@@ -30,8 +30,24 @@ export interface Outcome {
   doubts: string[];
 }
 
+/**
+ * What the person reads about a task's wait, or null when there's nothing
+ * fit to show. The agent's own reminder (`reason` on a wake it asked for)
+ * is never shown: only its plain sentence for the person. A wait for an
+ * answer is Ophio's own wording ("Codex’s answer to “…”"), so older
+ * computers that send no sentence still show that.
+ */
+export function wakeSaid(wake: TaskWake): string | null {
+  const plain = wake.person_reason?.trim();
+  if (plain) return plain;
+  return wake.answer ? wake.reason : null;
+}
+
 export function runOutcome(task: Task, run: Run | undefined): Outcome | null {
   if (!run) return null;
+  // The agent can be finished while the computer still checks its work.
+  // Keep earlier runs' history, but do not offer Archive for this turn yet.
+  if (task.state === "working" && task.checking && run.run_id === task.current_run) return null;
   const report = run.outcome?.report;
   // A review files what it finds as issues itself; those are its new work.
   const newWork = readOnlyLink(task.github?.link) ? [] : (report?.new_work ?? []);
@@ -56,7 +72,7 @@ export function runOutcome(task: Task, run: Run | undefined): Outcome | null {
   // It asked Ophio to wake it to go on, or asked another agent and waits
   // for the answer, so nothing is the person's to do; that is what is left.
   if (task.wake && run.run_id === task.current_run)
-    return { ...said, kind: "watching", title: task.wake.answer ? "Waiting for an answer" : "Watching", detail: task.wake.reason, items: [] };
+    return { ...said, kind: "watching", title: task.wake.answer ? "Waiting for an answer" : "Watching", detail: wakeSaid(task.wake) ?? "It's waiting to check back on its work.", items: [] };
   if (report?.status === "unfinished")
     return { ...said, kind: "unfinished", title: "Not finished", detail: left.length ? "Left to do:" : "It stopped with work left.", items: left };
   const doubts = runDoubts(run);

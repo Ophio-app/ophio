@@ -608,6 +608,7 @@ async fn watching(f: &Fixture, reason: &str) -> (ProjectId, TaskId, RunId) {
             PersonCall::Wake {
                 minutes: 20,
                 reason: reason.into(),
+                person_reason: Some("It’s waiting for the checks to finish.".into()),
             },
         )
         .await
@@ -618,6 +619,13 @@ async fn watching(f: &Fixture, reason: &str) -> (ProjectId, TaskId, RunId) {
     );
     let wake = task(f, task_id).wake.expect("watching");
     assert_eq!(wake.reason, reason);
+    assert_eq!(
+        wake.person_reason.as_deref(),
+        Some("It’s waiting for the checks to finish.")
+    );
+    let wire = serde_json::to_value(task(f, task_id)).unwrap();
+    let back: Task = serde_json::from_value(wire).unwrap();
+    assert_eq!(back.wake.as_ref(), Some(&wake));
     assert_eq!(
         wake.at.0 - ports::Clock::now(f.clock.as_ref()).0,
         20 * 60_000
@@ -722,6 +730,7 @@ async fn archiving_withdraws_the_wake_and_what_the_agent_went_on_without() {
             PersonCall::Wake {
                 minutes: 30,
                 reason: "the release".into(),
+                person_reason: None,
             },
         )
         .await
@@ -775,6 +784,7 @@ async fn a_guard_stop_keeps_the_wake_the_agent_asked_for() {
             PersonCall::Wake {
                 minutes: 60,
                 reason: "CI".into(),
+                person_reason: None,
             },
         )
         .await
@@ -910,6 +920,7 @@ async fn the_agent_checks_whether_it_may_ask_and_a_question_while_they_are_off_g
 
     // Asked through Claude Code's prompt, it is answered at once.
     let binding = BridgeBinding {
+        checks: false,
         run_id,
         target_id: None,
         computer_use: false,

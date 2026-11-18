@@ -19,6 +19,8 @@ import Library from "../library/Library";
 
 let app: App;
 const tick = async () => act(async () => { await vi.advanceTimersByTimeAsync(900); });
+/** Opens Review's folded sections, as a person taps them open. */
+const unfold = () => document.querySelectorAll<HTMLButtonElement>('.fold__head[aria-expanded="false"]').forEach((b) => fireEvent.click(b));
 beforeEach(async () => {
   localStorage.clear(); vi.useFakeTimers();
   HTMLDialogElement.prototype.showModal = function () { this.open = true; };
@@ -181,7 +183,7 @@ it("copies one of Øphio's agents to edit, listed once as that copy", async () =
 it("starts a task from an agent, and the task says so", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Make the launch video", agent: astra, mode: "work" });
   setDraftStart(app.ui, ids.pTide, await videoProducer());
-  review(ids.pTide); await tick();
+  review(ids.pTide); await tick(); unfold();
   expect(screen.getByText("Starts from Agent: Video producer")).toBeTruthy();
   expect(screen.getByText("Its instructions go to Codex with your request.")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
@@ -194,7 +196,7 @@ it("starts a task from an agent, and the task says so", async () => {
 it("can drop what a draft starts from before it's sent", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Make the launch video", agent: astra, mode: "work" });
   setDraftStart(app.ui, ids.pTide, await videoProducer());
-  review(ids.pTide); await tick();
+  review(ids.pTide); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Don’t start from Video producer" }));
   expect(screen.queryByText(/Starts from/)).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
@@ -204,7 +206,7 @@ it("can drop what a draft starts from before it's sent", async () => {
 it("starts a Next up task as the task it follows did, unless that is dropped", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Make the launch video", agent: astra, mode: "work" });
   setDraftStart(app.ui, ids.pTide, await videoProducer());
-  review(ids.pTide); await tick();
+  review(ids.pTide); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
   cleanup();
   const source = Object.values(app.session.state.get().tasks).find(t => t.title === "Make the launch video")!;
@@ -212,7 +214,7 @@ it("starts a Next up task as the task it follows did, unless that is dropped", a
   const nextUp = async (text: string, drop: boolean) => {
     app.ui.saveDraft(ids.pTide, source.task_id, { text });
     const route = { screen: "review", projectId: ids.pTide, taskId: source.task_id, intent: "next_up" } as const;
-    wrap(route, <Review route={route} />); await tick();
+    wrap(route, <Review route={route} />); await tick(); unfold();
     expect(screen.getByText("Starts from Agent: Video producer")).toBeTruthy();
     expect(screen.getByText(/^Kept from the task it follows, as that task was given it\. Its instructions go to/)).toBeTruthy();
     if (drop) fireEvent.click(screen.getByRole("button", { name: "Don’t start from Video producer" }));
@@ -229,13 +231,13 @@ it("starts a Next up task as the task it follows did, unless that is dropped", a
 it("changes what a Next up task starts from, and chooses again after it's removed", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Make the launch video", agent: astra, mode: "work" });
   setDraftStart(app.ui, ids.pTide, await videoProducer());
-  review(ids.pTide); await tick();
+  review(ids.pTide); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
   cleanup();
   const source = Object.values(app.session.state.get().tasks).find(t => t.title === "Make the launch video")!;
   app.ui.saveDraft(ids.pTide, source.task_id, { text: "Draw the thumbnails" });
   const route = { screen: "review", projectId: ids.pTide, taskId: source.task_id, intent: "next_up" } as const;
-  wrap(route, <Review route={route} />); await tick();
+  wrap(route, <Review route={route} />); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: /^Starts from Agent: Video producer/ })); await tick();
   let sheet = screen.getByRole("dialog", { name: /Start from/ });
   fireEvent.click(within(sheet).getByRole("radio", { name: "Skills" }));
@@ -257,7 +259,7 @@ it("changes what a Next up task starts from, and chooses again after it's remove
 
 it("starts a task on its own in a new folder, listed under One-offs", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Make a birthday card for Ana", agent: astra, mode: "work" });
-  review(ids.pTide); await tick();
+  review(ids.pTide); await tick(); unfold();
   fireEvent.click(screen.getByRole("radio", { name: "On its own" })); await tick();
   expect(app.ui.draft(ids.pTide, null)?.review?.place).toBe("one_off");
   expect(screen.getByText(`A new folder, ${localDate()}-make-a-birthday-card-for-ana`)).toBeTruthy();
@@ -279,7 +281,7 @@ it("starts a task on its own in a new folder, listed under One-offs", async () =
 it("starts a draft made with no project on its own, from what it was set to", async () => {
   app.ui.saveDraft(ONE_OFF_DRAFT, null, { text: "Storyboard the teaser", agent: astra, mode: "work" });
   setDraftStart(app.ui, ONE_OFF_DRAFT, await videoProducer());
-  review(ONE_OFF_DRAFT); await tick();
+  review(ONE_OFF_DRAFT); await tick(); unfold();
   expect(screen.queryByRole("radio", { name: "On its own" })).toBeNull();
   expect(screen.getByText(/^A new folder, /)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
@@ -293,7 +295,7 @@ it("won't start a project's own agent on its own", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Review the API", agent: astra, mode: "work" });
   setDraftStart(app.ui, ids.pTide, { start: { type: "agent", source: "claude_project", id: "api-reviewer", digest: "0".repeat(64) }, name: "API reviewer", source: "claude_project" });
   app.ui.saveDraft(ids.pTide, null, { review: { ...app.ui.draft(ids.pTide, null)!.review!, place: "one_off" } });
-  review(ids.pTide); await tick();
+  review(ids.pTide); await tick(); unfold();
   expect(screen.getByText("“API reviewer” is kept in tidewater-api’s own folder, so it can start only there.")).toBeTruthy();
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Start task" }).disabled).toBe(true);
 });

@@ -10,9 +10,12 @@ import { openAttention, tasksMovedAt } from "../state/projection";
 import { useApp, useHost, useUi, shallowEqual } from "../app/context";
 import { TABS, type Tab } from "../app/ui";
 import { talkShows } from "../app/taskOnScreen";
+import { usePane } from "./pane";
+import { SplitControl } from "../app/SplitControl";
 import { setNavBack, sync } from "../design/back";
 import { Toasts } from "../design/Toast";
 import { UrgentSlot } from "../design/urgent";
+import { SurfaceActive } from "../design/surface";
 import SafetyStrip from "../screens/control/SafetyStrip";
 import { RouteView } from "../screens/routes";
 import { ColdStartOffline } from "./ColdStartOffline";
@@ -30,8 +33,9 @@ import { Button } from "../design/Button";
 const TAB_LABEL: Record<Tab, string> = { talk: "Chat", control: "Control", work: "Tasks", library: "Library", todo: "To-Do" };
 
 export function Shell() {
+  const pane = usePane();
   const urgent = useContext(UrgentSlot);
-  const { ui, platform, session } = useApp();
+  const { ui, platform, session, computerServices } = useApp();
   const storageError = useStore(ui.persistence, (s) => s);
   const storageRecovery = useStore(ui.recovery, (s) => s);
   const tab = useUi((s) => s.tab);
@@ -46,13 +50,13 @@ export function Shell() {
 
   useEffect(() => {
     const talk = () => talkShows(session.state.get(), ui.get());
-    setNavBack({ canGoBack: () => ui.canGoBack(talk()), back: () => ui.back(talk()) });
+    setNavBack({ canGoBack: () => ui.canGoBack(talk()), back: () => ui.back(talk()) }, pane?.id);
     const off = ui.subscribe(sync);
     return () => {
       off();
-      setNavBack(null);
+      setNavBack(null, pane?.id);
     };
-  }, [ui, session]);
+  }, [ui, session, pane?.id]);
 
   useDefaultProject();
   useFirstOpen();
@@ -67,10 +71,10 @@ export function Shell() {
   const full = useStore(fullStore, (s) => s) &&
     (front?.screen === "desktop" || front?.screen === "annotate");
   useEffect(() => {
-    if (!full) return;
+    if (!full || (pane && (!pane.active || !pane.visible))) return;
     platform.immersive?.(true);
     return () => platform.immersive?.(false);
-  }, [full, platform]);
+  }, [full, platform, pane?.active, pane?.visible]);
   const onTalk = front?.screen === "talk" && chat !== null;
   const talking = onTalk && chat.taskId !== null;
   // A single-purpose destination is the whole screen until it is closed, and
@@ -98,11 +102,9 @@ export function Shell() {
       <ChatShown.Provider value={chatShown}>
       <Immersive.Provider value={fullStore}>
       <div className={`app${focused ? " app--focused" : ""}${full ? " app--full" : ""}`}>
-        <TaskAlerts />
-        <AlertsSetup />
-        <LoginUseNotices />
+        {computerServices !== false && <><TaskAlerts /><AlertsSetup /><LoginUseNotices /></>}
         {storageError ? (
-          <Notice className="app__notice" tone="stop" action={<Button size="sm" onClick={() => ui.persistNow()}>Retry saving chats</Button>}>
+          <Notice className="app__notice" tone="stop" action={<Button size="sm" onClick={() => ui.persistAll()}>Retry saving chats</Button>}>
             {storageError}
           </Notice>
         ) : storageRecovery && <Notice className="app__notice" tone="warn">{storageRecovery}</Notice>}
@@ -116,7 +118,7 @@ export function Shell() {
                   const top = i === stack.length - 1;
                   return (
                     <Kept key={`${i}:${JSON.stringify(route)}`} className="route" shown={top} refocus heading={i > 0}>
-                      <RouteProvider value={{ tab: t, route, depth: i, active: onTab && top }}>
+                      <RouteProvider value={{ tab: t, route, depth: i, active: onTab && top && (pane?.visible ?? true) }}>
                         <ColdStartOffline route={route}><RouteView route={route} /></ColdStartOffline>
                       </RouteProvider>
                     </Kept>
@@ -130,7 +132,8 @@ export function Shell() {
           <SafetyStrip except={except} open={rail} tuck stow={stow} />
         </div>
         {!focused && <BottomNav />}
-        <Toasts />
+        {(!pane || (pane.active && pane.visible)) && <Toasts />}
+        {full && <div className="split-floating"><SplitControl focused /></div>}
       </div>
       </Immersive.Provider>
       </ChatShown.Provider>
@@ -168,6 +171,8 @@ function Kept({
   heading?: boolean;
   children: ReactNode;
 }) {
+  const parentActive = useContext(SurfaceActive);
+  const pane = usePane();
   const ref = useRef<HTMLElement>(null);
   const offsets = useRef(new Map<Element, { left: number; top: number; atEnd: boolean }>());
   const focused = useRef<HTMLElement | null>(null);
@@ -202,6 +207,7 @@ function Kept({
       n.scrollLeft = o.left;
       n.scrollTop = o.atEnd ? n.scrollHeight : o.top;
     }
+    if (pane && (!pane.visible || !pane.active)) return;
     const f = focused.current;
     if (!refocus || el.contains(document.activeElement)) return;
     if (f?.isConnected && el.contains(f) && !f.matches(TEXT_ENTRY)) {
@@ -226,11 +232,11 @@ function Kept({
     });
     loaded.observe(el, { childList: true, subtree: true });
     return () => loaded.disconnect();
-  }, [shown, refocus, heading]);
+  }, [shown, refocus, heading, pane?.visible]);
 
   return (
     <Tag ref={ref as never} className={`${className}${shown ? "" : " is-hidden"}`} inert={!shown} aria-label={label}>
-      {children}
+      <SurfaceActive.Provider value={parentActive && shown}>{children}</SurfaceActive.Provider>
     </Tag>
   );
 }

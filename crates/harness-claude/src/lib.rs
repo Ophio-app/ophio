@@ -74,10 +74,45 @@ pub fn installed() -> Option<PathBuf> {
     io::locate(&None, "claude")
 }
 
+/// Ask for the installed version using the same serialized, graceful lifecycle
+/// as account and model checks, including when verifying an automatic update.
+pub async fn version(program: &Path) -> Option<std::process::Output> {
+    io::inspect(program, &["--version"]).await
+}
+
 /// Time allowed for EOF-driven native cleanup after a turn boundary.
 const SHUTDOWN_GRACE: Duration = Duration::from_secs(3);
 /// A native interrupt must reach a result within this interval.
 const STOP_TIMEOUT: Duration = Duration::from_secs(5);
+/// How long a message Claude Code took in too late for the turn that just
+/// ended may take to start the next one. Claude Code starts that turn by
+/// itself; on a busy computer it began reading 8.3 seconds after the reply
+/// ended. A minute leaves room for a slow start and still ends a run whose
+/// agent has gone quiet, with the message's delivery left unknown.
+const CARRY_WAIT: Duration = Duration::from_secs(60);
+
+/// Whether a frame comes from a new turn of the main conversation: its start,
+/// or anything it says. Helpers and background work report beside it.
+fn starts_turn(value: &Value) -> bool {
+    value["parent_tool_use_id"]
+        .as_str()
+        .is_none_or(str::is_empty)
+        && match value["type"].as_str() {
+            Some("system") => value["subtype"] == "init",
+            Some("user" | "assistant" | "stream_event") => true,
+            _ => false,
+        }
+}
+
+/// What came after a finished turn.
+enum AfterTurn {
+    /// A held follow-up was written; it is the next turn.
+    Wrote,
+    /// The agent's input was closed; the process is let go.
+    Closed,
+    /// Background work goes on, or the run is already ending.
+    Nothing,
+}
 
 const READ_ONLY_ENFORCEMENT: &str = "Claude Code can only read and search files. Additional tools and permission changes are disabled.";
 
@@ -125,14 +160,14 @@ async fn account(binary: &std::path::Path, cwd: Option<&std::path::Path>) -> Acc
     let Some(output) = io::inspect_in(binary, &["auth", "status", "--json"], cwd).await else {
         return AccountReadiness::Unknown {
             reason:
-                "Run claude auth login on the computer; authentication status could not be checked"
+                "Claude sign-in status could not be checked. Open Accounts in Øphio on your phone to check or sign in."
                     .into(),
         };
     };
     let value: Value = serde_json::from_slice(&output.stdout).unwrap_or(Value::Null);
     if value["loggedIn"] == false {
         return AccountReadiness::SignedOut {
-            remedy: "Run claude auth login on the computer".into(),
+            remedy: "Sign in to Claude Code in Accounts on your phone, or run claude auth login on the computer.".into(),
         };
     }
     if output.status.success() && value["loggedIn"] == true && value["authMethod"] == "claude.ai" {
@@ -153,10 +188,10 @@ impl HarnessAdapter for ClaudeAdapter {
     async fn probe(&self) -> HarnessInfo {
         let binary = self.program();
         let version = if let Some(path) = &binary {
-            io::inspect(path, &["--version"])
+            version(path)
                 .await
-                .filter(|o| o.status.success())
-                .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+                .filter(|output| output.status.success())
+                .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_owned())
         } else {
             None
         };
@@ -169,15 +204,18 @@ impl HarnessAdapter for ClaudeAdapter {
                     .into(),
             }
         };
-        // The account, the help text and the model list are independent; the
-        // modes and delegation are read from one `--help`, and so are the
-        // models of a CLI that doesn't list them.
+        // Share one help answer across modes, delegation and fallback models.
+        // The process-wide/account-wide gate also covers checks outside this
+        // probe. Do not start model discovery for a known signed-out account.
         let (account, help, listed) = if let Some(path) = &binary {
-            tokio::join!(
-                account(path, None),
-                io::inspect(path, &["--help"]),
-                catalog::listed(path)
-            )
+            let account = account(path, None).await;
+            let help = io::inspect(path, &["--help"]).await;
+            let listed = if !matches!(account, AccountReadiness::SignedOut { .. }) {
+                catalog::listed(path).await
+            } else {
+                None
+            };
+            (account, help, listed)
         } else {
             (
                 AccountReadiness::Unknown {
@@ -204,12 +242,41 @@ impl HarnessAdapter for ClaudeAdapter {
             .and_then(|m| m.details.as_ref())
             .map(|d| d.efforts.iter().map(|e| e.id.clone()).collect())
             .unwrap_or_default();
-        HarnessInfo { catalog, usage_limit: None, kind:self.kind(), display_name:"Claude Code".into(), native_version:version, integration:IntegrationLevel::Managed, installed: installed.clone(), account, modes, models, efforts, capabilities:HarnessCapabilities {
+        HarnessInfo {
+            catalog,
+            usage_limit: None,
+            kind: self.kind(),
+            display_name: "Claude Code".into(),
+            native_version: version,
+            integration: IntegrationLevel::Managed,
+            installed: installed.clone(),
+            account,
+            modes,
+            models,
+            efforts,
+            capabilities: HarnessCapabilities {
                 cancel_queued_message: Some(installed.clone()),
-            start_run:installed, steer_running:Availability::Unknown { reason:"Messages can be delivered, but Claude Code does not confirm whether they change the current turn.".into() }, interrupt:Availability::Available,
-            native_approvals:Availability::Available, resume_session:Availability::Available, child_agents:Availability::Available,
-            computer_use_delegation: if binary.is_some() { delegation::availability_in(help.as_ref()) } else { Availability::Unsupported { reason: "Claude Code is not installed".into() } }, model_selection:Availability::Available, effort_selection:Availability::Available,
-        } }
+                start_run: installed,
+                steer_running: Availability::Available,
+                // Claude Code reads a message written mid-turn at its next step and
+                // echoes it back, which confirms the read; one that misses the last
+                // step it answers in a turn of its own right after the reply, and the
+                // run stays open for it (verified with Claude Code 2.1.322).
+                interrupt: Availability::Available,
+                native_approvals: Availability::Available,
+                resume_session: Availability::Available,
+                child_agents: Availability::Available,
+                computer_use_delegation: if binary.is_some() {
+                    delegation::availability_in(help.as_ref())
+                } else {
+                    Availability::Unsupported {
+                        reason: "Claude Code is not installed".into(),
+                    }
+                },
+                model_selection: Availability::Available,
+                effort_selection: Availability::Available,
+            },
+        }
     }
     async fn start_run(&self, spec: RunSpec) -> Result<RunStarted, HarnessError> {
         let binary = self
@@ -301,6 +368,7 @@ impl HarnessAdapter for ClaudeAdapter {
                     .map(|file| file.path().to_owned()),
             )
             .chain(spec.prompt.images.iter().map(|i| i.path.clone()))
+            .chain(spec.attached.clone())
             .collect();
         let wrapped = match &spec.sandbox {
             Some(sandbox) => sandbox.wrap(ports::sandbox::WrapRequest {
@@ -308,9 +376,11 @@ impl HarnessAdapter for ClaudeAdapter {
                 visible: &visible,
                 env: &spec.env,
                 resume: spec.resume_session.as_deref(),
+                disabled: &spec.disabled,
             })?,
             None => ports::sandbox::unwrapped(&binary),
         };
+        launch.shared_skills(&spec, wrapped.shared_skills);
         let mut command = io::command(&wrapped.program);
         if wrapped.clear_env {
             command.env_clear();
@@ -343,11 +413,22 @@ impl HarnessAdapter for ClaudeAdapter {
                 command.env(key, value);
             }
         }
+        // Only a sandbox-supplied relay capability may replace the dummy, not
+        // account/inherited values. Keep endpoint and safety switches forced.
+        let relay_key = wrapped
+            .env
+            .iter()
+            .rev()
+            .find(|(key, _)| key == "ANTHROPIC_API_KEY")
+            .map(|(_, value)| value.clone());
         command.envs(wrapped.env);
         if let Some(endpoint) = relay(&spec) {
             command
                 .env("ANTHROPIC_BASE_URL", endpoint.base_url())
-                .env("ANTHROPIC_API_KEY", "ophio-relay-not-a-key")
+                .env(
+                    "ANTHROPIC_API_KEY",
+                    relay_key.as_deref().unwrap_or("ophio-relay-not-a-key"),
+                )
                 .env("CLAUDE_CODE_SIMPLE", "1")
                 .env("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1")
                 .env("DISABLE_TELEMETRY", "1")
@@ -411,7 +492,7 @@ impl HarnessAdapter for ClaudeAdapter {
                 pending: HashMap::new(),
                 busy: true,
                 sequence: 1,
-                state: stream::StreamState::new(spec.mode),
+                state: stream::StreamState::new(spec.mode).kept_in(spec.sandbox.clone()),
                 exact_model: model::exact(spec.model.as_deref()).map(str::to_owned),
                 sent_messages: HashMap::new(),
                 interrupted: false,
@@ -498,6 +579,21 @@ struct Launch {
     settings_file: Option<tempfile::NamedTempFile>,
 }
 impl Launch {
+    /// Only the actual wrapper can confirm which user skills reached the run.
+    /// Skill rendering can execute shell commands and grant tools: it must
+    /// never be added to an unsandboxed run or a read-only tool list.
+    fn shared_skills(&mut self, spec: &RunSpec, shared: bool) {
+        if shared
+            && spec.sandbox.is_some()
+            && spec.mode == TaskMode::Work
+            && !spec.bridge.as_ref().is_some_and(|b| b.computer_use)
+            && relay(spec).is_none()
+            && let Some(index) = self.args.iter().position(|arg| arg == "--tools")
+        {
+            self.args[index + 1].push_str(",Skill");
+        }
+    }
+
     fn build(spec: &RunSpec) -> Result<Self, HarnessError> {
         // Plan mode refuses every MCP tool, request_access too, and a Plan
         // turn keeps Claude Code's own plan mode, whose plan Ophio reads: it
@@ -533,8 +629,9 @@ impl Launch {
         // no prompts anything else is refused.
         let answering = spec.mode != TaskMode::Work
             && spec.bridge.as_ref().is_some_and(|b| b.checklist_answers);
-        // An Ask turn asks for more with request_access, the one tool of
-        // Ophio's it has, the same way: plan mode would refuse it.
+        // An Ask turn asks for more with request_access, and proposes work
+        // with ophio_propose, the two tools of Ophio's it has, the same way:
+        // plan mode would refuse them.
         let asking = spec.mode == TaskMode::Ask
             && !answering
             && spec.bridge.as_ref().is_some_and(|b| b.read_only);
@@ -592,6 +689,13 @@ impl Launch {
         }
         let mut config = None;
         let mut env = Vec::new();
+        if spec.sandbox.is_some() {
+            // Claude Code documents this as disabling telemetry (including
+            // third-party metrics), error reporting, updates, feedback,
+            // feature-flag/availability checks and background plugin commands.
+            // The network boundary still blocks anything not granted.
+            env.push(("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1"));
+        }
         if spec.mode == TaskMode::Work
             && !spec.bridge.as_ref().is_some_and(|b| b.computer_use)
             && !spec.project_settings
@@ -621,6 +725,14 @@ impl Launch {
                 .to_str()
                 .ok_or_else(|| HarnessError::Protocol("scratch folder is not UTF-8".into()))?;
             args.extend(["--add-dir".into(), scratch.into()]);
+        }
+        if let Some(attached) = &spec.attached {
+            // Read without asking: it holds only the files the person sent,
+            // under names Ophio chose, none of them an instruction file.
+            let attached = attached.to_str().ok_or_else(|| {
+                HarnessError::Protocol("attached files folder is not UTF-8".into())
+            })?;
+            args.extend(["--add-dir".into(), attached.into()]);
         }
         if spec.sandbox.is_some() && spec.mode == TaskMode::Work {
             // Cloud connectors and hosted search do not run in our namespace.
@@ -689,9 +801,13 @@ impl Launch {
             if let Some(bridge) = bridged {
                 let tools = match answering {
                     true => ports::bridge::ANSWER_TOOLS,
-                    false => &[ports::bridge::ACCESS_TOOL],
+                    false => ports::bridge::READ_ONLY_TOOLS,
                 };
-                args.extend(["--allowedTools".into(), allowed_tools(bridge, tools)]);
+                let mut tools = tools.to_vec();
+                if bridge.checks && !bridge.computer_use && !bridge.checklist_answers {
+                    tools.push(ports::bridge::CHECKS_READ_TOOL);
+                }
+                args.extend(["--allowedTools".into(), allowed_tools(bridge, &tools)]);
             }
             config = Some(file);
         } else if spec.bridge.as_ref().is_some_and(|b| b.computer_use) {
@@ -738,7 +854,13 @@ impl Launch {
             if bridge.checklist_answers {
                 allowed = ports::bridge::ANSWER_TOOLS.to_vec();
             } else if bridge.read_only {
-                allowed = vec![ports::bridge::ACCESS_TOOL];
+                allowed = ports::bridge::READ_ONLY_TOOLS.to_vec();
+            }
+            if bridge.checks && !bridge.computer_use && !bridge.checklist_answers {
+                allowed.push(ports::bridge::CHECKS_READ_TOOL);
+                if spec.mode == TaskMode::Work && !bridge.read_only {
+                    allowed.push(ports::bridge::CHECKS_PROPOSE_TOOL);
+                }
             }
             args.extend(["--allowedTools".into(), allowed_tools(bridge, &allowed)]);
             config = Some(file);
@@ -787,6 +909,7 @@ impl Launch {
         }
         let branch = spec.branch.as_ref().map(ports::harness::branch_instruction);
         let scratch = ports::harness::scratch_instruction(spec);
+        let checks = ports::harness::checks_instruction(spec);
         for framing in [
             started.as_deref(),
             ports::harness::task_mode_instruction(spec.mode),
@@ -796,6 +919,7 @@ impl Launch {
             ports::harness::conduct_instruction(spec),
             plan_switch.then_some(ports::harness::PLAN_SWITCH),
             scratch.as_deref(),
+            checks.as_deref(),
         ]
         .into_iter()
         .flatten()
@@ -1117,6 +1241,9 @@ impl RunControl for Control {
     fn containment(&self) -> Option<Containment> {
         Some(self.container.containment())
     }
+    fn run_group(&self) -> Option<std::path::PathBuf> {
+        self.container.group_dir().map(std::path::Path::to_path_buf)
+    }
     fn child_stop_availability(&self, native_ref: &str) -> Availability {
         self.child_availability(native_ref)
     }
@@ -1249,6 +1376,24 @@ struct Actor {
     parent_ended: bool,
     admission: Arc<private::Admission>,
 }
+
+/// Hub shutdown stops recording run events before it asks each actor to close
+/// stdin. If that receiver is already gone, dropping an event must not make the
+/// actor fail and kill its process before it can handle Urgent::Shutdown.
+fn send_event(
+    events: &mpsc::Sender<HarnessEvent>,
+    admission: &private::Admission,
+    event: HarnessEvent,
+) -> Result<(), HarnessError> {
+    match events.try_send(event) {
+        Ok(()) => Ok(()),
+        Err(mpsc::error::TrySendError::Closed(_)) if admission.check().is_err() => Ok(()),
+        Err(_) => Err(HarnessError::Protocol(
+            "event receiver stalled or closed; run stopped".into(),
+        )),
+    }
+}
+
 impl Actor {
     async fn stop_background(&mut self, id: &str) -> Result<(), HarnessError> {
         self.background.request(id)?;
@@ -1263,9 +1408,7 @@ impl Actor {
         {
             sandbox.session_started(native_session)?;
         }
-        self.events.try_send(event).map_err(|_| {
-            HarnessError::Protocol("event receiver stalled or closed; run stopped".into())
-        })
+        send_event(&self.events, &self.admission, event)
     }
     /// Stop withdraws every held follow-up; none is written after it.
     fn withdraw_queue(&mut self) -> Result<(), HarnessError> {
@@ -1277,6 +1420,89 @@ impl Actor {
             })?;
         }
         Ok(())
+    }
+    /// Messages written to Claude Code that it has not yet echoed as read.
+    fn unread(&self) -> Vec<String> {
+        self.sent_messages
+            .iter()
+            .filter(|(_, message_ref)| !self.queue.iter().any(|(held, _)| held == *message_ref))
+            .map(|(id, _)| id.clone())
+            .collect()
+    }
+    /// Claude Code never confirmed reading these written messages: they are
+    /// neither claimed as read nor reported withdrawn. Returns them.
+    fn unconfirmed(&mut self, ids: Vec<String>) -> Result<Vec<(String, MessageRef)>, HarnessError> {
+        let mut given_up = Vec::new();
+        for id in ids {
+            if let Some(message_ref) = self.sent_messages.remove(&id) {
+                self.emit(HarnessEvent::MessageDelivery {
+                    message_ref,
+                    state: DeliveryState::Unknown,
+                })?;
+                given_up.push((id, message_ref));
+            }
+        }
+        Ok(given_up)
+    }
+    /// Gives up on every written message not yet read, keeping each for a
+    /// late echo, which still confirms it.
+    fn give_up_unread(
+        &mut self,
+        late: &mut HashMap<String, MessageRef>,
+    ) -> Result<(), HarnessError> {
+        let unread = self.unread();
+        late.extend(self.unconfirmed(unread)?);
+        Ok(())
+    }
+    /// Ends a wait for a turn Claude Code has not begun: the finished turn's
+    /// exit stands, and the messages it would have read are not claimed as
+    /// read. Nothing to do once that turn has begun or when not waiting.
+    fn end_carry(
+        &mut self,
+        waiting: &mut bool,
+        carried: &mut Vec<String>,
+        carried_exit: &mut Option<RunExit>,
+        late: &mut HashMap<String, MessageRef>,
+    ) -> Result<(), HarnessError> {
+        if !std::mem::take(waiting) {
+            return Ok(());
+        }
+        carried.clear();
+        self.give_up_unread(late)?;
+        self.busy = false;
+        self.turn_exit = carried_exit.take();
+        Ok(())
+    }
+    /// After a finished turn: the next held follow-up, else waiting on
+    /// background work, else closing the agent's input.
+    async fn after_turn(
+        &mut self,
+        shutting: bool,
+        exited: bool,
+    ) -> Result<AfterTurn, HarnessError> {
+        // After Stop closes admission, a held message is withdrawn, never written.
+        if self.admission.check().is_err() {
+            self.withdraw_queue()?;
+        }
+        if shutting {
+            return Ok(AfterTurn::Nothing);
+        }
+        if !exited && let Some((message_ref, input)) = self.queue.pop_front() {
+            self.turn_exit = None;
+            self.write_message(message_ref, &input).await?;
+            self.busy = true;
+            self.interrupted = false;
+            return Ok(AfterTurn::Wrote);
+        }
+        if !self.background.live().is_empty() {
+            self.parent_ended = true;
+            self.emit(HarnessEvent::ParentEnded {
+                exit: self.turn_exit.clone().ok_or(HarnessError::NotActive)?,
+            })?;
+            return Ok(AfterTurn::Nothing);
+        }
+        self.stdin.take();
+        Ok(AfterTurn::Closed)
     }
     async fn write(&mut self, value: &Value) -> Result<(), HarnessError> {
         io::write(self.stdin.as_mut().ok_or(HarnessError::NotActive)?, value).await
@@ -1345,6 +1571,17 @@ impl Actor {
         tokio::pin!(stop_deadline);
         let deadline = tokio::time::sleep(Duration::from_secs(86400));
         tokio::pin!(deadline);
+        // A steer written after the turn's last step is not read in that
+        // turn: Claude Code answers it in a turn of its own, started by
+        // itself. Until it is read the run stays open for it, ahead of any
+        // held follow-up, and for at most CARRY_WAIT before that turn shows.
+        let mut carried: Vec<String> = Vec::new();
+        let mut carried_exit: Option<RunExit> = None;
+        let mut carry_waiting = false;
+        // Given up on after the wait; a late echo still confirms the read.
+        let mut late: HashMap<String, MessageRef> = HashMap::new();
+        let carry_deadline = tokio::time::sleep(Duration::from_secs(86400));
+        tokio::pin!(carry_deadline);
         loop {
             if eof && status.is_some() {
                 break;
@@ -1363,10 +1600,12 @@ impl Actor {
                     return Err(model::unverified());
                 },
                 _ = &mut stop_deadline, if stopping => {
+                    self.end_carry(&mut carry_waiting, &mut carried, &mut carried_exit, &mut late)?;
                     io::kill(&mut self.child);
                     return Ok(self.turn_exit.clone().unwrap_or(RunExit::Interrupted));
                 },
                 _ = &mut deadline, if shutting || status.is_some() || eof => {
+                    self.end_carry(&mut carry_waiting, &mut carried, &mut carried_exit, &mut late)?;
                     io::kill(&mut self.child);
                     return Ok(self.turn_exit.clone().unwrap_or_else(|| if stopping {
                         // Interrupted means execution was stopped, not that earlier effects were undone.
@@ -1374,6 +1613,16 @@ impl Actor {
                     } else {
                         RunExit::Unknown { reason:"native process did not report a turn result before shutdown".into() }
                     }));
+                },
+                _ = &mut carry_deadline, if carry_waiting && !shutting && !stopping && status.is_none() && !eof => {
+                    // The turn for the carried message never showed: it is not
+                    // claimed as read, and the finished turn ends as usual.
+                    self.end_carry(&mut carry_waiting, &mut carried, &mut carried_exit, &mut late)?;
+                    match self.after_turn(false, false).await? {
+                        AfterTurn::Wrote => stopping = false,
+                        AfterTurn::Closed => { shutting = true; deadline.as_mut().reset(tokio::time::Instant::now() + SHUTDOWN_GRACE); },
+                        AfterTurn::Nothing => {},
+                    }
                 },
                 message = urgent.recv(), if !shutting => match message {
                     Some(Urgent::Interrupt(reply)) => {
@@ -1387,6 +1636,20 @@ impl Actor {
                             // native turn/interrupt acknowledgement that cannot exist.
                             match io::kill_owned(&mut self.child, &mut leader).await {
                                 Ok(()) => { let _ = reply.send(Ok(())); return Ok(RunExit::Interrupted); },
+                                Err(error) => { let _ = reply.send(Err(error)); continue; },
+                            }
+                        }
+                        if carried.iter().any(|id| self.sent_messages.contains_key(id)) {
+                            // Between turns Claude Code would still start one on the
+                            // carried message after an interrupt; only ending it keeps
+                            // Stop's promise that nothing more runs.
+                            match io::kill_owned(&mut self.child, &mut leader).await {
+                                Ok(()) => {
+                                    let unread = self.unread();
+                                    self.unconfirmed(unread)?;
+                                    let _ = reply.send(Ok(()));
+                                    return Ok(RunExit::Interrupted);
+                                },
                                 Err(error) => { let _ = reply.send(Err(error)); continue; },
                             }
                         }
@@ -1425,15 +1688,26 @@ impl Actor {
                         self.withdraw_queue()?;
                         // Only a confirmed kill ends the run; otherwise it stays open to try again.
                         match io::kill_owned(&mut self.child, &mut leader).await {
-                            Ok(()) => { let _ = reply.send(Ok(())); return Ok(RunExit::Interrupted); },
+                            Ok(()) => {
+                                self.end_carry(&mut carry_waiting, &mut carried, &mut carried_exit, &mut late)?;
+                                let _ = reply.send(Ok(()));
+                                return Ok(RunExit::Interrupted);
+                            },
                             Err(error) => { let _ = reply.send(Err(error)); },
                         }
                     },
-                    Some(Urgent::Shutdown) | None => { shutting=true; self.stdin.take(); self.queue.clear(); deadline.as_mut().reset(tokio::time::Instant::now()+SHUTDOWN_GRACE); }
+                    Some(Urgent::Shutdown) | None => {
+                        // A held follow-up is never written now; it is not one Claude Code may read.
+                        let held: Vec<MessageRef> = self.queue.drain(..).map(|(id, _)| id).collect();
+                        self.sent_messages.retain(|_, id| !held.contains(id));
+                        // The finished reply stands, ahead of a turn that has not begun.
+                        self.end_carry(&mut carry_waiting, &mut carried, &mut carried_exit, &mut late)?;
+                        shutting=true; self.stdin.take(); deadline.as_mut().reset(tokio::time::Instant::now()+SHUTDOWN_GRACE);
+                    }
                 },
-                result = leader.exited(&mut self.child), if status.is_none() => { status=Some(result?); self.stdin.take(); if !shutting && !eof { deadline.as_mut().reset(tokio::time::Instant::now()+SHUTDOWN_GRACE); } },
+                result = leader.exited(&mut self.child), if status.is_none() => { status=Some(result?); self.stdin.take(); self.end_carry(&mut carry_waiting, &mut carried, &mut carried_exit, &mut late)?; if !shutting && !eof { deadline.as_mut().reset(tokio::time::Instant::now()+SHUTDOWN_GRACE); } },
                 frame = self.frames.next(), if !eof => match frame? {
-                    None => { eof=true; if !shutting && status.is_none() { deadline.as_mut().reset(tokio::time::Instant::now()+SHUTDOWN_GRACE); } },
+                    None => { eof=true; self.end_carry(&mut carry_waiting, &mut carried, &mut carried_exit, &mut late)?; if !shutting && status.is_none() { deadline.as_mut().reset(tokio::time::Instant::now()+SHUTDOWN_GRACE); } },
                     Some(bytes) => {
                         let value:Value = match serde_json::from_slice(&bytes) { Ok(v)=>v, Err(_)=> { self.emit(HarnessEvent::Warning { text:"invalid stream-json line ignored".into() })?; continue; } };
                         if value["type"] == "control_response" {
@@ -1468,11 +1742,15 @@ impl Actor {
                             // the reply to the message still in flight.
                             let notice = self.busy && value["type"] == "result" && value["origin"]["kind"] == "task-notification";
                             let completed = !notice && value["type"] == "result" && value["parent_tool_use_id"].as_str().is_none_or(str::is_empty);
+                            // The uuid is this adapter's own, fresh for each message, so it
+                            // alone identifies the echo, whatever shape its content takes.
                             if value["type"] == "user"
-                                && value["message"]["content"].as_array().is_some_and(|a| a.iter().any(|v| v["type"] == "text"))
-                                && let Some(message_ref) = value["uuid"].as_str().and_then(|id| self.sent_messages.remove(id)) {
+                                && let Some(message_ref) = value["uuid"].as_str().and_then(|id| self.sent_messages.remove(id).or_else(|| late.remove(id))) {
                                 self.emit(HarnessEvent::MessageDelivery { message_ref, state:DeliveryState::NativeDelivered })?;
+                                carried.retain(|id| self.sent_messages.contains_key(id));
                             }
+                            // The carried message's turn has begun; it ends like any other.
+                            if carry_waiting && !completed && starts_turn(&value) { carry_waiting = false; }
                             let background_events = self.background.observe(&value)?;
                             self.background.publish();
                             for event in background_events { self.emit(event)?; }
@@ -1488,24 +1766,40 @@ impl Actor {
                             }
                             if completed {
                                 for event in self.state.end_turn_helpers(self.interrupted) { self.emit(event)?; }
+                                let stopped = stopping || self.admission.check().is_err();
                                 self.busy = false;
                                 stopping = false;
                                 self.turn_exit = Some(stream::result_exit(&value, self.interrupted));
-                                // After Stop closes admission, a held message is withdrawn, never written.
-                                if self.admission.check().is_err() { self.withdraw_queue()?; }
-                                if !shutting && status.is_none() && let Some((message_ref, input)) = self.queue.pop_front() {
-                                    self.turn_exit = None;
-                                    self.write_message(message_ref, &input).await?;
-                                    self.busy = true;
-                                    self.interrupted = false;
-                                    stopping = false;
-                                } else if !shutting && !self.background.live().is_empty() {
-                                    self.parent_ended = true;
-                                    self.emit(HarnessEvent::ParentEnded { exit: self.turn_exit.clone().ok_or(HarnessError::NotActive)? })?;
-                                } else if !shutting {
+                                carry_waiting = false;
+                                carried_exit = None;
+                                // A steer that missed this turn's last step: Claude Code
+                                // reads it next, in a turn it starts by itself.
+                                carried = self.unread();
+                                if carried.is_empty() || shutting || status.is_some() {
+                                    // Ending now, there is no turn left to read them in.
+                                    if !carried.is_empty() { self.give_up_unread(&mut late)?; }
+                                    carried.clear();
+                                    match self.after_turn(shutting, status.is_some()).await? {
+                                        AfterTurn::Wrote => stopping = false,
+                                        AfterTurn::Closed => { shutting = true; deadline.as_mut().reset(tokio::time::Instant::now() + SHUTDOWN_GRACE); },
+                                        AfterTurn::Nothing => {},
+                                    }
+                                } else if stopped {
+                                    // After Stop nothing more runs. Closing input alone would
+                                    // let Claude Code start that turn, so the process ends now;
+                                    // the message was written and is never reported withdrawn.
+                                    self.withdraw_queue()?;
+                                    self.unconfirmed(std::mem::take(&mut carried))?;
                                     shutting = true;
                                     self.stdin.take();
-                                    deadline.as_mut().reset(tokio::time::Instant::now() + SHUTDOWN_GRACE);
+                                    deadline.as_mut().reset(tokio::time::Instant::now());
+                                } else {
+                                    // Held follow-ups stay queued for the turn end after it.
+                                    carried_exit = self.turn_exit.take();
+                                    self.busy = true;
+                                    self.interrupted = false;
+                                    carry_waiting = true;
+                                    carry_deadline.as_mut().reset(tokio::time::Instant::now() + CARRY_WAIT);
                                 }
                             }
                         }
@@ -1533,6 +1827,12 @@ impl Actor {
         if initial.is_some() && !stopping && !shutting {
             return Err(model::unverified());
         }
+        self.end_carry(
+            &mut carry_waiting,
+            &mut carried,
+            &mut carried_exit,
+            &mut late,
+        )?;
         let status = status
             .ok_or_else(|| HarnessError::Protocol("native exit status unavailable".into()))?;
         Ok(self.turn_exit.clone().unwrap_or_else(|| {
@@ -1555,3 +1855,29 @@ impl Actor {
 mod tests;
 #[cfg(all(test, windows))]
 use windows::tests;
+
+#[cfg(test)]
+mod send_event_tests {
+    use super::*;
+
+    fn warning() -> HarnessEvent {
+        HarnessEvent::Warning {
+            text: "fixture".into(),
+        }
+    }
+
+    #[test]
+    fn a_closed_receiver_is_ignored_only_after_admission_closes() {
+        let (events, receiver) = mpsc::channel(1);
+        drop(receiver);
+        let admission = private::Admission::default();
+
+        assert!(send_event(&events, &admission, warning()).is_err());
+        admission.close();
+        assert!(send_event(&events, &admission, warning()).is_ok());
+
+        let (events, _receiver) = mpsc::channel(1);
+        events.try_send(warning()).unwrap();
+        assert!(send_event(&events, &admission, warning()).is_err());
+    }
+}

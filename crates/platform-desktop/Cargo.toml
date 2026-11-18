@@ -1,0 +1,17 @@
+[package]
+name = "platform-desktop"
+description = "Desktop sharing shared by the Windows and Mac adapters: the capture and input seams, geometry, input sequencing and fencing"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+protocol.workspace = true
+ports.workspace = true
+async-trait.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

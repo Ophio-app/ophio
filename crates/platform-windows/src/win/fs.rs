@@ -20,6 +20,25 @@ use windows::{
 };
 use zeroize::Zeroizing;
 
+/// Keep Win32's error number and message for callers diagnosing a failed
+/// filesystem operation. Non-Win32 HRESULTs retain their original details.
+fn native_directory_error(error: windows::core::Error) -> io::Error {
+    let code = error.code().0 as u32;
+    if code & 0xffff_0000 == 0x8007_0000 {
+        io::Error::from_raw_os_error((code & 0xffff) as i32)
+    } else {
+        io::Error::other(error)
+    }
+}
+
+fn directory_failure(operation: &str, path: &Path, error: windows::core::Error) -> io::Error {
+    let error = native_directory_error(error);
+    if error.kind() != io::ErrorKind::NotFound {
+        tracing::warn!(operation, path = %path.display(), error = ?error, "Windows directory operation failed");
+    }
+    error
+}
+
 fn absolute(path: &Path) -> io::Result<PathBuf> {
     let path = std::path::absolute(path)?;
     if !matches!(path.components().next(), Some(Component::Prefix(p)) if matches!(p.kind(), std::path::Prefix::Disk(_) | std::path::Prefix::VerbatimDisk(_)))
@@ -65,7 +84,7 @@ fn open(path: &Path, directory: bool, create: bool, write: bool) -> io::Result<F
             FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS,
             None,
         )
-        .map_err(failure)?
+        .map_err(|error| directory_failure("CreateFileW", path, error))?
     };
     // SAFETY: ownership of the newly created handle transfers exactly once.
     let file = unsafe { File::from_raw_handle(handle.0) };
@@ -76,7 +95,8 @@ fn metadata(file: &File, directory: bool) -> io::Result<BY_HANDLE_FILE_INFORMATI
     let mut info = BY_HANDLE_FILE_INFORMATION::default();
     // SAFETY: file owns a valid handle, output is initialized and writable.
     unsafe {
-        GetFileInformationByHandle(HANDLE(file.as_raw_handle()), &mut info).map_err(failure)?;
+        GetFileInformationByHandle(HANDLE(file.as_raw_handle()), &mut info)
+            .map_err(native_directory_error)?;
     }
     if info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT.0 != 0
         || (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY.0 != 0) != directory
@@ -123,7 +143,7 @@ fn create_dir(path: &Path) -> io::Result<()> {
     match unsafe { CreateDirectoryW(PCWSTR(name.as_ptr()), Some(&sa)) } {
         Ok(()) => Ok(()),
         Err(e) if e.code().0 as u32 & 0xffff == 183 => Ok(()),
-        Err(e) => Err(failure(e)),
+        Err(e) => Err(directory_failure("CreateDirectoryW", path, e)),
     }
 }
 pub fn private_dir(path: &Path) -> io::Result<()> {
@@ -251,4 +271,26 @@ fn rename(file: &File, dir: &File, name: &OsStr, replace: bool) -> io::Result<()
         )));
     }
     Ok(())
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::windows::fs::OpenOptionsExt;
+
+    #[test]
+    fn directory_validation_retains_the_windows_sharing_error() {
+        let root = tempfile::tempdir().unwrap();
+        let parent = root.path().join("private");
+        private_dir(&parent).unwrap();
+        let held = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS.0)
+            .open(&parent)
+            .unwrap();
+        let error = private_dir(&parent.join("child")).unwrap_err();
+        assert_eq!(error.raw_os_error(), Some(32), "{error:?}");
+        drop(held);
+        private_dir(&parent.join("child")).unwrap();
+    }
 }

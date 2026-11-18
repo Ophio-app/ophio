@@ -300,6 +300,8 @@ async fn next_run_ends(f: &Fixture, task_id: TaskId, outcome: RunOutcome) -> Run
             &Caller::local_owner(),
             edit(
                 Command::ResumeTask {
+                    observed_reply: None,
+                    harness: None,
                     task_id,
                     text: Some("It still breaks on an empty file.".into()),
                     bundle: None,
@@ -448,6 +450,8 @@ async fn a_next_run_that_was_stopped_says_nothing_of_the_one_before() {
             &Caller::local_owner(),
             edit(
                 Command::ResumeTask {
+                    observed_reply: None,
+                    harness: None,
                     task_id,
                     text: Some("Run the tests.".into()),
                     bundle: None,
@@ -490,4 +494,98 @@ async fn a_next_run_that_was_stopped_says_nothing_of_the_one_before() {
     assert_eq!(run(&f, second).state, RunState::Interrupted);
     assert_eq!(run(&f, first).follow_up, None);
     f.close().await;
+}
+
+/// What a suggestion needs is read only from the keys that describe the
+/// work; anything an agent writes to approve itself or set its own access is
+/// ignored.
+#[test]
+fn a_suggestion_says_what_it_needs_and_nothing_else() {
+    use protocol::work_cards::WorkNeeds;
+    let report = read(
+        r##"{"status": "done", "new_work": [
+            {"title": "Find", "mode": "ask", "needs": {"read": ["Garden", "garden", " ", 4], "internet": true}},
+            {"title": "Flat", "mode": "ask", "read": "Garden", "local_network": true, "internet": "yes"},
+            {"title": "Approved", "approved": true, "access": {"whole_write": true}, "auto_start": true, "launch_policy": "bypass"},
+            {"title": "Plain"},
+            {"title": "Wide", "mode": "ask", "needs": {"read": ["a","b","c","d","e","f","g","h","i","j"], "whole_computer": true}}
+        ]}"##,
+    )
+    .unwrap();
+    let needs: Vec<_> = report.new_work.iter().map(|w| w.needs.clone()).collect();
+    assert_eq!(
+        needs[0],
+        Some(WorkNeeds {
+            read: vec!["Garden".into()],
+            internet: true,
+            ..Default::default()
+        })
+    );
+    // Only `true` turns something on.
+    assert_eq!(
+        needs[1],
+        Some(WorkNeeds {
+            read: vec!["Garden".into()],
+            local_network: true,
+            ..Default::default()
+        })
+    );
+    assert_eq!(
+        needs[2], None,
+        "an agent can't approve or widen its own work"
+    );
+    assert_eq!(needs[3], None);
+    let wide = needs[4].clone().unwrap();
+    assert_eq!(wide.read.len(), 8);
+    assert!(wide.whole_computer);
+    assert!(report.new_work.iter().all(|w| w.refused.is_none()));
+}
+
+/// Combinations no task can honestly be are refused with the reason, so the
+/// card can say why and offer Review instead.
+#[test]
+fn a_suggestion_no_task_can_be_is_refused_with_its_reason() {
+    let cases = [
+        (
+            r#"{"title": "x", "mode": "ask", "issue": 12}"#,
+            Some("An issue is fixed or planned, not only asked about."),
+        ),
+        (
+            r#"{"title": "x", "issue": 12, "needs": {"changes": "Garden"}}"#,
+            Some("An issue is fixed in its own project, on its own branch."),
+        ),
+        (
+            r#"{"title": "x", "issue": 12, "needs": {"desktop": true}}"#,
+            Some("An issue is fixed in its own project, on its own branch."),
+        ),
+        (
+            r#"{"title": "x", "mode": "plan", "needs": {"changes": "Garden"}}"#,
+            Some(
+                "A question or a plan can’t change files, yet this one names a project to change.",
+            ),
+        ),
+        (
+            r#"{"title": "x", "mode": "ask", "needs": {"desktop": true}}"#,
+            Some("Work on the desktop is a change, not a question or a plan."),
+        ),
+        (
+            r#"{"title": "x", "needs": {"changes": "Garden", "whole_computer": true}}"#,
+            Some("It asks to change another project and read the whole computer at once."),
+        ),
+        (
+            r#"{"title": "x", "needs": {"changes": "Garden", "desktop": true}}"#,
+            Some("Work on the desktop doesn’t change a project."),
+        ),
+        (r#"{"title": "x", "mode": "plan", "issue": 12}"#, None),
+        (r#"{"title": "x", "needs": {"changes": "Garden"}}"#, None),
+        (r#"{"title": "x", "needs": {"desktop": true}}"#, None),
+        (
+            r#"{"title": "x", "mode": "ask", "needs": {"whole_computer": true, "internet": true}}"#,
+            None,
+        ),
+    ];
+    for (work, reason) in cases {
+        let report = read(&format!(r#"{{"status": "done", "new_work": [{work}]}}"#)).unwrap();
+        assert_eq!(report.new_work[0].refused.as_deref(), reason, "{work}");
+    }
 }

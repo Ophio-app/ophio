@@ -304,10 +304,15 @@ class SourceCandidateTests(unittest.TestCase):
             ".env.local",
             "test.keystore",
             "notes/review-notes.md",
+            "review.md",
+            "notes/Review.md",
             ".lanes/x.rs",
         ):
             with self.subTest(path=path):
                 self.assertTrue(source_candidate.inspect(path, b"fixture", []))
+        for path in ("REVIEW.md", "crates/billing/REVIEW.md"):
+            with self.subTest(path=path):
+                self.assertFalse(source_candidate.inspect(path, b"fixture", []))
 
     def test_generated_exception_requires_path_and_marker(self):
         exemptions = [

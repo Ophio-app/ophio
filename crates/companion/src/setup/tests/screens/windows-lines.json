@@ -1,0 +1,248 @@
+{
+  "120x40.txt": [
+    [
+      39,
+      "│                             Run ophio setup whenever you want it.                                                    │",
+      "│                             Run .\\ophio.exe setup whenever you want it.                                              │"
+    ],
+    [
+      54,
+      "│  ┊                 │  It runs as your own systemd service, ophio.service. To stop that, run ophio                    │",
+      "│  ┊                 │  It starts with Windows: Settings › Apps › Startup lists it. To stop that, run                  │"
+    ],
+    [
+      55,
+      "│  ○ Check           │  service uninstall.                                                                             │",
+      "│  ○ Check           │  .\\ophio.exe service uninstall.                                                                 │"
+    ],
+    [
+      501,
+      "│  │                 │  Change this whenever you like in the app, under Connections, or with ophio                     │",
+      "│  │                 │  Change this whenever you like in the app, under Connections, or with .\\ophio.exe               │"
+    ],
+    [
+      502,
+      "│  ◉ Phone ──────────┤  devices allow and ophio devices deny.                                                          │",
+      "│  ◉ Phone ──────────┤  devices allow and .\\ophio.exe devices deny.                                                    │"
+    ],
+    [
+      541,
+      "│  ● Agents          │  ophio setup.                                                                                   │",
+      "│  ● Agents          │  .\\ophio.exe setup.                                                                             │"
+    ],
+    [
+      834,
+      "│  ● Check           │  Change any of this in the app's Settings, or run ophio setup again.                            │",
+      "│  ● Check           │  Change any of this in the app's Settings, or run .\\ophio.exe setup again.                      │"
+    ],
+    [
+      900,
+      "│                             Run ophio setup whenever you want it.                                                    │",
+      "│                             Run .\\ophio.exe setup whenever you want it.                                              │"
+    ],
+    [
+      952,
+      "│  ┊                 │  ▸ curl -fsSL https://claude.ai/install.sh | bash                                               │",
+      "│  ┊                 │  ▸ irm https://claude.ai/install.ps1 | iex                                                      │"
+    ],
+    [
+      1239,
+      "│  ┊                 │  ▸ npm install -g @openai/codex                                                                 │",
+      "│  ┊                 │  ▸ npm.cmd install -g @openai/codex                                                             │"
+    ],
+    [
+      1243,
+      "│  ┊                 │  If npm says EACCES, it needs a folder of your own for global packages:                         │",
+      "│  ┊                 │                                                                                                 │"
+    ],
+    [
+      1245,
+      "│                    │  npm's guide  https://docs.npmjs.com/resolving-eacces-permissions-errors-when-ins               │",
+      "│                    │                                                                                                 │"
+    ],
+    [
+      1246,
+      "│                    │               talling-packages-globally                                                         │",
+      "│                    │                                                                                                 │"
+    ],
+    [
+      1392,
+      "│                             Run ophio setup whenever you want it.                                                    │",
+      "│                             Run .\\ophio.exe setup whenever you want it.                                              │"
+    ],
+    [
+      1406,
+      "│  ◉ Extras ─────────┤  ▸ ophio voice install tiny.en                                                                  │",
+      "│  ◉ Extras ─────────┤  ▸ .\\ophio.exe voice install tiny.en                                                            │"
+    ]
+  ],
+  "60x20.txt": [
+    [
+      33,
+      " It runs as your own systemd service, ophio.service. To",
+      " It starts with Windows: Settings › Apps › Startup lists"
+    ],
+    [
+      34,
+      " stop that, run ophio service uninstall.",
+      " it. To stop that, run .\\ophio.exe service uninstall."
+    ],
+    [
+      260,
+      " Connections, or with ophio devices allow and ophio devices",
+      " Connections, or with .\\ophio.exe devices allow and"
+    ],
+    [
+      261,
+      " deny.",
+      " .\\ophio.exe devices deny."
+    ],
+    [
+      279,
+      " in the app or with ophio setup.",
+      " in the app or with .\\ophio.exe setup."
+    ],
+    [
+      433,
+      " Change any of this in the app's Settings, or run ophio",
+      " Change any of this in the app's Settings, or run"
+    ],
+    [
+      434,
+      " setup again.",
+      " .\\ophio.exe setup again."
+    ],
+    [
+      491,
+      " ▸ curl -fsSL https://claude.ai/install.sh | bash",
+      " ▸ irm https://claude.ai/install.ps1 | iex"
+    ],
+    [
+      638,
+      " ▸ npm install -g @openai/codex",
+      " ▸ npm.cmd install -g @openai/codex"
+    ],
+    [
+      642,
+      " If npm says EACCES, it needs a folder of your own for",
+      ""
+    ],
+    [
+      643,
+      " global packages:",
+      ""
+    ],
+    [
+      645,
+      " npm's guide  https://docs.npmjs.com/resolving-eacces-permi",
+      ""
+    ],
+    [
+      646,
+      "              ssions-errors-when-installing-packages-global",
+      ""
+    ],
+    [
+      647,
+      "              ly",
+      ""
+    ],
+    [
+      725,
+      " ▸ ophio voice install tiny.en",
+      " ▸ .\\ophio.exe voice install tiny.en"
+    ]
+  ],
+  "80x24.txt": [
+    [
+      23,
+      "│          Run ophio setup whenever you want it.                               │",
+      "│          Run .\\ophio.exe setup whenever you want it.                         │"
+    ],
+    [
+      39,
+      "│  ○ Check           │  It runs as your own systemd service, ophio.service.    │",
+      "│  ○ Check           │  It starts with Windows: Settings › Apps › Startup      │"
+    ],
+    [
+      40,
+      "│                    │  To stop that, run ophio service uninstall.             │",
+      "│                    │  lists it. To stop that, run .\\ophio.exe service        │"
+    ],
+    [
+      41,
+      "│                    │                                                         │",
+      "│                    │  uninstall.                                             │"
+    ],
+    [
+      310,
+      "│  ◉ Phone ──────────┤  Connections, or with ophio devices allow and ophio     │",
+      "│  ◉ Phone ──────────┤  Connections, or with .\\ophio.exe devices allow and     │"
+    ],
+    [
+      311,
+      "│  ┊                 │  devices deny.                                          │",
+      "│  ┊                 │  .\\ophio.exe devices deny.                              │"
+    ],
+    [
+      333,
+      "│  ● Agents          │  later, in the app or with ophio setup.                 │",
+      "│  ● Agents          │  later, in the app or with .\\ophio.exe setup.           │"
+    ],
+    [
+      516,
+      "│                    │  ophio setup again.                                     │",
+      "│                    │  .\\ophio.exe setup again.                               │"
+    ],
+    [
+      548,
+      "│          Run ophio setup whenever you want it.                               │",
+      "│          Run .\\ophio.exe setup whenever you want it.                         │"
+    ],
+    [
+      585,
+      "│  ○ Phone           │  ▸ curl -fsSL https://claude.ai/install.sh | bash       │",
+      "│  ○ Phone           │  ▸ irm https://claude.ai/install.ps1 | iex              │"
+    ],
+    [
+      760,
+      "│  ○ Phone           │  ▸ npm install -g @openai/codex                         │",
+      "│  ○ Phone           │  ▸ npm.cmd install -g @openai/codex                     │"
+    ],
+    [
+      764,
+      "│  ○ Check           │  If npm says EACCES, it needs a folder of your own for  │",
+      "│  ○ Check           │                                                         │"
+    ],
+    [
+      765,
+      "│                    │  global packages:                                       │",
+      "│                    │                                                         │"
+    ],
+    [
+      767,
+      "│                    │  npm's guide  https://docs.npmjs.com/resolving-eacces-  │",
+      "│                    │                                                         │"
+    ],
+    [
+      768,
+      "│                    │               permissions-errors-when-installing-packa  │",
+      "│                    │                                                         │"
+    ],
+    [
+      769,
+      "│                    │               ges-globally                              │",
+      "│                    │                                                         │"
+    ],
+    [
+      848,
+      "│          Run ophio setup whenever you want it.                               │",
+      "│          Run .\\ophio.exe setup whenever you want it.                         │"
+    ],
+    [
+      863,
+      "│  ┊                 │  ▸ ophio voice install tiny.en                          │",
+      "│  ┊                 │  ▸ .\\ophio.exe voice install tiny.en                    │"
+    ]
+  ]
+}

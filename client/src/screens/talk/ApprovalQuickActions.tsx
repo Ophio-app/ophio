@@ -16,7 +16,7 @@ export function ApprovalQuickActions({ approvalId }: { approvalId: string }) {
 function QuickDecision({ approval }: { approval: Approval }) {
   const { profile } = useApp();
   const canDecide = useHost((s) => s.grants?.approvals === true);
-  const agent = useHost((s) => s.harnesses.find((h) => h.kind === s.tasks[approval.task_id]?.harness)?.display_name ?? "The agent");
+  const agent = useHost((s) => s.harnesses.find((h) => h.kind === (s.runs[approval.run_id]?.harness ?? s.tasks[approval.task_id]?.harness))?.display_name ?? "The agent");
   const { card } = useApprovalDecision(approval);
   return <div className="talk-quick-approval">
     <ApprovalCard approval={approval} agent={agent} myDeviceId={profile.deviceId} canDecide={canDecide && approval.state === "pending"} embedded {...card}

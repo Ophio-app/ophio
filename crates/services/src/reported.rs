@@ -14,6 +14,7 @@ use protocol::{
         CheckStatus, ChildState, NewWork, ReportStatus, Run, RunOutcome, RunReport, TaskMode,
         TimelineBody,
     },
+    work_cards::WorkNeeds,
 };
 use serde_json::Value;
 
@@ -196,9 +197,9 @@ pub(crate) fn read(block: &str) -> Option<RunReport> {
     })
 }
 
-fn work(v: &Value) -> Option<NewWork> {
-    let (title, brief, mode, issue) = match v {
-        Value::String(s) => (s.as_str(), s.as_str(), None, None),
+pub(crate) fn work(v: &Value) -> Option<NewWork> {
+    let (title, brief, mode, issue, needs) = match v {
+        Value::String(s) => (s.as_str(), s.as_str(), None, None, None),
         Value::Object(o) => {
             let text = |k: &str| o.get(k).and_then(Value::as_str);
             let title = text("title").or_else(|| text("brief"))?;
@@ -212,6 +213,7 @@ fn work(v: &Value) -> Option<NewWork> {
                 text("brief").unwrap_or(title),
                 text("mode").or_else(|| text("kind")),
                 issue.filter(|n| (1..=protocol::MAX_SAFE_INTEGER).contains(n)),
+                needs(o),
             )
         }
         _ => return None,
@@ -225,12 +227,83 @@ fn work(v: &Value) -> Option<NewWork> {
         Some(m) if m == "ask" => TaskMode::Ask,
         _ => TaskMode::Work,
     };
+    let refused = refusal(mode, issue, needs.as_ref());
     Some(NewWork {
         title,
         brief: clip(brief, MAX_BRIEF),
         mode,
         issue,
+        needs,
+        refused,
+        after: None,
+        all_issues: false,
     })
+}
+
+/// At most this many other projects one piece of work may name to read.
+const MAX_READS: usize = 8;
+const MAX_NAME: usize = 200;
+
+/// What a piece of work says it needs beyond its own project, read from its
+/// `needs` object or, as some agents write it, from the work itself. Only
+/// these keys are read: anything else an agent writes, such as that it is
+/// approved or what access it should get, is not.
+fn needs(o: &serde_json::Map<String, Value>) -> Option<WorkNeeds> {
+    let inner = o.get("needs").and_then(Value::as_object);
+    let get = |k: &str| inner.and_then(|n| n.get(k)).or_else(|| o.get(k));
+    let on = |k: &str| matches!(get(k), Some(Value::Bool(true)));
+    let name = |v: &Value| {
+        v.as_str()
+            .map(|s| clip(s, MAX_NAME))
+            .filter(|s| !s.is_empty())
+    };
+    let mut read: Vec<String> = Vec::new();
+    match get("read") {
+        Some(Value::Array(list)) => {
+            for n in list.iter().filter_map(name) {
+                if read.len() < MAX_READS
+                    && !read.iter().any(|r| r.to_lowercase() == n.to_lowercase())
+                {
+                    read.push(n);
+                }
+            }
+        }
+        Some(v) => read.extend(name(v)),
+        None => {}
+    }
+    let needs = WorkNeeds {
+        read,
+        changes: get("changes").and_then(name),
+        internet: on("internet"),
+        local_network: on("local_network"),
+        whole_computer: on("whole_computer"),
+        desktop: on("desktop"),
+    };
+    (needs != WorkNeeds::default()).then_some(needs)
+}
+
+/// Why a piece of work can't start as the agent wrote it, in the person's
+/// words: combinations no task can honestly be.
+fn refusal(mode: TaskMode, issue: Option<u64>, needs: Option<&WorkNeeds>) -> Option<String> {
+    if issue.is_some() && mode == TaskMode::Ask {
+        return Some("An issue is fixed or planned, not only asked about.".to_owned());
+    }
+    let needs = needs?;
+    let changes = needs.changes.is_some();
+    let reason = if issue.is_some() && (changes || needs.desktop) {
+        "An issue is fixed in its own project, on its own branch."
+    } else if changes && mode != TaskMode::Work {
+        "A question or a plan can’t change files, yet this one names a project to change."
+    } else if needs.desktop && mode != TaskMode::Work {
+        "Work on the desktop is a change, not a question or a plan."
+    } else if needs.whole_computer && changes {
+        "It asks to change another project and read the whole computer at once."
+    } else if needs.desktop && changes {
+        "Work on the desktop doesn’t change a project."
+    } else {
+        return None;
+    };
+    Some(reason.to_owned())
 }
 
 /// `text` trimmed and cut to `max` characters on a character boundary.

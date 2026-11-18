@@ -6,9 +6,11 @@ import { UiStore } from "../../app/ui";
 import { HostSession } from "../../host/session";
 import { createSimPlatform } from "../../dev/sim/platform";
 import { ids } from "../../dev/sim/scenario";
+import { SurfaceActive } from "../../design/surface";
 import { RouteProvider } from "../../shell/Screen";
 import { stopStore } from "../control/stops";
 import Talk from "./Talk";
+import { appLock, unavailableLock } from "../../platform/lock";
 
 let app: App;
 const tick = (ms = 1500) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
@@ -19,6 +21,7 @@ beforeEach(async () => {
   HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   HTMLDialogElement.prototype.close = function () { this.open = false; };
   const platform = createSimPlatform(); const profile = (await platform.profiles())[0]!;
+  appLock(platform).accept(unavailableLock);
   const session = new HostSession(profile.profileId, platform.control(profile.profileId));
   app = { platform, profile, session, profiles: [profile], ui: new UiStore(profile.profileId), switchTo() {}, pairAnother() {}, async rename() {}, async forget() {} };
   session.start(); await tick(900);
@@ -51,8 +54,15 @@ it("starts a conversation in Ask from Chat, and its first reply is in the chat (
   const started = await begin();
   expect(started).toMatchObject({ mode: "ask", conversation: true, project_id: ids.pTide });
   expect(app.ui.get()).toMatchObject({ taskList: false, taskByProject: { [ids.pTide]: started.task_id } });
-  expect(screen.getByRole("button", { name: /^Model for your next message/ }).textContent).toMatch(/Claude Code/);
-  expect(screen.getByRole("button", { name: /Turn into a task/ })).toBeTruthy();
+  const model = screen.getByRole("button", { name: /^Agent for your next message: Claude Code/ });
+  expect(model.textContent).toBe("Claude · Opus 5.5 · High");
+  // Turn into a task is in the chat's menu, not beside the message.
+  expect(screen.queryByRole("button", { name: /Turn into a task/ })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "More about this conversation" }));
+  await tick(100);
+  expect(within(screen.getByRole("dialog", { name: /This conversation/ })).getByRole("button", { name: /^Turn into a task/ })).toBeTruthy();
+  fireEvent.click(within(screen.getByRole("dialog", { name: /This conversation/ })).getByRole("button", { name: /^Close/ }));
+  await tick(100);
   // Between messages it hasn't ended: no "Finished", in the header or the chat.
   expect(document.querySelector(".chat-head__state")).toBeNull();
   expect(screen.queryByText(/^Finished/)).toBeNull();
@@ -61,13 +71,44 @@ it("starts a conversation in Ask from Chat, and its first reply is in the chat (
   expect(screen.getByRole("button", { name: /^Conversations, \d+ needs? attention in Tasks$/ })).toBeTruthy();
 });
 
+it("keeps a reply unread while its selected conversation is in the background", async () => {
+  await begin();
+  const command = vi.spyOn(app.session, "command");
+  fireEvent.change(composer(), { target: { value: "Reply while the app is in the background." } });
+  fireEvent.click(screen.getByRole("button", { name: "Send" }));
+  const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  act(() => document.dispatchEvent(new Event("visibilitychange")));
+  await tick(4000);
+  const acknowledgements = () => command.mock.calls.filter(([c]) => c.command === "acknowledge_attention");
+  expect(acknowledgements()).toHaveLength(0);
+
+  visibility.mockReturnValue("visible");
+  act(() => document.dispatchEvent(new Event("visibilitychange")));
+  await tick(1500);
+  expect(acknowledgements()).toHaveLength(1);
+});
+
+it("does not mark a reply read behind the app lock", async () => {
+  await begin();
+  const command = vi.spyOn(app.session, "command");
+  act(() => appLock(app.platform).accept({ ...unavailableLock, available: true, enabled: true, locked: true }));
+  fireEvent.change(composer(), { target: { value: "Reply while the app is locked." } });
+  fireEvent.click(screen.getByRole("button", { name: "Send" }));
+  await tick(4000);
+  const acknowledgements = () => command.mock.calls.filter(([c]) => c.command === "acknowledge_attention");
+  expect(acknowledgements()).toHaveLength(0);
+  act(() => appLock(app.platform).accept(unavailableLock));
+  await tick(1500);
+  expect(acknowledgements()).toHaveLength(1);
+});
+
 it("switches the model for the next message without asking which agent should get it", async () => {
   const started = await begin();
   const before = started.model;
-  fireEvent.click(screen.getByRole("button", { name: /^Model for your next message/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^Agent for your next message/ }));
   await tick(100);
-  const sheet = screen.getByRole("dialog", { name: /Model for your next message/ });
-  fireEvent.click(within(sheet).getByRole("button", { name: "Claude Fable (latest)" }));
+  const sheet = screen.getByRole("dialog", { name: /Agent for your next message/ });
+  fireEvent.click(within(sheet).getByRole("button", { name: "Fable (latest)" }));
   fireEvent.click(within(sheet).getByRole("button", { name: "Use from the next message" }));
   await tick(100);
   fireEvent.change(composer(), { target: { value: "And what about 429s?" } });
@@ -83,6 +124,21 @@ it("switches the model for the next message without asking which agent should ge
   expect(screen.getAllByText(/^Replied · /).map((d) => d.textContent)).toEqual([expect.stringMatching(/^Replied · \d/), expect.stringMatching(/^Replied · Claude .+ · \d/)]);
 });
 
+/** Turn into a task, from the chat's menu. */
+async function intoTask() {
+  fireEvent.click(screen.getByRole("button", { name: "More about this conversation" }));
+  await tick(100);
+  fireEvent.click(within(screen.getByRole("dialog", { name: /This conversation/ })).getByRole("button", { name: /^Turn into a task/ }));
+  await tick(100);
+}
+
+/** A control in the access bar, opened from its summary line first. */
+function control(name: string | RegExp): HTMLElement {
+  const line = document.querySelector(".access__line");
+  if (line?.getAttribute("aria-expanded") === "false") fireEvent.click(line);
+  return screen.getByRole("button", { name });
+}
+
 /** Frees pTide, which tFlaky holds while it waits for approval. */
 function freeWriter() {
   const host = window.__sim!.host;
@@ -94,8 +150,7 @@ it("Turn into a task carries the conversation on in Work mode, moving it from Ch
   const started = await begin();
   freeWriter();
   await tick(100);
-  fireEvent.click(screen.getByRole("button", { name: /Turn into a task/ }));
-  await tick(100);
+  await intoTask();
   const sheet = screen.getByRole("dialog", { name: /Turn into a task/ });
   fireEvent.click(within(sheet).getByRole("button", { name: "Start the task" }));
   await tick(4000);
@@ -104,14 +159,33 @@ it("Turn into a task carries the conversation on in Work mode, moving it from Ch
   expect(task.conversation).toBeFalsy();
 });
 
+it("Turn into a task keeps what was typed while another screen is in front, and has it back on Back", async () => {
+  const started = await begin();
+  freeWriter();
+  // Mount Chat again inside a screen the shell can hide, as a tapped notification does.
+  cleanup();
+  const route = { screen: "talk" as const };
+  const tree = (active: boolean) => <AppProvider app={app}><SurfaceActive.Provider value={active}><RouteProvider value={{ tab: "talk", depth: 0, active, route }}><Talk route={route} /></RouteProvider></SurfaceActive.Provider></AppProvider>;
+  const mounted = render(tree(true)); await tick(100);
+  await intoTask();
+  const sheet = () => within(screen.getByRole("dialog", { name: /Turn into a task/ }));
+  fireEvent.change(sheet().getByRole("textbox"), { target: { value: "Add the backoff cap we talked about." } });
+  mounted.rerender(tree(false)); await tick(100);
+  expect(document.querySelector("dialog[open]")).toBeNull();
+  mounted.rerender(tree(true)); await tick(100);
+  expect(sheet().getByRole<HTMLTextAreaElement>("textbox").value).toBe("Add the backoff cap we talked about.");
+  fireEvent.click(sheet().getByRole("button", { name: "Start the task" }));
+  await tick(4000);
+  expect(window.__sim!.host.tasks.find((t) => t.task_id === started.task_id)).toMatchObject({ mode: "work" });
+});
+
 it("Turn into a task keeps the conversation's access, says all of it, and keeps the access bar", async () => {
   const started = await begin();
   freeWriter();
-  fireEvent.click(screen.getByRole("button", { name: "Internet" }));
+  fireEvent.click(control("Internet"));
   await tick(2000);
   expect(conversation().access).toMatchObject({ internet: false, write: [] });
-  fireEvent.click(screen.getByRole("button", { name: /Turn into a task/ }));
-  await tick(100);
+  await intoTask();
   const sheet = screen.getByRole("dialog", { name: /Turn into a task/ });
   const name = window.__sim!.host.projects.find((p) => p.project_id === ids.pTide)!.name;
   expect(sheet.textContent).toContain(`It keeps this conversation’s access, and may change ${name}.`);
@@ -121,14 +195,13 @@ it("Turn into a task keeps the conversation's access, says all of it, and keeps 
   const task = window.__sim!.host.tasks.find((t) => t.task_id === started.task_id)!;
   expect(task.conversation).toBeFalsy();
   expect(task.access).toMatchObject({ internet: false, write: [ids.pTide] });
-  expect(screen.getByRole("button", { name: "Internet" }).getAttribute("aria-pressed")).toBe("false");
-  expect(screen.getByRole("button", { name: /^Change & run: / }).getAttribute("aria-label")).toBe(`Change & run: ${name}`);
+  expect(control("Internet").getAttribute("aria-pressed")).toBe("false");
+  expect(control(/^Change & run: /).getAttribute("aria-label")).toBe(`Change & run: ${name}`);
 });
 
 it("says which task holds the project when a conversation can't become a task yet, and opens it", async () => {
   await begin();
-  fireEvent.click(screen.getByRole("button", { name: /Turn into a task/ }));
-  await tick(100);
+  await intoTask();
   const sheet = screen.getByRole("dialog", { name: /Turn into a task/ });
   expect(sheet.textContent).toMatch(/Fix the flaky retry test in the payments client/);
   expect(within(sheet).getByRole("button", { name: "Start the task" }).hasAttribute("disabled")).toBe(true);

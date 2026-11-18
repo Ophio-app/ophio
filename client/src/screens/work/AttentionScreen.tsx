@@ -16,6 +16,7 @@ import type { Approval, AttentionItem, DeclineReason, InboxReportCode, ReportVer
 import { declineWords } from "../../reports/words";
 import { REPORT_INBOX_FEATURE, REPORT_LOOK_INTO_FEATURE } from "../../diagnostics/constants";
 import { APPROVALS_NOT_GRANTED, UnsavedAnswer, useApprovalDecision } from "./shared";
+import { QuestionReply } from "./QuestionReply";
 import "./work.css";
 import { useQueue, pendingQueueItems } from "./useQueue";
 import { PrChip } from "../github/PrSheet";
@@ -32,6 +33,7 @@ type Destination =
   | { kind: "talk"; task: Task }
   | { kind: "queue"; task: Task }
   | { kind: "sign_in"; accountId: string }
+  | { kind: "agent_update" }
   | { kind: "missing"; reason: string };
 
 /** A problem report someone sent to the owner's intake, for the owner to read. */
@@ -42,7 +44,17 @@ export function isInboxItem(item: AttentionItem): boolean {
 /** Never substitute the task's newest run for the immutable alert reference. */
 export function attentionDestination(item: AttentionItem | undefined, state: Pick<HostState, "tasks" | "runs" | "approvals" | "caughtUp"> & Partial<Pick<HostState, "grants">>, now: number): Destination {
   if (!item) return { kind: "missing", reason: state.caughtUp ? "This item is no longer available on the computer." : "Waiting for the computer’s current items…" };
+  if (item.agent_update) return item.resolved_at === null ? { kind: "agent_update" } : { kind: "missing", reason: "This agent update notice is closed." };
   if (isSignInItem(item)) return item.resolved_at === null ? { kind: "sign_in", accountId: item.account_id! } : { kind: "missing", reason: "This notice is closed: the agent was signed in again or the notice was put away." };
+  // Keep an answered question where it was answered, including when its
+  // notification has closed. Never substitute another request or run.
+  const settledQuestion = item.approval_id ? state.approvals[item.approval_id] : undefined;
+  if (state.grants?.approvals !== false && settledQuestion?.kind === "question" && settledQuestion.state !== "pending"
+    && (!item.task_id || item.task_id === settledQuestion.task_id) && (!item.run_id || item.run_id === settledQuestion.run_id))
+    return { kind: "request", approval: settledQuestion };
+  const conversation = item.task_id ? state.tasks[item.task_id] : undefined;
+  // A reply is part of its conversation, even if the alert was since closed.
+  if (conversation?.conversation && (item.resolved_at !== null || ((item.kind === "completed" || item.kind === "failure") && !item.approval_id))) return { kind: "talk", task: conversation };
   if (item.resolved_at !== null) return { kind: "missing", reason: "This update has already been handled. It no longer needs a decision." };
   if (item.kind === "approval" || item.approval_id) {
     const approval = item.approval_id ? state.approvals[item.approval_id] : undefined;
@@ -105,14 +117,17 @@ export default function Attention({ route }: RouteProps<"attention">) {
   const projectId = kind === "talk" || kind === "queue" ? destination.task.project_id : null;
   useLayoutEffect(() => {
     if (!active || (item?.report_id && kind !== "report_fix")) return;
-    if (kind === "queue" && taskId && projectId && queueItemId) {
+    if (kind === "agent_update") {
+      placeAttention(ui, route.attentionId, { screen: "settings", section: "settings-agents" });
+    } else if (kind === "queue" && taskId && projectId && queueItemId) {
       ui.contextProject(projectId);
       placeAttention(ui, route.attentionId, { screen: "review", projectId, taskId, queueItemId });
     } else if (kind === "talk" && taskId && projectId) {
-      ui.finish(["attention"]);
+      // Remove the alert before opening Chat, so Back returns to its caller.
+      ui.back();
       ui.openTask(projectId, taskId);
     } else {
-      placeAttention(ui, route.attentionId, kind === "receipt" && taskId ? { screen: "receipt", taskId, ...(runId ? { runId } : {}) } : route);
+      placeAttention(ui, route.attentionId, kind === "receipt" && taskId ? { screen: "receipt", taskId, taskEntry: true, ...(runId ? { runId } : {}) } : route);
     }
   }, [ui, route, active, kind, taskId, projectId, runId, queueItemId]);
   if (item && isSignInItem(item)) return <Screen title="Sign in again" className="work-screen"><SignInAttention item={item} reason={destination.kind === "missing" ? destination.reason : null} /></Screen>;
@@ -127,7 +142,7 @@ export default function Attention({ route }: RouteProps<"attention">) {
           : !state.caughtUp && item && <Notice tone="unknown">Checking this item’s current state with the computer…</Notice>}
         {queuedTask && <Notice>{queueError ?? (queue ? "This queue item no longer needs a go-ahead at the front of Next up." : "Loading the queued request…")}</Notice>}
         {destination.kind === "missing" && <Notice>{destination.reason}</Notice>}
-        {request ? <AttentionApproval key={`${request.approval_id}:${request.requested_at}:${request.kind}`} approval={request} agent={task?.harness === "codex" ? "Codex" : task ? "Claude Code" : "The agent"} /> : item && <>
+        {request ? <AttentionApproval key={`${request.approval_id}:${request.requested_at}:${request.kind}`} approval={request} task={task} agent={task?.harness === "codex" ? "Codex" : task ? "Claude Code" : "The agent"} /> : item && <>
           <h2 className="work-card-title">{item.title}</h2>
           {task && <p className="work-muted">{state.projects[task.project_id]?.name} · {task.title}</p>}
           <p className="work-caption">Received <Age at={item.created_at} suffix=" ago" /></p>
@@ -304,12 +319,13 @@ function ReportFixDecision({ item, task }: { item: AttentionItem; task: Task }) 
   </>;
 }
 
-function AttentionApproval({ approval, agent }: { approval: Approval; agent: string }) {
-  const { profile } = useApp();
+function AttentionApproval({ approval, agent, task }: { approval: Approval; agent: string; task: Task | undefined }) {
+  const { profile, ui } = useApp();
   const canDecide = useHost((s) => s.grants?.approvals === true);
   const { card, saved } = useApprovalDecision(approval);
   return <>
     <ApprovalCard approval={approval} agent={agent} myDeviceId={profile.deviceId} canDecide={canDecide} {...card} />
     {!saved && <UnsavedAnswer />}
+    <QuestionReply approval={approval} onOpenTask={task ? () => ui.openTask(task.project_id, task.task_id) : undefined} />
   </>;
 }

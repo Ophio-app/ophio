@@ -65,6 +65,9 @@ id_type!(
 );
 id_type!(QueryId);
 id_type!(ProjectId);
+id_type!(CheckId);
+id_type!(CheckDraftId);
+id_type!(CheckJobId);
 id_type!(TaskId);
 id_type!(
     /// One dispatch of a task to a native harness session.

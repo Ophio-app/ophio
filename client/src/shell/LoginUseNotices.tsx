@@ -3,14 +3,19 @@ import { useEffect, useRef } from "react";
 import { useApp, useHost } from "../app/context";
 import { toast } from "../design/Toast";
 import { isActiveTask } from "../state/projection";
+import type { Task } from "../protocol/types";
 
 /**
  * Tells the owner, while the app is open, each time an agent used a login
  * they asked to hear about. Only uses heard live: a reconnect's replay does
  * not tell of them again, and nothing is sent when the app is closed.
  */
-export function LoginUseNotices() {
+export function LoginUseNotices({ onOpenTask }: { onOpenTask?: (task: Task) => void } = {}) {
   const { ui } = useApp();
+  // A toast can outlive a side change. Its action must use today's routing
+  // destination rather than the side that originally heard the notice.
+  const destination = useRef({ ui, onOpenTask });
+  destination.current = { ui, onOpenTask };
   const use = useHost((s) => s.agentLoginUse);
   const task = useHost((s) => (use ? s.tasks[use.taskId] ?? null : null));
   // Whatever was already recorded when this mounted has been told of, or was never live.
@@ -22,7 +27,9 @@ export function LoginUseNotices() {
       action: task ? {
         label: "Open task",
         run: () => {
-          if (isActiveTask(task)) ui.openTask(task.project_id, task.task_id);
+          const { ui, onOpenTask } = destination.current;
+          if (onOpenTask) onOpenTask(task);
+          else if (isActiveTask(task)) ui.openTask(task.project_id, task.task_id);
           else ui.push({ screen: "receipt", taskId: task.task_id });
         },
       } : undefined,

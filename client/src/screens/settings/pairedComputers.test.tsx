@@ -7,6 +7,7 @@ import { UiStore } from "../../app/ui";
 import { HostSession } from "../../host/session";
 import type { HostProfile } from "../../host/link";
 import { createSimPlatform } from "../../dev/sim/platform";
+import { SurfaceActive } from "../../design/surface";
 import { PairedComputers, sharedNames } from "./PairedComputers";
 
 let app: App;
@@ -46,6 +47,17 @@ it("tells two computers with one name apart by fingerprint, address and when eac
   expect(document.getElementById(change.getAttribute("aria-describedby")!)?.textContent).toContain("47101");
 });
 
+it("keeps long computer names in accessible labels, not in repeated button text", () => {
+  const long = "Workshop computer in the northern office";
+  app = { ...app, profiles: [{ ...current, name: long }, { ...old(current), name: long }] };
+  render(<PairedComputers />, { wrapper });
+  const [now, before] = cards();
+  expect(within(now!).getByRole("button", { name: `Rename ${long}` }).textContent).toBe("Rename");
+  expect(within(before!).getByRole("button", { name: `Switch to ${long}` }).textContent).toBe("Switch");
+  expect(within(before!).getByRole("button", { name: `Rename ${long}` }).textContent).toBe("Rename");
+  expect(within(before!).getByRole("button", { name: `Switch to ${long}` }).getAttribute("aria-describedby")).toBeTruthy();
+});
+
 it("shows only the names when every computer has its own", () => {
   app = { ...app, profiles: [current, { ...old(current), name: "spare" }] };
   render(<PairedComputers />, { wrapper });
@@ -63,6 +75,24 @@ it("renames a paired computer on this device", async () => {
   await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save name" })); });
   expect(app.rename).toHaveBeenCalledWith("old", "Old studio");
   expect(screen.queryByLabelText("Computer name")).toBeNull();
+});
+
+it("keeps a typed name while another screen is in front, and drops the sheet for a computer let go of meanwhile", async () => {
+  const tree = (active: boolean) => <AppProvider app={app}><SurfaceActive.Provider value={active}><PairedComputers /></SurfaceActive.Provider></AppProvider>;
+  const view = render(tree(true));
+  fireEvent.click(within(cards()[1]!).getByRole("button", { name: "Rename studio" }));
+  fireEvent.change(screen.getByLabelText("Computer name"), { target: { value: "Old studio" } });
+  view.rerender(tree(false));
+  expect(document.querySelector("dialog[open]")).toBeNull();
+  view.rerender(tree(true));
+  expect(screen.getByLabelText<HTMLInputElement>("Computer name").value).toBe("Old studio");
+
+  view.rerender(tree(false));
+  app = { ...app, profiles: [current] };
+  view.rerender(tree(false));
+  view.rerender(tree(true));
+  expect(screen.queryByLabelText("Computer name")).toBeNull();
+  expect(app.rename).not.toHaveBeenCalled();
 });
 
 it("keeps the sheet open and says why when the name isn't saved", async () => {

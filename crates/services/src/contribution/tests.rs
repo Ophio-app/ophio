@@ -650,7 +650,7 @@ mod engine {
                 input,
             } = self;
             hub.shutdown().await.unwrap();
-            drop(hub);
+            crate::testing::drop_hub_and_wait(hub, std::time::Duration::from_secs(10)).await;
             let hub = CompanionHub::builder()
                 .data_dir(temp.path().join("data"))
                 .clock(clock.clone())

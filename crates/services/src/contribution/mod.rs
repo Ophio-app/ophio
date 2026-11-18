@@ -970,6 +970,8 @@ impl CompanionHub {
                         default_harness: None,
                         default_model: None,
                         default_effort: None,
+                        chat_access: None,
+                        auto_start: None,
                         active_writer: None,
                         stage: None,
                         one_off: false,

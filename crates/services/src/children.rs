@@ -9,6 +9,53 @@ pub(crate) fn stoppable(state: ChildState) -> bool {
     matches!(state, ChildState::Active | ChildState::Unknown)
 }
 
+/// Record local helpers ended only after the run's processes are confirmed gone.
+/// A separate process needs full containment; an unknown lifetime may be remote.
+pub(crate) fn run_processes_ended(
+    tx: &mut store::Write<'_>,
+    run: &mut Run,
+    contained: bool,
+    now: protocol::time::Timestamp,
+) -> store::Result<()> {
+    for child in run.children.iter_mut().filter(|c| stoppable(c.state)) {
+        if child.lifetime == Some(ChildLifetime::InProcess)
+            || (contained && child.lifetime == Some(ChildLifetime::SeparateProcess))
+        {
+            child.state = ChildState::Stopped;
+            child.ended_at = Some(now);
+            child.provenance = Provenance::Observed;
+            child.stop = Some(Availability::Unsupported {
+                reason: "Ended with the run's processes".into(),
+            });
+        }
+    }
+    resolve_ended_attention(tx, run, now)
+}
+
+fn resolve_ended_attention(
+    tx: &mut store::Write<'_>,
+    run: &Run,
+    now: protocol::time::Timestamp,
+) -> store::Result<()> {
+    for mut item in tx.read().list::<AttentionItem>("attention")? {
+        if item.run_id == Some(run.run_id)
+            && item.child_id.is_some()
+            && item.resolved_at.is_none()
+            && !run
+                .children
+                .iter()
+                .any(|c| Some(c.child_id) == item.child_id && stoppable(c.state))
+        {
+            item.resolved_at = Some(now);
+            tx.put("attention", item.attention_id, &item)?;
+            tx.emit(Event::AttentionResolved {
+                attention_id: item.attention_id,
+            })?;
+        }
+    }
+    Ok(())
+}
+
 /// Finished helpers a run lists. An agent can start thousands, and every one
 /// in the run would make its record larger than a control frame.
 const LISTED_FINISHED: usize = 100;
@@ -111,25 +158,7 @@ impl CompanionHub {
             }
             let mut task: Task = tx.read().require("task", run.task_id)?;
             let attention = tx.read().list::<AttentionItem>("attention")?;
-            for mut item in attention
-                .iter()
-                .filter(|a| {
-                    a.run_id == Some(run_id) && a.child_id.is_some() && a.resolved_at.is_none()
-                })
-                .cloned()
-            {
-                if !run
-                    .children
-                    .iter()
-                    .any(|c| Some(c.child_id) == item.child_id && stoppable(c.state))
-                {
-                    item.resolved_at = Some(now);
-                    tx.put("attention", item.attention_id, &item)?;
-                    tx.emit(Event::AttentionResolved {
-                        attention_id: item.attention_id,
-                    })?;
-                }
-            }
+            resolve_ended_attention(tx, &run, now)?;
             for child in run
                 .children
                 .iter()
@@ -163,6 +192,8 @@ impl CompanionHub {
                     account_id: None,
                     alert: None,
                     alert_handled_at: None,
+                    agent_update: None,
+                    new_version: None,
                 };
                 tx.put("attention", item.attention_id, &item)?;
                 tx.emit(Event::AttentionUpserted { item })?;

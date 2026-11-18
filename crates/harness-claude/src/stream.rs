@@ -76,6 +76,12 @@ impl StreamState {
             ..Self::default()
         }
     }
+    /// The sandbox the agent runs in, which its receipt asks which files
+    /// are only its own.
+    pub fn kept_in(mut self, sandbox: Option<std::sync::Arc<dyn ports::sandbox::Sandbox>>) -> Self {
+        self.results.kept_in(sandbox);
+        self
+    }
     pub fn parse(&mut self, value: &Value) -> Vec<HarnessEvent> {
         self.results.observe(value);
         let mut out = Vec::new();
@@ -424,10 +430,12 @@ impl StreamState {
     fn rate_limit(&mut self, info: &Value, out: &mut Vec<HarnessEvent>) {
         let status = info["status"].as_str().unwrap_or("allowed");
         let window = match info["rateLimitType"].as_str() {
-            Some("five_hour") => "five-hour",
-            Some("seven_day") => "weekly",
-            Some("seven_day_opus") => "weekly model",
-            _ => "plan",
+            Some("five_hour") => "five-hour".to_owned(),
+            Some("seven_day") => "weekly".to_owned(),
+            Some("seven_day_opus") => "weekly Opus".to_owned(),
+            Some("seven_day_sonnet") => "weekly Sonnet".to_owned(),
+            Some(other) if !other.is_empty() => other.replace('_', " "),
+            _ => "plan".to_owned(),
         };
         let state = (status != "allowed").then(|| format!("{status}/{window}"));
         if state == self.limited {
@@ -442,7 +450,7 @@ impl StreamState {
             }
             _ => format!("Claude Code reports the {window} usage limit is reached"),
         };
-        out.push(HarnessEvent::Warning { text });
+        out.push(HarnessEvent::UsageNotice { text });
         let overage = info["isUsingOverage"] == true
             || matches!(
                 info["overageStatus"].as_str(),
@@ -526,7 +534,7 @@ mod quiet_lines {
             .parse(&line)
             .into_iter()
             .filter_map(|e| match e {
-                HarnessEvent::Warning { text } => Some(text),
+                HarnessEvent::Warning { text } | HarnessEvent::UsageNotice { text } => Some(text),
                 _ => None,
             })
             .collect()
@@ -579,6 +587,27 @@ mod quiet_lines {
             ["Claude usage is available again"]
         );
         assert!(notes(&mut state, limit("allowed")).is_empty());
+    }
+
+    #[test]
+    fn distinct_limit_names_keep_distinct_notices() {
+        let mut state = StreamState::new(TaskMode::Work);
+        let mut seen = std::collections::HashSet::new();
+        for window in [
+            "five_hour",
+            "seven_day",
+            "seven_day_opus",
+            "seven_day_sonnet",
+            "future_limit",
+        ] {
+            let parsed = state.parse(&json!({"type":"rate_limit_event","rate_limit_info":{
+                "status":"allowed_warning", "rateLimitType":window,
+            }}));
+            let [HarnessEvent::UsageNotice { text }] = parsed.as_slice() else {
+                panic!("expected a typed usage notice: {parsed:?}")
+            };
+            assert!(seen.insert(text.clone()));
+        }
     }
 
     #[test]

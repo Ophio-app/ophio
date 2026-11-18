@@ -31,6 +31,7 @@ async fn watched() -> Watched {
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,

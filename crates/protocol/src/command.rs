@@ -47,12 +47,57 @@ pub struct CommandEnvelope {
     pub body: Command,
 }
 
+/// A bounded phone observation of an interrupted stream, not authoritative
+/// native output. Used only to anchor the next explicit carry-on turn.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct ObservedReply {
+    pub run_id: RunId,
+    pub message_key: String,
+    #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
+    pub text_offset: u64,
+    pub text: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
 #[serde(tag = "command", rename_all = "snake_case")]
 #[ts(export)]
 // Keep the command wire API direct; boxing changes every producer for a small memory saving.
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
+    ChecksSave {
+        project_id: ProjectId,
+        #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
+        base_version: u64,
+        edit: crate::checks::CheckEdit,
+    },
+    ChecksAsk {
+        project_id: ProjectId,
+        #[serde(default)]
+        check_id: Option<CheckId>,
+        request: String,
+    },
+    ChecksApplyDraft {
+        draft_id: CheckDraftId,
+        #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
+        base_version: u64,
+        keep_items: Vec<u32>,
+    },
+    ChecksDiscardDraft {
+        draft_id: CheckDraftId,
+    },
+    ChecksRunNow {
+        project_id: ProjectId,
+        check_ids: Vec<CheckId>,
+    },
+    ChecksStopJob {
+        job_id: CheckJobId,
+        // The person has checked that an uncertain job stopped. This never
+        // overrides a process Ophio can positively see is still running.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        #[ts(as = "Option<bool>", optional)]
+        confirmed_stopped: bool,
+    },
     /// Store inert records for local review. Does not fetch or register a project.
     ReviewContribution {
         input: Box<crate::contribution::ContributionInput>,
@@ -83,6 +128,17 @@ pub enum Command {
         harness: Option<HarnessKind>,
         model: Option<String>,
         effort: Option<String>,
+    },
+    /// Remember the person's choice for new chats in this project.
+    SetChatAccessDefault {
+        project_id: ProjectId,
+        access: Option<crate::access::ConversationAccess>,
+    },
+    /// Start what this project's chats' agents propose without asking, with
+    /// these limits; none turns it off. The person's alone to change.
+    SetAutoStart {
+        project_id: ProjectId,
+        auto_start: Option<crate::work_cards::AutoStart>,
     },
     /// Make a one-off folder an ordinary project, listed with the others.
     PromoteOneOff {
@@ -133,6 +189,14 @@ pub enum Command {
     CreateTask {
         project_id: ProjectId,
         kind: TaskKind,
+        /// Chat turn and suggested-work position this task was started from.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        origin: Option<crate::work_cards::TaskOrigin>,
+        /// The conversation this task was turned from; its first turn is told what was said there.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        from_chat: Option<TaskId>,
         /// Omission preserves the existing Work behavior.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         #[ts(optional)]
@@ -206,6 +270,17 @@ pub enum Command {
         text: String,
         bundle: Option<Box<AnnotationBundle>>,
         delivery: MessageDelivery,
+        /// Chat-only choices for a queued next turn. Never redirect a live turn.
+        /// Advertised as `chat_agent_switch_v1`. Omission keeps the running choice.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        harness: Option<HarnessKind>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        model: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        effort: Option<String>,
     },
     /// Stop the task's active run (native interrupt). Never queued behind
     /// media or other traffic. The outcome arrives as an intervention receipt.
@@ -215,9 +290,20 @@ pub enum Command {
         #[ts(as = "Option<bool>", optional)]
         force: bool,
     },
-    /// Start a new run continuing an interrupted/completed task.
+    /// Start a new run continuing an interrupted/completed task. A chat whose
+    /// reply was cut off, once its agent and what it started under Øphio
+    /// have stopped (`Run::nothing_running`), carries on too, given only the
+    /// person's next message: its old turn is settled as stopped, with
+    /// `Run::carried_on`.
+    /// Advertised as `chat_carry_on_v1`.
     ResumeTask {
         task_id: TaskId,
+        /// Chat-only agent for this and later turns. With an explicit agent,
+        /// omitted model and effort use its defaults, never the previous agent's.
+        /// Advertised as `chat_agent_switch_v1`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        harness: Option<HarnessKind>,
         /// Explicit reviewed transition from a completed Plan to Work, or
         /// from a conversation to Work, which makes it a task. Omit to keep
         /// the mode.
@@ -243,6 +329,11 @@ pub enum Command {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         #[ts(optional)]
         carried_plan: Option<CarriedPlan>,
+        /// Optional phone-observed tail ahead of the durable interrupted reply.
+        /// Never becomes native history. Advertised as `chat_reply_recovery_v1`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        observed_reply: Option<ObservedReply>,
         /// Run this one turn in Ask, with the task's own session, model and
         /// effort, while the task keeps its mode: the agent can read and
         /// answer but change nothing, and no writer is needed. The task's
@@ -601,9 +692,25 @@ pub enum Command {
         bundle: Option<Box<AnnotationBundle>>,
         authorization: QueueAuthorization,
     },
-    /// Keep Øphio's own copies of the agents up to date, or go back to the
-    /// programs installed on the computer. Advertised as `agent_updates_v1`.
+    /// Legacy setting: true chooses Automatic; false chooses Never. Existing
+    /// copies remain usable. Advertised as `agent_updates_v1`.
     SetAgentUpdates {
+        enabled: bool,
+    },
+    /// Three-way update policy. Advertised as `agent_update_policy_v1`.
+    SetAgentUpdateMode {
+        mode: crate::agent_updates::AgentUpdateMode,
+    },
+    /// Check releases without downloading or changing the update policy.
+    CheckAgentUpdates {},
+    /// Update only this agent once, retaining the copy in any policy mode.
+    UpdateAgent {
+        harness: HarnessKind,
+    },
+    /// Check once a day whether a newer Øphio is out for this computer, or
+    /// stop checking. Advertised as `release_check_v1`; takes the view's
+    /// revision as the expected one.
+    SetReleaseCheck {
         enabled: bool,
     },
     /// How the person likes agents to work with them, in every task from the
@@ -943,6 +1050,16 @@ pub enum ReceiptStatus {
 #[serde(tag = "kind", rename_all = "snake_case")]
 #[ts(export)]
 pub enum CommandResult {
+    ChecksSaved {
+        approved: crate::checks::ProjectChecks,
+        job_id: Option<CheckJobId>,
+    },
+    ChecksDraft {
+        draft: crate::checks::ChecksDraft,
+    },
+    CheckJob {
+        job: crate::checks::CheckJob,
+    },
     Contribution {
         operation: crate::contribution::ContributionView,
     },

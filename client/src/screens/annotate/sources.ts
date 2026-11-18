@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { PRODUCT_NAME } from "../../brand";
+import { decodeImage } from "../../platform/images";
 import { commandResult } from "../../host/commandResult";
 import { download, sha256Hex } from "../../host/transfer";
 import type { Platform } from "../../host/link";
@@ -47,13 +48,13 @@ export async function imageSize(
   blob: Blob,
 ): Promise<{ width: number; height: number }> {
   try {
-    const image = await createImageBitmap(blob);
+    const image = await decodeImage(blob);
     const result = { width: image.width, height: image.height };
     image.close();
     return result;
   } catch {
     throw new SourceError(
-      "This image couldn’t be decoded. Choose a PNG, JPEG or WebP image.",
+      "This device can’t open this picture. Try a screenshot, or save it as PNG or JPEG and attach it again.",
     );
   }
 }
@@ -254,7 +255,7 @@ export async function deriveStill(
   const blob = source.blobKey ? await blobs.get(source.blobKey) : null;
   if (!blob)
     throw new SourceError("The original image is missing from this device.");
-  const image = await createImageBitmap(blob),
+  const image = await decodeImage(blob),
     canvas = document.createElement("canvas");
   try {
     canvas.width = image.width;
@@ -270,7 +271,7 @@ export async function deriveStill(
       canvas.width = Math.max(1, Math.ceil(derivation.w * image.width));
       canvas.height = Math.max(1, Math.ceil(derivation.h * image.height));
       context.drawImage(
-        image,
+        image.image,
         x,
         y,
         canvas.width,
@@ -281,7 +282,7 @@ export async function deriveStill(
         canvas.height,
       );
     } else {
-      context.drawImage(image, 0, 0);
+      context.drawImage(image.image, 0, 0);
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
       redactPixels(
         pixels.data,

@@ -2,13 +2,41 @@
 
 /* ---- Frame ------------------------------------------------------------- */
 
+.pane {
+  position: relative;
+  container: pane / size;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+.pane.pane-split::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+  border: 1px solid var(--line);
+  pointer-events: none;
+}
+.pane.pane-split.pane-active::after { border-color: var(--accent); }
+@media (forced-colors: active) {
+  .pane.pane-split.pane-active::after { border-color: Highlight; }
+}
+
+/* The coordinator owns the slot size; app content must not restore the
+   whole device's height or an intrinsic minimum inside either slot. */
+.pane .app { height: 100%; min-width: 0; min-height: 0; }
+.pane :is(.app__main, .screen, .screen__body, .screen__footer, .app__safety) { min-width: 0; }
+
 .app {
   --nav-h: 4rem;
   position: relative;
   display: grid;
   grid-template: "notice" auto "main" minmax(0, 1fr) "safety" auto "nav" auto / minmax(0, 1fr);
   height: 100%;
-  height: 100dvh;
+  height: calc(100 * var(--pane-vh, 1dvh));
   background: var(--bg);
   /* The frame never scrolls, not even to reveal a focused control: moved, it
      would lift the navigation over a blank band. Screens scroll inside it. */
@@ -21,7 +49,7 @@
   min-width: 0;
   min-height: 0;
   /* Keep the screen and Stop usable with large text or a short viewport. */
-  max-height: 40dvh;
+  max-height: calc(40 * var(--pane-vh, 1dvh));
   overflow: auto;
 }
 
@@ -273,6 +301,14 @@
   flex: none;
 }
 
+/* At large text sizes a split pane's project name must not collapse to a
+   few pixels between its close/settings controls and the computer pill. */
+@container pane (max-width: 18rem) {
+  .pane-split .ctx:not(.chat-head) { flex-wrap: wrap; }
+  .pane-split .ctx:not(.chat-head) > :is(.ctx__heading, .ctx__context) { flex: 1 0 100%; }
+  .pane-split .ctx:not(.chat-head) > .ctx__end { flex: 1 0 100%; justify-content: flex-end; }
+}
+
 /* ---- Connection status ---------------------------------------------------- */
 
 .status {
@@ -366,19 +402,19 @@
 }
 /* Cramped, the bar keeps to the height of its buttons and the subtitle follows
    the title where it fits, so the screen below keeps its content. */
-:root.app-cramped .bar {
+:is(:root:not(:has(.pane)), .pane).app-cramped .bar {
   min-height: calc(var(--target) + var(--safe-top));
 }
-:root.app-cramped .bar__titles {
+:is(:root:not(:has(.pane)), .pane).app-cramped .bar__titles {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   column-gap: var(--s2);
 }
-:root.app-cramped .bar__title {
+:is(:root:not(:has(.pane)), .pane).app-cramped .bar__title {
   min-width: 0;
 }
-:root.app-cramped .bar__subtitle {
+:is(:root:not(:has(.pane)), .pane).app-cramped .bar__subtitle {
   flex: 1 1 4rem;
 }
 
@@ -466,11 +502,11 @@
 }
 
 /* Keyboard open: content and input first. The header offers Hide keyboard. */
-:root.kb-open .nav {
+:is(:root:not(:has(.pane)), .pane).kb-open .nav {
   display: none;
 }
-@media (max-height: 520px) {
-  :root.kb-open .ctx__computer {
+@container pane (max-height: 520px) {
+  :is(:root:not(:has(.pane)), .pane).kb-open .ctx__computer {
     display: none;
   }
 }
@@ -478,35 +514,35 @@
 /* Short for the text size (large text, a phone on its side; see keyboard.ts):
    each pinned bar keeps to one line of essentials, so the content keeps a
    readable share of the screen. Nothing is removed that isn't one tap away. */
-:root.app-tight .app {
+:is(:root:not(:has(.pane)), .pane).app-tight .app {
   /* The pill and one line of label; never below a touch target. */
   --nav-h: max(48px, calc(2.55rem + 6px));
 }
-:root.app-tight .nav__tab {
+:is(:root:not(:has(.pane)), .pane).app-tight .nav__tab {
   gap: 0;
   padding: 2px 0 var(--s1);
 }
-:root.app-tight .nav__pill {
+:is(:root:not(:has(.pane)), .pane).app-tight .nav__pill {
   height: 1.625rem;
 }
 
 /* If a screen's own pinned parts still outgrow it, the screen scrolls as a
    whole rather than letting them spill over the safety strip; its body keeps
    a readable minimum. */
-:root.app-tight .screen {
+:is(:root:not(:has(.pane)), .pane).app-tight .screen {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-:root.app-tight .screen__body {
+:is(:root:not(:has(.pane)), .pane).app-tight .screen__body {
   min-height: min(10rem, 45%);
 }
 /* In All, which computer the project is on stays: it is the only place
    that says so. */
-:root.app-tight .ctx__computer:not(.ctx__computer--all) {
+:is(:root:not(:has(.pane)), .pane).app-tight .ctx__computer:not(.ctx__computer--all) {
   display: none;
 }
 /* Without the computer's line the header needs only its touch target. */
-:root.app-tight .ctx {
+:is(:root:not(:has(.pane)), .pane).app-tight .ctx {
   min-height: calc(var(--target) + var(--safe-top));
 }
 
@@ -514,22 +550,22 @@
    screen bar keeps Back and its actions on one row and gives the title the
    full width below, and the attention entry stacks its time under the
    chevron beside the label. */
-:root.app-narrow .bar {
+:is(:root:not(:has(.pane)), .pane).app-narrow .bar {
   flex-wrap: wrap;
 }
-:root.app-narrow .bar__titles {
+:is(:root:not(:has(.pane)), .pane).app-narrow .bar__titles {
   flex: 1 0 100%;
   order: 2;
   padding: 0 var(--s3) var(--s2);
 }
-:root.app-narrow .bar__title {
+:is(:root:not(:has(.pane)), .pane).app-narrow .bar__title {
   font-size: var(--text-md);
 }
-:root.app-narrow .bar__subtitle {
+:is(:root:not(:has(.pane)), .pane).app-narrow .bar__subtitle {
   white-space: normal;
   overflow-wrap: break-word;
 }
-:root.app-narrow .bar__actions {
+:is(:root:not(:has(.pane)), .pane).app-narrow .bar__actions {
   margin-left: auto;
 }
 
@@ -539,7 +575,7 @@
 }
 
 /* Wide screens (tablets, landscape, desktop windows): a side rail. */
-@media (min-width: 900px) {
+@container pane (min-width: 900px) {
   .app {
     grid-template: "nav notice" auto "nav main" minmax(0, 1fr) "nav safety" auto / 5.5rem minmax(0, 1fr);
   }
@@ -553,17 +589,17 @@
     border-top: 0;
     border-right: 1px solid var(--line);
   }
-  :root.kb-open .nav {
+  :is(:root:not(:has(.pane)), .pane).kb-open .nav {
     display: grid;
   }
 }
 
 /* A phone on its side, on every tab: navigation and the safety rail share
    the bottom row, so the content keeps most of the short height. */
-@media (max-height: 480px) and (min-width: 700px) {
+@container pane (max-height: 480px) and (min-width: 700px) {
   .app__notice {
     /* Leave room below the screen header and tabs, even at 200% text. */
-    max-height: 20dvh;
+    max-height: calc(20 * var(--pane-vh, 1dvh));
   }
   .app {
     grid-template: "notice" auto "main" minmax(0, 1fr) "safety" auto "nav" auto / minmax(0, 1fr);
@@ -587,7 +623,7 @@
   .nav__pill {
     width: 2.75rem;
   }
-  :root.kb-open .nav {
+  :is(:root:not(:has(.pane)), .pane).kb-open .nav {
     display: none;
   }
 }
@@ -649,7 +685,7 @@
   flex: 0 1 auto;
   overflow: hidden;
 }
-:root:is(.app-tight, .kb-open) .toast:not(:last-of-type) {
+:is(:root:not(:has(.pane)), .pane):is(.app-tight, .kb-open) .toast:not(:last-of-type) {
   display: none;
 }
 .toast__icon {
@@ -716,7 +752,7 @@
 }
 /* Narrow for its text size: the text keeps the width and the action takes
    its own line under it. */
-:root.app-narrow .toast {
+:is(:root:not(:has(.pane)), .pane).app-narrow .toast {
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -724,10 +760,10 @@
     ". action action";
   align-items: start;
 }
-:root.app-narrow .toast__icon {
+:is(:root:not(:has(.pane)), .pane).app-narrow .toast__icon {
   margin-top: calc(var(--s2) + 0.2em);
 }
-:root.app-narrow .toast__action {
+:is(:root:not(:has(.pane)), .pane).app-narrow .toast__action {
   justify-self: start;
   margin-left: calc(-1 * var(--s3) + var(--s1));
 }
@@ -759,6 +795,12 @@
 }
 .row__reported {
   white-space: normal;
+}
+/* A project's counts stay together: on a narrow screen they move under the
+   name as one line instead of stacking one pill per line at the right. */
+.row__pills--counts {
+  max-width: 100%;
+  justify-content: flex-start;
 }
 .row__check {
   width: 1.25rem;
@@ -823,7 +865,7 @@
   position: fixed;
   z-index: 90;
   inset: max(8px, env(safe-area-inset-top)) 12px auto;
-  max-height: 45dvh;
+  max-height: calc(45 * var(--pane-vh, 1dvh));
   overflow: auto;
   display: grid;
   gap: 8px;
@@ -837,7 +879,7 @@
 
 /* The collapsed safety rail reserves space for the current screen's action.
    Expanding it reveals full task names and every other intervention. */
-:root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
+:is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
   padding-block: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -849,19 +891,19 @@
 /* Beside navigation the rail's Stop has two lines. The action word stays
    whole: the task name is cut short on the first line, and the display it
    uses takes the second, so neither is cut to a fragment of the other. */
-@media (max-height: 480px) and (min-width: 700px) {
-  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop .named-stop__button .btn__label {
+@container pane (max-height: 480px) and (min-width: 700px) {
+  :is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) .named-stop .named-stop__button .btn__label {
     display: grid;
     grid-template-columns: auto auto minmax(0, 1fr);
     column-gap: 0.3em;
     white-space: nowrap;
   }
-  :root.app-tight .safety-rail:not(.safety-rail--expanded) :is(.named-stop__task, .named-stop__display) {
+  :is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) :is(.named-stop__task, .named-stop__display) {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__display { grid-column: 1 / -1; }
-  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__sep { display: none; }
+  :is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__display { grid-column: 1 / -1; }
+  :is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__sep { display: none; }
 }
 
 /* Expanded safety owns the space above navigation. Only its content scrolls,
@@ -880,17 +922,17 @@
 .sheet[open] { visibility: visible; }
 
 /* On tablets the expanded rail overlays only the room its controls need. */
-@media (min-width: 700px) {
+@container pane (min-width: 700px) {
   .app__safety:has(.safety-rail--expanded) {
     align-self: end;
     display: flex;
     flex-direction: column;
     height: fit-content;
-    max-height: min(75dvh, 42rem, 100%);
+    max-height: min(calc(75 * var(--pane-vh, 1dvh)), 42rem, 100%);
   }
   .app__safety > .safety-rail--expanded {
     height: auto;
-    max-height: min(75dvh, 42rem);
+    max-height: min(calc(75 * var(--pane-vh, 1dvh)), 42rem);
   }
   .app:has(> .app__safety > .safety-rail--expanded) > .app__main { visibility: visible; }
 }

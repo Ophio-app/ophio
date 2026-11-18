@@ -234,6 +234,30 @@ pub(crate) fn tell(
     };
     run.told = Some(now);
     tx.put(RUN, project_id, &run)?;
+    // Every chat that started a part of this report hears the same words.
+    let origins: Vec<_> = run
+        .other_origins
+        .iter()
+        .chain(run.view.origin.iter())
+        .collect();
+    if !origins.is_empty() {
+        let text = match &item {
+            Some(item) => match &item.body {
+                Some(body) => format!("{}.\n{body}", item.title),
+                None => format!("{}.", item.title),
+            },
+            None if run.view.stopped => "Run all stopped before any fix came of it.".to_owned(),
+            None => "Run all done: nothing to fix.".to_owned(),
+        };
+        let mut chats = Vec::new();
+        for origin in origins {
+            if chats.contains(&origin.chat) {
+                continue;
+            }
+            chats.push(origin.chat);
+            crate::chat_news::run_all_ended(tx, origin, text.clone(), now)?;
+        }
+    }
     match item {
         Some(item) => put_item(tx, item),
         None => Ok(()),

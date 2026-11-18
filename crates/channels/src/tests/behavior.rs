@@ -738,10 +738,13 @@ async fn completion_summaries_are_opt_in_and_live_conversations_are_never_mirror
         task.current_run = Some(run_id);
         task.state = TaskState::Completed;
         let run = Run {
+            chat_handover: None,
             human_resolution: None,
+            carried_on: None,
             helpers_checked: None,
             force_stoppable: false,
             cleanup_pending: false,
+            nothing_running: false,
             run_id,
             task_id: task.task_id,
             harness: task.harness,
@@ -798,6 +801,8 @@ async fn completion_summaries_are_opt_in_and_live_conversations_are_never_mirror
                 at: f.clock.now(),
                 run_id: Some(run_id),
                 item: TimelineBody::AgentMessage {
+                    message_key: None,
+                    text_offset: None,
                     text: "PRIVATE CONVERSATION".into(),
                     partial: false,
                 },
@@ -853,6 +858,8 @@ async fn completed_result_does_not_make_telegram_say_needs_attention() {
             account_id: None,
             alert: None,
             alert_handled_at: None,
+            new_version: None,
+            agent_update: None,
         });
     }
     let snapshot = f.hub.snapshot.lock().unwrap().clone();
@@ -944,6 +951,8 @@ async fn ignored_notifications_do_not_query_snapshots() {
             account_id: None,
             alert: None,
             alert_handled_at: None,
+            new_version: None,
+            agent_update: None,
         };
         let events = [
             Event::TimelineAppended {
@@ -953,6 +962,8 @@ async fn ignored_notifications_do_not_query_snapshots() {
                     at: f.clock.now(),
                     run_id: task.current_run,
                     item: TimelineBody::AgentMessage {
+                        message_key: None,
+                        text_offset: None,
                         text: "Tool progress".into(),
                         partial: false,
                     },
@@ -1059,6 +1070,8 @@ async fn attention_notifications_recheck_latest_context_and_project() {
             account_id: None,
             alert: None,
             alert_handled_at: None,
+            new_version: None,
+            agent_update: None,
         };
         let mut latest = item.clone();
         latest.title = "Latest title".into();
@@ -1121,6 +1134,8 @@ async fn a_notice_handled_on_a_phone_is_not_posted_again_or_late() {
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        new_version: None,
+        agent_update: None,
     };
     let told = waiting("Told once");
     let missed = waiting("Never told");

@@ -33,6 +33,8 @@ fn alert(kind: AttentionKind, at: i64) -> Alert {
         bundle: false,
         report: None,
         sign_in: None,
+        new_version: None,
+        agent_update: None,
         alert_type: None,
         follow: false,
         project_tier: None,
@@ -57,6 +59,8 @@ fn item(alert: &Alert, resolved: bool) -> AttentionItem {
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        new_version: None,
+        agent_update: None,
     }
 }
 async fn watching(fixture: &Fixture) -> support::Client {
@@ -70,6 +74,8 @@ async fn watching_quietly(fixture: &Fixture, quiet: bool) -> support::Client {
             quiet,
             reports: false,
             sign_in: false,
+            new_version: false,
+            agent_updates: false,
             handled: vec![],
             types: false,
         })
@@ -110,7 +116,7 @@ async fn open_list_then_raised_and_resolved_once_each() {
     assert_eq!(
         client.receive::<AlertServerFrame>().await,
         AlertServerFrame::Raised {
-            alert: finished.clone()
+            alert: Box::new(finished.clone())
         }
     );
     // An update to an alert already sent is not a second alert.
@@ -314,7 +320,7 @@ async fn alerts_turned_off_reach_only_a_phone_that_holds_them_quietly() {
         item: item(&next, false),
     });
     let raised = |alert: &Alert| AlertServerFrame::Raised {
-        alert: alert.clone(),
+        alert: Box::new(alert.clone()),
     };
     assert_eq!(new.receive::<AlertServerFrame>().await, raised(&later));
     assert_eq!(new.receive::<AlertServerFrame>().await, raised(&next));
@@ -363,6 +369,8 @@ async fn muting_a_project_sends_a_phone_choosing_by_type_its_alerts_quiet() {
             quiet: true,
             reports: false,
             sign_in: false,
+            new_version: false,
+            agent_updates: false,
             handled: vec![],
             types: true,
         })
@@ -422,6 +430,8 @@ async fn a_reconnect_behind_a_full_list_names_what_the_phone_shows_that_closed_m
             ],
             reports: false,
             sign_in: false,
+            new_version: false,
+            agent_updates: false,
             handled: vec![],
             types: false,
         })
@@ -485,6 +495,8 @@ async fn watch_names_a_bounded_list() {
                 .collect(),
             reports: false,
             sign_in: false,
+            new_version: false,
+            agent_updates: false,
             handled: vec![],
             types: false,
         })
@@ -602,6 +614,8 @@ async fn report_alerts_require_the_watch_capability_in_lists_and_live_events() {
             quiet: true,
             reports: true,
             sign_in: false,
+            new_version: false,
+            agent_updates: false,
             handled: vec![],
             types: false,
         })
@@ -623,7 +637,9 @@ async fn report_alerts_require_the_watch_capability_in_lists_and_live_events() {
     });
     assert_eq!(
         supported.receive::<AlertServerFrame>().await,
-        AlertServerFrame::Raised { alert: next }
+        AlertServerFrame::Raised {
+            alert: Box::new(next)
+        }
     );
     // A normal task alert follows on both connections. On the older phone
     // it must be the very next frame, with no report ahead of it.
@@ -640,12 +656,14 @@ async fn report_alerts_require_the_watch_capability_in_lists_and_live_events() {
     assert_eq!(
         old.receive::<AlertServerFrame>().await,
         AlertServerFrame::Raised {
-            alert: normal.clone()
+            alert: Box::new(normal.clone())
         }
     );
     assert_eq!(
         supported.receive::<AlertServerFrame>().await,
-        AlertServerFrame::Raised { alert: normal }
+        AlertServerFrame::Raised {
+            alert: Box::new(normal)
+        }
     );
     fixture.stop().await;
 }
@@ -682,6 +700,8 @@ async fn sign_in_alerts_reach_only_a_phone_that_says_it_reads_them() {
             quiet: true,
             reports: false,
             sign_in: true,
+            new_version: false,
+            agent_updates: false,
             handled: vec![],
             types: false,
         })
@@ -707,12 +727,129 @@ async fn sign_in_alerts_reach_only_a_phone_that_says_it_reads_them() {
     }
     assert_eq!(
         current.receive::<AlertServerFrame>().await,
-        AlertServerFrame::Raised { alert: again }
+        AlertServerFrame::Raised {
+            alert: Box::new(again)
+        }
     );
     assert_eq!(
         old.receive::<AlertServerFrame>().await,
         AlertServerFrame::Raised {
-            alert: normal.clone()
+            alert: Box::new(normal.clone())
+        }
+    );
+    fixture.stop().await;
+}
+
+#[tokio::test]
+async fn new_version_alerts_reach_only_a_phone_that_says_it_reads_them() {
+    let fixture = Fixture::new().await;
+    let mut newer = alert(AttentionKind::Completed, 10);
+    newer.project_id = "00000000-0000-0000-0000-000000000000".parse().unwrap();
+    newer.task_id = "00000000-0000-0000-0000-000000000000".parse().unwrap();
+    newer.project.clear();
+    newer.task.clear();
+    newer.headline = Some("Øphio 0.3.0 is available".into());
+    newer.alert_type = Some(protocol::notifications::AlertType::NewVersion);
+    newer.new_version = Some(Box::new(protocol::alerts::NewVersionAlert {
+        version: "0.3.0".into(),
+    }));
+    let normal = alert(AttentionKind::Completed, 20);
+    (fixture.hub.alerts.lock().unwrap()).extend([(newer.clone(), true), (normal.clone(), true)]);
+    // An older phone, which couldn't read it, isn't sent it.
+    let mut old = watching(&fixture).await;
+    let AlertServerFrame::Open { alerts, .. } = old.receive().await else {
+        panic!("open")
+    };
+    assert_eq!(alerts, vec![normal.clone()]);
+    let mut current = fixture.authenticated(ConnectionKind::Alerts).await;
+    current
+        .send(&AlertClientFrame::Watch {
+            showing: Vec::new(),
+            quiet: true,
+            reports: false,
+            sign_in: false,
+            new_version: true,
+            agent_updates: false,
+            handled: vec![],
+            types: true,
+        })
+        .await;
+    let AlertServerFrame::Open { alerts, .. } = current.receive().await else {
+        panic!("open")
+    };
+    assert_eq!(alerts, vec![newer, normal]);
+    fixture.stop().await;
+}
+
+#[tokio::test]
+async fn agent_update_alerts_require_capability_and_clear_when_resolved() {
+    use protocol::agent_updates::{AgentUpdateNotice, AgentUpdateNoticeKind};
+    let fixture = Fixture::new().await;
+    let mut newer = alert(AttentionKind::Completed, 10);
+    newer.alert_type = Some(protocol::notifications::AlertType::AgentUpdate);
+    newer.agent_update = Some(Box::new(AgentUpdateNotice {
+        harness: HarnessKind::ClaudeCode,
+        kind: AgentUpdateNoticeKind::UpdateForModels,
+        version: Some("2.1.321".into()),
+        models: vec!["claude-fable-5-2".into()],
+    }));
+    (fixture.hub.alerts.lock().unwrap()).push((newer.clone(), true));
+    let mut old = watching(&fixture).await;
+    let AlertServerFrame::Open { alerts, .. } = old.receive().await else {
+        panic!("open")
+    };
+    assert!(alerts.is_empty());
+    let mut current = fixture.authenticated(ConnectionKind::Alerts).await;
+    current
+        .send(&AlertClientFrame::Watch {
+            showing: vec![],
+            quiet: true,
+            reports: false,
+            sign_in: false,
+            new_version: false,
+            agent_updates: true,
+            handled: vec![],
+            types: true,
+        })
+        .await;
+    let AlertServerFrame::Open { alerts, .. } = current.receive().await else {
+        panic!("open")
+    };
+    assert_eq!(alerts, vec![newer.clone()]);
+    let mut next = newer.clone();
+    next.attention_id = AttentionId::new();
+    let normal = alert(AttentionKind::Completed, 20);
+    (fixture.hub.alerts.lock().unwrap()).extend([(next.clone(), true), (normal.clone(), true)]);
+    for raised in [&next, &normal] {
+        fixture.hub.publish(Event::AttentionUpserted {
+            item: item(raised, false),
+        });
+    }
+    assert_eq!(
+        current.receive::<AlertServerFrame>().await,
+        AlertServerFrame::Raised {
+            alert: Box::new(next)
+        }
+    );
+    assert_eq!(
+        old.receive::<AlertServerFrame>().await,
+        AlertServerFrame::Raised {
+            alert: Box::new(normal.clone())
+        }
+    );
+    assert_eq!(
+        current.receive::<AlertServerFrame>().await,
+        AlertServerFrame::Raised {
+            alert: Box::new(normal)
+        }
+    );
+    fixture.hub.publish(Event::AttentionResolved {
+        attention_id: newer.attention_id,
+    });
+    assert_eq!(
+        current.receive::<AlertServerFrame>().await,
+        AlertServerFrame::Resolved {
+            attention_id: newer.attention_id
         }
     );
     fixture.stop().await;
@@ -726,6 +863,8 @@ async fn watching_by_type(fixture: &Fixture, handled: Vec<AttentionId>) -> suppo
             quiet: true,
             reports: true,
             sign_in: true,
+            new_version: false,
+            agent_updates: false,
             types: true,
             handled,
         })
@@ -873,6 +1012,8 @@ async fn handled_frames_are_refused_from_older_phones_and_when_too_long() {
             quiet: true,
             reports: false,
             sign_in: false,
+            new_version: false,
+            agent_updates: false,
             types: true,
             handled: Vec::new(),
         })
@@ -913,7 +1054,9 @@ async fn an_alert_carries_its_type_its_projects_choice_and_follow() {
     });
     assert_eq!(
         phone.receive::<AlertServerFrame>().await,
-        AlertServerFrame::Raised { alert: muted }
+        AlertServerFrame::Raised {
+            alert: Box::new(muted)
+        }
     );
     fixture.stop().await;
 }

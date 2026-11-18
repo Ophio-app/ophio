@@ -68,6 +68,13 @@ pub enum AlertClientFrame {
         /// sent sign-in alerts at all.
         #[serde(default)]
         sign_in: bool,
+        /// The phone understands [`Alert::new_version`]. Older phones aren't
+        /// sent new-version alerts at all.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        new_version: bool,
+        /// The phone understands agent-update notices and their Settings target.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        agent_updates: bool,
         /// The phone chooses by [`Alert::alert_type`] and
         /// [`Alert::project_tier`] itself: alerts the person turned off on
         /// every phone aren't marked quiet for it, as the phone keeps that
@@ -108,7 +115,7 @@ pub enum AlertServerFrame {
         handled: bool,
     },
     /// A new alert.
-    Raised { alert: Alert },
+    Raised { alert: Box<Alert> },
     /// An alert answered, dismissed or closed anywhere.
     Resolved { attention_id: AttentionId },
     /// One of the person's devices handled this alert's notification: it
@@ -170,6 +177,16 @@ pub struct Alert {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub sign_in: Option<Box<SignInAlert>>,
+    /// A newer Øphio out for the computer. Its `project_id` and `task_id`
+    /// are then the nil id and its `project` and `task` empty. Sent only to
+    /// a phone whose `Watch` said `new_version`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub new_version: Option<Box<NewVersionAlert>>,
+    /// Agent release/model news; sent only when Watch advertises agent_updates.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub agent_update: Option<Box<crate::agent_updates::AgentUpdateNotice>>,
     /// What the notification is about, in the types the person chooses
     /// by. Older computers send none; the phone then works it out. A type
     /// newer than this phone reads as none, so the rest of the list still
@@ -208,6 +225,15 @@ pub struct SignInAlert {
     pub service: String,
 }
 
+/// A newer Øphio out for the computer, as its notification names it:
+/// "Øphio 0.3.0 is available", which opens Settings › Versions.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct NewVersionAlert {
+    /// The version, such as `0.3.0`.
+    pub version: String,
+}
+
 /// An agent's question as a notification shows it, answered with
 /// `ResolveApproval { approval_id, decision: Answer }`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
@@ -241,7 +267,7 @@ impl AttentionKind {
 
 /// A value only a newer computer would send, read as none rather than
 /// refusing the whole frame it came in.
-fn newer_is_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+pub(crate) fn newer_is_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
     T: serde::de::DeserializeOwned,
@@ -278,6 +304,8 @@ mod tests {
                 quiet: false,
                 reports: false,
                 sign_in: false,
+                new_version: false,
+                agent_updates: false,
                 types: false,
                 handled: vec![],
             }
@@ -288,6 +316,8 @@ mod tests {
             quiet: true,
             reports: false,
             sign_in: true,
+            new_version: false,
+            agent_updates: false,
             types: false,
             handled: vec![],
         };
@@ -336,6 +366,31 @@ mod tests {
         assert_eq!(alerts.len(), 1);
         assert_eq!(alerts[0].alert_type, None);
         assert_eq!(alerts[0].project_tier, None);
+    }
+
+    #[test]
+    fn boxed_agent_notice_preserves_the_alert_wire_shape() {
+        let wire = serde_json::json!({
+            "type": "raised",
+            "alert": {
+                "attention_id": AttentionId::new(),
+                "kind": "completed",
+                "project_id": ProjectId::new(),
+                "project": "",
+                "task_id": TaskId::new(),
+                "task": "",
+                "harness": "codex",
+                "created_at": 1,
+                "agent_update": {
+                    "harness": "codex",
+                    "kind": "behind",
+                    "version": "2.0.0",
+                    "models": [],
+                },
+            },
+        });
+        let frame: AlertServerFrame = serde_json::from_value(wire.clone()).unwrap();
+        assert_eq!(serde_json::to_value(frame).unwrap(), wire);
     }
 
     #[test]

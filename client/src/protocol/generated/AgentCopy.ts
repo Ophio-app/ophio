@@ -3,18 +3,19 @@ import type { HarnessKind } from "./HarnessKind";
 import type { Timestamp } from "./Timestamp";
 
 /**
- * Where Øphio's copy of one agent stands.
+ * What is known, not inferred, about one agent's programs.
  */
 export type AgentCopy = { harness: HarnessKind, 
 /**
- * The version tasks start with, `None` before the first copy.
+ * Compatibility field: the version of Ophio's own copy.
  */
 version: string | null, 
 /**
- * When Øphio last asked the agent's maker for its newest version.
+ * The version tasks actually start; unknown when it cannot be established.
  */
-checked_at: Timestamp | null, 
+installed_version: string | null, latest_version: string | null, update_supported: boolean, managed: boolean, 
 /**
- * Why the last check or download didn't finish, in words for the owner.
+ * Model identifiers explicitly announced by the checked release, not a
+ * promise that the person's account can use them.
  */
-problem: string | null, };
+released_models: Array<string>, checked_at: Timestamp | null, problem: string | null, };

@@ -427,8 +427,9 @@ hardware or other Android versions. No real desktop, real model/account,
 private-network connection, voice or chat service was exercised. Alerts with
 the app closed were checked across a swipe, a restart, an update, forced Doze
 and airplane mode, each over a minute or two; a day of real use and its battery
-cost are checked on the Galaxy and the tablet. Readiness reports fixture capabilities and the intentional
-disabled-desktop state, not a working desktop setup.
+cost still need checks on physical Android devices. Readiness reports fixture
+capabilities and the intentional disabled-desktop state, not a working desktop
+setup.
 
 | Command/check | Result |
 | --- | --- |

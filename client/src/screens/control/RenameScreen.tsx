@@ -24,6 +24,8 @@ export function RenameScreen({ target, onClose }: { target: ControlTarget; onClo
   return (
     <Sheet
       open
+      // The typed name outlasts another screen in front; it is kept only on this device.
+      keepWhenHidden
       title={`Rename ${target.label}`}
       onClose={onClose}
       footer={

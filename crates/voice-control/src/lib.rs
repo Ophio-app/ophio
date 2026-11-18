@@ -165,6 +165,19 @@ pub trait Accessibility: Send + Sync + std::fmt::Debug {
     /// True means a native accessibility action was acknowledged. False asks the
     /// caller to use its existing, fenced input sink at the verified coordinates.
     async fn activate(&self, element: &VoiceElement, focus: bool) -> Result<bool, Error>;
+    /// Native adapters that resolve controls asynchronously override this to
+    /// check authority on the dispatch thread, after their final revalidation.
+    /// The default preserves existing adapters and refuses an already stopped
+    /// session before asking them to act.
+    async fn activate_authorized(
+        &self,
+        element: &VoiceElement,
+        focus: bool,
+        authority: std::sync::Arc<dyn Authority>,
+    ) -> Result<bool, Error> {
+        authority.check()?;
+        self.activate(element, focus).await
+    }
 }
 
 /// The longest a [`Launcher`]'s `launch` or `open_url` may take to answer,
@@ -189,6 +202,26 @@ pub trait Launcher: Send + Sync + std::fmt::Debug {
     /// Opens an http or https address in the default browser, checking
     /// `authority` just before the opener starts.
     async fn open_url(&self, url: &str, authority: &dyn Authority) -> Result<(), Error>;
+    /// Opens an app with owned authority. Native adapters override this when
+    /// dispatch is delayed, carrying authority into the native task so it can
+    /// be checked immediately before launch rather than before queuing it.
+    async fn launch_authorized(
+        &self,
+        app: &VoiceApp,
+        authority: std::sync::Arc<dyn Authority>,
+    ) -> Result<(), Error> {
+        self.launch(app, authority.as_ref()).await
+    }
+    /// Opens an address with owned authority. Native adapters override this
+    /// to carry authority through delayed native dispatch and check it just
+    /// before the opener starts. Existing adapters use the borrowed method.
+    async fn open_url_authorized(
+        &self,
+        url: &str,
+        authority: std::sync::Arc<dyn Authority>,
+    ) -> Result<(), Error> {
+        self.open_url(url, authority.as_ref()).await
+    }
 }
 /// A computer that can't open apps by voice yet.
 #[derive(Debug)]
@@ -218,5 +251,7 @@ pub fn capability(connected: jev::Connection, enabled: bool, native: Availabilit
     native
 }
 
+#[cfg(test)]
+mod accessibility_tests;
 #[cfg(test)]
 mod tests;

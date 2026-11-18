@@ -83,6 +83,8 @@ pub(crate) fn allow_ask(f: &Fixture) {
 }
 pub(crate) fn create(project: ProjectId, access: ConversationAccess) -> CommandEnvelope {
     CommandEnvelope::new(Command::CreateTask {
+        origin: None,
+        from_chat: None,
         github: None,
         agent_chosen: None,
         project_id: project,
@@ -136,6 +138,7 @@ async fn conversation_launch_and_live_grant_use_the_same_sandbox_and_publish_blo
     let owner = Caller::local_owner();
     let access = ConversationAccess {
         read: vec![project],
+        write: vec![project],
         internet: false,
         ..Default::default()
     };
@@ -208,15 +211,585 @@ async fn conversation_launch_and_live_grant_use_the_same_sandbox_and_publish_blo
     let changes = backend.sandbox.changes.lock().unwrap().clone();
     assert_eq!(changes.len(), 1);
     assert!(changes[0].internet);
-    assert_eq!(
-        changes[0].write,
-        vec![f.project_dir().canonicalize().unwrap()]
+    assert_eq!(changes[0].write.len(), 1);
+    // Internal sandbox grants may retain Windows' extended spelling.
+    crate::testing::assert_path_eq(
+        &changes[0].write[0],
+        f.project_dir().canonicalize().unwrap(),
+        false,
     );
     assert_eq!(f.harness.specs.lock().unwrap().len(), 1);
     let task: Task = f.hub.read(|r| r.require("task", task_id)).unwrap();
     assert!(task.access_blocked.is_none());
     f.close().await;
 }
+#[tokio::test]
+async fn granting_project_write_restarts_before_giving_a_read_only_turn_the_writer() {
+    let backend = Arc::new(Backend::default());
+    let f = Fixture::with(|b| b.sandboxes(backend.clone())).await;
+    let project = f.project().await;
+    allow_ask(&f);
+    f.harness
+        .controls
+        .confirm_terminate
+        .store(true, Ordering::SeqCst);
+    let receipt = f
+        .hub
+        .submit(
+            &Caller::local_owner(),
+            create(project, ConversationAccess::default()),
+        )
+        .await;
+    let Some(CommandResult::TaskCreated { task_id, .. }) = receipt.result else {
+        panic!("{receipt:?}")
+    };
+    let first = dispatched(&f, task_id).await;
+    f.harness
+        .emit(
+            first.run_id,
+            ports::HarnessEvent::SessionStarted {
+                native_session: "read-to-write".into(),
+                actual_model: None,
+                actual_effort: None,
+                account_label: None,
+            },
+        )
+        .await;
+    let receipt = f
+        .hub
+        .submit(
+            &Caller::local_owner(),
+            CommandEnvelope::new(Command::SetConversationAccess {
+                task_id,
+                access: ConversationAccess {
+                    write: vec![project],
+                    ..Default::default()
+                },
+            }),
+        )
+        .await;
+    assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        f.harness.controls.terminate_entered.acquire(),
+    )
+    .await
+    .unwrap()
+    .unwrap()
+    .forget();
+    assert!(
+        backend.sandbox_changes().is_empty(),
+        "write must not reach the old sandbox"
+    );
+    assert_eq!(f.harness.specs.lock().unwrap().len(), 1);
+    f.harness
+        .emit(
+            first.run_id,
+            ports::HarnessEvent::Exited {
+                exit: ports::RunExit::Interrupted,
+                outcome: None,
+            },
+        )
+        .await;
+    let second = launched(&f, 1).await;
+    assert_eq!(second.resume_session.as_deref(), Some("read-to-write"));
+    let (run, host): (Run, Project) = f
+        .hub
+        .read(|r| {
+            Ok((
+                r.require("run", second.run_id)?,
+                r.require("project", project)?,
+            ))
+        })
+        .unwrap();
+    assert!(run.holds_writer);
+    assert_eq!(host.active_writer, Some(second.run_id));
+    assert_eq!(
+        backend.specs.lock().unwrap()[1].reach.write,
+        vec![PathBuf::from(host.host_path)]
+    );
+    f.close().await;
+}
+
+#[tokio::test]
+async fn granting_project_write_beside_work_restarts_with_the_project_still_read_only() {
+    let backend = Arc::new(Backend::default());
+    let f = Fixture::with(|b| b.sandboxes(backend.clone())).await;
+    let project = f.project().await;
+    more_access_tests::all_modes(&f);
+    f.harness
+        .controls
+        .confirm_terminate
+        .store(true, Ordering::SeqCst);
+    let receipt = f
+        .hub
+        .submit(
+            &Caller::local_owner(),
+            create(project, ConversationAccess::default()),
+        )
+        .await;
+    let Some(CommandResult::TaskCreated { task_id, .. }) = receipt.result else {
+        panic!("{receipt:?}")
+    };
+    let first = dispatched(&f, task_id).await;
+    let (work, _) = f
+        .task(
+            project,
+            TaskPlacement::StartNow,
+            &Caller::local_owner(),
+            false,
+        )
+        .await;
+    let work_spec = dispatched(&f, work).await;
+    f.harness
+        .emit(
+            first.run_id,
+            ports::HarnessEvent::SessionStarted {
+                native_session: "read-to-write".into(),
+                actual_model: None,
+                actual_effort: None,
+                account_label: None,
+            },
+        )
+        .await;
+    let receipt = f
+        .hub
+        .submit(
+            &Caller::local_owner(),
+            CommandEnvelope::new(Command::SetConversationAccess {
+                task_id,
+                access: ConversationAccess {
+                    write: vec![project],
+                    ..Default::default()
+                },
+            }),
+        )
+        .await;
+    assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        f.harness.controls.terminate_entered.acquire(),
+    )
+    .await
+    .unwrap()
+    .unwrap()
+    .forget();
+    assert!(
+        backend.sandbox_changes().is_empty(),
+        "write must not reach the old sandbox"
+    );
+    assert_eq!(f.harness.specs.lock().unwrap().len(), 2);
+    f.harness
+        .emit(
+            first.run_id,
+            ports::HarnessEvent::Exited {
+                exit: ports::RunExit::Interrupted,
+                outcome: None,
+            },
+        )
+        .await;
+    let second = launched(&f, 2).await;
+    assert_eq!(second.resume_session.as_deref(), Some("read-to-write"));
+    let (run, host): (Run, Project) = f
+        .hub
+        .read(|r| {
+            Ok((
+                r.require("run", second.run_id)?,
+                r.require("project", project)?,
+            ))
+        })
+        .unwrap();
+    assert!(!run.holds_writer);
+    assert_eq!(host.active_writer, Some(work_spec.run_id));
+    assert!(backend.specs.lock().unwrap()[1].reach.write.is_empty());
+    assert!(
+        second
+            .prompt
+            .text
+            .contains("Read them, but do not change them this turn.")
+    );
+    assert_eq!(
+        f.hub
+            .read(|r| r.require::<Option<TaskId>>(crate::access::CHAT_WRITER_HOLD, second.run_id))
+            .unwrap(),
+        Some(work)
+    );
+    f.close().await;
+}
+
+#[tokio::test]
+async fn blocked_chat_keeps_overlapping_grants_read_only_on_launch_and_live_updates() {
+    let backend = Arc::new(Backend::default());
+    let f = Fixture::with(|b| b.sandboxes(backend.clone())).await;
+    let project = f.project().await;
+    allow_ask(&f);
+    let owner = Caller::local_owner();
+    let receipt = f
+        .hub
+        .submit(
+            &owner,
+            create(
+                project,
+                ConversationAccess {
+                    write: vec![project],
+                    ..Default::default()
+                },
+            ),
+        )
+        .await;
+    let Some(CommandResult::TaskCreated {
+        task_id: writer, ..
+    }) = receipt.result
+    else {
+        panic!("{receipt:?}")
+    };
+    let writer_spec = dispatched(&f, writer).await;
+    let (parent, child, other) = f
+        .hub
+        .write(|tx| {
+            let host: Project = tx.read().require("project", project)?;
+            let path = PathBuf::from(&host.host_path);
+            let mut registered = Vec::new();
+            for path in [
+                path.parent().unwrap().to_owned(),
+                path.join("nested"),
+                path.with_extension("other"),
+            ] {
+                let mut alias = host.clone();
+                alias.project_id = ProjectId::new();
+                alias.host_path = path.to_string_lossy().into_owned();
+                alias.active_writer = None;
+                tx.put("project", alias.project_id, &alias)?;
+                registered.push(alias.project_id);
+            }
+            Ok((registered[0], registered[1], registered[2]))
+        })
+        .unwrap();
+    let access = ConversationAccess {
+        write: vec![parent, child, project, other],
+        ..Default::default()
+    };
+    let receipt = f.hub.submit(&owner, create(project, access.clone())).await;
+    let Some(CommandResult::TaskCreated { task_id, .. }) = receipt.result else {
+        panic!("{receipt:?}")
+    };
+    let blocked = dispatched(&f, task_id).await;
+    let other_path: Project = f.hub.read(|r| r.require("project", other)).unwrap();
+    let check = |reach: &Reach| {
+        assert_eq!(reach.write, vec![PathBuf::from(&other_path.host_path)]);
+        assert!(!reach.whole_write);
+        for id in [parent, child, project] {
+            let host: Project = f.hub.read(|r| r.require("project", id)).unwrap();
+            assert!(reach.read.contains(&PathBuf::from(host.host_path)));
+        }
+    };
+    check(&backend.specs.lock().unwrap()[1].reach);
+    let task: Task = f.hub.read(|r| r.require("task", task_id)).unwrap();
+    assert_eq!(
+        task.access,
+        Some(access.clone().normalized()),
+        "the task's grant is not rewritten"
+    );
+    let hold: Option<TaskId> = f
+        .hub
+        .read(|r| r.require(crate::access::CHAT_WRITER_HOLD, blocked.run_id))
+        .unwrap();
+    assert_eq!(hold, Some(writer));
+    assert!(
+        blocked
+            .prompt
+            .text
+            .contains("Read them, but do not change them this turn.")
+    );
+    // Ending the holder does not silently upgrade an already-running turn.
+    finish(&f, writer, writer_spec.run_id).await;
+    let receipt = f
+        .hub
+        .submit(
+            &owner,
+            CommandEnvelope::new(Command::SetConversationAccess {
+                task_id,
+                access: ConversationAccess {
+                    internet: false,
+                    ..access
+                },
+            }),
+        )
+        .await;
+    assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while backend.sandbox_changes().is_empty() {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    let changed = backend.sandbox_changes();
+    check(changed.last().unwrap());
+    assert!(!changed.last().unwrap().internet);
+    assert_eq!(f.harness.specs.lock().unwrap().len(), 2);
+    f.close().await;
+}
+
+#[tokio::test]
+async fn writer_detection_and_effective_reach_cover_parent_child_and_whole_computer_grants() {
+    let backend = Arc::new(Backend::default());
+    let f = Fixture::with(|b| b.sandboxes(backend.clone())).await;
+    let project = f.project().await;
+    allow_ask(&f);
+    let receipt = f
+        .hub
+        .submit(
+            &Caller::local_owner(),
+            create(project, ConversationAccess::default()),
+        )
+        .await;
+    let Some(CommandResult::TaskCreated { task_id, .. }) = receipt.result else {
+        panic!("{receipt:?}")
+    };
+    let spec = dispatched(&f, task_id).await;
+    let mut task: Task = f.hub.read(|r| r.require("task", task_id)).unwrap();
+    let host: Project = f.hub.read(|r| r.require("project", project)).unwrap();
+    let own = PathBuf::from(&host.host_path);
+    let mut alias = host.clone();
+    alias.project_id = ProjectId::new();
+    for (path, writes) in [
+        (own.clone(), true),
+        (own.parent().unwrap().to_owned(), true),
+        (own.join("nested"), true),
+        (own.with_extension("other"), false),
+    ] {
+        alias.host_path = path.to_string_lossy().into_owned();
+        f.hub
+            .write(|tx| tx.put("project", alias.project_id, &alias))
+            .unwrap();
+        task.access = Some(ConversationAccess {
+            write: vec![alias.project_id],
+            ..Default::default()
+        });
+        assert_eq!(
+            f.hub
+                .read(|r| crate::access::conversation_writes_project(r, &task))
+                .unwrap(),
+            writes,
+            "{}",
+            path.display()
+        );
+    }
+    f.hub
+        .write(|tx| {
+            tx.put(
+                crate::access::CHAT_WRITER_HOLD,
+                spec.run_id,
+                &Some(TaskId::new()),
+            )
+        })
+        .unwrap();
+    let offline = ConversationAccess {
+        whole_read: true,
+        whole_write: true,
+        internet: false,
+        ..Default::default()
+    };
+    task.access = Some(offline.clone());
+    assert!(
+        f.hub
+            .read(|r| crate::access::conversation_writes_project(r, &task))
+            .unwrap()
+    );
+    let reach = f
+        .hub
+        .read(|r| f.hub.conversation_reach(r, &task, spec.run_id, &offline))
+        .unwrap();
+    assert!(reach.whole_read);
+    assert!(!reach.whole_write);
+    assert!(reach.write.is_empty());
+    let unrestricted = ConversationAccess {
+        internet: true,
+        ..offline
+    };
+    task.access = Some(unrestricted.clone());
+    let reach = f
+        .hub
+        .read(|r| {
+            f.hub
+                .conversation_reach(r, &task, spec.run_id, &unrestricted)
+        })
+        .unwrap();
+    assert!(
+        reach.whole_write,
+        "unrestricted access is deliberately advisory"
+    );
+    assert!(
+        f.hub
+            .conversation_sandbox(&task, spec.run_id, &host, None, Vec::new(), false)
+            .unwrap()
+            .is_none()
+    );
+    task.access = Some(ConversationAccess::default());
+    assert!(
+        !f.hub
+            .read(|r| crate::access::conversation_writes_project(r, &task))
+            .unwrap()
+    );
+    task.conversation = false;
+    task.access = Some(unrestricted);
+    assert!(
+        !f.hub
+            .read(|r| crate::access::conversation_writes_project(r, &task))
+            .unwrap()
+    );
+    f.close().await;
+}
+
+#[tokio::test]
+async fn writer_notes_name_the_holder_and_only_report_changed_holds() {
+    let backend = Arc::new(Backend::default());
+    let f = Fixture::with(|b| b.sandboxes(backend)).await;
+    let project = f.project().await;
+    allow_ask(&f);
+    let receipt = f
+        .hub
+        .submit(
+            &Caller::local_owner(),
+            create(project, ConversationAccess::default()),
+        )
+        .await;
+    let Some(CommandResult::TaskCreated { task_id, .. }) = receipt.result else {
+        panic!("{receipt:?}")
+    };
+    let spec = dispatched(&f, task_id).await;
+    let task: Task = f.hub.read(|r| r.require("task", task_id)).unwrap();
+    assert!(
+        f.hub
+            .writer_note(&task, spec.run_id, false)
+            .unwrap()
+            .is_none()
+    );
+    let mut holder = task.clone();
+    holder.task_id = TaskId::new();
+    holder.title = "Update the homepage".into();
+    f.hub
+        .write(|tx| {
+            tx.put("task", holder.task_id, &holder)?;
+            tx.put(
+                crate::access::CHAT_WRITER_HOLD,
+                spec.run_id,
+                &Some(holder.task_id),
+            )
+        })
+        .unwrap();
+    let (text, hold) = f
+        .hub
+        .writer_note(&task, spec.run_id, true)
+        .unwrap()
+        .unwrap();
+    assert_eq!(hold, Some(holder.task_id));
+    assert!(text.contains("“Update the homepage” is changing"));
+    assert!(text.contains("Read them, but do not change them this turn."));
+    assert!(text.contains("suggest them as work using Ophio’s tools"));
+    assert!(text.contains(
+        "tell the person you can make them in a later reply once “Update the homepage” finishes"
+    ));
+    assert!(!text.contains("unrestricted access"));
+    assert!(!text.contains("whole-computer access is read-only"));
+    assert!(!text.contains("the person changed"));
+    let mut unrestricted = task.clone();
+    unrestricted.access = Some(ConversationAccess {
+        whole_read: true,
+        whole_write: true,
+        ..Default::default()
+    });
+    let unrestricted_text = f
+        .hub
+        .writer_note(&unrestricted, spec.run_id, false)
+        .unwrap()
+        .unwrap()
+        .0;
+    assert!(
+        unrestricted_text
+            .contains("With unrestricted access, the computer cannot enforce this instruction.")
+    );
+    assert!(!unrestricted_text.contains("whole-computer access is read-only"));
+    unrestricted.access.as_mut().unwrap().internet = false;
+    let sandboxed_text = f
+        .hub
+        .writer_note(&unrestricted, spec.run_id, false)
+        .unwrap()
+        .unwrap()
+        .0;
+    assert!(sandboxed_text.contains("For this reply, whole-computer access is read-only."));
+    assert!(
+        sandboxed_text
+            .contains("Only separately allowed folders that do not overlap this project, and your scratch folder if available, remain writable.")
+    );
+    assert!(!sandboxed_text.contains("unrestricted access"));
+    assert!(!sandboxed_text.contains("the person changed"));
+    f.hub
+        .write(|tx| tx.put(crate::access::WRITER_TOLD, task_id, &hold))
+        .unwrap();
+    assert!(
+        f.hub
+            .writer_note(&task, spec.run_id, true)
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        f.hub
+            .writer_note(&task, spec.run_id, false)
+            .unwrap()
+            .is_some(),
+        "a fresh native session must hear the hold"
+    );
+    holder.task_id = TaskId::new();
+    holder.title = "Fix the menu".into();
+    f.hub
+        .write(|tx| {
+            tx.put("task", holder.task_id, &holder)?;
+            tx.put(
+                crate::access::CHAT_WRITER_HOLD,
+                spec.run_id,
+                &Some(holder.task_id),
+            )
+        })
+        .unwrap();
+    assert!(
+        f.hub
+            .writer_note(&task, spec.run_id, true)
+            .unwrap()
+            .unwrap()
+            .0
+            .contains("Fix the menu")
+    );
+    f.hub
+        .write(|tx| {
+            tx.put(
+                crate::access::CHAT_WRITER_HOLD,
+                spec.run_id,
+                &None::<TaskId>,
+            )
+        })
+        .unwrap();
+    let (text, hold) = f
+        .hub
+        .writer_note(&task, spec.run_id, true)
+        .unwrap()
+        .unwrap();
+    assert_eq!(hold, None);
+    assert!(text.contains("the pause on changing this project has ended"));
+    assert!(!text.contains("the person changed"));
+    f.hub
+        .write(|tx| tx.put(crate::access::WRITER_TOLD, task_id, &hold))
+        .unwrap();
+    assert!(
+        f.hub
+            .writer_note(&task, spec.run_id, true)
+            .unwrap()
+            .is_none()
+    );
+    f.close().await;
+}
+
 #[tokio::test]
 async fn restricted_conversation_fails_closed_without_a_backend() {
     let f = Fixture::new().await;
@@ -427,6 +1000,8 @@ async fn later_turns_hear_about_access_only_when_it_changed() {
         async move {
             let task: Task = f.hub.read(|r| r.require("task", task_id)).unwrap();
             let mut envelope = CommandEnvelope::new(Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 mode: None,
                 task_id,
                 text: Some(text),
@@ -471,9 +1046,15 @@ async fn later_turns_hear_about_access_only_when_it_changed() {
     assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
     say("go ahead").await;
     let third = turn(2).await;
+    let host: Project = f.hub.read(|r| r.require("project", project)).unwrap();
+    crate::testing::assert_path_eq(
+        &host.host_path,
+        f.project_dir().canonicalize().unwrap(),
+        true,
+    );
     let changed = format!(
         "Ophio: the person changed this conversation's access. You may change `{}`.",
-        f.project_dir().canonicalize().unwrap().display()
+        host.host_path
     );
     assert!(
         third.prompt.text.starts_with(&changed),
@@ -575,6 +1156,8 @@ async fn a_conversation_carried_on_as_a_task_keeps_its_access() {
             &owner,
             edit(
                 Command::ResumeTask {
+                    observed_reply: None,
+                    harness: None,
                     task_id,
                     mode: Some(TaskMode::Work),
                     text: Some("Add a README".into()),
@@ -607,10 +1190,17 @@ async fn a_conversation_carried_on_as_a_task_keeps_its_access() {
     assert!(!reach.internet);
     assert!(!reach.whole_read);
     let host: Project = f.hub.read(|r| r.require("project", project)).unwrap();
-    assert_eq!(reach.write, vec![PathBuf::from(host.host_path)]);
+    assert_eq!(reach.write.len(), 1);
+    // Internal sandbox grants may retain Windows' extended spelling.
+    crate::testing::assert_path_eq(&reach.write[0], &host.host_path, false);
+    crate::testing::assert_path_eq(
+        &host.host_path,
+        f.project_dir().canonicalize().unwrap(),
+        true,
+    );
     let changed = format!(
         "Ophio: the person changed this task's access. You may change `{}`.",
-        f.project_dir().canonicalize().unwrap().display()
+        host.host_path
     );
     assert!(
         second.prompt.text.starts_with(&changed),
@@ -689,6 +1279,8 @@ async fn a_side_turn_only_reads_what_its_access_may_change() {
             &owner,
             edit(
                 Command::ResumeTask {
+                    observed_reply: None,
+                    harness: None,
                     task_id,
                     mode: None,
                     text: Some("Sum up".into()),

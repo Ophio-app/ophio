@@ -49,8 +49,9 @@ The agent makes the branch, not Ophio. Its instructions become:
 
 - The branch is saved with the task and its runs, including continuations,
   restart recovery and lost-request retries. A task keeps its branch; start a
-  new task for a different one. Tap the running task's agent chip to see it
-  beside the agent and launch flags.
+  new task for unrelated work on a different one. A deliberate pull-request
+  replacement is the exception described below. Tap the running task's agent
+  chip to see its branch beside the agent and launch flags.
 - A **Next up** item starts on its source task's branch; change it, or choose
   All branches, in Review.
 - The branch list is read when the sheet opens, not stored. It is capped at the
@@ -63,6 +64,23 @@ The agent makes the branch, not Ophio. Its instructions become:
 - A companion without `task_branch_v1` cannot pass a branch on. The Branch row
   is disabled and asks for an update, and the phone refuses to send a task
   naming a branch to it rather than silently dropping the choice.
+
+## Pull requests
+
+The agent's `github_pr` tool uses the branch saved on its task, even when the
+agent works in a separate Git worktree. A different branch checked out in the
+shared project folder does not change that choice. If the saved branch has not
+been pushed, the tool asks the agent to push it rather than using another one.
+A task without a saved branch can use the checked-out branch, provided it is
+not the default branch or the branch of another task that has not been archived.
+
+When taking over a pull request requires a replacement branch, the agent can
+name that branch explicitly in `github_pr`'s optional `branch` argument. The
+tool validates its name, ownership and pushed commit before creating or
+updating the pull request. Only a successful operation saves the replacement
+branch on the task for later calls and continuations. This does not switch the
+project folder's branch or change its files, and it does not grant additional
+GitHub permissions.
 
 ## Protocol
 

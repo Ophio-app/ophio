@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentUpdatesView } from "../../protocol/types";
+import type { AgentUpdateMode, AgentUpdatesView, HarnessKind } from "../../protocol/types";
 
-/** Øphio's own copies of the agents, kept up to date on the simulated computer. */
+/** Synthetic update state; never contacts a registry or installs programs. */
 export class AgentUpdatesSim {
   view: AgentUpdatesView = {
-    enabled: true, revision: 1, supported: true, checking: false,
+    enabled: false, mode: "notify", revision: 1, supported: true, checking: false,
     agents: [
-      { harness: "claude_code", version: "2.4.1", checked_at: Date.now() - 40 * 60_000, problem: null },
-      { harness: "codex", version: "0.212.0", checked_at: Date.now() - 40 * 60_000, problem: "Couldn't reach the update site to check for a new version." },
+      { harness: "claude_code", version: "2.4.1", installed_version: "2.4.1", latest_version: "2.4.2", update_supported: true, managed: true, released_models: ["claude-fable-5-2"], checked_at: Date.now() - 40 * 60_000, problem: null },
+      { harness: "codex", version: "0.212.0", installed_version: "0.212.0", latest_version: null, update_supported: true, managed: true, released_models: [], checked_at: Date.now() - 40 * 60_000, problem: "Couldn’t reach the update site to check for a new version." },
     ],
   };
-  set(enabled: boolean, revision: number | null) {
+  set(enabled: boolean, revision: number | null) { this.setMode(enabled ? "automatic" : "never", revision); }
+  setMode(mode: AgentUpdateMode, revision: number | null) {
     if (revision !== this.view.revision) throw { code: "stale_revision", message: "Agent updates changed. Refresh before changing them." };
-    const now = Date.now();
-    this.view = {
-      ...this.view, enabled, revision: this.view.revision + 1,
-      agents: enabled
-        ? (["claude_code", "codex"] as const).map((harness, i) => ({ harness, version: ["2.4.1", "0.212.0"][i]!, checked_at: now, problem: null }))
-        : [],
-    };
+    this.view = { ...this.view, enabled: mode === "automatic", mode, revision: this.view.revision + 1 };
+  }
+  check() {
+    this.view = { ...this.view, agents: this.view.agents.map(a => ({ ...a, checked_at: Date.now(), latest_version: a.latest_version ?? a.installed_version, problem: null })) };
+  }
+  update(harness: HarnessKind) {
+    this.check();
+    this.view = { ...this.view, agents: this.view.agents.map(a => a.harness === harness ? { ...a, installed_version: a.latest_version, version: a.latest_version, managed: true } : a) };
   }
 }

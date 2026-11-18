@@ -125,6 +125,8 @@ async fn starting_a_task_again_ends_its_wait_on_the_person() {
     f.clock.advance(Duration::from_secs(60));
     assert!(open(&f, asked));
     let resume = Command::ResumeTask {
+        observed_reply: None,
+        harness: None,
         task_id,
         mode: None,
         model: None,

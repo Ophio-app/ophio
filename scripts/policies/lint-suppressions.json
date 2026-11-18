@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "policy": "Protected review policy. Increases require a deliberate edit to the affected limits and an explanation in the reviewed change. Do not regenerate this file in CI. Lower limits when exceptions are removed.",
+  "scope": "Every tracked or new unignored Rust source file; JavaScript and TypeScript source files under client. Each allowed lint or disabled rule counts once per occurrence, including conditional attributes. eslint:* means a directive disabling every rule.",
+  "counts": {
+    "eslint:no-control-regex": 1,
+    "eslint:react-hooks/exhaustive-deps": 5,
+    "rust:async_fn_in_trait": 1,
+    "rust:clippy::await_holding_lock": 1,
+    "rust:clippy::cast_lossless": 2,
+    "rust:clippy::large_enum_variant": 3,
+    "rust:clippy::permissions_set_readonly_false": 5,
+    "rust:clippy::too_many_arguments": 17,
+    "rust:clippy::type_complexity": 2,
+    "rust:dead_code": 24,
+    "rust:deprecated": 3,
+    "rust:unreachable_code": 1,
+    "rust:unsafe_code": 70,
+    "rust:unused_mut": 1
+  }
+}

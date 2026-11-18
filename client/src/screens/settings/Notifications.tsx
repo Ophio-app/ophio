@@ -6,7 +6,7 @@
 // computer that owns the project, for every device paired with it. Every
 // change shows on the tap and takes effect at once.
 
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useCommandControl } from "../../app/commandControl";
 import { describeError, useApp, useHost, useLink } from "../../app/context";
 import { useComputerEntries, type ComputerEntry } from "../../app/fleet";
@@ -49,32 +49,84 @@ import {
   type NotificationDetail,
 } from "../../platform/notifications";
 import { backgroundAlerts, type Alerts } from "../../platform/alerts";
+import { RELEASE_CHECK_FEATURE } from "./useReleaseCheck";
 import { AlertPermissionAction, useNotificationAccess } from "../../shell/AlertsOffer";
 import "./notifications.css";
 
 const TIERS: readonly Tier[] = ["alert", "silent", "off"];
 
 export function Notifications() {
+  const delivery = useRef<HTMLDetailsElement>(null);
+  const deliveryId = useId();
+  const openDelivery = () => {
+    if (!delivery.current) return;
+    delivery.current.open = true;
+    const summary = delivery.current.querySelector("summary");
+    summary?.focus({ preventScroll: true });
+    delivery.current.scrollIntoView({ block: "start" });
+  };
   return (<>
-    <PhoneStatus />
+    <DeliveryWarning open={openDelivery} detailsId={deliveryId} />
     <WhatNotifies />
+    <PhoneStatus deliveryRef={delivery} detailsId={deliveryId} />
     <Projects />
     <HowTheyLook />
     <Elsewhere />
   </>);
 }
 
+type DeliveryLink = { open: () => void; detailsId: string };
+
+/** Surface a delivery limit before the choices, without repeating setup instructions. */
+function DeliveryWarning(link: DeliveryLink) {
+  const { platform } = useApp();
+  const { permission } = useNotificationAccess();
+  const watcher = backgroundAlerts(platform);
+  const limit = !platform.notify ? "This build can’t show system notifications."
+    : platform.notificationPermission && permission !== "granted"
+      ? permission === "blocked" ? "Phone settings block notifications."
+        : permission === "promptable" ? "Phone notifications are off."
+          : "Notification permission is unknown. Alerts may not arrive."
+      : !watcher ? "Notifications arrive only while Øphio is open." : null;
+  if (limit) return <DeliveryLimit {...link} limit={limit} />;
+  return watcher ? <WatcherWarning {...link} watcher={watcher} /> : null;
+}
+
+function WatcherWarning({ watcher, ...link }: DeliveryLink & { watcher: Alerts }) {
+  const view = useStore(watcher, (s) => s, shallowEqual);
+  const limit = backgroundDeliveryLimit(view);
+  return limit ? <DeliveryLimit {...link} limit={limit} /> : null;
+}
+
+function DeliveryLimit({ limit, open, detailsId }: DeliveryLink & { limit: string }) {
+  return <aside className="notif-delivery-warning" aria-label="Notification delivery limits">
+    <p aria-live="polite">{limit}</p>
+    <Button size="sm" variant="quiet" aria-controls={detailsId} onClick={open}>Delivery settings</Button>
+  </aside>;
+}
+
 /** Whether this phone may show notifications, whether they keep coming once
  * Øphio is closed, and how the watcher's connection to each computer is. */
-function PhoneStatus() {
+function PhoneStatus({ deliveryRef, detailsId }: { deliveryRef: RefObject<HTMLDetailsElement | null>; detailsId: string }) {
   const { platform } = useApp();
   const { access, permission, error: permissionError } = useNotificationAccess();
   const watcher = backgroundAlerts(platform);
+  const permissionTitle = permission === "granted" ? "Alerts are on" : permission === "promptable" ? "Alerts are off" : permission === "blocked" ? "Alerts are blocked in the phone’s settings" : permissionError ? "Task alert permission is unknown" : "Checking task alerts…";
   return <Section title="This phone" id="settings-notifications">
-    <div className="settings-card settings-stack">
+    <details className="settings-card notif-delivery" ref={deliveryRef} id={detailsId}>
+      <summary>
+        <span className="notif-delivery__title">Background delivery and phone settings</span>
+        <span className="notif-delivery__status">
+          {platform.notificationPermission && <span>{permissionTitle}</span>}
+          {!platform.notify ? <span>System notifications aren’t available in this build.</span>
+            : watcher ? <BackgroundDeliverySummary watcher={watcher} />
+              : <span>Notifications arrive only while Øphio is open.</span>}
+        </span>
+      </summary>
+      <div className="settings-stack notif-delivery__body">
       {platform.notificationPermission && <Notice
         tone={permission === "blocked" ? "warn" : permissionError ? "unknown" : "info"}
-        title={permission === "granted" ? "Alerts are on" : permission === "promptable" ? "Alerts are off" : permission === "blocked" ? "Alerts are blocked in the phone’s settings" : permissionError ? "Task alert permission is unknown" : "Checking task alerts…"}
+        title={permissionTitle}
         action={!permission && permissionError ? <Button onClick={() => void access.refresh()}>Check alerts again</Button> : <AlertPermissionAction />}>
         {permissionError}
       </Notice>}
@@ -86,12 +138,31 @@ function PhoneStatus() {
       ) : watcher ? <ClosedAlerts watcher={watcher} /> : (
         <p className="settings-meta">
           {onIPhone()
-            ? "On iPhone, Øphio can notify you only while it’s open. Your choices below apply then."
-            : "In this build, notifications arrive only while the app is open. Your choices below apply then."}
+            ? "On iPhone, Øphio can notify you only while it’s open. Your choices above apply then."
+            : "In this build, notifications arrive only while the app is open. Your choices above apply then."}
         </p>
       )}
-    </div>
+      </div>
+    </details>
   </Section>;
+}
+
+/** Keep delivery limits visible even while the explanation is folded away.
+ * ClosedAlerts stays mounted inside the details, so it still follows Android. */
+function BackgroundDeliverySummary({ watcher }: { watcher: Alerts }) {
+  const view = useStore(watcher, (s) => s, shallowEqual);
+  return <span>{backgroundDeliveryLimit(view) ?? "Background delivery is on."}</span>;
+}
+
+function backgroundDeliveryLimit({ state, error }: ReturnType<Alerts["get"]>): string | null {
+  return error ? "Background delivery status is unavailable."
+    : !state ? "Checking background delivery…"
+      : !state.settings?.enabled ? "Background delivery is off. Notifications stop when Øphio closes."
+        : state.android && !state.android.running ? "Android stopped background notifications."
+          : state.android && !state.android.unrestricted ? "Background delivery stops when Øphio closes."
+            : Object.values(state.statuses).some((status) => status !== "watching")
+              ? "Some computers aren’t delivering background notifications."
+              : null;
 }
 
 /** How the watcher's own connection to one computer stands, in a few words. */
@@ -165,6 +236,8 @@ function ClosedAlerts({ watcher }: { watcher: Alerts }) {
  * Alert, Silent or Off; the recommended one is marked. */
 function WhatNotifies() {
   const { platform } = useApp();
+  const releaseCheck = useHost((s) => s.capabilities?.features.includes(RELEASE_CHECK_FEATURE) ?? false);
+  const agentUpdates = useHost((s) => s.capabilities?.features.includes("agent_update_policy_v1") ?? false);
   const store = deviceTiers(platform);
   useEffect(() => store.start(), [store]);
   const view = useStore(store, (s) => s, shallowEqual);
@@ -180,7 +253,8 @@ function WhatNotifies() {
   });
   const tiers = control.value;
   const recommended = recommendedTiers();
-  const changed = ALERT_TYPES.filter((t) => tiers[t.type] !== t.tier).length;
+  const shownTypes = ALERT_TYPES.filter((t) => (t.type !== "new_version" || releaseCheck) && (t.type !== "agent_update" || agentUpdates));
+  const changed = shownTypes.filter((t) => tiers[t.type] !== t.tier).length;
   const set = (t: AlertTypeInfo, tier: Tier) => void control.set({ ...tiers, [t.type]: tier }, {
     label: `${t.name}: ${TIER_LABELS[tier]}`, what: `how ${t.name.toLowerCase()} notify you`, said: `${t.name}: ${TIER_LABELS[tier]}.`,
   });
@@ -201,7 +275,7 @@ function WhatNotifies() {
       <section key={g.group} className="settings-card notif-group" aria-labelledby={`notif-group-${g.group}`}>
         <h3 id={`notif-group-${g.group}`} className="notif-group__title">{g.title}</h3>
         <p className="settings-meta notif-group__hint">{g.hint}</p>
-        {ALERT_TYPES.filter((t) => t.group === g.group).map((t) => (
+        {shownTypes.filter((t) => t.group === g.group).map((t) => (
           <TypeRow key={t.type} info={t}>
             <Segmented<Tier> label={t.name} value={tiers[t.type]} onChange={(v) => set(t, v)}
               options={TIERS.map((v) => ({ value: v, label: TIER_LABELS[v], ...(recommended[t.type] === v ? { mark: "recommended" } : {}) }))} />
@@ -211,7 +285,7 @@ function WhatNotifies() {
     ))}
     <div className="notif-actions">
       <Button variant="secondary" disabled={!changed}
-        onClick={() => void control.set(recommended, { label: "Use the recommended choices", what: "your notification choices", said: "Using the recommended choices.", done: "Using the recommended choices." })}>
+        onClick={() => void control.set({ ...tiers, ...Object.fromEntries(shownTypes.map((t) => [t.type, recommended[t.type]])) }, { label: "Use the recommended choices", what: "your notification choices", said: "Using the recommended choices.", done: "Using the recommended choices." })}>
         Use the recommended choices
       </Button>
       <p className="settings-meta" role="status">{!changed ? "These are the recommended choices." : `${changed === 1 ? "1 choice differs" : `${changed} choices differ`} from the recommended ones.`}</p>
@@ -257,7 +331,7 @@ function useChoices() {
     send: async (next, note) => {
       const revision = Math.max(store.get().view?.revision ?? 0, saved.current);
       try {
-        await session.command({ command: "set_notification_settings", off: next.off, bundle: next.bundle, projects: next.projects, types: true }, { label: note.label, expectedRevision: revision });
+        await session.command({ command: "set_notification_settings", off: next.off, bundle: next.bundle, projects: next.projects.map((project) => ({ ...project, tiers: project.tiers?.filter((tier) => ALERT_TYPES.some((type) => type.type === tier.type && type.project)) })), types: true }, { label: note.label, expectedRevision: revision });
         saved.current = revision + 1;
       } finally { store.refresh(); }
     },
@@ -461,7 +535,7 @@ function ProjectTypesPage({ projectId }: { projectId: string }) {
       </Section>
       <Section title="What notifies you" id="settings-project-types">
       {GROUPS.map((g) => {
-        const types = ALERT_TYPES.filter((t) => t.group === g.group && t.type !== "app_update");
+        const types = ALERT_TYPES.filter((t) => t.group === g.group && t.project);
         return <section key={g.group} className={`settings-card notif-group${mine.mute ? " notif-group--muted" : ""}`} aria-labelledby={`${id}-${g.group}`}>
           <h3 id={`${id}-${g.group}`} className="notif-group__title">{g.title}</h3>
           {types.map((t) => {

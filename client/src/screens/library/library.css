@@ -23,6 +23,13 @@
   margin-top: var(--s2);
   color: var(--ink-2);
 }
+.lib-search-file > .btn {
+  margin: 0 var(--s3) var(--s2);
+  text-align: start;
+}
+.lib-search-file .lib-snippet {
+  overflow-wrap: anywhere;
+}
 .lib-filters {
   display: flex;
   flex-wrap: wrap;
@@ -99,7 +106,7 @@
   padding: var(--s3) var(--s4);
   border-top: 1px solid var(--line);
   background: var(--surface);
-  max-height: 38dvh;
+  max-height: calc(38 * var(--pane-vh, 1dvh));
   overflow-y: auto;
 }
 .lib-footer > * {
@@ -210,7 +217,7 @@
   overflow-wrap: anywhere;
 }
 .library-sheet .sheet__footer {
-  max-height: 40dvh;
+  max-height: calc(40 * var(--pane-vh, 1dvh));
   overflow-y: auto;
 }
 .library-sheet .btn,
@@ -229,7 +236,7 @@
   overflow-wrap: anywhere;
   hyphens: manual;
 }
-@media (max-width: 380px) {
+@container pane (max-width: 380px) {
   .lib-entry .row {
     padding-inline: var(--s3);
     gap: var(--s2);
@@ -242,7 +249,7 @@
 .library-screen .lib-footer > .btn {
   max-width: var(--content-max);
 }
-:root.app-narrow .lib-entry :is(.row__icon, .row__chevron) {
+:is(:root:not(:has(.pane)), .pane).app-narrow .lib-entry :is(.row__icon, .row__chevron) {
   display: none;
 }
 
@@ -281,7 +288,7 @@
   min-height: var(--target);
 }
 
-:root.app-narrow .lib-recovery-choices {
+:is(:root:not(:has(.pane)), .pane).app-narrow .lib-recovery-choices {
   grid-template-columns: minmax(0, 1fr);
 }
 .lib-template textarea {
@@ -295,32 +302,32 @@
 .library-editor-sheet .sheet__body {
   min-height: 0;
 }
-:root.app-tight .library-editor-sheet .sheet__header {
+:is(:root:not(:has(.pane)), .pane).app-tight .library-editor-sheet .sheet__header {
   padding: var(--s1) var(--s2);
   align-items: center;
 }
-:root.app-tight .library-editor-sheet .sheet__titles {
+:is(:root:not(:has(.pane)), .pane).app-tight .library-editor-sheet .sheet__titles {
   padding-top: 0;
 }
-:root.app-tight .library-editor-sheet .sheet__title {
+:is(:root:not(:has(.pane)), .pane).app-tight .library-editor-sheet .sheet__title {
   font-size: var(--text-md);
 }
-:root.app-tight .library-editor-sheet .sheet__body {
+:is(:root:not(:has(.pane)), .pane).app-tight .library-editor-sheet .sheet__body {
   padding: var(--s2);
 }
-:root.app-tight .lib-editor-content {
+:is(:root:not(:has(.pane)), .pane).app-tight .lib-editor-content {
   display: flex;
   flex-direction: column;
 }
-:root.app-tight .lib-editor-content > .lib-editor {
+:is(:root:not(:has(.pane)), .pane).app-tight .lib-editor-content > .lib-editor {
   order: -1;
   flex: none;
 }
-:root.app-tight .lib-editor {
+:is(:root:not(:has(.pane)), .pane).app-tight .lib-editor {
   display: flex;
   flex-direction: column;
 }
-:root.app-tight .lib-editor > .lib-toolbar {
+:is(:root:not(:has(.pane)), .pane).app-tight .lib-editor > .lib-toolbar {
   order: 1;
   border-top: 1px solid var(--line);
   border-bottom: 0;
@@ -334,8 +341,8 @@
 .lib-options[open] { display: grid; gap: var(--s3); }
 .lib-checked { display: grid; gap: var(--s2); }
 
-:root.app-narrow .lib-document { padding: var(--s3); }
-:root.app-narrow .lib-document .md > :first-child { margin-top: 0; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .lib-document { padding: var(--s3); }
+:is(:root:not(:has(.pane)), .pane).app-narrow .lib-document .md > :first-child { margin-top: 0; }
 
 .lib-recovery-status > summary { min-height: var(--target); padding-block: var(--s2); color: var(--ink-3); font-size: var(--text-sm); }
 

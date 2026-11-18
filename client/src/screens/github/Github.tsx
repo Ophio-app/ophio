@@ -356,7 +356,8 @@ function IssueSheet({ item, project, view, off, onClose }: { item: GithubItem; p
       </Button>
     </>;
   return (
-    <Sheet open onClose={onClose} title={`#${item.number} ${item.title}`} subtitle={`Issue by @${item.author}`} footer={footer}>
+    // Its direction and agent outlast "Defaults in Settings" and a tapped notification.
+    <Sheet open keepWhenHidden onClose={onClose} title={`#${item.number} ${item.title}`} subtitle={`Issue by @${item.author}`} footer={footer}>
       <div className="settings-stack">
         {need && <NeedCard need={need} ask={ask} action={cardAction} />}
         {answering && !on && item.triage_pick && <div className="github-pick">

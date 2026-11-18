@@ -7,7 +7,7 @@ import { prefs } from "../../app/prefs";
 import type { Run, TargetControlView, Task } from "../../protocol/types";
 import { preferredComputerAgent } from "../control/computerReview";
 import type { HostState } from "../../state/projection";
-import { agentChoiceBlocker, agentLabel, composerMode, createTaskCommand, defaultIntent, firstLine, missionFrom, modeSupport, needsReview, resolveAgent, runAgent, sendLabel, writerHold, writerHoldBesideText, writerHoldState, writerHoldText, writerQueueLine, type IntentOption, type WriterHold } from "./intent";
+import { agentChoiceBlocker, agentLabel, composerMode, createTaskCommand, defaultIntent, firstLine, missionFrom, modeSupport, needsReview, resolveAgent, runAgent, sendLabel, writerBlockLine, writerHold, writerHoldBesideText, writerHoldState, writerHoldText, writerQueueLine, type IntentOption, type WriterHold } from "./intent";
 
 const now = 1_800_000_000_000;
 const claude = harnesses.find((h) => h.kind === "claude_code")!;
@@ -43,6 +43,20 @@ describe("writerHold", () => {
     const unknown = writerHold(held.run_id, state([], []))!;
     expect(writerHoldText(unknown, "api")).toBe("Another task is changing files in api, so this can’t start until it finishes.");
     expect(writerHoldState(unknown)).toBe("After another task finishes");
+  });
+
+  it("names a writing chat and its reply in Work, Next up, and beside read-only work", () => {
+    const chat = { ...holding, conversation: true, title: "Fix the login flow", state: "working" as const, current_run: held.run_id };
+    const working = writerHold(held.run_id, state([{ ...held, state: "working", holds_writer: true }], [chat]))!;
+    expect(writerHoldText(working, "api")).toBe("Chat “Fix the login flow” is replying in api. This task can start when its reply ends.");
+    expect(writerHoldState(working)).toBe("Can start when chat “Fix the login flow” finishes its reply");
+    expect(writerBlockLine(working)).toBe("Wait for chat “Fix the login flow” to finish its reply");
+    expect(writerQueueLine(working)).toBe("Waits in Next up until chat “Fix the login flow” finishes its reply");
+    expect(writerHoldBesideText(working, "api", "Ask")).toBe("Chat “Fix the login flow” is replying in api. Ask only reads, so it can start now, but it may see changes from the chat before its reply ends.");
+    const approval = writerHold(held.run_id, state([{ ...held, state: "awaiting_approval" }], [chat]))!;
+    expect(writerHoldText(approval, "api")).toBe("Chat “Fix the login flow” is waiting for your approval. This task can start when its reply ends.");
+    const finished = writerHold(held.run_id, state([{ ...held, state: "completed", ended_at: now, holds_writer: true }], [{ ...chat, state: "completed" }]))!;
+    expect(writerHoldText(finished, "api")).toContain("Helpers from “Fix the login flow” are still finishing");
   });
 
   it("says when helpers a finished turn left still hold the project, and Continue waits for them", () => {
@@ -159,6 +173,41 @@ describe("composerMode", () => {
     if (m.mode !== "ended") throw new Error(m.mode);
     expect(m.options[0]!.detail).toMatch(/fresh session/);
     expect(m.options[0]!.unavailable).toBe("Open Pi in a terminal");
+  });
+
+  it("checks only the destination's start capability when switching an ended chat", () => {
+    const chat: Task = { ...task("completed"), mode: "ask", conversation: true };
+    const old = { ...claude, capabilities: { ...claude.capabilities, start_run: { state: "unsupported" as const, reason: "Old agent unavailable" } } };
+    const destination = { ...codex, capabilities: { ...codex.capabilities, resume_session: { state: "unsupported" as const, reason: "No saved sessions" } } };
+    const m = composerMode(chat, null, old, null, "api", false, destination);
+    if (m.mode !== "ended") throw new Error(m.mode);
+    expect(m.options[0]!.unavailable).toBeNull();
+    expect(m.options[0]!.detail).toContain("Codex reads but changes nothing");
+    expect(m.options[0]!.detail).not.toMatch(/fresh session|won’t remember/);
+    const unchanged = composerMode(chat, null, old);
+    if (unchanged.mode !== "ended") throw new Error(unchanged.mode);
+    expect(unchanged.options[0]!.unavailable).toBe("Old agent unavailable");
+  });
+
+  it("blocks a switch when the destination cannot start or is no longer reported", () => {
+    const chat: Task = { ...task("completed"), mode: "ask", conversation: true };
+    const destination = { ...codex, capabilities: { ...codex.capabilities, start_run: { state: "unsupported" as const, reason: "Codex is unavailable" } } };
+    for (const next of [destination, null]) {
+      const m = composerMode(chat, null, claude, null, "api", false, next);
+      if (m.mode !== "ended") throw new Error(m.mode);
+      expect(m.options[0]!.unavailable).toBe(next ? "Codex is unavailable" : "The selected agent isn’t available on this computer");
+    }
+  });
+
+  it("keeps steer and interrupt readiness tied to the running agent", () => {
+    const chat: Task = { ...task("working"), mode: "ask", conversation: true };
+    const current = { ...claude, capabilities: { ...claude.capabilities,
+      steer_running: { state: "unsupported" as const, reason: "Current agent cannot steer" },
+      interrupt: { state: "unsupported" as const, reason: "Current agent cannot interrupt" },
+    } };
+    const m = composerMode(chat, run({ state: "working" }), current, null, "api", false, codex);
+    if (m.mode !== "running") throw new Error(m.mode);
+    expect(unavailable(m.options)).toMatchObject({ "Steer now": "Current agent cannot steer", "Stop the turn and send": "Current agent cannot interrupt", "After this turn": null });
   });
 
   it("maps the remaining states to their own modes", () => {
@@ -318,8 +367,15 @@ describe("settled approvals", () => {
 
   it("names the reported outcome, and a mismatch with what was sent", () => {
     const ok = { ...base, state: "denied" as const, outcome: "denied" as const, resolved_by: null };
-    expect(settledText(ok, me)).toEqual({ title: "Declined", meta: "Declined" });
+    expect(settledText(ok, me)).toEqual({ title: "Rejected", meta: "Rejected" });
     const odd = { ...base, state: "allowed" as const, outcome: "denied" as const, resolved_by: null };
-    expect(settledText(odd, me)).toEqual({ title: "Declined", meta: "Allowed, but the agent reported it declined" });
+    expect(settledText(odd, me)).toEqual({ title: "Rejected", meta: "Allowed, but the agent reported it rejected" });
+  });
+
+  it("says a question was declined and a request for more access too, not rejected", () => {
+    const question = { ...base, kind: "question" as const, state: "denied" as const, outcome: "denied" as const, resolved_by: { kind: "device" as const, device_id: me } };
+    expect(settledText(question, me)).toEqual({ title: "Declined", meta: "Declined by you" });
+    const access = { ...base, kind: "other" as const, access_request: { needs: ["internet" as const], reason: "to fetch it" }, state: "denied" as const, resolved_by: null };
+    expect(settledText(access, me).title).toBe("Declined");
   });
 });

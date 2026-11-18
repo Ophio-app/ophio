@@ -224,6 +224,11 @@ impl CompanionHub {
                 ErrorCode::PermissionDenied,
                 "A task working on GitHub doesn't plan other work.",
             )),
+            WorkCall::Propose {
+                tasks,
+                in_order,
+                all_issues,
+            } => self.propose(run_id, task, &tasks, in_order, all_issues),
             // Filed on GitHub, it would carry what this chat read past the
             // internet the person kept it from.
             WorkCall::NewIssue { .. } | WorkCall::StartReview { .. }
@@ -665,6 +670,8 @@ impl CompanionHub {
         start: bool,
     ) -> Result<(String, Option<String>, bool), ProtocolError> {
         let envelope = CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             project_id: task.project_id,
             kind: TaskKind::Coding,
             mode: None,
@@ -839,6 +846,8 @@ impl CompanionHub {
             Some(f) => format!("Find {} issues in {place}", profile_words(f)),
         };
         let envelope = CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             project_id: task.project_id,
             kind: TaskKind::Coding,
             mode: None,

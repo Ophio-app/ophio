@@ -108,6 +108,18 @@ pub struct HostInfo {
     pub boot_epoch: BootEpoch,
     pub started_at: Timestamp,
     pub capabilities: HostCapabilities,
+    /// Whether a newer Øphio is out for this computer, as
+    /// [`crate::Query::ReleaseCheck`] answers, kept current here so a
+    /// change shows on every phone at once. None from a computer that
+    /// doesn't check. One a newer computer kept in a form this version
+    /// can't read reads as none, so the host record still reads.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::alerts::newer_is_none"
+    )]
+    #[ts(optional)]
+    pub release_check: Option<crate::releases::ReleaseCheckView>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
@@ -120,6 +132,16 @@ pub struct Project {
     pub default_harness: Option<HarnessKind>,
     pub default_model: Option<String>,
     pub default_effort: Option<String>,
+    /// What new chats in this project start with, last chosen by the person.
+    /// Absent means this project's folder read-only plus the internet.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub chat_access: Option<crate::access::ConversationAccess>,
+    /// Start what this project's chats' agents propose without asking, set
+    /// by the person alone. Absent is off. Advertised as `chat_work_sets_v1`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub auto_start: Option<crate::work_cards::AutoStart>,
     /// Run currently holding the managed writer slot, if any.
     pub active_writer: Option<RunId>,
     pub vcs: Option<VcsInfo>,
@@ -156,7 +178,13 @@ pub struct VcsInfo {
 #[ts(export)]
 pub struct TaskWake {
     pub at: Timestamp,
+    /// The full reminder handed back to the agent when it wakes.
     pub reason: String,
+    /// One plain sentence for the person about what the task is waiting for.
+    /// Older agents and computers may omit it; never display `reason` instead.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub person_reason: Option<String>,
     /// Waiting for another agent's answer, which wakes it when it comes;
     /// `at` is when Ophio wakes it anyway.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -275,9 +303,21 @@ pub enum TaskState {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
 #[ts(export)]
 pub struct Task {
+    /// Remains Working for older phones; only checks_v1 clients display progress.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub checking: Option<crate::checks::TaskChecking>,
     pub task_id: TaskId,
     pub project_id: ProjectId,
     pub kind: TaskKind,
+    /// Chat turn and suggested-work position this task was started from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub origin: Option<crate::work_cards::TaskOrigin>,
+    /// The conversation this task was turned from; its first turn is told what was said there.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub from_chat: Option<TaskId>,
     /// Kept by resumed runs. Carrying out a finished Plan is the one change,
     /// to Work; each run records its own in `Run::mode`.
     #[serde(default)]
@@ -448,6 +488,11 @@ impl RunState {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
 #[ts(export)]
 pub struct Run {
+    /// Recent chat given to this turn, not another agent's native memory.
+    /// Recorded before launch; absent on older computers and ordinary turns.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub chat_handover: Option<ChatHandover>,
     /// A person's check of helper unknowns, never computer verification.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -456,6 +501,12 @@ pub struct Run {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub human_resolution: Option<HumanResolution>,
+    /// Who carried a chat on by writing after this run's reply was cut off,
+    /// and when. The cut-off reply's result stays unknown: this is neither
+    /// a person's verdict on it nor the computer's.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub carried_on: Option<HumanCheck>,
     /// This companion owns the agent process and supports Force stop.
     #[serde(default)]
     #[ts(as = "Option<bool>", optional)]
@@ -465,6 +516,17 @@ pub struct Run {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     #[ts(as = "Option<bool>", optional)]
     pub cleanup_pending: bool,
+    /// Set only on a run whose result is unknown: this computer has
+    /// confirmed that the agent and everything it started under Øphio's
+    /// containment have stopped. It can't see work the agent handed to
+    /// something outside that containment, such as a service started
+    /// through the user's service manager, which may still be running. A
+    /// chat in this state carries on when the person writes, on a computer
+    /// that advertises `chat_carry_on_v1`; the old turn's result stays
+    /// unknown.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub nothing_running: bool,
     pub run_id: RunId,
     pub task_id: TaskId,
     pub harness: HarnessKind,
@@ -511,6 +573,19 @@ pub struct Run {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub follow_up: Option<FollowUp>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct ChatHandover {
+    /// Exclusive lower boundary; none means a fresh session.
+    #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
+    pub after_seq: Option<u64>,
+    /// Inclusive upper boundary, before the message starting this turn.
+    #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
+    pub through_seq: u64,
+    /// This agent's own earlier session was resumed, with only missed messages.
+    pub resumed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
@@ -654,6 +729,24 @@ pub struct NewWork {
     #[ts(optional)]
     #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
     pub issue: Option<u64>,
+    /// What access this work would actually require.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub needs: Option<crate::work_cards::WorkNeeds>,
+    /// Why the suggestion cannot start as written; set only by the parser.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub refused: Option<String>,
+    /// The suggestion of the same turn this one follows, by position:
+    /// started with it, it waits in Next up until that one has finished.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub after: Option<u32>,
+    /// Fix every issue Agent can take, one by one, as Run all does, with
+    /// the project's own fixer and reviewer.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub all_issues: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
@@ -1170,6 +1263,17 @@ pub struct AttentionItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub alert_handled_at: Option<Timestamp>,
+    /// The newer version of Øphio the item is about, with no task: one out
+    /// for this computer (see [`crate::releases`]). Older computers send
+    /// none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub new_version: Option<String>,
+    /// News about an agent release or its observed models. Older companions
+    /// ignore this marker and can still read the record after a rollback.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub agent_update: Option<crate::agent_updates::AgentUpdateNotice>,
 }
 
 impl AttentionItem {
@@ -1238,6 +1342,17 @@ pub enum TimelineBody {
     AgentMessage {
         text: String,
         partial: bool,
+        /// Stable identity of this streamed message incarnation within its run.
+        /// Absent on older companions; never infer identity from an offset alone.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        message_key: Option<String>,
+        /// UTF-8 byte position of `text` in that message, including partials
+        /// already journaled before this segment. Advertised as `chat_reply_recovery_v1`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
+        text_offset: Option<u64>,
     },
     /// Tool/activity summary.
     Activity {

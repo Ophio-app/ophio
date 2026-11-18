@@ -9,7 +9,7 @@ use super::*;
 use ports::bridge::{BridgeBinding, BridgeHandler, BridgeRequest, BridgeResponse, PersonCall};
 use protocol::access::ConversationAccess;
 
-fn all_modes(f: &Fixture) {
+pub(super) fn all_modes(f: &Fixture) {
     f.hub
         .write(|tx| {
             let mut infos: Vec<protocol::capability::HarnessInfo> =
@@ -26,12 +26,14 @@ fn all_modes(f: &Fixture) {
         .unwrap();
 }
 
-fn create(
+pub(super) fn create(
     project: ProjectId,
     mode: TaskMode,
     access: Option<ConversationAccess>,
 ) -> CommandEnvelope {
     CommandEnvelope::new(Command::CreateTask {
+        origin: None,
+        from_chat: None,
         github: None,
         agent_chosen: None,
         project_id: project,
@@ -57,7 +59,7 @@ fn create(
     })
 }
 
-async fn started(f: &Fixture, envelope: CommandEnvelope) -> (TaskId, ports::RunSpec) {
+pub(super) async fn started(f: &Fixture, envelope: CommandEnvelope) -> (TaskId, ports::RunSpec) {
     let receipt = f.hub.submit(&Caller::local_owner(), envelope).await;
     let Some(CommandResult::TaskCreated { task_id, .. }) = receipt.result else {
         panic!("{receipt:?}")
@@ -78,7 +80,7 @@ async fn started(f: &Fixture, envelope: CommandEnvelope) -> (TaskId, ports::RunS
     (task_id, spec)
 }
 
-async fn bound(f: &Fixture, spec: &ports::RunSpec) -> BridgeBinding {
+pub(super) async fn bound(f: &Fixture, spec: &ports::RunSpec) -> BridgeBinding {
     let bridge = spec.bridge.clone().expect("a bridge");
     let token = (bridge.env.iter())
         .find(|(key, _)| key == ports::bridge::RUN_TOKEN_ENV)
@@ -89,7 +91,7 @@ async fn bound(f: &Fixture, spec: &ports::RunSpec) -> BridgeBinding {
         .expect("bridge binding")
 }
 
-async fn approval_where(f: &Fixture, found: impl Fn(&Approval) -> bool) -> Approval {
+pub(super) async fn approval_where(f: &Fixture, found: impl Fn(&Approval) -> bool) -> Approval {
     tokio::time::timeout(Duration::from_secs(15), async {
         loop {
             let approvals: Vec<Approval> = f.hub.read(|r| r.list("approval")).unwrap();
@@ -128,7 +130,11 @@ async fn raised(f: &Fixture, run: RunId, raw: &str) -> Approval {
     approval_where(f, |a| a.native_request_id == native).await
 }
 
-async fn decide(f: &Fixture, a: &Approval, decision: ApprovalDecision) -> CommandReceipt {
+pub(super) async fn decide(
+    f: &Fixture,
+    a: &Approval,
+    decision: ApprovalDecision,
+) -> CommandReceipt {
     let mut envelope = CommandEnvelope::new(Command::ResolveApproval {
         approval_id: a.approval_id,
         decision,
@@ -163,7 +169,7 @@ async fn switching(f: &Fixture, run: RunId, command: Command) -> CommandReceipt 
     receipt
 }
 
-async fn next_spec(f: &Fixture, task: TaskId, after: RunId) -> ports::RunSpec {
+pub(super) async fn next_spec(f: &Fixture, task: TaskId, after: RunId) -> ports::RunSpec {
     tokio::time::timeout(Duration::from_secs(15), async {
         loop {
             let found = (f.harness.specs.lock().unwrap().iter())
@@ -378,13 +384,11 @@ async fn a_chats_allow_turns_on_exactly_what_was_asked() {
         "{}",
         a.title
     );
-    let receipt = decide(&f, &a, ApprovalDecision::Allow).await;
+    let receipt = allow_with_restart(&f, &a, spec.run_id).await;
     assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
-    let said = asking.await.unwrap();
-    let BridgeResponse::AccessResult { text } = said else {
-        panic!("{said:?}")
-    };
-    assert!(text.starts_with("The person allowed it"), "{text}");
+    let next = next_spec(&f, task_id, spec.run_id).await;
+    assert!(next.prompt.text.contains("to give you what you asked for"));
+    asking.abort();
     let task: Task = f.hub.read(|r| r.require("task", task_id)).unwrap();
     let after = task.access.unwrap();
     assert_eq!(
@@ -400,13 +404,15 @@ async fn a_chats_allow_turns_on_exactly_what_was_asked() {
         .normalized()
     );
     assert!(!after.write.contains(&other));
-    // The running sandbox was widened before the agent heard it.
-    let changes = backend.sandbox_changes();
+    // A first write grant requires a fresh turn that reserves the project.
+    assert!(backend.sandbox_changes().is_empty());
+    let reach = backend.specs.lock().unwrap()[1].reach.clone();
+    assert!(reach.internet && reach.local_network && reach.write.len() == 1);
     assert!(
-        changes
-            .last()
-            .is_some_and(|r| r.internet && r.local_network && r.write.len() == 1),
-        "{changes:?}"
+        f.hub
+            .read(|r| r.require::<Run>("run", next.run_id))
+            .unwrap()
+            .holds_writer
     );
     f.close().await;
 }
@@ -937,7 +943,7 @@ async fn the_build_before_reads_what_asking_for_more_stores() {
         read: vec![project],
         ..Default::default()
     };
-    let (_, spec) = started(&f, create(project, TaskMode::Ask, Some(access))).await;
+    let (chat, spec) = started(&f, create(project, TaskMode::Ask, Some(access))).await;
     let binding = bound(&f, &spec).await;
     let hub = f.hub.clone();
     let asking = tokio::spawn(async move {
@@ -952,9 +958,13 @@ async fn the_build_before_reads_what_asking_for_more_stores() {
     });
     let a = approval_where(&f, |a| a.access_request.is_some()).await;
     assert_eq!(a.kind, ApprovalKind::Other);
-    let receipt = decide(&f, &a, ApprovalDecision::Allow).await;
+    let receipt = allow_with_restart(&f, &a, spec.run_id).await;
     assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
-    asking.await.unwrap();
+    asking.abort();
+    let next = next_spec(&f, chat, spec.run_id).await;
+    f.hub
+        .finish_run(next.run_id, RunState::Completed, None)
+        .unwrap();
     // A Plan task's request, with its ways forward, switched past.
     let (plan, plan_spec) = started(&f, create(project, TaskMode::Plan, None)).await;
     let asked = raised(&f, plan_spec.run_id, "make build").await;
@@ -1053,10 +1063,9 @@ async fn ophio_s_own_gate_is_never_switched_past_and_stop_lets_it_go() {
     );
     assert!(
         f.hub
-            .read(|r| r
-                .get::<crate::switch_work::Preapproved>(crate::switch_work::PREAPPROVED, task_id))
+            .read(|r| crate::switch_work::passes(r, task_id))
             .unwrap()
-            .is_none()
+            .is_empty()
     );
     // Stopped, what waits on the gate is let go at once, not at its deadline.
     let seen: Task = f.hub.read(|r| r.require("task", task_id)).unwrap();
@@ -1235,5 +1244,107 @@ async fn a_request_the_facts_line_fails_on_leaves_the_store_working() {
         )
         .await;
     assert_eq!(stop.status, ReceiptStatus::Accepted, "{stop:?}");
+    f.close().await;
+}
+
+/// A first project-write grant must end the reading process before continuing.
+async fn allow_with_restart(f: &Fixture, approval: &Approval, run: RunId) -> CommandReceipt {
+    f.harness
+        .controls
+        .confirm_terminate
+        .store(true, Ordering::SeqCst);
+    let before = f.harness.controls.terminates.load(Ordering::SeqCst);
+    let ends = async {
+        tokio::time::timeout(Duration::from_secs(15), async {
+            while f.harness.controls.terminates.load(Ordering::SeqCst) == before {
+                tokio::time::sleep(Duration::from_millis(2)).await;
+            }
+        })
+        .await
+        .expect("the reading turn was never ended");
+        f.harness
+            .emit(
+                run,
+                ports::HarnessEvent::Exited {
+                    exit: ports::RunExit::Interrupted,
+                    outcome: None,
+                },
+            )
+            .await;
+    };
+    let (receipt, ()) = tokio::join!(decide(f, approval, ApprovalDecision::Allow), ends);
+    receipt
+}
+
+#[tokio::test]
+async fn a_busy_chat_access_approval_describes_the_actual_turn_limits() {
+    let backend = Arc::new(Backend::default());
+    let f = Fixture::with(|b| b.sandboxes(backend.clone())).await;
+    all_modes(&f);
+    let project = f.project().await;
+    let _ = started(&f, create(project, TaskMode::Work, None)).await;
+    let (_, spec) = started(
+        &f,
+        create(
+            project,
+            TaskMode::Ask,
+            Some(ConversationAccess {
+                write: vec![project],
+                internet: false,
+                ..Default::default()
+            }),
+        ),
+    )
+    .await;
+    let binding = bound(&f, &spec).await;
+    let hub = f.hub.clone();
+    let request = binding.clone();
+    let asking = tokio::spawn(async move {
+        hub.handle(
+            &request,
+            BridgeRequest::RequestAccess {
+                needs: vec![AccessNeed::WholeComputer],
+                reason: "to inspect more folders".into(),
+            },
+        )
+        .await
+    });
+    let approval = approval_where(&f, |a| a.access_request.is_some()).await;
+    assert_eq!(
+        decide(&f, &approval, ApprovalDecision::Allow).await.status,
+        ReceiptStatus::Accepted
+    );
+    let BridgeResponse::AccessResult { text } = asking.await.unwrap() else {
+        panic!("no access answer")
+    };
+    assert!(
+        text.contains("this reply keeps its temporary limits"),
+        "{text}"
+    );
+    assert!(
+        text.contains("whole-computer access is read-only"),
+        "{text}"
+    );
+    assert!(!text.contains("you may now read and change anything"));
+    let reach = backend.sandbox_changes().last().unwrap().clone();
+    assert!(!reach.whole_write && reach.write.is_empty());
+    let BridgeResponse::AccessResult { text } = f
+        .hub
+        .handle(
+            &binding,
+            BridgeRequest::RequestAccess {
+                needs: vec![AccessNeed::WholeComputer],
+                reason: "try again".into(),
+            },
+        )
+        .await
+    else {
+        panic!("no access answer")
+    };
+    assert!(
+        text.contains("whole-computer access is read-only"),
+        "{text}"
+    );
+    assert!(!text.contains("You already have that"));
     f.close().await;
 }

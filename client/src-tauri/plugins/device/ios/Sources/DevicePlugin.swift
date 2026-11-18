@@ -28,6 +28,7 @@ final class DevicePlugin: Plugin {
   private let clips = ClipTrimmer()
   private let previews = PreviewBrowser()
   private let reports = Reports()
+  private lazy var windowLayout = WindowLayout { [weak self] in self?.send($0) }
   private var appLock: AppLock!
 
   /// Guards what other threads read: the app's event channel and whether it's on screen.
@@ -57,6 +58,7 @@ final class DevicePlugin: Plugin {
 
   override func load(webview: WKWebView) {
     onMain {
+      self.windowLayout.attach(webview)
       guard !self.loaded else { return }
       self.loaded = true
       self.state.sync { self.shown = UIApplication.shared.applicationState != .background }
@@ -97,6 +99,7 @@ final class DevicePlugin: Plugin {
     appLock.resume()
     state.sync { shown = true }
     shell.apply(foreground: true)
+    windowLayout.refresh()
     send(["type": "foreground"])
     let waiting = microphoneWaiting
     microphoneWaiting.removeAll()
@@ -144,6 +147,10 @@ final class DevicePlugin: Plugin {
 
   // MARK: Events
 
+  @objc func windowLayout(_ invoke: Invoke) {
+    onMain { self.windowLayout.snapshot { invoke.resolve($0) } }
+  }
+
   @objc func events(_ invoke: Invoke) {
     guard let args = try? invoke.parseArgs(EventArgs.self) else {
       return invoke.reject("Invalid arguments.")
@@ -151,6 +158,7 @@ final class DevicePlugin: Plugin {
     onMain {
       self.state.sync { self.channel = args.events }
       self.shell.apply(foreground: self.foreground)
+      self.windowLayout.replay()
       self.flushEvents()
       invoke.resolve()
     }

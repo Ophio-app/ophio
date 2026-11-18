@@ -4,7 +4,7 @@
 // name or folder. A draft stays with the project and task it was typed for.
 
 import { useEffect, useState } from "react";
-import { Check, FolderGit2, FolderPlus, House, ListChecks, MonitorSmartphone, Trash2 } from "lucide-react";
+import { Check, FolderGit2, FolderPlus, House, ListChecks, MessagesSquare, MonitorSmartphone, Trash2 } from "lucide-react";
 import { useApp, useHost, useUi, useLink, shallowEqual } from "../app/context";
 import { Empty, ListRow, Section } from "../design/ListRow";
 import { IconButton } from "../design/Button";
@@ -23,6 +23,7 @@ import { PathText } from "../design/PathText";
 import type { Project } from "../protocol/types";
 import { DeleteOneOff, useDeleteOneOff } from "../screens/work/DeleteOneOff";
 import { useWarning } from "../app/warnings";
+import { useTalkAll } from "../app/talkScope";
 import ProjectSettingsSheet from "../screens/work/ProjectSheet";
 
 /** Each project's tasks working and queued, what needs the person,
@@ -92,7 +93,7 @@ export function matchingProjects(projects: Project[], query: string): Project[] 
 
 /** Drops from the header as a search field over the list. The field isn't
  * focused on opening, so the keyboard comes up only when it's tapped. */
-export function ProjectSheet({ open, onClose, allowAll = false }: { open: boolean; onClose: () => void; allowAll?: boolean }) {
+export function ProjectSheet({ open, onClose, allowAll = false, conversations = false, onChooseProject }: { open: boolean; onClose: () => void; allowAll?: boolean; conversations?: boolean; onChooseProject?: (project: Project) => void }) {
   const { profile, all: allComputers } = useApp();
   // Adding a project replaces the list with the add sheet, which closes both.
   const [adding, setAdding] = useState(false);
@@ -101,16 +102,16 @@ export function ProjectSheet({ open, onClose, allowAll = false }: { open: boolea
   if (open && adding) return <ProjectSettingsSheet project={undefined} onClose={() => { setAdding(false); onClose(); }} />;
   // Counting every project's tasks on each store update is work only an open sheet shows.
   return (
-    <Sheet open={open} onClose={onClose} title="Projects" subtitle={allComputers ? "On every computer" : `On ${profile.name}`} size="drop" closeLabel="Close projects"
+    <Sheet open={open} onClose={onClose} title="Projects" subtitle={allComputers && !conversations ? "On every computer" : `On ${profile.name}`} size="drop" closeLabel="Close projects"
       head={<TextField label="Search projects" hideLabel placeholder="Search projects" type="search" value={query} onChange={setQuery} enterKeyHint="search" />}>
-      {allComputers
+      {allComputers && !conversations
         ? <AllProjectList onClose={onClose} onAdd={() => setAdding(true)} query={query} allowAll={allowAll} />
-        : <ProjectList onClose={onClose} onAdd={() => setAdding(true)} query={query} allowAll={allowAll} />}
+        : <ProjectList onClose={onClose} onAdd={() => setAdding(true)} query={query} allowAll={allowAll} conversations={conversations} onChooseProject={onChooseProject} />}
     </Sheet>
   );
 }
 
-function ProjectList({ onClose, onAdd, query, allowAll }: { onClose: () => void; onAdd: () => void; query: string; allowAll: boolean }) {
+function ProjectList({ onClose, onAdd, query, allowAll, conversations, onChooseProject }: { onClose: () => void; onAdd: () => void; query: string; allowAll: boolean; conversations: boolean; onChooseProject?: (project: Project) => void }) {
   const { profile } = useApp();
   const { ui } = useApp();
   const projects = useHost((s) => Object.values(s.projects), shallowEqual);
@@ -118,7 +119,8 @@ function ProjectList({ onClose, onAdd, query, allowAll }: { onClose: () => void;
   const online = useLink().state === "online";
   const heard = useHost(s => s.lastHeardAt);
   const current = useUi((s) => s.projectId);
-  const all = useUi((s) => s.todoAll);
+  const todoAll = useUi((s) => s.todoAll);
+  const all = useTalkAll();
   const drafts = useUi((s) => s.drafts);
   const admin = useHost((s) => s.grants?.admin === true);
   const [deleting, setDeleting] = useState<Project | null>(null);
@@ -169,18 +171,20 @@ function ProjectList({ onClose, onAdd, query, allowAll }: { onClose: () => void;
             {!online && <><br />Last reported {heard === null ? "at an unknown time" : <Age at={heard} suffix=" ago" />}</>}
           </>
         }
-        selected={p.project_id === current && (!allowAll || !all)}
+        selected={p.project_id === current && (!allowAll || !(conversations ? all : todoAll))}
         trailing={
-          <span className="row__pills">
+          <span className="row__pills row__pills--counts">
             {c && c.attention > 0 && <Pill tone="warn">{c.attention} {c.attention === 1 ? "needs" : "need"} you</Pill>}
             {c && c.active > 0 && <Pill tone={online ? "accent" : "neutral"}>{c.active} working</Pill>}
             {c && c.queued > 0 && <Pill>{c.queued} queued</Pill>}
             {hasDraft && <Pill>Draft</Pill>}
-            {p.project_id === current && (!allowAll || !all) && <Check className="row__check" aria-label="Current" />}
+            {p.project_id === current && (!allowAll || !(conversations ? all : todoAll)) && <Check className="row__check" aria-label="Current" />}
           </span>
         }
         onClick={() => {
-          ui.selectProject(p.project_id);
+          if (onChooseProject) onChooseProject(p);
+          else if (conversations) ui.selectTalkProject(p.project_id);
+          else ui.selectProject(p.project_id);
           onClose();
         }}
       />
@@ -197,9 +201,9 @@ function ProjectList({ onClose, onAdd, query, allowAll }: { onClose: () => void;
             : "Its projects appear once it answers."}
         </Empty>
       )}
-      {allowAll && !searching && <Section><div className="group"><ListRow icon={ListChecks} title="All projects"
-        subtitle="To-dos from every project" selected={all} trailing={all && <Check className="row__check" aria-label="Current" />}
-        onClick={() => { ui.setTodoAll(true); onClose(); }} /></div></Section>}
+      {allowAll && !searching && <Section><div className="group"><ListRow icon={conversations ? MessagesSquare : ListChecks} title="All projects"
+        subtitle={conversations ? "Conversations from every project" : "To-dos from every project"} selected={conversations ? all : todoAll} trailing={(conversations ? all : todoAll) && <Check className="row__check" aria-label="Current" />}
+        onClick={() => { conversations ? ui.setTalkAll(true) : ui.setTodoAll(true); onClose(); }} /></div></Section>}
       {(homeShown || places.length > 0 || (!home && heardHost && !searching)) && (
         <Section>
           <div className="group">
@@ -355,7 +359,7 @@ function AllProjectList({ onClose, onAdd, query, allowAll }: { onClose: () => vo
         }
         selected={selected}
         trailing={
-          <span className="row__pills">
+          <span className="row__pills row__pills--counts">
             {c && c.attention > 0 && <Pill tone="warn">{c.attention} {c.attention === 1 ? "needs" : "need"} you</Pill>}
             {c && c.active > 0 && <Pill tone={at.online ? "accent" : "neutral"}>{c.active} working</Pill>}
             {c && c.queued > 0 && <Pill>{c.queued} queued</Pill>}

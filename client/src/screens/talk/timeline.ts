@@ -18,15 +18,17 @@ export type Row =
   /** `withdrawn`: Stop withdrew the message while it was held, so it was never sent.
    * `carried`: the earlier plan the computer recorded this message as carrying out. */
   | { kind: "user"; messageSeq: number; key: string; at: number; text: string; bundle: AnnotationBundle | null; delivery: DeliveryState; withdrawn: boolean; revoked: boolean; carried: string | null }
-  | { kind: "agent"; key: string; at: number; text: string; partial: boolean }
-  /** `ended`: the run finished, so a step still marked running will not report a result. */
-  | { kind: "steps"; key: string; at: number; steps: Step[]; ended: boolean }
+  | { kind: "agent"; key: string; at: number; text: string; partial: boolean; runId?: string | null }
+  /** `ended`: the run finished, so a step still marked running will not report a result.
+   *  `stopped`: it ended because it was stopped. */
+  | { kind: "steps"; key: string; at: number; steps: Step[]; ended: boolean; stopped?: boolean }
   | { kind: "approval"; key: string; at: number; approvalId: string; runId: string | null }
   | { kind: "run_started"; key: string; at: number; runId: string; number: number }
   /** `withdrawn`: how many held messages Stop withdrew from this run. */
   /** `mode`: as the run recorded it, absent on runs recorded before it was kept. */
-  | { kind: "run_ended"; key: string; at: number; runId: string; state: RunState; mode: TaskMode | undefined; withdrawn: number }
-  | { kind: "receipt"; key: string; at: number; summary: string; outcome: ReceiptOutcome }
+  /** `cutOff`: a chat's reply cut off whose agent and what it started have stopped; the next message carries on from it. */
+  | { kind: "run_ended"; key: string; at: number; runId: string; state: RunState; mode: TaskMode | undefined; withdrawn: number; cutOff?: boolean }
+  | { kind: "receipt"; key: string; at: number; summary: string; outcome: ReceiptOutcome; stopOf?: string }
   | { kind: "decision"; key: string; at: number; runId: string; decision: HumanResolution }
   | { kind: "helpers_checked"; key: string; at: number; runId: string; decision: HumanCheck }
   | { kind: "note"; key: string; at: number; text: string }
@@ -70,7 +72,7 @@ export function conversationRuns(items: TimelineItem[], runs: Run[]): { items: T
   return { items: [...(groups.get(null) ?? []), ...ids.flatMap(id => groups.get(id) ?? [])], ids };
 }
 
-export function rows(items: TimelineItem[], runs: Run[] = []): Row[] {
+export function rows(items: TimelineItem[], runs: Run[] = [], conversation = false): Row[] {
   const out: Row[] = [];
   const calls = new Map<string, Step>();
   const grouped = conversationRuns(applyDeliveries(items), [...runs]);
@@ -117,7 +119,7 @@ export function rows(items: TimelineItem[], runs: Run[] = []): Row[] {
         if (it.run_id && withdrawn.has(it.seq)) withdrawnFrom.set(it.run_id, (withdrawnFrom.get(it.run_id) ?? 0) + 1);
         break;
       case "agent_message":
-        out.push({ kind: "agent", key, at: it.at, text: b.text, partial: b.partial });
+        out.push({ kind: "agent", key, at: it.at, text: b.text, partial: b.partial, runId: it.run_id });
         break;
       case "approval":
         out.push({ kind: "approval", key, at: it.at, approvalId: b.approval_id, runId: it.run_id });
@@ -127,11 +129,11 @@ export function rows(items: TimelineItem[], runs: Run[] = []): Row[] {
         started.add(b.run_id);
         break;
       case "run_ended":
-        for (const r of out) if (r.kind === "steps" && r.steps[0]?.run_id === b.run_id) r.ended = true;
+        for (const r of out) if (r.kind === "steps" && r.steps[0]?.run_id === b.run_id) Object.assign(r, { ended: true }, b.state === "interrupted" && { stopped: true });
         out.push({ kind: "run_ended", key, at: it.at, runId: b.run_id, state: b.state, mode: runs.find(r => r.run_id === b.run_id)?.mode, withdrawn: withdrawnFrom.get(b.run_id) ?? 0 });
         break;
       case "receipt":
-        out.push({ kind: "receipt", key, at: it.at, summary: b.receipt.summary, outcome: outcome(b.receipt.facts) });
+        out.push({ kind: "receipt", key, at: it.at, summary: b.receipt.summary, outcome: outcome(b.receipt.facts), ...(b.receipt.kind === "stop_task" && it.run_id ? { stopOf: it.run_id } : {}) });
         break;
       case "note":
         out.push({ kind: "note", key, at: it.at, text: b.text });
@@ -148,7 +150,45 @@ export function rows(items: TimelineItem[], runs: Run[] = []): Row[] {
       out.push({ kind: "run_started", key: `run-${run.run_id}`, at: run.admitted_at, runId: run.run_id, number });
   }
   for (const row of out) {
-    if (row.kind === "steps" && runs.some(run => run.run_id === row.steps[0]?.run_id && ["interrupted", "completed", "failed", "reconciliation_required"].includes(run.state))) row.ended = true;
+    const run = row.kind === "steps" ? runs.find(run => run.run_id === row.steps[0]?.run_id) : undefined;
+    if (row.kind === "steps" && run && ["interrupted", "completed", "failed", "reconciliation_required"].includes(run.state)) {
+      row.ended = true;
+      if (run.state === "interrupted") row.stopped = true;
+    }
+  }
+  // A confirmed Stop is said once, by its turn's “Stopped” line and the
+  // receipt behind it. A Stop the agent hasn't confirmed, or one that failed,
+  // keeps its own line: that is what to go and check.
+  const stoppedRuns = new Set(out.flatMap(row => row.kind === "run_ended" && row.state === "interrupted" ? [row.runId] : []));
+  for (let i = out.length - 1; i >= 0; i--) {
+    const row = out[i]!;
+    if (row.kind === "receipt" && row.outcome === "confirmed" && row.stopOf && stoppedRuns.has(row.stopOf)) out.splice(i, 1);
+  }
+  for (const run of runs) {
+    // A cut-off reply reads as cut off once, at its end, whether or not the
+    // computer recorded an end for it before it restarted.
+    // A saved partial reply proves this chat turn was cut off, even while the
+    // computer is still checking whether anything it started remains running.
+    // That affects only the transcript label, never whether the person may
+    // carry on or decide the run's outcome.
+    const savedPartial = conversation && run.state === "reconciliation_required"
+      && items.some(i => i.run_id === run.run_id && i.item.kind === "agent_message" && i.item.partial);
+    if (!cutOffRun(run) && !savedPartial) continue;
+    const ends = out.filter((row): row is Extract<Row, { kind: "run_ended" }> => row.kind === "run_ended" && row.runId === run.run_id);
+    for (const end of ends.slice(0, -1)) out.splice(out.indexOf(end), 1);
+    const end = ends.at(-1);
+    if (end) {
+      end.cutOff = true;
+      continue;
+    }
+    // No end was recorded, so it is placed, and timed, after the last thing
+    // recorded for it: never after a later message only shown beside it.
+    // A carried-on turn whose rows aren't loaded (an older page) draws
+    // nothing; only the unanswered one, with nothing recorded yet, goes last.
+    const own = new Set(items.filter(i => i.run_id === run.run_id).map(i => `s${i.seq}`));
+    const last = out.findLastIndex(row => own.has(row.key));
+    if (last < 0 && run.carried_on) continue;
+    out.splice(last < 0 ? out.length : last + 1, 0, { kind: "run_ended", key: `cut-${run.run_id}`, at: out[last]?.at ?? run.ended_at ?? run.admitted_at, runId: run.run_id, state: run.state, mode: run.mode, withdrawn: withdrawnFrom.get(run.run_id) ?? 0, cutOff: true });
   }
   for (const run of runs) {
     if (run.helpers_checked) {
@@ -161,6 +201,12 @@ export function rows(items: TimelineItem[], runs: Run[] = []): Row[] {
   }
   return out;
 }
+
+/** A chat's reply cut off whose agent and what it started have stopped: carried on
+ * from by the person's next message, or waiting for it. Its result stays
+ * unknown, so it is neither the person's failure nor finished. */
+export const cutOffRun = (run: Run): boolean =>
+  !!run.carried_on || (!!run.nothing_running && run.state === "reconciliation_required");
 
 /** `next`, with each row that repeats a row of `prev` unchanged replaced by
  * that earlier row, so memoized views of unchanged rows need not render again. */
@@ -216,6 +262,10 @@ export function runEnd(state: RunState, mode: TaskMode | null | undefined, conve
   return state === "completed" && mode === "plan" ? "Plan proposed" : RUN_END[state];
 }
 
+/** Whether a bundle carries markup, not only files. */
+export const hasMarkup = (b: AnnotationBundle): boolean =>
+  b.sources.length > 0 || b.marks.length > 0 || b.comments.length > 0 || b.steps.length > 0 || !!b.speech || !!b.general_note?.trim();
+
 /** Short description of an attached bundle, e.g. "2 images · 3 marks". */
 export function bundleSummary(b: AnnotationBundle): string {
   const n = (k: number, one: string, many: string) => (k ? `${k} ${k === 1 ? one : many}` : "");
@@ -226,6 +276,7 @@ export function bundleSummary(b: AnnotationBundle): string {
       n(b.comments.length, "comment", "comments"),
       n(b.steps.length, "step", "steps"),
       b.speech ? "voice" : "",
+      n(b.files?.length ?? 0, "file", "files"),
     ]
       .filter(Boolean)
       .join(" · ") || "Markup"
@@ -234,9 +285,15 @@ export function bundleSummary(b: AnnotationBundle): string {
 
 /** Older journals embedded live state in the title. Keep their tool name readable. */
 export function stepSummary(step: ActivityItem, ended: boolean): string {
-  if (step.item.tool === "ExitPlanMode") return "Plan proposed";
-  if (step.item.not_run) return `${toolLabel(step.item.tool)}: ${NOT_RUN[step.item.not_run].label}`;
-  return ended || step.item.status !== "running"
-    ? step.item.summary.replace(/^Running /i, "").replace(/ is running$/i, "")
-    : step.item.summary;
+  const { tool, summary, status, not_run } = step.item;
+  if (tool === "ExitPlanMode") return "Plan proposed";
+  const label = toolLabel(tool);
+  if (not_run) return `${label}: ${NOT_RUN[not_run].label}`;
+  // The computer names a step by its tool ("mcp__computer__request_access
+  // finished"); the person reads the tool's label instead.
+  const said = label === tool ? summary : summary.split(tool).join(label);
+  // Once it has ended, its mark says how; the words needn't.
+  return ended || status !== "running"
+    ? said.replace(/^Running /i, "").replace(/ is running$/i, "").replace(/ finished$/, "")
+    : said;
 }

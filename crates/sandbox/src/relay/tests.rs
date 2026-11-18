@@ -1,11 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
 use ports::sandbox::{RelayBudget, RelayPolicy};
+#[cfg(target_os = "macos")]
+use tokio::net::TcpStream as RelayStream;
+#[cfg(target_os = "linux")]
+use tokio::net::UnixStream as RelayStream;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::{TcpListener, UnixStream},
+    net::TcpListener,
     sync::Notify,
 };
+
+#[cfg(target_os = "linux")]
+fn address(relay: &Relay) -> PathBuf {
+    relay.socket()
+}
+#[cfg(target_os = "macos")]
+fn address(relay: &Relay) -> std::net::SocketAddr {
+    ([127, 0, 0, 1], relay.port()).into()
+}
 
 struct Fake {
     url: String,
@@ -146,8 +159,34 @@ impl Fixture {
             .collect()
     }
 }
+fn authenticated(relay: &Relay, request: &str) -> String {
+    let Some(value) = &relay.shared.local_auth else {
+        return request.to_owned();
+    };
+    let name = match relay.shared.spec.provider {
+        RelayProvider::Anthropic => "x-api-key",
+        RelayProvider::OpenAi => "authorization",
+    };
+    let (headers, body) = request.split_once("\r\n\r\n").unwrap();
+    let headers = headers
+        .lines()
+        .filter(|line| {
+            !line
+                .split_once(':')
+                .is_some_and(|(key, _)| key.eq_ignore_ascii_case(name))
+        })
+        .collect::<Vec<_>>()
+        .join("\r\n");
+    format!(
+        "{headers}\r\n{name}: {}\r\n\r\n{body}",
+        value.to_str().unwrap()
+    )
+}
 async fn raw(relay: &Relay, request: &str) -> String {
-    let mut stream = UnixStream::connect(relay.socket()).await.unwrap();
+    raw_unauthenticated(relay, &authenticated(relay, request)).await
+}
+async fn raw_unauthenticated(relay: &Relay, request: &str) -> String {
+    let mut stream = RelayStream::connect(address(relay)).await.unwrap();
     stream.write_all(request.as_bytes()).await.unwrap();
     let mut response = String::new();
     tokio::time::timeout(Duration::from_secs(3), stream.read_to_string(&mut response))
@@ -192,12 +231,29 @@ async fn inspector_refuses_raw_and_json_escaped_canaries_before_upstream() {
         ]
     );
 }
-async fn forwarded(relay: &Relay) -> (String, tokio::task::JoinHandle<io::Result<()>>) {
-    let tcp = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let url = format!("http://{}", tcp.local_addr().unwrap());
-    let socket = relay.socket();
-    let forward = tokio::spawn(async move { crate::shim::forward(tcp, &socket).await });
-    (url, forward)
+fn http(relay: &Relay) -> (String, reqwest::Client) {
+    let client = reqwest::Client::builder().no_proxy();
+    // Unit tests do not need a host-visible TCP forwarder. Otherwise an unrelated
+    // server-discovery GET can legitimately emit an extra refusal signal.
+    #[cfg(target_os = "linux")]
+    let (url, client) = (
+        "http://relay".to_owned(),
+        client.unix_socket(relay.socket()),
+    );
+    #[cfg(target_os = "macos")]
+    let (url, client) = {
+        let mut headers = HeaderMap::new();
+        let name = match relay.shared.spec.provider {
+            RelayProvider::Anthropic => "x-api-key",
+            RelayProvider::OpenAi => "authorization",
+        };
+        headers.insert(name, relay.shared.local_auth.as_ref().unwrap().clone());
+        (
+            format!("http://{}", address(relay)),
+            client.default_headers(headers),
+        )
+    };
+    (url, client.build().unwrap())
 }
 
 #[tokio::test]
@@ -323,6 +379,7 @@ async fn refuses_paths_methods_upgrades_absolute_form_connect_and_large_bodies()
         assert!(!log.contains(secret));
     }
 }
+#[cfg(target_os = "linux")]
 #[tokio::test]
 async fn listens_under_a_home_folder_too_long_for_a_socket_address() {
     use std::os::unix::fs::FileTypeExt;
@@ -356,14 +413,14 @@ async fn chunked_requests_are_bounded_and_count_tokens_is_allowed() {
     );
     assert!(raw(&relay, &req).await.starts_with("HTTP/1.1 200"));
     assert_eq!(relay.totals().input_tokens, 12);
-    let (url, forward) = forwarded(&relay).await;
+    let (url, client) = http(&relay);
     let huge = format!(
         "{{\"model\":\"fixture\",\"text\":\"{}\"}}",
         "x".repeat(MAX_BODY_BYTES)
     );
     // The relay answers 403 once the body passes the cap and closes, so the
     // sender may see the connection drop before it reads the answer.
-    match reqwest::Client::new()
+    match client
         .post(format!("{url}/v1/messages"))
         .body(huge)
         .send()
@@ -373,7 +430,6 @@ async fn chunked_requests_are_bounded_and_count_tokens_is_allowed() {
         Err(error) => assert!(error.is_request() || error.is_body(), "{error}"),
     }
     assert_eq!(fake.requests.lock().unwrap().len(), 1);
-    forward.abort();
 }
 #[tokio::test]
 async fn sse_arrives_before_upstream_finishes_and_accounts_usage_across_chunks() {
@@ -408,9 +464,9 @@ async fn sse_arrives_before_upstream_finishes_and_accounts_usage_across_chunks()
         .await;
         let f = Fixture::new(provider);
         let relay = f.relay(&fake);
-        let (url, forward) = forwarded(&relay).await;
+        let (url, client) = http(&relay);
         let body = r#"{"model":"fixture","stream":true}"#;
-        let mut response = reqwest::Client::new()
+        let mut response = client
             .post(format!("{url}{path}"))
             .body(body)
             .send()
@@ -453,7 +509,6 @@ async fn sse_arrives_before_upstream_finishes_and_accounts_usage_across_chunks()
         );
         assert_eq!(f.logs()[0]["input_tokens"], input);
         assert!(f.signals.lock().unwrap().is_empty());
-        forward.abort();
     }
 }
 #[tokio::test]
@@ -521,6 +576,78 @@ async fn model_and_output_token_limits_refuse_without_rewriting() {
     }
 }
 #[tokio::test]
+async fn local_capability_rejects_unrelated_probes_before_inspection_signals_or_accounting() {
+    for provider in [RelayProvider::Anthropic, RelayProvider::OpenAi] {
+        let fake = Fake::json().await;
+        let mut f = Fixture::new(provider);
+        let inspections = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let inspected = inspections.clone();
+        f.spec.inspect = Some(Arc::new(move |_| {
+            inspected.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            false
+        }));
+        let relay = Relay::start_inner(f.dir.path(), f.spec.clone(), &fake.url, true).unwrap();
+        let other = Relay::start_inner(f.dir.path(), f.spec.clone(), &fake.url, true).unwrap();
+        assert!(relay.local_key().unwrap().len() == 64);
+        assert!(relay.local_key() != other.local_key());
+        assert!(relay.local_key() != Some("fixture-provider-key"));
+        let (path, name) = match provider {
+            RelayProvider::Anthropic => ("/v1/messages", "x-api-key"),
+            RelayProvider::OpenAi => ("/v1/responses", "authorization"),
+        };
+        let valid = request(path, r#"{"model":"fixture"}"#, "");
+        for probe in [
+            "GET / HTTP/1.1\r\nHost: probe\r\n\r\n".to_owned(),
+            valid.clone(),
+            request(
+                path,
+                r#"{"model":"fixture"}"#,
+                &format!("{name}: wrong\r\n"),
+            ),
+            authenticated(&other, &valid),
+            request(
+                path,
+                r#"{"model":"fixture"}"#,
+                &format!(
+                    "{name}: {}\r\n{name}: {}\r\n",
+                    relay.shared.local_auth.as_ref().unwrap().to_str().unwrap(),
+                    relay.shared.local_auth.as_ref().unwrap().to_str().unwrap()
+                ),
+            ),
+        ] {
+            assert!(
+                raw_unauthenticated(&relay, &probe)
+                    .await
+                    .starts_with("HTTP/1.1 401")
+            );
+        }
+        assert_eq!(inspections.load(std::sync::atomic::Ordering::SeqCst), 0);
+        assert_eq!(relay.totals(), RelayTotals::default());
+        assert!(f.signals.lock().unwrap().is_empty());
+        assert!(f.logs().is_empty());
+        assert!(fake.requests.lock().unwrap().is_empty());
+        assert!(
+            raw(&relay, &request("/v1/files", r#"{"model":"fixture"}"#, ""))
+                .await
+                .starts_with("HTTP/1.1 403")
+        );
+        assert_eq!(*f.signals.lock().unwrap(), [RelaySignal::HijackAttempt]);
+        assert!(raw(&relay, &valid).await.starts_with("HTTP/1.1 200"));
+        assert_eq!(relay.totals().requests, 1);
+        let upstream = fake.requests.lock().unwrap();
+        assert_eq!(upstream.len(), 1);
+        assert!(upstream[0].contains("fixture-provider-key"));
+        assert!(!upstream[0].contains(relay.local_key().unwrap()));
+        assert!(
+            !std::fs::read_to_string(&f.spec.log)
+                .unwrap()
+                .contains(relay.local_key().unwrap())
+        );
+        assert!(!format!("{relay:?}").contains(relay.local_key().unwrap()));
+    }
+}
+
+#[tokio::test]
 async fn missing_usage_fails_closed_and_deadline_ends_an_active_stream() {
     let fake = Fake::new(
         "application/json",
@@ -544,8 +671,8 @@ async fn missing_usage_fails_closed_and_deadline_ends_an_active_stream() {
     let mut f = Fixture::new(RelayProvider::OpenAi);
     f.spec.budget.deadline = Some(SystemTime::now() + Duration::from_millis(150));
     let relay = f.relay(&fake);
-    let (url, forward) = forwarded(&relay).await;
-    let response = reqwest::Client::new()
+    let (url, client) = http(&relay);
+    let response = client
         .post(format!("{url}/v1/responses"))
         .body(r#"{"model":"fixture"}"#)
         .send()
@@ -562,7 +689,6 @@ async fn missing_usage_fails_closed_and_deadline_ends_an_active_stream() {
         f.signals.lock().unwrap().as_slice(),
         [RelaySignal::BudgetSpent]
     );
-    forward.abort();
 }
 
 #[tokio::test]
@@ -607,13 +733,16 @@ async fn concurrent_requests_recheck_budget_after_usage_and_disconnects_still_co
     let mut f = Fixture::new(RelayProvider::OpenAi);
     f.spec.budget.max_output_tokens = 3;
     let relay = f.relay(&fake);
-    let req = request("/v1/responses", r#"{"model":"fixture"}"#, "");
-    let mut first = UnixStream::connect(relay.socket()).await.unwrap();
+    let req = authenticated(
+        &relay,
+        &request("/v1/responses", r#"{"model":"fixture"}"#, ""),
+    );
+    let mut first = RelayStream::connect(address(&relay)).await.unwrap();
     first.write_all(req.as_bytes()).await.unwrap();
     first.read_u8().await.unwrap();
-    let socket = relay.socket();
+    let socket = address(&relay);
     let mut second = tokio::spawn(async move {
-        let mut stream = UnixStream::connect(socket).await.unwrap();
+        let mut stream = RelayStream::connect(socket).await.unwrap();
         stream.write_all(req.as_bytes()).await.unwrap();
         let mut response = String::new();
         stream.read_to_string(&mut response).await.unwrap();
@@ -754,14 +883,9 @@ async fn concurrent_requests_cannot_share_the_last_input_allowance() {
     let mut f = Fixture::new(RelayProvider::OpenAi);
     f.spec.budget.max_input_tokens = body.len() as u64;
     let relay = f.relay(&fake);
-    let (url, forward) = forwarded(&relay).await;
+    let (url, client) = http(&relay);
     let url = format!("{url}/v1/responses");
-    let mut first = reqwest::Client::new()
-        .post(&url)
-        .body(body)
-        .send()
-        .await
-        .unwrap();
+    let mut first = client.post(&url).body(body).send().await.unwrap();
     assert!(first.chunk().await.unwrap().is_some());
     assert_eq!(
         relay.totals(),
@@ -772,14 +896,7 @@ async fn concurrent_requests_cannot_share_the_last_input_allowance() {
         }
     );
     assert!(f.signals.lock().unwrap().is_empty());
-    let mut second = tokio::spawn(async move {
-        reqwest::Client::new()
-            .post(url)
-            .body(body)
-            .send()
-            .await
-            .unwrap()
-    });
+    let mut second = tokio::spawn(async move { client.post(url).body(body).send().await.unwrap() });
     assert!(
         tokio::time::timeout(Duration::from_millis(50), &mut second)
             .await
@@ -805,7 +922,6 @@ async fn concurrent_requests_cannot_share_the_last_input_allowance() {
             output_tokens: 3
         }
     );
-    forward.abort();
 }
 
 #[tokio::test]
@@ -825,9 +941,9 @@ async fn settlement_releases_unused_reservations_for_another_request() {
     f.spec.budget.max_input_tokens = body.len() as u64 + 7;
     f.spec.budget.max_output_tokens = 8;
     let relay = f.relay(&fake);
-    let (url, forward) = forwarded(&relay).await;
+    let (url, client) = http(&relay);
     for requests in 1..=2 {
-        let mut response = reqwest::Client::new()
+        let mut response = client
             .post(format!("{url}/v1/responses"))
             .body(body)
             .send()
@@ -856,7 +972,6 @@ async fn settlement_releases_unused_reservations_for_another_request() {
     }
     assert_eq!(fake.requests.lock().unwrap().len(), 2);
     assert!(f.signals.lock().unwrap().is_empty());
-    forward.abort();
 }
 
 #[tokio::test]
@@ -895,6 +1010,59 @@ async fn usage_exceeding_either_reservation_is_charged_and_closes_admission() {
 }
 
 #[tokio::test]
+async fn shutdown_closes_partial_requests_and_refuses_reconnects() {
+    let fake = Fake::json().await;
+    let fixture = Fixture::new(RelayProvider::OpenAi);
+    let relay = fixture.relay(&fake);
+    let endpoint = address(&relay);
+    let mut partial = RelayStream::connect(address(&relay)).await.unwrap();
+    partial
+        .write_all(b"POST /v1/responses HTTP/1.1\r\n")
+        .await
+        .unwrap();
+    relay.shutdown();
+    relay.shutdown();
+    let mut response = Vec::new();
+    let closed = tokio::time::timeout(Duration::from_secs(2), partial.read_to_end(&mut response))
+        .await
+        .expect("relay shutdown must close existing connections");
+    assert!(closed.is_ok() || closed.unwrap_err().kind() == io::ErrorKind::ConnectionReset);
+    assert!(RelayStream::connect(endpoint).await.is_err());
+    assert!(fake.requests.lock().unwrap().is_empty());
+    assert_eq!(relay.totals(), RelayTotals::default());
+    assert!(fixture.signals.lock().unwrap().is_empty());
+}
+
+#[cfg(target_os = "macos")]
+#[tokio::test]
+async fn loopback_port_is_pinned_on_both_address_families_and_not_retargeted() {
+    let fake = Fake::json().await;
+    let fixture = Fixture::new(RelayProvider::OpenAi);
+    let first = fixture.relay(&fake);
+    let second = fixture.relay(&fake);
+    assert_ne!(first.port(), second.port());
+    assert!(std::net::TcpListener::bind(("127.0.0.1", first.port())).is_err());
+    if first._v6.is_some() {
+        assert!(std::net::TcpListener::bind(("::1", first.port())).is_err());
+    }
+    assert!(
+        raw(&first, &request("/v1/files", "{}", ""))
+            .await
+            .starts_with("HTTP/1.1 403")
+    );
+    assert!(
+        raw(
+            &second,
+            &request("/v1/responses", r#"{"model":"fixture"}"#, "")
+        )
+        .await
+        .starts_with("HTTP/1.1 200")
+    );
+    assert_eq!(first.totals().requests, 0);
+    assert_eq!(second.totals().requests, 1);
+}
+
+#[tokio::test]
 async fn cancelled_stream_keeps_its_reservation_and_admitted_request_count() {
     let gate = Arc::new(Notify::new());
     let fake = Fake::new("text/event-stream", vec![
@@ -905,9 +1073,9 @@ async fn cancelled_stream_keeps_its_reservation_and_admitted_request_count() {
     f.spec.budget.max_requests = 1;
     let relay = f.relay(&fake);
     let body = r#"{"max_tokens":10,"model":"fixture","stream":true}"#;
-    let mut stream = UnixStream::connect(relay.socket()).await.unwrap();
+    let mut stream = RelayStream::connect(address(&relay)).await.unwrap();
     stream
-        .write_all(request("/v1/messages", body, "").as_bytes())
+        .write_all(authenticated(&relay, &request("/v1/messages", body, "")).as_bytes())
         .await
         .unwrap();
     tokio::time::timeout(Duration::from_secs(2), async {

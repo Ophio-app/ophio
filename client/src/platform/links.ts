@@ -88,7 +88,7 @@ export async function resolveObject(link: ObjectLink, session: Pick<HostSession,
     const records = older ? await olderTask(session, link.id) : snap;
     const task = records?.tasks.find((t) => t.task_id === link.id);
     if (!records || !task) return missing;
-    const route: Route = { screen: "receipt", taskId: task.task_id };
+    const route: Route = { screen: "receipt", taskId: task.task_id, taskEntry: true };
     if (["completed", "failed", "interrupted", "archived"].includes(task.state))
       return { state: "settled", label: `task ‘${task.title}’`, detail: `Task status: ${taskBadge(task, records.runs.find(r => r.run_id === task.current_run)).label}. Opening its receipt won’t restart it.`, route };
     return { state: "ready", label: `task ‘${task.title}’`, route };

@@ -27,6 +27,7 @@ impl CompanionHub {
         task: &Task,
         minutes: u32,
         reason: String,
+        person_reason: Option<String>,
     ) -> Result<String, ProtocolError> {
         if self.run_stopped(run_id)? {
             return Err(error(ErrorCode::Expired, "Run is no longer active"));
@@ -42,6 +43,7 @@ impl CompanionHub {
             t.wake = Some(TaskWake {
                 at,
                 reason: reason.clone(),
+                person_reason: person_reason.clone(),
                 answer: false,
             });
             t.updated_at = now;

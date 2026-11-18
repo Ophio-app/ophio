@@ -94,7 +94,7 @@ it("keeps sheet edits across parent updates and explains an unsupported effort",
   expect(screen.getByText(/GPT-6-Sol doesn’t offer High effort/)).toBeTruthy();
   mounted.rerender(sheet(false));
   mounted.rerender(sheet());
-  expect(screen.getByRole("button", { name: /^Claude Opus 5.5$/ }).getAttribute("aria-pressed")).toBe("true");
+  expect(screen.getByRole("button", { name: "Opus 5.5 · fixed" }).getAttribute("aria-pressed")).toBe("true");
 });
 it.each(["completed", "working"] as const)("annotation Review derives delivery for a %s task", async (state) => {
   freeWriter();

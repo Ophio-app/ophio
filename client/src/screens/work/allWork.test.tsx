@@ -90,12 +90,11 @@ it("sends Allow on another computer's approval card to that computer", async () 
   expect(app.session.state.get().approvals[ids.aTest]?.state).toBe("pending");
 });
 
-it("sends Decline on another computer's approval card to that computer", async () => {
+it("sends Reject on another computer's approval card to that computer", async () => {
   await start();
   render(wrap(<AllWork />));
-  fireEvent.click(within(card("Archive last month's renders")).getByRole("button", { name: /^Decline/ }));
-  await advance(300);
-  fireEvent.click(within(card("Archive last month's renders")).getByRole("button", { name: "Decline" }));
+  // One tap: Reject is sent at once.
+  fireEvent.click(within(card("Archive last month's renders")).getByRole("button", { name: "Reject" }));
   await advance(900);
   expect(sent()["sim-spare"]!).toContainEqual(expect.objectContaining({ command: "resolve_approval", approval_id: otherIds.spare.aArchive }));
   expect(sent()["sim-studio"]!.filter((c) => c.command === "resolve_approval")).toEqual([]);
@@ -302,7 +301,9 @@ it("switches to another computer after an awaited answer, and opens the new task
   render(wrap(<OnComputer entry={spareEntry()}><RequestChecklist project={farm} /></OnComputer>));
   // Asking for a checklist reads the spare's catalog first, then opens the task.
   fireEvent.click(screen.getByRole("button", { name: "Request checklist" }));
-  for (let i = 0; i < 10 && !vi.mocked(app.visit!).mock.calls.length; i++) await advance(500);
+  // Catalog hashing uses WebCrypto outside fake timers; wait for its real async work
+  // and the simulated response instead of racing ahead through a fixed number of ticks.
+  await vi.waitFor(() => expect(app.visit).toHaveBeenCalled(), { timeout: 5000 });
   await advance(0);
   expect(vi.mocked(app.visit!).mock.calls.map((c) => c[0])).toEqual(["sim-spare"]);
   const spareUi = app.uiOf!("sim-spare");

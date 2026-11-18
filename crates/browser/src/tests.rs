@@ -179,6 +179,72 @@ async fn private_pipe_snapshot_click_type_stale_sensitive_picture_and_detach() {
     assert_eq!(std::fs::read_dir(&profiles).unwrap().count(), 0);
 }
 
+/// Opening an address waits for the site's first answer, so a site slower
+/// than a moment (or a busy computer) must not make the outcome unknown. A
+/// stand-in browser that answers late keeps this independent of load.
+#[cfg(unix)]
+#[tokio::test]
+async fn an_address_slower_than_a_moment_to_answer_still_opens() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let executable = dir.path().join("late-browser");
+    // It answers an address 4 seconds after it was asked for: longer than an
+    // ordinary call may wait, well within the time voice control gives
+    // opening an address. It reads requests on descriptor 3 and answers on 4,
+    // as a browser started with --remote-debugging-pipe does.
+    std::fs::write(
+        &executable,
+        r#"#!/usr/bin/env python3
+import json, os, time
+answers = {
+    "Target.getTargets": {"targetInfos": [{"type": "page", "targetId": "page"}]},
+    "Target.attachToTarget": {"sessionId": "session"},
+    "Page.getFrameTree": {"frameTree": {"frame": {"id": "frame"}}},
+    "Page.createIsolatedWorld": {"executionContextId": 1},
+    "Runtime.evaluate": {"result": {"value": {"elements": [], "context": "late"}}},
+    "Page.navigate": {"frameId": "frame", "loaderId": "loader"},
+}
+pending = b""
+while True:
+    read = os.read(3, 65536)
+    if not read:
+        break
+    pending += read
+    while b"\0" in pending:
+        frame, pending = pending.split(b"\0", 1)
+        call = json.loads(frame)
+        if call["method"] == "Page.navigate":
+            time.sleep(4)
+        reply = {"id": call["id"], "result": answers.get(call["method"], {})}
+        os.write(4, json.dumps(reply).encode() + b"\0")
+        if call["method"] == "Browser.close":
+            raise SystemExit
+"#,
+    )
+    .unwrap();
+    std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let browser = crate::Browser::launch(&executable, dir.path(), true)
+        .await
+        .unwrap();
+    let opened: Result<(), Error> = async {
+        let initial = browser.snapshot().await?;
+        let action = VoiceAction {
+            kind: VoiceActionKind::Navigate,
+            target: None,
+            literal: Some("https://slow.example/".into()),
+            scroll_y: 0,
+            previous_tab: false,
+            app: None,
+        };
+        browser
+            .act(&action, &initial, std::sync::Arc::new(Allowed))
+            .await
+    }
+    .await;
+    browser.close_for_test().await;
+    opened.unwrap();
+}
+
 #[tokio::test]
 async fn a_browser_that_cannot_start_leaves_no_profile() {
     let dir = tempfile::tempdir().unwrap();

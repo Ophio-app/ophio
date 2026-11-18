@@ -57,6 +57,14 @@ export const ids = {
   tNotes: "0192f7a1-0000-7000-8000-000000000205",
   tSigning: "0192f7a1-0000-7000-8000-000000000206",
   tExport: "0192f7a1-0000-7000-8000-000000000207",
+  tCards: "0192f7a1-0000-7000-8000-000000000208",
+  tOneCard: "0192f7a1-0000-7000-8000-000000000209",
+  rCards: "0192f7a1-0000-7000-8000-000000000308",
+  rOneCard: "0192f7a1-0000-7000-8000-000000000309",
+  tSet: "0192f7a1-0000-7000-8000-00000000020a",
+  rSet: "0192f7a1-0000-7000-8000-00000000030a",
+  tRunAll: "0192f7a1-0000-7000-8000-00000000020b",
+  rRunAll: "0192f7a1-0000-7000-8000-00000000030b",
   rFlaky: "0192f7a1-0000-7000-8000-000000000301",
   rHeaders: "0192f7a1-0000-7000-8000-000000000302",
   rDash: "0192f7a1-0000-7000-8000-000000000304",
@@ -99,7 +107,7 @@ export function capabilities(): HostCapabilities {
     conversation_access: available,
     // Alex Chen's Discord chat stays linked after the bot token was removed.
     discord: { state: "permission_missing", remedy: `${PROGRAM_NAME} channels token set discord` },
-    features: ["reports_v1", "report_inbox_code_v1", "channel_link_review", "task_history", "project_folders", "launch_policy_v1", "task_branch_v1", "accounts_v1", "launchers_v1", "agent_logins_v1", "github_v1", "system_stats_v1", "collaboration_v1", "found_previews_v1", "fix_launch_v1", "agent_updates_v1", "read_only_turn_v1", "github_review_v1", "agent_preferences_v1", "github_issues_v1", "github_uat_v1", "github_run_v1", "github_close_v1", "notification_settings_v1", "queue_markup_v1", "launch_defaults_v1", "project_shown_v1", "conversations_v1", "findings_v1", "contribution_import_v1", "github_together_v1", "unarchive_task_v1", "checklist_v1", "checklist_agent_items_v1", "disable_in_ophio_v1", "review_rules_v1", "review_rounds_v2", "github_when_green_v1", "conversation_access_v1", "switch_to_work_v1", "computer_name_v1", "sign_in_on_phone_v1", "alert_types_v1"],
+    features: ["reports_v1", "report_inbox_code_v1", "channel_link_review", "task_history", "project_folders", "launch_policy_v1", "task_branch_v1", "accounts_v1", "launchers_v1", "agent_logins_v1", "github_v1", "system_stats_v1", "collaboration_v1", "found_previews_v1", "fix_launch_v1", "agent_updates_v1", "agent_update_policy_v1", "read_only_turn_v1", "github_review_v1", "agent_preferences_v1", "github_issues_v1", "github_uat_v1", "github_run_v1", "github_close_v1", "notification_settings_v1", "queue_markup_v1", "launch_defaults_v1", "project_shown_v1", "conversations_v1", "findings_v1", "contribution_import_v1", "github_together_v1", "unarchive_task_v1", "checklist_v1", "checklist_agent_items_v1", "disable_in_ophio_v1", "review_rules_v1", "review_rounds_v2", "github_when_green_v1", "conversation_access_v1", "chat_work_cards_v1", "switch_to_work_v1", "computer_name_v1", "sign_in_on_phone_v1", "alert_types_v1", "chat_carry_on_v1", "chat_reply_recovery_v1", "chat_files_v1"],
   };
 }
 
@@ -313,7 +321,75 @@ export function branchListing(project: Project): BranchListing | null {
 
 const device = { kind: "device", device_id: ids.device } as const;
 
-export function tasks(now: number): Task[] {
+/** Screenshot fixtures are opt-in so the usual simulated project stays unchanged. */
+function cardTasks(now: number): Task[] {
+  return [
+    { task_id: ids.tCards, project_id: ids.pTide, kind: "coding", conversation: true, mode: "ask",
+      title: "What should we improve after this release?", state: "completed", revision: 2,
+      harness: "claude_code", model: "claude-opus-5-5", effort: "high", created_by: device,
+      created_at: now - 42 * MIN, updated_at: now - 39 * MIN, current_run: ids.rCards,
+      target_id: null, mission: null, attention_count: 0, status_line: null },
+    { task_id: ids.tOneCard, project_id: ids.pTide, kind: "coding", conversation: true, mode: "ask",
+      title: "What can we do for the upload flow?", state: "completed", revision: 2,
+      harness: "claude_code", model: "claude-opus-5-5", effort: "high", created_by: device,
+      created_at: now - 68 * MIN, updated_at: now - 65 * MIN, current_run: ids.rOneCard,
+      target_id: null, mission: null, attention_count: 0, status_line: null },
+    { task_id: ids.tSet, project_id: ids.pTide, kind: "coding", conversation: true, mode: "ask",
+      title: "How should we move the settings to the new store?", state: "completed", revision: 2,
+      harness: "claude_code", model: "claude-opus-5-5", effort: "high", created_by: device,
+      created_at: now - 30 * MIN, updated_at: now - 27 * MIN, current_run: ids.rSet,
+      target_id: null, mission: null, attention_count: 0, status_line: null },
+    { task_id: ids.tRunAll, project_id: ids.pTide, kind: "coding", conversation: true, mode: "ask",
+      title: "Can the agents clear the issue backlog overnight?", state: "completed", revision: 2,
+      harness: "claude_code", model: "claude-opus-5-5", effort: "high", created_by: device,
+      created_at: now - 20 * MIN, updated_at: now - 18 * MIN, current_run: ids.rRunAll,
+      target_id: null, mission: null, attention_count: 0, status_line: null },
+  ];
+}
+
+function cardRuns(now: number): Run[] {
+  const make = (run_id: string, task_id: string, ago: number, summary: string, new_work: NonNullable<NonNullable<Run["outcome"]>["report"]>["new_work"]): Run => ({
+    run_id, task_id, harness: "claude_code", requested_model: "claude-opus-5-5", actual_model: "claude-opus-5-5",
+    requested_effort: "high", actual_effort: "high", account_label: "Personal", native_session: `sim-${run_id}`,
+    state: "completed", admitted_at: now - ago, dispatched_at: now - ago + 400,
+    acknowledged_at: now - ago + 1000, ended_at: now - ago + 3 * MIN,
+    children: [], holds_writer: false,
+    outcome: { summary, changed_files: [], checks: [], still_active: [], unknowns: [], usage: null,
+      report: { status: "done", questions: [], remaining: [], new_work } },
+  });
+  return [
+    make(ids.rCards, ids.tCards, 42 * MIN, "There are three useful follow-ups worth separating into their own tasks.", [
+      { title: "Find out why the build is slow", mode: "ask",
+        brief: "Investigate why the build takes longer than it used to. Compare recent build steps and report likely causes without changing files.",
+        needs: { read: [], changes: null, internet: true, local_network: false, whole_computer: false, desktop: false } },
+      { title: "Add a retry to the upload", mode: "work",
+        brief: "Add a bounded retry for transient upload failures, and test that a permanent failure is still shown to the person." },
+      { title: "Fix the orders webhook retry test", mode: "work", issue: 219,
+        brief: "Fix issue #219: make the orders webhook retry test deterministic without adding sleeps." },
+    ]),
+    make(ids.rOneCard, ids.tOneCard, 68 * MIN, "The upload screen has one small follow-up.", [
+      { title: "Show upload progress", mode: "work",
+        brief: "Show upload progress beside the file name and leave the retry action visible if the connection drops." },
+    ]),
+    // An ordered set: each waits in Next up for the one before it.
+    make(ids.rSet, ids.tSet, 30 * MIN, "The move is four steps, each on its own branch, in this order.", [
+      { title: "Add the new settings store", mode: "work",
+        brief: "Add the new settings store beside the old one, with tests, without moving any setting yet." },
+      { title: "Copy existing settings across", mode: "work", after: 0,
+        brief: "Copy each saved setting into the new store on first launch, once, and keep the old copy." },
+      { title: "Read settings from the new store", mode: "work", after: 1,
+        brief: "Switch every screen to read and write the new store, and test that nothing reads the old one." },
+      { title: "Remove the old settings store", mode: "work", after: 2,
+        brief: "Remove the old store and its migration guard once nothing reads it, and update the docs." },
+    ]),
+    make(ids.rRunAll, ids.tRunAll, 20 * MIN, "Yes. Run all can work through them one after another while you sleep.", [
+      { title: "Fix every open issue", mode: "work", all_issues: true,
+        brief: "Fix every open issue an agent can take, one after another, with the agents chosen on the Issues tab." },
+    ]),
+  ];
+}
+
+export function tasks(now: number, cards = false): Task[] {
   const items: Task[] = [
     {
       task_id: ids.tFlaky,
@@ -484,10 +560,11 @@ export function tasks(now: number): Task[] {
       status_line: null,
     },
   ];
+  if (cards) items.push(...cardTasks(now));
   return items.map(task => ({ ...task, attention_count: blockingAttentionCount(attention(now), task.task_id) }));
 }
 
-export function runs(now: number): Run[] {
+export function runs(now: number, cards = false): Run[] {
   return [
     {
       run_id: ids.rFlaky,
@@ -576,13 +653,34 @@ export function runs(now: number): Run[] {
       outcome: null,
       holds_writer: false,
     },
+    ...(cards ? cardRuns(now) : []),
   ];
 }
 
 export type TimelineSeed = { runId: string | null; ago: number; body: TimelineBody };
 
-export function timelines(): Record<string, TimelineSeed[]> {
+function cardTimelines(): Record<string, TimelineSeed[]> {
+  const conversation = (runId: string, ago: number, question: string, answer: string): TimelineSeed[] => [
+    { runId: null, ago, body: { kind: "user_message", text: question, bundle: null, delivery: "native_delivered" } },
+    { runId, ago: ago - 1000, body: { kind: "run_started", run_id: runId } },
+    { runId, ago: ago - 2 * MIN, body: { kind: "agent_message", text: answer, partial: false } },
+    { runId, ago: ago - 3 * MIN, body: { kind: "run_ended", run_id: runId, state: "completed" } },
+  ];
   return {
+    [ids.tCards]: conversation(ids.rCards, 42 * MIN, "Which improvements should we tackle after this release?",
+      "I would first find out why the build is slow, then make uploads more resilient and fix the webhook retry test in issue #219. Each can be handled separately."),
+    [ids.tOneCard]: conversation(ids.rOneCard, 68 * MIN, "Is there one small improvement to make to uploads?",
+      "Yes. The upload should show progress and keep the retry action visible if the connection drops."),
+    [ids.tSet]: conversation(ids.rSet, 30 * MIN, "How should we move the settings to the new store?",
+      "In four steps, each on its own branch: add the store, copy the settings across, switch the screens over, then remove the old store."),
+    [ids.tRunAll]: conversation(ids.rRunAll, 20 * MIN, "Can the agents clear the issue backlog overnight?",
+      "Yes. Run all fixes each open issue the agent can take, one after another, and tells you once at the end."),
+  };
+}
+
+export function timelines(cards = false): Record<string, TimelineSeed[]> {
+  return {
+    ...(cards ? cardTimelines() : {}),
     [ids.tFlaky]: [
       {
         runId: null,

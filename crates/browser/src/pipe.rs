@@ -32,6 +32,11 @@ struct Follower {
 }
 /// How long one call waits for the browser's answer.
 const CALL_WAIT: Duration = Duration::from_secs(3);
+/// Capturing waits for the renderer/compositor and PNG encoding, not just
+/// the browser process. Give that work the same budget as loading a page:
+/// a busy renderer can still return a valid picture after three seconds.
+/// Other calls keep their short deadline; a capture is never retried.
+const SCREENSHOT_WAIT: Duration = Duration::from_secs(15);
 pub struct Pipe {
     input: mpsc::Sender<Vec<u8>>,
     pending: Pending,
@@ -103,8 +108,11 @@ impl Pipe {
                     .env_remove("WAYLAND_DISPLAY")
                     .env_remove("DBUS_SESSION_BUS_ADDRESS");
             }
-            let mut child = command
-                .spawn()
+            // It starts while nothing private is being made, as other starts
+            // do. It runs as long as the browser, so a pipe it kept from
+            // another start would never close: a keychain read waiting for
+            // `security` to finish would wait for the browser to end.
+            let mut child = containment::inherit::tokio_spawn(&mut command)
                 .map_err(|_| Error::Unavailable("The separate browser could not start".into()))?;
             (
                 child.stdin.take().ok_or(Error::Stopped)?,
@@ -185,6 +193,11 @@ impl Pipe {
                     && let Some(tx) = waiters.remove(&id)
                 {
                     let _ = tx.send(if value.get("error").is_some() {
+                        #[cfg(test)]
+                        eprintln!(
+                            "browser CDP error {}: {}",
+                            value["error"]["code"], value["error"]["message"]
+                        );
                         Err(Error::Unavailable(
                             "The browser refused the operation".into(),
                         ))
@@ -232,7 +245,12 @@ impl Pipe {
         method: &str,
         params: Value,
     ) -> Result<Value, Error> {
-        self.call_within(session, method, params, CALL_WAIT).await
+        let wait = if method == "Page.captureScreenshot" {
+            SCREENSHOT_WAIT
+        } else {
+            CALL_WAIT
+        };
+        self.call_within(session, method, params, wait).await
     }
     /// [`Self::call`], for operations that can take longer than a moment,
     /// such as opening an address.
@@ -264,7 +282,9 @@ impl Pipe {
         }
         let mut bytes = serde_json::to_vec(&value).map_err(|_| Error::Stopped)?;
         bytes.push(0);
-        tokio::time::timeout(wait, async {
+        #[cfg(test)]
+        let started = std::time::Instant::now();
+        let result = tokio::time::timeout(wait, async {
             // A cancelled caller must not leave half a JSON frame in the private pipe.
             self.input
                 .send(bytes)
@@ -273,7 +293,19 @@ impl Pipe {
             rx.await.map_err(|_| Error::OutcomeUnknown)?
         })
         .await
-        .map_err(|_| Error::OutcomeUnknown)?
+        .map_err(|_| Error::OutcomeUnknown)
+        .and_then(|result| result);
+        // Test failures must identify the operation, without logging its
+        // arguments (which may contain a password or other page content).
+        // How long it took tells a wait that ran out from a browser that went.
+        #[cfg(test)]
+        if let Err(error) = &result {
+            eprintln!(
+                "browser CDP {method} failed after {} ms: {error:?}",
+                started.elapsed().as_millis()
+            );
+        }
+        result
     }
     pub async fn close_for_test(&self) {
         self.close().await;
@@ -294,5 +326,48 @@ impl Pipe {
                 let _ = child.wait().await;
             }
         }
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod mac {
+    use std::{
+        os::unix::fs::PermissionsExt,
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+            mpsc,
+        },
+        thread,
+        time::Duration,
+    };
+
+    /// The browser's shell starts only while nothing private is being made,
+    /// so it keeps none of the pipes another start is making.
+    #[tokio::test]
+    async fn the_browser_starts_only_between_private_steps() {
+        let dir = tempfile::tempdir().unwrap();
+        let browser = dir.path().join("browser");
+        std::fs::write(&browser, "#!/bin/sh\nexit 0\n").unwrap();
+        std::fs::set_permissions(&browser, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let ended = Arc::new(AtomicBool::new(false));
+        let (inside, is_inside) = mpsc::channel();
+        let step = {
+            let ended = ended.clone();
+            thread::spawn(move || {
+                containment::inherit::private(|| {
+                    inside.send(()).unwrap();
+                    thread::sleep(Duration::from_millis(300));
+                    ended.store(true, Ordering::SeqCst);
+                })
+            })
+        };
+        is_inside.recv().unwrap();
+        let launched = super::Pipe::launch(&browser, dir.path(), false, true, &[]).await;
+        let started_after = ended.load(Ordering::SeqCst);
+        step.join().unwrap();
+        let pipe = launched.unwrap();
+        pipe.child.lock().await.wait().await.unwrap();
+        assert!(started_after, "the browser started during a private step");
     }
 }

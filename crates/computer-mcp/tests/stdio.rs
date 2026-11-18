@@ -23,6 +23,8 @@ use tokio::{
 struct Handler {
     computer: bool,
     answers: bool,
+    checks: bool,
+    read_only: bool,
     unbound: AtomicUsize,
     called: Notify,
     block: bool,
@@ -36,8 +38,9 @@ impl BridgeHandler for Handler {
             computer_use: self.computer,
             browser: false,
             github: false,
+            checks: self.checks,
             checklist_answers: self.answers,
-            read_only: false,
+            read_only: self.read_only,
         })
     }
     async fn handle(&self, _: &BridgeBinding, request: BridgeRequest) -> BridgeResponse {
@@ -74,6 +77,9 @@ impl BridgeHandler for Handler {
                     decision: json!({"behavior":"allow","updatedInput":input}),
                 }
             }
+            BridgeRequest::Checks { .. } => BridgeResponse::ChecksResult {
+                text: "approved checks or draft saved".into(),
+            },
             BridgeRequest::Person { .. } => BridgeResponse::PersonResult {
                 text: "shown".into(),
             },
@@ -107,11 +113,23 @@ impl Fixture {
         Self::with(computer, token, block, false).await
     }
     async fn with(computer: bool, token: &str, block: bool, answers: bool) -> Self {
+        Self::with_checks(computer, token, block, answers, false, false).await
+    }
+    async fn with_checks(
+        computer: bool,
+        token: &str,
+        block: bool,
+        answers: bool,
+        checks: bool,
+        read_only: bool,
+    ) -> Self {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("private").join("bridge.sock");
         let handler = Arc::new(Handler {
             computer,
             answers,
+            checks,
+            read_only,
             unbound: AtomicUsize::new(0),
             called: Notify::new(),
             block,
@@ -406,4 +424,43 @@ async fn a_turn_answering_on_the_checklist_sees_and_calls_its_two_tools_alone() 
         );
     }
     f.stop().await;
+}
+
+#[tokio::test]
+async fn project_checks_cross_the_real_stdio_bridge_and_read_only_never_proposes() {
+    for read_only in [false, true] {
+        let mut f =
+            Fixture::with_checks(false, "fixture-token", false, false, true, read_only).await;
+        f.init().await;
+        let result = f.call(2, "tools/list", json!({})).await;
+        let names: Vec<_> = result["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|tool| tool["name"].as_str().unwrap())
+            .collect();
+        assert!(names.contains(&CHECKS_READ_TOOL));
+        assert_eq!(names.contains(&CHECKS_PROPOSE_TOOL), !read_only);
+        let read = f
+            .call(
+                3,
+                "tools/call",
+                json!({"name":CHECKS_READ_TOOL,"arguments":{}}),
+            )
+            .await;
+        assert_eq!(read["result"]["isError"], false);
+        assert_eq!(
+            read["result"]["content"][0]["text"],
+            "approved checks or draft saved"
+        );
+        let propose = f
+            .call(
+                4,
+                "tools/call",
+                json!({"name":CHECKS_PROPOSE_TOOL,"arguments":{"base_version":0,"items":[]}}),
+            )
+            .await;
+        assert_eq!(propose["result"]["isError"], read_only);
+        f.stop().await;
+    }
 }

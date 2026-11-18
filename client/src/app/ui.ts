@@ -41,12 +41,12 @@ export type Route =
   | { screen: "system" }
   | { screen: "work" }
   | { screen: "agents" }
-  | { screen: "receipt"; taskId: string; runId?: string; section?: "changes" }
+  | { screen: "receipt"; taskId: string; runId?: string; section?: "changes"; /** The task opened on its result; following it in Chat replaces this view. */ taskEntry?: boolean }
   | { screen: "next_up" }
   | { screen: "inbox" }
   | { screen: "attention"; attentionId: string }
   | { screen: "needs_you"; projectId: string }
-  | { screen: "library" }
+  | { screen: "library"; part?: "checks" }
   | { screen: "folder"; rootId: string; path: string }
   /** Library's agent files of one kind, wherever they are kept. */
   | { screen: "agent_files"; group: AgentFileGroup }
@@ -130,6 +130,8 @@ export interface Draft {
   text: string;
   /** Phone-local annotation draft attached to this message (state/annotations). */
   annotationId: string | null;
+  /** Files attached to a chat message, kept here until the computer has it. */
+  files?: import("../screens/talk/chatFiles").FileDraft[];
   /** Agent chosen for a new task when it differs from the project default. */
   agent?: AgentChoice | null;
   /** Requested mode for a new task; absent means Work. */
@@ -164,16 +166,27 @@ export interface ReviewDetails {
   /** What GitHub work it is for. Undefined is the default for the project's
    * GitHub setting; null is not linked. */
   github?: import("../protocol/types").GithubLink | null;
+  /** A proposal's intended link, resolved with the project's settings in
+   * Review. Unlike null, unloaded settings never mean a choice to disconnect. */
+  proposalGithub?: { type: "issue"; number: number } | { type: "new_pr" };
   /** The mode of the task an agent proposed this from, so Review says when
    * starting it switches. Absent when nothing proposed it. */
   from?: import("../protocol/types").TaskMode;
+  /** The chat this task is made from, which stays and hears how it ends. */
+  fromChat?: string;
+  /** The chat's card this was opened from: started here, it is still that
+   * card's task, started once and linked to the chat. */
+  origin?: import("../protocol/types").TaskOrigin;
+  /** One step of a chat's ordered proposal, reviewed and created at a time.
+   * It stays in Next up and returns to the card after the computer accepts. */
+  ordered?: { step: number; total: number; after: string | null };
 }
 
 /** Review's choices before any are made. Queued work starts by itself unless the person asks to be asked first. */
 export const freshReview = (): ReviewDetails => ({ title: "", stopWhen: "", placement: null, authorization: "auto_start" });
 
 export const hasReviewDetails = (r: ReviewDetails | null | undefined): boolean =>
-  !!r && (r.title.trim() !== "" || r.stopWhen.trim() !== "" || !!r.bounds?.trim() || !!r.completionChecks?.trim() || r.placement !== null || r.authorization !== "auto_start" || r.branch != null || !!r.start || r.place === "one_off" || r.browser === false || r.github != null);
+  !!r && (r.title.trim() !== "" || r.stopWhen.trim() !== "" || !!r.bounds?.trim() || !!r.completionChecks?.trim() || r.placement !== null || r.authorization !== "auto_start" || r.branch != null || !!r.start || r.place === "one_off" || r.browser === false || r.github != null || !!r.proposalGithub);
 
 /** What New issue does once the issue is filed. */
 export type IssueThen = "start" | "next_up" | "file";
@@ -231,6 +244,8 @@ export interface SendAttempt {
   asTask?: boolean;
   /** The markup sent with it, cleared from the draft only if unchanged since. */
   annotationId?: string | null;
+  /** The files sent with it, by key, cleared from the draft once it arrived. */
+  files?: string[];
   /** The exact request, so sending again reuses its id and the computer
    * recognises a repeat instead of acting twice. */
   body?: Command | null;
@@ -264,6 +279,8 @@ export interface UiState {
   /** Per tab, where Back goes once it is back at what was opened there. */
   returns: Partial<Record<Tab, Return>>;
   projectId: string | null;
+  /** Chat's explicit list scope; null uses the host's conversation-based default. */
+  talkAll: boolean | null;
   /** To-Do can combine projects without changing the selected project elsewhere. */
   todoAll: boolean;
   /** Item opened by a checklist link; null means the normal To-Do view. */
@@ -293,6 +310,7 @@ const initial: UiState = {
   stacks: { talk: [ROOT.talk], control: [ROOT.control], work: [ROOT.work], library: [ROOT.library], todo: [ROOT.todo] },
   returns: {},
   projectId: null,
+  talkAll: null,
   todoAll: false,
   todoItemId: null,
   taskByProject: {},
@@ -432,12 +450,32 @@ export type SourceStart = { kind: "screen" } | { kind: "files"; files: File[] };
 /** How long Talk waits for a task this device created to reach its record. */
 export const ARRIVAL_MS = 10_000;
 
+/** Work belongs to the computer; only these four fields are shared by its views. */
+const SHARED_FIELDS = ["drafts", "savedDrafts", "issueDrafts", "removedMarkup"] as const;
+function sharedFields(state: UiState) {
+  return { drafts: state.drafts, savedDrafts: state.savedDrafts, issueDrafts: state.issueDrafts, removedMarkup: state.removedMarkup };
+}
+function navigationFields(state: UiState) {
+  const { drafts: _drafts, savedDrafts: _saved, issueDrafts: _issues, removedMarkup: _markup, ...navigation } = state;
+  return navigation;
+}
+
 export class UiStore extends Store<UiState> {
+  #shared: UiStore = this;
+  #views = new Set<UiStore>([this]);
+  #side: string | null = null;
+  #profileId: string;
   #key: string;
   #unread = false;
   #flushing = false;
+  /** On the computer store: each storage key that last failed to read or
+   * save, with what to tell the person. Its warning shows until all have saved. */
+  #failing = new Map<string, string>();
   readonly persistence = new Store<string | null>(null);
   readonly recovery = new Store<string | null>(null);
+  /** A mounted side, or one kept open while the window is too narrow. Closed
+   * navigation may stay cached, but must not keep removed markup alive. */
+  readonly navigationRetained = new Store(true);
   /** Nothing was kept from an earlier run: this device's first look at this computer. */
   #firstRun: boolean;
   #timer: ReturnType<typeof setTimeout> | null = null;
@@ -445,20 +483,104 @@ export class UiStore extends Store<UiState> {
   #forgotten = false;
   #hide = () => this.#flush();
 
-  constructor(profileId: string) {
-    const key = `ui.${profileId}`;
+  constructor(profileId: string, shared?: UiStore, side?: string) {
+    const key = shared ? `ui.${profileId}.side.${side}` : `ui.${profileId}`;
     let state = initial, error: string | null = null, recovered = false;
     try { ({ state, recovered } = load(key)); }
     catch (e) { error = readError(e); }
+    const sharedState = shared?.sharedStore();
+    if (sharedState) {
+      // A fresh side shares work, never another side's history. Opening split
+      // explicitly chooses the current project and its complementary root tab.
+      state = { ...state, ...sharedFields(sharedState.get()) };
+    }
     super(state);
+    this.#profileId = profileId;
     this.#key = key;
+    if (sharedState) {
+      this.#shared = sharedState;
+      this.#side = side ?? null;
+      sharedState.#views.add(this);
+      this.persistence = sharedState.persistence;
+      this.recovery = sharedState.recovery;
+    }
     this.#unread = error !== null;
-    this.persistence.set(error);
+    // A readable side-navigation key cannot erase an unread shared-chat
+    // warning: each key clears only its own failed read or save.
+    this.#report(error);
     if (recovered) this.recovery.set(RECOVERED);
-    this.#firstRun = state === initial && !this.#unread && !recovered;
+    this.#firstRun = !shared && state === initial && !this.#unread && !recovered;
     this.subscribe(() => this.#persist());
     followRoutes(this);
     window.addEventListener("pagehide", this.#hide);
+  }
+
+  /** The single owner of this computer's drafts and send bookkeeping. */
+  sharedStore(): UiStore { return this.#shared; }
+
+  /** Live navigation views, including cached positions of closed sides. */
+  navigationStores(): readonly UiStore[] { return [...this.#shared.#views]; }
+
+  /** Which application side owns this saved navigation. */
+  navigationSide(): string { return this.#side ?? "left"; }
+
+  /** Only mounted views and sides saved as open can still be editing markup. */
+  retainedNavigationStores(): readonly UiStore[] { return this.navigationStores().filter(view => view.navigationRetained.get()); }
+
+  /** Restore a saved position on an open side without creating unused fresh
+   * navigation. Removed-markup cleanup must see editors on other computers too. */
+  restoreNavigation(side: string): void {
+    if (side === "left") return;
+    const root = this.#shared;
+    if ([...root.#views].some(view => view.#side === side)) return;
+    try { if (localStorage.getItem(`ui.${root.#profileId}.side.${side}`) === null) return; }
+    catch { /* Let the constructor surface the existing storage warning. */ }
+    root.fork(side);
+  }
+
+  /** An independent, persisted navigation history over the same computer work. */
+  fork(side: string): UiStore {
+    const root = this.#shared;
+    return [...root.#views].find(view => view.#side === side)
+      ?? new UiStore(root.#profileId, root, side);
+  }
+
+  override set(next: UiState | ((state: UiState) => UiState)): void {
+    const root = this.#shared;
+    // A side's copy of shared work is only a cache of the computer store's.
+    // It can lag while the computer store is still notifying, so a side's
+    // change is always made to the newest shared work, never to that copy.
+    const own = this.get();
+    const before = root === this || SHARED_FIELDS.every(key => Object.is(own[key], root.get()[key]))
+      ? own : { ...own, ...sharedFields(root.get()) };
+    const value = typeof next === "function" ? next(before) : next;
+    if (Object.is(value, before)) return;
+    const changed = SHARED_FIELDS.filter(key => !Object.is(value[key], before[key]));
+    if (root !== this && changed.length) {
+      root.set(state => {
+        const updated = { ...state };
+        for (const key of changed) Object.assign(updated, { [key]: value[key] });
+        return updated;
+      });
+    }
+    const current = root === this ? value : { ...value, ...sharedFields(root.get()) };
+    super.set(current);
+    if (root === this && changed.length) {
+      // A listener may have changed shared work again while this change was
+      // notifying, and that newer change has already reached every side.
+      // Hand each side what the computer store holds now, never the snapshot
+      // this call started with, or a side is left with superseded work that
+      // its next edit would write back.
+      for (const view of root.#views) {
+        if (view !== this) view.#receiveShared(this.get());
+      }
+    }
+  }
+
+  #receiveShared(state: UiState): void {
+    const before = this.get();
+    if (SHARED_FIELDS.every(key => Object.is(before[key], state[key]))) return;
+    super.set({ ...before, ...sharedFields(state) });
   }
 
   #persist(): void {
@@ -470,6 +592,20 @@ export class UiStore extends Store<UiState> {
     if (this.#timer) clearTimeout(this.#timer);
     this.#timer = null;
     if (this.#forgotten) return false;
+    if (this.#shared !== this) {
+      const workSaved = this.#shared.persistNow();
+      try {
+        // Never overwrite unread navigation. Draft recovery remains exclusively
+        // in the original computer store and retains its existing safeguards.
+        if (this.#unread) { load(this.#key); this.#unread = false; }
+        localStorage.setItem(this.#key, JSON.stringify({ version: VERSION, state: navigationFields(this.get()) }));
+        this.#report(null);
+        return workSaved;
+      } catch {
+        this.#report("This side’s position could not be saved. Your chats remain with the computer.");
+        return false;
+      }
+    }
     if (this.#unread) {
       try {
         const loaded = load(this.#key);
@@ -479,7 +615,7 @@ export class UiStore extends Store<UiState> {
           try {
             preserveSavedText(localStorage, `${this.#key}.issue-drafts.recovered`, JSON.stringify(loaded.state.issueDrafts));
           } catch {
-            this.persistence.set("An earlier issue draft could not be preserved. Keep the app open and retry when storage is available.");
+            this.#report("An earlier issue draft could not be preserved. Keep the app open and retry when storage is available.");
             return false;
           }
           this.recovery.set("An earlier issue draft was kept separately on this device for recovery. New changes can be saved again.");
@@ -491,18 +627,27 @@ export class UiStore extends Store<UiState> {
         try { this.set(state); }
         finally { this.#flushing = false; }
       } catch (error) {
-        this.persistence.set(readError(error));
+        this.#report(readError(error));
         return false;
       }
     }
     try {
       localStorage.setItem(this.#key, JSON.stringify({ version: VERSION, state: this.get() }));
-      this.persistence.set(null);
+      this.#report(null);
       return true;
     } catch {
-      this.persistence.set("Chats could not be saved on this device. Keep the app open and retry when storage is available.");
+      this.#report("Chats could not be saved on this device. Keep the app open and retry when storage is available.");
       return false;
     }
+  }
+
+  /** Record whether this store's own key last read and saved, and show the
+   * newest warning still unresolved for any key of this computer. */
+  #report(problem: string | null): void {
+    const failing = this.#shared.#failing;
+    failing.delete(this.#key);
+    if (problem) failing.set(this.#key, problem);
+    this.persistence.set([...failing.values()].at(-1) ?? null);
   }
 
   /** Write now rather than after the usual pause. False when storage refused. */
@@ -510,15 +655,27 @@ export class UiStore extends Store<UiState> {
     return this.#flush();
   }
 
+  /** Write this computer's work and every side's position now: what a Retry
+   * after a storage warning should do. False while any of them is refused. */
+  persistAll(): boolean {
+    let saved = this.#shared.persistNow();
+    for (const view of this.navigationStores()) if (view !== this.#shared) saved = view.persistNow() && saved;
+    return saved;
+  }
+
   /** Flush work before retiring this pairing, without deleting its drafts. */
   retire(): void {
     this.#flush();
+    // A side that has gone has no position left to save.
+    if (this.#shared !== this) this.#report(null);
+    this.#shared.#views.delete(this);
     this.#forgotten = true;
     window.removeEventListener("pagehide", this.#hide);
   }
 
   /** Stops keeping this computer's interface on the device once it is forgotten. */
   forget(): void {
+    this.#shared.#views.delete(this);
     this.#forgotten = true;
     this.#flush();
     window.removeEventListener("pagehide", this.#hide);
@@ -710,6 +867,16 @@ export class UiStore extends Store<UiState> {
 
   // ---- Context ---------------------------------------------------------------
 
+  /** The Chat list's project choice does not change To-Do's All choice. */
+  selectTalkProject(projectId: string): void {
+    this.set((s) => s.projectId === projectId && s.talkAll === false && s.taskList ? s : { ...s, projectId, talkAll: false, taskList: true, todoItemId: null });
+  }
+
+  /** All conversations keeps the current project for starting a new one. */
+  setTalkAll(all: boolean): void {
+    this.set((s) => s.talkAll === all ? s : { ...s, talkAll: all });
+  }
+
   selectProject(projectId: string): void {
     this.set((s) => (s.projectId === projectId && !s.todoAll ? s : { ...s, projectId, todoAll: false, todoItemId: null }));
   }
@@ -755,6 +922,12 @@ export class UiStore extends Store<UiState> {
   /** Open a task in Talk from wherever the person is; Back from it returns there. */
   openTask(projectId: string, taskId: string | null): void {
     this.set((s) => {
+      const stack = s.stacks[s.tab], entry = stack.at(-1);
+      // A task opened on its result and then followed in Chat is still one
+      // visit. Carry its original caller forward, rather than making Back
+      // stop on that entry receipt. Explicit history/changes receipts stay.
+      if (entry?.screen === "receipt" && entry.taskEntry && entry.taskId === taskId && stack.length > 1)
+        s = leave(s) ?? { ...s, stacks: { ...s.stacks, [s.tab]: stack.slice(0, -1) } };
       const next = choose(s, projectId, taskId);
       const from: Return | undefined = s.tab !== "talk" ? { tab: s.tab, depth: 1 }
         : s.taskList ? s.returns.talk
@@ -796,7 +969,7 @@ export class UiStore extends Store<UiState> {
   }
 
   /** Update the unsent text and/or attachment; an empty draft is removed. */
-  saveDraft(projectId: string, taskId: string | null, patch: Partial<Pick<Draft, "text" | "annotationId" | "agent" | "mode" | "access" | "attempt" | "review">>): void {
+  saveDraft(projectId: string, taskId: string | null, patch: Partial<Pick<Draft, "text" | "annotationId" | "files" | "agent" | "mode" | "access" | "attempt" | "review">>): void {
     const key = draftKey(projectId, taskId);
     this.set((s) => {
       const drafts = { ...s.drafts };
@@ -808,6 +981,7 @@ export class UiStore extends Store<UiState> {
         taskId,
         text: patch.text ?? prev?.text ?? "",
         annotationId: patch.annotationId !== undefined ? patch.annotationId : (prev?.annotationId ?? null),
+        ...((patch.files ?? prev?.files)?.length ? { files: patch.files ?? prev!.files } : {}),
         agent: patch.agent !== undefined ? patch.agent : (prev?.agent ?? null),
         mode: patch.mode ?? prev?.mode,
         ...(access ? { access } : {}),
@@ -815,7 +989,7 @@ export class UiStore extends Store<UiState> {
         review: patch.review !== undefined ? patch.review : (prev?.review ?? null),
         updatedAt: Date.now(),
       };
-      if (next.text.trim() === "" && next.annotationId === null && !next.agent && !next.access && !next.attempt && !hasReviewDetails(next.review)) delete drafts[key];
+      if (next.text.trim() === "" && next.annotationId === null && !next.files?.length && !next.agent && !next.access && !next.attempt && !hasReviewDetails(next.review)) delete drafts[key];
       else drafts[key] = next;
       return { ...s, drafts };
     });

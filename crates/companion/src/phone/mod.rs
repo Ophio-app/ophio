@@ -29,6 +29,10 @@ const PUBLIC_CERT_SHA256: &str = "2df838f528a3edf7e6450eeac2b584e86820640876448c
 /// with before the public release, which phones installed from them still run.
 const PERSONAL_CERT_SHA256: &str =
     "a4b1d0fb6bb576729111ef5ddd6d333dfa76275710606fbfdb574ced0d9741bf";
+/// A personal build, made from the newest source with
+/// `OPHIO_PERSONAL_SIGNING=1` for phones that run the development
+/// certificate. Public builds, and builds from the source without it, aren't.
+pub const PERSONAL_BUILD: bool = ::core::cfg!(ophio_personal_signing);
 /// The SHA-256 of the certificate this build's Android app must be signed
 /// with: the public one, unless the build was made with
 /// `OPHIO_PERSONAL_SIGNING=1`, which trusts the development one instead.
@@ -182,17 +186,18 @@ impl Adb for SystemAdb {
     async fn adb(&mut self, args: &[&str], input: Option<&str>, limit: Duration) -> Result<Output> {
         use std::process::Stdio;
         use tokio::io::AsyncWriteExt;
-        let mut child = tokio::process::Command::new(&self.0)
-            .args(args)
-            .stdin(if input.is_some() {
-                Stdio::piped()
-            } else {
-                Stdio::null()
-            })
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .kill_on_drop(true)
-            .spawn()?;
+        let mut child = containment::inherit::tokio_spawn(
+            tokio::process::Command::new(&self.0)
+                .args(args)
+                .stdin(if input.is_some() {
+                    Stdio::piped()
+                } else {
+                    Stdio::null()
+                })
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .kill_on_drop(true),
+        )?;
         if let (Some(input), Some(mut stdin)) = (input, child.stdin.take()) {
             stdin.write_all(input.as_bytes()).await?;
         }

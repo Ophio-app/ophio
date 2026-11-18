@@ -311,6 +311,7 @@ async fn a_bridge_request_too_large_to_show_is_refused_at_once() {
         .await;
     let run = run_started(&f, task).await;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: None,
         computer_use: false,

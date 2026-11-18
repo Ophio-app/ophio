@@ -6,6 +6,8 @@
 // reported capabilities, so the phone never offers a delivery the agent
 // cannot perform. Unsupported choices stay visible with the reason.
 
+import { checkingLabel } from "../../app/checksFeature";
+import type { CheckJob } from "../../protocol/generated/CheckJob";
 import { defaultLaunchPolicy, launchChoices } from "../../app/launchPolicy";
 import { prefs } from "../../app/prefs";
 import { modelEfforts, modelName, ranAsAsked } from "./catalog";
@@ -33,6 +35,7 @@ import type {
   TaskPlace,
   TaskPlacement,
   TaskStart,
+  TaskOrigin,
 } from "../../protocol/types";
 
 export type Intent =
@@ -56,7 +59,8 @@ export type ComposerMode =
   | { mode: "running"; options: IntentOption[] }
   | { mode: "starting" }
   | { mode: "waiting" }
-  | { mode: "ended"; options: IntentOption[] }
+  /** `cutOff`: a chat whose last reply was cut off, carrying on from it. */
+  | { mode: "ended"; options: IntentOption[]; cutOff?: boolean }
   | { mode: "reconcile" }
   | { mode: "archived" };
 
@@ -88,20 +92,22 @@ export interface WriterHold {
   unresolved: boolean;
   waiting: WriterWait | null;
   helpers: boolean;
+  checkJob?: CheckJob;
 }
 export type WriterWait = "approval" | "input_back" | "answer";
 
-export function writerHold(id: RunId | null | undefined, s: Pick<HostState, "runs" | "tasks" | "control">): WriterHold | null {
+export function writerHold(id: RunId | null | undefined, s: Pick<HostState, "runs" | "tasks" | "control" | "checkJobs">): WriterHold | null {
   if (id == null) return null;
   const run = s.runs[id];
-  const task = (run && s.tasks[run.task_id]) || null;
+  const task = (run && s.tasks[run.task_id]) || Object.values(s.tasks).find(task => task.checking?.job_id === id) || null;
   const unresolved = run?.state === "reconciliation_required" || task?.state === "reconciliation_required";
   const waiting = unresolved || !run || !task ? null
     : run.state === "awaiting_approval" ? "approval"
     : awaitingInputBack(task, run, s.control[task.target_id ?? ""]) ? "input_back"
     : run.state === "awaiting_input" ? "answer"
     : null;
-  return { task, unresolved, waiting, helpers: !!run && helpersFinishing(run) };
+  const checkJob = s.checkJobs?.[id];
+  return { task, unresolved, waiting, helpers: !task?.checking && !!run && helpersFinishing(run), ...(checkJob ? { checkJob } : {}) };
 }
 
 /** How much of the holder's title a sentence names. */
@@ -113,28 +119,44 @@ const WAITS_FOR: Record<WriterWait, string> = { approval: "your approval", input
 
 /** What the holder is doing now, as a sentence without its full stop. */
 export function writerActivity(hold: WriterHold, project: string): string {
+  const checking = hold.task && checkingLabel(hold.task);
+  if (checking) return `${checking} for ${writerHolder(hold)} in ${project}`;
+  if (hold.checkJob) return hold.checkJob.state === "uncertain"
+    ? "Ophio could not confirm that this project’s checks stopped"
+    : "Ophio is running this project’s checks";
   if (hold.helpers) return `Helpers from ${hold.task ? writerHolder(hold) : "another task"} are still finishing in ${project}`;
+  if (hold.task?.conversation && !hold.unresolved) return hold.waiting
+    ? `Chat ${writerHolder(hold)} is waiting for ${WAITS_FOR[hold.waiting]}`
+    : `Chat ${writerHolder(hold)} is replying in ${project}`;
   return hold.waiting ? `${writerHolder(hold)} is waiting for ${WAITS_FOR[hold.waiting]}` : `${writerHolder(hold)} is changing files in ${project}`;
 }
 
 /** The one line a Continue that `hold` stops shows in place of the composer. */
 export function writerBlockLine(hold: WriterHold, max = COMPOSER_HOLDER): string {
   const holder = hold.task ? writerHolder(hold, max) : "another task";
+  if (hold.task && checkingLabel(hold.task)) return `Waiting for Ophio to finish checking ${holder}`;
+  if (hold.checkJob) return "Waiting for Ophio to finish this project’s checks";
   if (hold.unresolved) return `Blocked until you check how ${holder} ended`;
   if (hold.helpers) return `Blocked until helpers from ${holder} finish`;
+  if (hold.task?.conversation) return `Wait for chat ${holder} to finish its reply`;
   return hold.waiting ? `Blocked: ${holder} is waiting for ${WAITS_FOR[hold.waiting]}` : `Blocked until ${holder} finishes`;
 }
 
 /** The same line when the message waits in Next up for the hold to end. */
 export function writerQueueLine(hold: WriterHold): string {
   const holder = hold.task ? writerHolder(hold, COMPOSER_HOLDER) : "another task";
+  if (hold.task && checkingLabel(hold.task)) return `Waits in Next up until Ophio finishes checking ${holder}`;
+  if (hold.checkJob) return "Waits in Next up until Ophio finishes this project’s checks";
   if (hold.unresolved) return `Waits in Next up until you check how ${holder} ended`;
   if (hold.helpers) return `Waits in Next up until helpers from ${holder} finish`;
+  if (hold.task?.conversation) return `Waits in Next up until chat ${holder} finishes its reply`;
   return hold.waiting ? `Waits in Next up: ${holder} is waiting for ${WAITS_FOR[hold.waiting]}` : `Waits in Next up until ${holder} finishes`;
 }
 
 /** Why a Work run can't start in `project` while `hold` stands. */
 export function writerHoldText(hold: WriterHold, project: string): string {
+  if (hold.task?.conversation && !hold.unresolved && !hold.helpers)
+    return `${writerActivity(hold, project)}. This task can start when its reply ends.`;
   return hold.unresolved
     ? `${writerHolder(hold)} ended without a known result, so nothing else can change files in ${project} until you check what happened.`
     : hold.waiting
@@ -144,6 +166,8 @@ export function writerHoldText(hold: WriterHold, project: string): string {
 
 /** The same hold, for a read-only run that may start beside it. */
 export function writerHoldBesideText(hold: WriterHold, project: string, mode: string): string {
+  if (hold.task?.conversation && !hold.unresolved && !hold.helpers)
+    return `${writerActivity(hold, project)}. ${mode} only reads, so it can start now, but it may see changes from the chat before its reply ends.`;
   return hold.unresolved
     ? `${writerHolder(hold)} ended without a known result and may have left files in ${project} half changed. ${mode} only reads, so it can start now.`
     : hold.waiting
@@ -154,8 +178,12 @@ export function writerHoldBesideText(hold: WriterHold, project: string, mode: st
 /** What a queued Work task at the front of Next up waits for while `hold` stands. */
 export function writerHoldState(hold: WriterHold): string {
   const holder = hold.task ? writerHolder(hold) : "another task";
+  const checking = hold.task && checkingLabel(hold.task);
+  if (checking) return `${checking} for ${holder}`;
+  if (hold.checkJob) return "After Ophio finishes this project’s checks";
   if (hold.unresolved) return `Waiting for you to check ${holder}`;
   if (hold.helpers) return `After helpers from ${holder} finish`;
+  if (hold.task?.conversation) return `Can start when chat ${holder} finishes its reply`;
   switch (hold.waiting) {
     case "approval": return `Waiting for your approval on ${holder}`;
     case "input_back": return `Waiting for you to resume ${holder}`;
@@ -164,19 +192,48 @@ export function writerHoldState(hold: WriterHold): string {
   }
 }
 
+/** The computer settles a chat's cut-off reply when the person writes again. */
+export const CHAT_CARRY_ON_FEATURE = "chat_carry_on_v1";
+
 /**
+ * A chat whose last reply was cut off, where the computer has confirmed that
+ * the agent and what it started under Øphio have stopped: the person's next
+ * message carries on in the same session. Anything that may still run keeps
+ * the review.
+ */
+export function cutOff(task: Task | null, run: Run | null): boolean {
+  return !!task && !!run
+    && !!task.conversation
+    && task.state === "reconciliation_required"
+    && task.current_run === run.run_id
+    && run.state === "reconciliation_required"
+    && !!run.nothing_running
+    && !run.cleanup_pending
+    && !run.children.some((c) => c.state === "active" || c.state === "unknown");
+}
+
+/**
+ * @param destination a different agent chosen for the chat's next reply.
+ *   Null means that agent is no longer reported by the computer.
+ * @param carryOn the computer advertises {@link CHAT_CARRY_ON_FEATURE}.
  * @param writer the run holding this project's writer, if any. The computer
  *   refuses to start a Work run here until it is released. Ask and Plan runs
  *   only read, so they start beside it.
  */
-export function composerMode(task: Task | null, run: Run | null, harness: HarnessInfo | null, writer: WriterHold | null = null, project = "this project"): ComposerMode {
+export function composerMode(task: Task | null, run: Run | null, harness: HarnessInfo | null, writer: WriterHold | null = null, project = "this project", carryOn = false, destination?: HarnessInfo | null): ComposerMode {
   if (!task) return { mode: "new" };
+  // A cut-off chat is replied to like an ended one. Writing settles the
+  // cut-off reply, and with it the hold that reply kept on the project.
+  const cut = carryOn && cutOff(task, run);
+  if (cut && writer?.task?.task_id === task.task_id) writer = null;
   const name = harness?.display_name ?? "The agent";
+  const switching = !!task.conversation && destination !== undefined;
+  const nextStart = switching ? reason(destination?.capabilities.start_run, "The selected agent isn’t available on this computer") : null;
   // A new task from one that only reads starts in Work (Review), but a
   // stranger's work in Next up stays read-only.
   // A chat is never called Ask: only its access decides what it may do.
   const reads = task.conversation ? null : (task.mode ?? "work") !== "work" ? task.mode === "plan" ? "Plan" : "Ask" : null;
-  switch (task.state) {
+  switch (cut ? "interrupted" : task.state) {
     case "working":
     case "awaiting_decision": {
       const waiting = run?.state === "awaiting_approval" || run?.state === "awaiting_input";
@@ -186,7 +243,7 @@ export function composerMode(task: Task | null, run: Run | null, harness: Harnes
       const interrupt = reason(harness?.capabilities.interrupt, `${name} doesn’t report whether it can be interrupted`);
       const options: IntentOption[] = [
         { intent: { kind: "message", delivery: "steer" }, label: "Steer now", detail: `${name} reads this while it works.`, unavailable: steer },
-        { intent: { kind: "message", delivery: "next_turn" }, label: "After this turn", detail: "Held until the current turn ends, then delivered.", unavailable: null },
+        { intent: { kind: "message", delivery: "next_turn" }, label: "After this turn", detail: "Held until the current turn ends, then delivered.", unavailable: nextStart },
         {
           intent: { kind: "message", delivery: "interrupt_and_send" },
           label: "Stop the turn and send",
@@ -210,12 +267,16 @@ export function composerMode(task: Task | null, run: Run | null, harness: Harnes
           ? `Can’t continue yet: ${writerHoldText(writer, project)} Check it first, or put your message in Next up.`
           : writer.helpers
             ? `Can’t continue yet: ${writerActivity(writer, project)}. Continue once they end, or stop them.`
-            : `Can’t continue yet: ${writerActivity(writer, project)}. Put your message in Next up to continue when it finishes.`
+            : writer.task?.conversation
+              ? `Can’t continue yet: ${writerHoldText(writer, project)} Put your message in Next up to continue then.`
+              : `Can’t continue yet: ${writerActivity(writer, project)}. Put your message in Next up to continue when it finishes.`
+        : switching ? nextStart
         : reason(harness?.capabilities.start_run, `${name} isn’t available on this computer`)
           ?? reason(harness?.capabilities.resume_session, `${name} doesn’t report that it can continue a task`);
-      const fresh = harness?.capabilities.resume_session.state === "available" ? "" : ` ${name} starts a fresh session and won’t remember this conversation.`;
+      const fresh = switching || harness?.capabilities.resume_session.state === "available" ? "" : ` ${name} starts a fresh session and won’t remember this conversation.`;
+      const replyName = switching ? destination?.display_name ?? "The selected agent" : name;
       if (task.conversation)
-        return { mode: "ended", options: [{ intent: { kind: "continue" }, label: "Reply", detail: `Goes on with the conversation. ${task.access && accessChanges(task.access) ? `${name} may change files where you’ve let it, and run commands there.` : `${name} reads but changes nothing.`}${fresh}`, unavailable: start }] };
+        return { mode: "ended", ...(cut && { cutOff: true }), options: [{ intent: { kind: "continue" }, label: "Reply", detail: `Goes on with the conversation${cut ? " from where the last reply was cut off" : ""}. ${task.access && accessChanges(task.access) ? `${replyName} may change files where you’ve let it, and run commands there.` : `${replyName} reads but changes nothing.`}${fresh}`, unavailable: start }] };
       // Held only by the project's writer, the message can wait its turn.
       const later: IntentOption[] = writer && (task.mode ?? "work") === "work" && !reason(harness?.capabilities.start_run, "unknown")
         ? [{ intent: { kind: "continue_later" }, label: "Continue in Next up", detail: `Waits in Next up, then continues this task with your message. ${writerHoldState(writer)}.${fresh}`, unavailable: null }]
@@ -385,6 +446,10 @@ export interface NewTaskInput {
   access?: ConversationAccess | null;
   /** Its part in a review, which gives it the project's review rules; only for a computer that has them. */
   review?: ReviewRole | null;
+  /** The chat it is made from, which stays and hears how it ends. */
+  fromChat?: string | null;
+  /** The chat's card it was opened from in Review. */
+  origin?: TaskOrigin | null;
 }
 
 export function createTaskCommand(i: NewTaskInput): Command {
@@ -409,6 +474,8 @@ export function createTaskCommand(i: NewTaskInput): Command {
     ...(i.conversation ? { conversation: true } : {}),
     ...(i.access ? { access: i.access } : {}),
     ...(i.review ? { review: i.review } : {}),
+    ...(i.fromChat ? { from_chat: i.fromChat } : {}),
+    ...(i.origin ? { origin: i.origin } : {}),
     mission: i.mission,
     target_id: null,
     placement: i.placement,

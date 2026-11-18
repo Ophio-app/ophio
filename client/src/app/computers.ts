@@ -47,6 +47,23 @@ export class Computers extends Store<ReadonlyMap<string, HostSession>> {
   #running = false;
   /** The computer the screen shows, whose alerts it shows. */
   readonly viewing = new Store<string | null>(null);
+  /** Every visibly shown computer, independently of the active navigation side. */
+  readonly visible = new Store<ReadonlySet<string>>(new Set());
+  #visibleCounts = new Map<string, number>();
+  visibleCount(profileId: string): number { return this.#visibleCounts.get(profileId) ?? 0; }
+  show(profileId: string): () => void {
+    this.session(profileId);
+    this.#visibleCounts.set(profileId, (this.#visibleCounts.get(profileId) ?? 0) + 1);
+    this.visible.set(new Set(this.#visibleCounts.keys()));
+    let done = false;
+    return () => {
+      if (done) return;
+      done = true;
+      const count = (this.#visibleCounts.get(profileId) ?? 1) - 1;
+      if (count) this.#visibleCounts.set(profileId, count); else this.#visibleCounts.delete(profileId);
+      this.visible.set(new Set(this.#visibleCounts.keys()));
+    };
+  }
   /** All's own lists are on screen: every connected computer's requests
    * and results are on it, and their alerts with them. */
   readonly showingAll = new Store(false);
@@ -182,8 +199,8 @@ export class Computers extends Store<ReadonlyMap<string, HostSession>> {
     const { session, profile } = kept;
     const id = profile.profileId;
     const viewed: Viewed = {
-      get: () => this.showingAll.get() || this.viewing.get() === id,
-      subscribe: (listener) => { const a = this.viewing.subscribe(listener), b = this.showingAll.subscribe(listener); return () => { a(); b(); }; },
+      get: () => this.showingAll.get() || this.visible.get().has(id) || this.viewing.get() === id,
+      subscribe: (listener) => { const a = this.viewing.subscribe(listener), b = this.showingAll.subscribe(listener), c = this.visible.subscribe(listener); return () => { a(); b(); c(); }; },
     };
     // Returning to the app is when a person looks: try now, not after the wait
     // between attempts, and show what changed meanwhile in one step.
@@ -248,7 +265,7 @@ export class Computers extends Store<ReadonlyMap<string, HostSession>> {
     const viewed = this.viewing.get();
     let changed = false;
     for (const id of [...this.#kept.keys()]) {
-      if (id === viewed || this.options.held?.(id)) continue;
+      if (id === viewed || this.visible.get().has(id) || this.options.held?.(id)) continue;
       this.#drop(id);
       this.#parked.add(id);
       changed = true;

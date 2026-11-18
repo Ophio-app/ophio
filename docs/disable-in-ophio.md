@@ -94,6 +94,10 @@ says **Can't be disabled in Øphio** with the reason:
 - A file inside a skill's folder: disable the skill, from its `SKILL.md`.
 - Files no agent Øphio runs reads, such as Hermes's and `GEMINI.md`.
 
+In a limited chat, which has its own copy of the agent's settings folder,
+your instructions and skills that are disabled aren't shared into that copy
+at all; see [Agent files](agent-files.md#in-a-limited-chat).
+
 ## Limits
 
 - A conversation keeps what its earlier turns were already given. Disabling

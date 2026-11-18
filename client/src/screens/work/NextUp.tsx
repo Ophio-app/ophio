@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { checkingLabel } from "../../app/checksFeature";
 import {
   ArrowDown,
   ArrowUp,
@@ -31,6 +32,7 @@ import { dependencyError } from "./logic";
 import {
   CommandFeedback,
   ConnectionNote,
+  FromChatMark,
   TaskPermissionNote,
   inDoubt,
   useCanWork,
@@ -39,7 +41,7 @@ import {
 } from "./shared";
 import { expectQueue, pendingQueueItems, queueItemState, queueMoveError, queueState, useQueue } from "./useQueue";
 import { useLocalText } from "./local";
-import { writerHold } from "../talk/intent";
+import { writerActivity, writerHold } from "../talk/intent";
 import "./work.css";
 import { useWarning } from "../../app/warnings";
 
@@ -54,30 +56,40 @@ export default function NextUp(_: RouteProps<"next_up">) {
   const { queue, error, allowed, reload } = useQueue(projectId);
   const tasks = useHost((s) => s.tasks);
   const writer = useHost((s) =>
-    queue?.writer ? s.tasks[s.runs[queue.writer]?.task_id ?? ""] : undefined,
+    queue?.writer ? s.tasks[s.runs[queue.writer]?.task_id ?? ""] ?? Object.values(s.tasks).find(t => t.checking?.job_id === queue.writer) : undefined,
   );
   const writerRun = useHost((s) => queue?.writer ? s.runs[queue.writer] : undefined);
-  const hasWriter = !!queue?.writer && (!writerRun || writerRun.holds_writer);
+  const hasWriter = !!queue?.writer && (!writerRun || writerRun.holds_writer || !!writer?.checking);
   const openTask = useOpenTask();
   const held = useHost((s) => hasWriter ? writerHold(queue?.writer, s) : null, shallowEqual);
   const writerDescription = !hasWriter
-    ? "No writer is holding this project."
+    ? "This project is available for work."
+    : writer && checkingLabel(writer)
+      ? `${checkingLabel(writer)}. Nothing else can change files until Ophio finishes checking.`
+    : held?.checkJob
+      ? `${writerActivity(held, "this project")}. Nothing else can change files until these checks end.`
     : !writerRun
-      ? "Waiting for the computer to report the writer’s state."
+      ? "Waiting for the computer to report what is using this project."
       : writerRun.state === "reconciliation_required"
         ? "Stopped and waiting for your decision. Nothing else can change files until you decide."
         : writerRun.state === "stopping"
           ? "Stopping. The computer is checking what ended."
           : helpersFinishing(writerRun)
             ? "Its turn has ended, but helpers it started are still finishing. Nothing else can change files until they end."
-            : ["completed", "failed", "interrupted"].includes(writerRun.state)
-              ? "This task has ended. The computer is updating the writer slot."
+            : writer?.conversation && !["completed", "failed", "interrupted", "admitted", "dispatching"].includes(writerRun.state)
+              ? writerRun.state === "awaiting_approval"
+                ? "This chat is waiting for your approval before its reply can end. Work can start when its reply ends."
+                : writerRun.state === "awaiting_input"
+                  ? "This chat is waiting for your answer before its reply can end. Work can start when its reply ends."
+                  : "This chat holds the project while it replies. Work can start when its reply ends."
+              : ["completed", "failed", "interrupted"].includes(writerRun.state)
+                ? `This ${writer?.conversation ? "reply" : "task"} has ended. The computer is checking that nothing is still changing this project.`
               : ["admitted", "dispatching"].includes(writerRun.state)
-                ? "Starting. The computer has reserved this project’s writer slot."
+                ? `Starting. Other work can start when this ${writer?.conversation ? "reply" : "task"} finishes.`
                 : writerRun.state === "awaiting_approval"
-                  ? "Waiting for approval. This task holds the project’s writer slot."
+                  ? "Waiting for your approval. Other work can start when this task finishes."
                   : writerRun.state === "awaiting_input"
-                    ? "Agent paused. This task holds the project’s writer slot until you resume it."
+                    ? "Waiting for you to resume this task. Other work can start when it finishes."
                     : "Running. This task is changing files.";
   const pendingItems = pendingQueueItems(queue);
   const [editing, setEditing] = useState<Editing | null>(null);
@@ -229,7 +241,7 @@ export default function NextUp(_: RouteProps<"next_up">) {
               ) : (
                 <div className="work-card">
                   <p className="work-card-title">
-                    {hasWriter ? "The computer hasn’t reported this task" : "No task is changing files"}
+                    {held?.checkJob ? "Ophio checks" : hasWriter ? "The computer hasn’t reported what holds this project" : "No task is changing files"}
                   </p>
                   <p className="work-muted">
                     {writerDescription}
@@ -317,6 +329,7 @@ export default function NextUp(_: RouteProps<"next_up">) {
                           </h2>
                         </div>
                         <p className="work-queue-state">
+                          {task && <FromChatMark task={task} />}
                           {queueItemState(item, index, (task?.mode ?? "work") === "work" ? held : null)}
                         </p>
                         {item.authorization_expires_at && <p className="work-caption">Permission expires {new Date(item.authorization_expires_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}. One start only.</p>}
@@ -507,6 +520,7 @@ export default function NextUp(_: RouteProps<"next_up">) {
     </Screen>
   );
 }
+
 function QueueEdit({
   editing,
   queue,

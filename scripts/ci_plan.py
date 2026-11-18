@@ -33,9 +33,9 @@ ROOT = Path(__file__).resolve().parents[1]
 # Its own job, which runs on every push whatever changed.
 SEPARATE = {"advisories"}
 # Quick, and about the whole tree.
-ALWAYS = {"source", "licenses", "python"}
+ALWAYS = {"quick", "source", "licenses", "python"}
 # The phone and the computer against a real intake: both sides can break it.
-RUST = {"fmt", "clippy", "test", "windows", "tauri", "intake-e2e"}
+RUST = {"fmt", "clippy", "test", "windows", "macos", "tauri", "intake-e2e"}
 CLIENT = {"client", "tauri", "intake-e2e"}
 # The whole test suite run again and again, some runs with every core busy,
 # to catch a test that only fails now and then. That takes about a quarter of

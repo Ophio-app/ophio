@@ -62,29 +62,41 @@ fn call<T>(f: impl FnOnce(&mut JNIEnv, &GlobalRef) -> jni::errors::Result<T>) ->
     .map_err(|e| Error::Native(e.to_string()))
 }
 
+/// Snapshot clears before waiting for the ledger, as the plugin path did.
+pub async fn post_from_app(note: Note, fold: Option<super::AppFold>) -> Result<()> {
+    let since = Android.clears();
+    tokio::task::spawn_blocking(move || {
+        super::post_from_app_fold_with(&Android, note, fold, since, || {
+            protocol::time::Timestamp::now().0
+        })
+    })
+    .await
+    .map_err(|_| Error::Native("Android could not show the notification.".into()))?
+}
+
+pub async fn clear_from_app(tags: Vec<String>) -> Result<()> {
+    tokio::task::spawn_blocking(move || super::clear_from_app_with(&Android, &tags))
+        .await
+        .map_err(|_| Error::Native("Android could not clear the notifications.".into()))?
+}
+
+pub async fn handle_from_app(profile: String, ids: Vec<protocol::AttentionId>) -> Result<()> {
+    tokio::task::spawn_blocking(move || super::handle_from_app_with(&Android, &profile, &ids))
+        .await
+        .map_err(|_| Error::Native("Android could not clear the notifications.".into()))?
+}
+
 struct Android;
 impl Shade for Android {
+    fn post_member(&self, note: &Note, since: i64, member: &str, realert: bool) -> Result<Posted> {
+        let mut json = serde_json::to_value(note).map_err(|_| Error::Invalid("Invalid alert."))?;
+        json["source"] = serde_json::Value::String(member.to_owned());
+        json["realert"] = serde_json::Value::Bool(realert);
+        self.post_json(json.to_string(), Some(since))
+    }
     fn post(&self, note: &Note, since: Option<i64>) -> Result<Posted> {
         let json = serde_json::to_string(note).map_err(|_| Error::Invalid("Invalid alert."))?;
-        let posted = call(|env, class| {
-            let json = env.new_string(json)?;
-            env.call_static_method(
-                class,
-                "post",
-                "(Ljava/lang/String;J)I",
-                &[JValue::Object(&json), JValue::Long(since.unwrap_or(-1))],
-            )?
-            .i()
-        })?;
-        // As AlertWatcher.post answers.
-        match posted {
-            0 => Ok(Posted::Shown),
-            1 => Ok(Posted::NoRoom),
-            3 => Ok(Posted::Cleared),
-            4 => Ok(Posted::Off),
-            5 => Ok(Posted::Sounded),
-            _ => Err(Error::Native("Android did not show the alert.".into())),
-        }
+        self.post_json(json, since)
     }
     fn cancel(&self, tag: &str) {
         let _ = call(|env, class| {
@@ -346,6 +358,26 @@ pub extern "system" fn Java_app_ophio_device_AlertWatcher_importTiers<'local>(
 }
 
 impl Android {
+    fn post_json(&self, json: String, since: Option<i64>) -> Result<Posted> {
+        let posted = call(|env, class| {
+            let json = env.new_string(json)?;
+            env.call_static_method(
+                class,
+                "post",
+                "(Ljava/lang/String;J)I",
+                &[JValue::Object(&json), JValue::Long(since.unwrap_or(-1))],
+            )?
+            .i()
+        })?;
+        match posted {
+            0 => Ok(Posted::Shown),
+            1 => Ok(Posted::NoRoom),
+            3 => Ok(Posted::Cleared),
+            4 => Ok(Posted::Off),
+            5 => Ok(Posted::Sounded),
+            _ => Err(Error::Native("Android did not show the alert.".into())),
+        }
+    }
     fn tier_of(&self, note: &Note) -> Option<protocol::notifications::Tier> {
         let json = serde_json::to_string(note).ok()?;
         let tier = call(|env, class| {

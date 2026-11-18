@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Reviewed workspace dependencies, initially taken from the existing manifests.
+# These permissions include normal, build and test dependencies on every platform
+# and under every feature. A new crate, even with no edges, needs an entry.
+# Review every addition; removing an edge should remove its permission too.
+#
+# Existing edges to reconsider individually, not failures in this first baseline:
+# - services depends on report-fixer and report-pipeline (bug reporting).
+# - platform-linux, platform-macos and platform-windows depend on voice-control.
+# - terminal depends on platform-macos.
+# - browser depends on platform-windows.
+
+[allowed]
+accounts = ["containment", "platform-windows", "ports", "protocol"]
+browser = ["containment", "platform-windows", "ports", "protocol", "voice-control"]
+check-runner = ["containment", "sandbox"]
+channels = ["ports", "protocol", "services", "store"]
+companion = ["accounts", "browser", "channels", "computer-mcp", "containment", "harness-claude", "harness-codex", "jev", "library", "media", "platform-desktop", "platform-linux", "platform-macos", "platform-windows", "ports", "protocol", "sandbox", "services", "speech", "store", "terminal", "test-support", "voice-control"]
+computer-mcp = ["containment", "harness-claude", "ports", "protocol", "test-support"]
+containment = ["ports", "protocol", "test-support"]
+domain = ["protocol"]
+harness-claude = ["containment", "ports", "protocol", "test-support"]
+harness-codex = ["containment", "ports", "protocol", "test-support"]
+intake = ["protocol"]
+jev = ["protocol"]
+library = ["ports", "protocol"]
+media = ["ports", "protocol"]
+platform-desktop = ["ports", "protocol"]
+platform-linux = ["ports", "protocol", "voice-control"]
+platform-macos = ["containment", "platform-desktop", "ports", "protocol", "voice-control"]
+platform-windows = ["platform-desktop", "ports", "protocol", "voice-control"]
+ports = ["protocol"]
+protocol = []
+report-fixer = ["containment", "intake", "ports", "protocol", "report-pipeline", "sandbox"]
+report-pipeline = ["protocol"]
+sandbox = ["containment", "harness-claude", "harness-codex", "ports", "protocol"]
+services = ["accounts", "check-runner", "containment", "domain", "harness-claude", "harness-codex", "intake", "jev", "library", "ports", "protocol", "report-fixer", "report-pipeline", "sandbox", "services", "store", "terminal", "test-support", "voice-control"]
+speech = ["ports", "protocol"]
+store = ["domain", "protocol"]
+terminal = ["containment", "platform-macos", "ports", "protocol"]
+test-support = []
+voice-control = ["jev", "ports", "protocol"]

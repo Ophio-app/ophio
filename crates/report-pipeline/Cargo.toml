@@ -14,7 +14,7 @@ serde.workspace = true
 serde_json.workspace = true
 schemars.workspace = true
 thiserror.workspace = true
-rusqlite = { version = "0.38.0", features = ["bundled"] }
+rusqlite = { version = "0.41.0", features = ["bundled"] }
 ed25519-dalek = "2.2"
 sha2 = "0.10"
 getrandom = "0.3.4"

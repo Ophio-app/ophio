@@ -3,6 +3,237 @@
 Each public release of Øphio is listed here, newest first. A release's version
 matches the `vX.Y.Z` tag on the commit it was built from.
 
+## 0.3.0 — chat across projects, checks after each task, split view
+
+This release is for Android and Linux, with an experimental,
+unsigned Windows 11 x86_64 ZIP; Windows is not a beta support promise and
+paid signing is not required for that download. The final files have limited
+lab checks, not complete physical-device qualification; see the scope below.
+It has a new phone app: update the computer first, then the
+paired phone from Settings › Versions ›
+**Update now**. Most new features need both the new phone app and the new
+computer; [docs/upgrading.md](docs/upgrading.md#updating-to-030) says what
+works when only one end is updated, and what happens if you go back to 0.2.0.
+
+### New
+
+- **Install the computer app with one command.** There is one command for
+  Linux or a Mac, and one for Windows. They download the right release,
+  check its checksum and install it for your user account. See
+  [Get started](README.md#get-started).
+- **An experimental Mac download.** Macs with Apple silicon get their own
+  archive, `ophio-0.3.0-aarch64-macos.tar.gz`. It is not a beta support
+  promise: the final archive passed checksum, signature and clean version
+  checks on macOS 27.2, not installation or full workflows. Screen watching
+  and control have not been tested. Its programs have no Apple Developer ID
+  signature and are not notarized by Apple,
+  so read [the Mac install guide](packaging/macos/INSTALL.md) before
+  downloading, especially if you use a browser. Screen and accessibility
+  permissions have to be given again after each update.
+- **Checks after every task.** Each project can have checks, written in plain
+  English in Library › Checks, such as "the app still builds for Android".
+  When a task finishes changing the project, Øphio runs the checks that apply
+  itself and shows the results on the task and its receipt, so you don't have
+  to take the agent's word that the work works. **Set up checks** and **Add a
+  check** ask an agent to write them; agents can only suggest checks, and
+  Øphio runs only the ones you approved. On Linux, checks run in a sandbox
+  with no more access than the agent had, and reach the internet only if you
+  allowed it for that check and the task had it too. While checks run, the task shows as
+  checking, and its notification waits until they finish.
+- **Split view on tablets and foldables.** On a tablet held sideways, or an
+  unfolded foldable phone, **Split view** opens two copies of the app side by
+  side. Each side has its own screen and can show a different computer, or
+  All computers. On a foldable the divider sits on the crease, using the
+  fold position Android reports. Earlier builds were checked on Android
+  tablet and foldable emulators. The final app passed partial foldable checks;
+  its tablet run stopped after emulator crashes. Neither was tested on physical
+  hardware. A chat's draft stays in sync across both sides, and each
+  side warns about its own unsaved edits. Open sheets keep their edits and
+  scroll position when you fold or unfold the phone.
+- **Build the experimental iPhone app yourself.** Developers with a Mac can
+  follow the [iPhone build guide](packaging/ios/INSTALL.md). There is no App
+  Store or TestFlight download yet. Only simulator runs have been tested,
+  not signing or installation on a real iPhone.
+- **Chat across all projects.** Chat lists the conversations from every
+  project on the connected computer in one place.
+- **Switch agent, model and effort between messages.** Pick another agent,
+  model or effort for the next message without starting a new conversation.
+  The new agent is given a summary of the recent conversation, not the other
+  agent's whole memory. Øphio remembers which agent you prefer for each
+  project and each kind of work, and keeps the model list short, with the
+  full list one tap away.
+- **Attach files to messages.** Send ordinary files, not only pictures, with
+  a chat message, and download them again later.
+- **Suggested work as cards.** When an agent in a chat suggests work, it
+  shows as a card you can start with one tap, with the right task type and
+  access. Ordered sets of tasks start in order, waiting for the step before;
+  a set stops at a failed step. Work started from a chat reports back to that
+  chat in one combined summary. **Turn into a task** carries a chat on as a
+  task that can change files, and plain tasks can be started from the
+  message box. Starting suggested work by itself is an optional setting with
+  limits, and is off unless you turn it on.
+- **Steer Claude Code while it works.** **Steer now** sends a message that
+  Claude Code reads while it is still working, instead of after it finishes.
+- **Replies survive interruptions.** Replies are saved while they stream, so
+  a restart or a lost connection keeps what had arrived. After a reply is
+  confirmed cut off, writing another message carries the conversation on.
+  Unfinished actions are not silently repeated or reported as done.
+- **Chats and tasks take turns.** A chat and a task can work in the same
+  project: they take turns changing it, so a busy task doesn't stop a chat
+  from answering.
+- **Your instructions and skills in limited chats.** A chat kept to its
+  project can now read your own agent instructions and the skills that suit
+  its access, without being able to change them.
+- **New versions of Øphio.** Once a day the computer asks GitHub whether a
+  newer Øphio has been released, and tells your phone once per new version.
+  Settings › Versions shows what's new and how to update. This check is on
+  by default in the public download and can be turned off there; it sends
+  nothing about you or your projects.
+- **Agent updates you choose.** Claude Code and Codex updates are now
+  **Update automatically**, **Tell me when there's an update** (the new
+  default) or **Don't check**, with **Check now** and a one-off **Update
+  now**. Øphio also tells you, quietly, when an update brings new models.
+  See [docs/agent-updates.md](docs/agent-updates.md).
+
+### Improved
+
+- Setup explains Android's download and unknown-app warnings. The phone's
+  Windows instructions point to the installed app, and Windows setup text
+  no longer shows garbled characters.
+- The phone's welcome and pairing screens no longer describe every computer
+  download as a Linux archive.
+- A task that is watching for something (Watching) says in plain words what
+  it is waiting for, on the task and at the top of the chat.
+- Notifications: a chat reply makes a sound unless that chat is on screen;
+  work started from chat cards gives one combined notice; an interrupted
+  reply gives one "write to carry on" notice.
+- **Allow** still counts when you tap it after the agent stopped waiting: the
+  agent is told it may go ahead, and if it asks for exactly the same thing
+  again within half an hour, that is allowed once without a second card.
+- Approval and question cards are shorter: short requests sit beside Allow
+  and Reject, a request is declined in one tap, and a question card shows
+  just the question.
+- Library search groups matches by file.
+- Review is folded down to the choices you made, chat steps show plain tool
+  names and whether each step finished or was stopped, and finished tasks
+  return you to the screen you opened them from.
+- Typed text in a sheet is kept when another screen covers it, and a
+  double tap sends a message only once.
+- A phone and computer whose versions can't work together offer an update
+  instead of retrying the connection.
+
+### Fixed
+
+- Running the Windows one-command installer again when that version is
+  already installed now finishes cleanly without changing the installation.
+- The agent's browser keeps tab titles and addresses up to date when a page
+  finishes loading, even in the background, and gives screenshots up to 15
+  seconds to finish on a busy computer.
+- Opening a web address by voice gives a slow site the full time allowed
+  for that action, instead of cutting it off early.
+- Terminal controls stay at the top of the phone screen, including while
+  typing, so **Detach**, **Attach again** and **Close terminal** stay within
+  reach.
+- On a Mac, uninstalling the background service also removes a finished
+  update's background job. An update still in progress is left alone.
+- On a Mac, the warning before deleting Øphio's data names the shared
+  settings and data folder once, rather than twice.
+- A failed Claude Code or Codex update could remove the copy tasks were
+  using. A failed update now keeps the working copy and the previous one,
+  including on the first try after a restart.
+- Pull requests from a task use that task's own branch, not whatever branch
+  the project folder happens to be on.
+- On Linux, an app outside your home folder could be taken for one you
+  installed yourself. Øphio now checks that it really is in your home folder.
+- Shutting Øphio down lets a Claude Code reply finish cleanly instead of
+  stopping it part way.
+- Øphio's own background checks of Claude Code no longer run at the same
+  time or get cut off part way, either of which could leave Claude Code
+  signed out.
+- `ophio update` retries when a just-copied program is briefly busy, instead
+  of failing the update.
+- Notification settings that name a kind this version doesn't know no longer
+  stop the others from being read.
+- Dependency security fixes: the bundled SQLite (RUSTSEC-2026-0459), rustix
+  (RUSTSEC-2026-0486), the quinn-proto and quinn-udp network libraries
+  (RUSTSEC-2026-0523, RUSTSEC-2026-0524 and RUSTSEC-2026-0538), and the zip
+  library that the speech-recognition code brings in (RUSTSEC-2026-0545 to
+  RUSTSEC-2026-0548), now at a version with its archive-extraction fixes. Øphio's speech code never
+  extracted archives, so the zip problems could not be reached before
+  either.
+
+### Changed
+
+- Agent updates default to **Tell me when there's an update**. A computer
+  that updated automatically before keeps doing so.
+- The public download checks GitHub for new Øphio releases once a day, as
+  described above. Builds made from source with `OPHIO_PERSONAL_SIGNING=1`
+  start with the check off.
+
+### Known issues
+
+- A pinch outside a picture can zoom the whole phone app. Pinch in on the
+  chat or reopen the app to fix it. This also affects 0.2.0. It is fixed on
+  the development line, but not in this 0.3.0 release.
+- On Windows, a script that starts the background service and waits for its
+  output can hang. Typing the commands yourself and the one-line installer
+  are unaffected.
+- When updating the phone from 0.2.0, the first try just after allowing
+  installs from Øphio can fail. Tap **Try again**.
+
+### Scope and known limits
+
+- Windows 11 x86_64 has an experimental unsigned ZIP, not a beta support
+  promise; read [Windows warnings and how to continue](packaging/windows/INSTALL.md#windows-warnings-and-how-to-continue)
+  for **Windows protected your PC** and Smart App Control before installing.
+  The initial host-only candidate passed fresh installation and
+  connected checks with a signed Android 0.2.0 emulator, including stand-in
+  chat/task approval, a real terminal, transfers and desktop input/Stop.
+  Native tests and packaged executable-sharing-error recovery also passed;
+  a complete aggregate service-suite run did not finish within its time limit.
+  Normal upgrade from an old flat ZIP installation is not qualified: inherited
+  permissions are intentionally refused rather than weakened. A separately
+  tested clean reinstall retained data without changing old program permissions,
+  and corrected stable-launcher startup passed native checks. Real providers,
+  matching 0.3.0 Android, physical hardware, Windows 10 and power-loss recovery
+  remain unverified. Limited chats/tasks and resource-limited containers remain
+  unavailable. See [Windows qualification](docs/qualification/windows-macos.md).
+- The beta is for Android and Linux, as in 0.2.0. The Mac download is
+  experimental; iPhone code is in the source but has no download
+  and no support promise.
+  On iPhone the app can only tell whether a foldable is folded, not where
+  its crease is, and has only run in the simulator.
+- With a 0.2.0 phone and a 0.3.0 computer, the phone can't show attached
+  files, set up checks, start a suggested-work card as work linked to its
+  chat, or show the three agent-update choices. With a 0.3.0 phone and a
+  0.2.0 computer, the features that need the computer are hidden. Update both.
+- Going back to 0.2.0 keeps your history, setup and Øphio's own agent
+  copies, but 0.2.0 starts updating the agents automatically again, and
+  your Tell me or Don't check choice is not kept when you come back to
+  0.3.0. Read [going back to 0.2.0](docs/upgrading.md#going-back-to-020)
+  first.
+- The final Android and Linux files were tested on an Android 15 emulator
+  and an Ubuntu 24.04.5 virtual machine with glibc 2.39. Installation, pairing,
+  phone self-update, computer upgrade/rollback and Chat/Task use with either
+  end on 0.2.0 passed using synthetic agents, not real providers. Permissions,
+  attachment bytes, writer scheduling and interrupted-reply recovery also
+  passed. Managed-agent lookup failures retained the saved programs; separate
+  source tests covered deeper update failures. Reminder timing used synthetic
+  saved metadata, not a real update feed.
+- The final Windows ZIP passed limited installation and lifecycle checks in
+  a Windows 11 24H2 virtual machine, including update and retained rollback
+  from a synthetic managed baseline. The final Mac archive passed limited
+  archive, signature, version and synthetic quarantine checks on macOS 27.2,
+  not installation, service or update checks. Earlier-build results above do
+  not qualify the final files.
+- Physical phones, real provider sign-in/conversations, audible reply sounds,
+  vibration, Do Not Disturb and battery-managed background delivery were not
+  qualified. Full settings retention, sound eligibility, locked-screen taps,
+  dismissal/reconnection and focus/selection checks remain incomplete.
+  Tablet qualification stopped after emulator crashes; foldable checks were
+  partial. See [Linux qualification](docs/qualification/linux.md#030-release-file-checks)
+  and [Windows and Mac qualification](docs/qualification/windows-macos.md).
+
 ## 0.2.0 — several computers, calmer notifications, clearer approvals
 
 The first release with a new phone app since 0.1.0. Update the computer

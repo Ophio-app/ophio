@@ -189,7 +189,7 @@
   padding: var(--s3) var(--s4);
   border-top: 1px solid var(--line);
   background: var(--surface);
-  max-height: 38dvh;
+  max-height: calc(38 * var(--pane-vh, 1dvh));
   overflow-y: auto;
 }
 .transfer-footer > * {

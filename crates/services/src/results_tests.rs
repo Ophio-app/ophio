@@ -39,6 +39,7 @@ fn bundle(artifact: &ArtifactMeta, mark_id: MarkId) -> Box<AnnotationBundle> {
         steps: vec![],
         general_note: None,
         speech: None,
+        files: vec![],
     })
 }
 
@@ -61,6 +62,8 @@ async fn capture_and_upload_links_survive_restart_and_paginate_without_labels() 
         mark_ids: vec![mark],
     };
     let request = CommandEnvelope::new(Command::CreateTask {
+        origin: None,
+        from_chat: None,
         github: None,
         project_id: project,
         kind: TaskKind::Coding,
@@ -126,6 +129,9 @@ async fn capture_and_upload_links_survive_restart_and_paginate_without_labels() 
         .submit(
             &Caller::local_owner(),
             CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id,
                 text: "Changed drawing".into(),
                 bundle: Some(changed.clone()),
@@ -220,7 +226,7 @@ async fn capture_and_upload_links_survive_restart_and_paginate_without_labels() 
         }
     ));
     f.hub.shutdown().await.unwrap();
-    drop(f.hub);
+    crate::testing::drop_hub_and_wait(f.hub, WAIT).await;
 
     let hub = CompanionHub::builder()
         .data_dir(&f.path)
@@ -343,6 +349,8 @@ async fn preview_capture_provenance_is_retained_with_the_reviewed_bundle() {
         .submit(
             &owner,
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 project_id: project,
                 kind: TaskKind::Coding,

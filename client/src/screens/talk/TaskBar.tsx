@@ -4,8 +4,9 @@
 // a task's one state word and the sheet of what else there is about the
 // task itself. Talk's list of conversations is Conversations.tsx.
 
-import { FileText, Images, Pencil, ReceiptText } from "lucide-react";
+import { FileText, Hammer, Images, Pencil, ReceiptText } from "lucide-react";
 import { useApp } from "../../app/context";
+import { checkingLabel } from "../../app/checksFeature";
 import type { UiStore } from "../../app/ui";
 import { Store } from "../../state/store";
 import type { Tone } from "../../design/Chip";
@@ -56,13 +57,14 @@ export function taskHeadingFocus(ui: UiStore): Store<string | null> {
 /** What else there is about the open task, from the ⋯ in its header: its
  * title to change, what it showed and was sent, the instructions it was
  * given, and its record. */
-export function TaskMoreSheet({ open, onClose, task, onMedia, onRename }: { open: boolean; onClose: () => void; task: Task; onMedia?: () => void; onRename: () => void }) {
+export function TaskMoreSheet({ open, onClose, task, onMedia, onRename, onIntoTask }: { open: boolean; onClose: () => void; task: Task; onMedia?: () => void; onRename: () => void; onIntoTask?: () => void }) {
   const { ui } = useApp();
   const go = (route: Parameters<UiStore["push"]>[0]) => { onClose(); ui.push(route); };
   const noun = task.conversation ? "conversation" : "task";
   return (
     <Sheet open={open} onClose={onClose} title={`This ${noun}`} subtitle={task.title}>
       <div className="group">
+        {onIntoTask && <ListRow icon={Hammer} title="Turn into a task" subtitle="Carry this on as a task that can change files" chevron onClick={onIntoTask} />}
         <ListRow icon={Pencil} title="Rename" subtitle={`Give this ${noun} a title you’ll recognize`} chevron onClick={onRename} />
         {onMedia && <ListRow icon={Images} title="Pictures and videos" subtitle={`Everything shown and sent in this ${noun}`} chevron onClick={onMedia} />}
         <ListRow icon={FileText} title="Instructions" subtitle={`Discovered files and revisions for this ${noun}`} chevron onClick={() => go({ screen: "instructions", taskId: task.task_id })} />
@@ -86,8 +88,11 @@ export function taskRowBadge(task: Task, run: Run | undefined, queue: QueueView 
 }
 
 const NEEDS_A_LOOK = { label: "Finished, needs a look", tone: "warn" } as const;
+const UNKNOWN_STATE = { label: "Status unknown", tone: "neutral" } as const;
 export function taskBadge(task: Task, run?: Run, queue?: QueueView): { label: string; tone: Tone } {
   if (task.state === "archived") return TASK_STATE.archived;
+  const checking = checkingLabel(task);
+  if (checking) return { label: checking, tone: "accent" };
   if (run?.task_id !== task.task_id) run = undefined;
   const label = decisionLabel(run);
   if (label) return { label, tone: "neutral" };
@@ -96,11 +101,11 @@ export function taskBadge(task: Task, run?: Run, queue?: QueueView): { label: st
   if (reported) return { label: reported, tone: "warn" };
   if (planProposed(task, run)) return { label: "Plan proposed", tone: "ok" };
   // A newer run can reach the phone before the task's current_run and state.
-  if (run && run.run_id !== task.current_run) return RUN_STATE[run.state];
+  if (run && run.run_id !== task.current_run) return RUN_STATE[run.state] ?? UNKNOWN_STATE;
   // Between turns, an agent waiting on something it was asked to watch is
   // watching, or waiting for another agent's answer, and the project is free.
   if (task.wake && !["accepted", "dispatching", "working", "awaiting_decision"].includes(task.state)) return task.wake.answer ? WAITING : WATCHING;
   // Finished with a failed check, a helper running or an unknown is not done.
   if (task.state === "completed" && run && runDoubts(run).length) return NEEDS_A_LOOK;
-  return task.state === "accepted" ? { ...TASK_STATE.accepted, label: acceptedLabel(task, run ? [run] : [], queue) } : TASK_STATE[task.state];
+  return task.state === "accepted" ? { ...TASK_STATE.accepted, label: acceptedLabel(task, run ? [run] : [], queue) } : TASK_STATE[task.state] ?? UNKNOWN_STATE;
 }

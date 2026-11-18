@@ -156,7 +156,7 @@
 
 .status--named {
   gap: var(--s1);
-  max-width: min(9rem, 32vw);
+  max-width: min(9rem, calc(32 * var(--pane-vw, 1vw)));
   min-width: 0;
   padding-inline: var(--s2);
 }

@@ -6,9 +6,9 @@
 
 import { defaultLaunchPolicy, launchChoices, launchRisk, launchSummary, LAUNCH_POLICY_FEATURE, LAUNCH_POLICY_UPDATE } from "../../app/launchPolicy";
 import { LaunchLine } from "./LaunchLine";
-import { keepEffort, readEffortMemory, saveEffortMemory, rememberedModel, switchEffort } from "./effortMemory";
-import { Bot, Check, SquareTerminal } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { conversationMemory, keepEffort, readEffortMemory, saveEffortMemory, rememberedModel, switchEffort } from "./effortMemory";
+import { Bot } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useApp, useCommand, useHost, useLink, useUi } from "../../app/context";
 import type { AgentChoice } from "../../app/ui";
 import { Button } from "../../design/Button";
@@ -16,15 +16,17 @@ import { Chip } from "../../design/Chip";
 import { ListRow, Section } from "../../design/ListRow";
 import { availabilityText } from "../../design/Notice";
 import { Sheet } from "../../design/Sheet";
-import type { HarnessInfo, Project } from "../../protocol/types";
-import { agentChoiceBlocker, canStart } from "./intent";
+import type { HarnessInfo, Project, Task } from "../../protocol/types";
+import { agentChoiceBlocker, canStart, modeSupport } from "./intent";
 
 import { Age } from "../../design/Age";
 import { Notice } from "../../design/Notice";
 import { modelChoiceValid, modelEfforts } from "./catalog";
+import { isFixedModel, orderExtraModels, pickerModelLabel, shortlistModels } from "./modelPicker";
 import { agentUnavailable } from "../control/computerReview";
 import { HARNESS_ACCOUNT, useSignInOn } from "../settings/signIn";
 import { SignInAgainButton } from "../settings/SignInAgain";
+import { AgentModelUpdate } from "../settings/AgentModelUpdate";
 import "./agentSheet.css";
 
 function whyNot(h: HarnessInfo): string {
@@ -55,9 +57,13 @@ export function AgentSheet({
   launchFlags = true,
   computerUse = false,
   fixedAgent = false,
+  nextMessage = false,
+  conversationTask,
   title = "Agent for this task",
   doneLabel = "Use this agent",
   note,
+  compact = false,
+  after,
 }: {
   open: boolean;
   onClose: () => void;
@@ -74,13 +80,32 @@ export function AgentSheet({
   computerUse?: boolean;
   /** Only the model and effort change, as between a conversation's messages. */
   fixedAgent?: boolean;
+  /** A chat's next reply never changes project defaults or saved usual choices. */
+  nextMessage?: boolean;
+  /** Saved history scopes provider choices to this conversation and computer. */
+  conversationTask?: Task;
   title?: string;
   doneLabel?: string;
   /** Said under the title, such as when the choice takes effect. */
   note?: string;
+  /**
+   * The small picker over a suggestion's card: agent, model and effort only,
+   * each pick shown at once, and `after` (More options) beneath them.
+   */
+  compact?: boolean;
+  after?: ReactNode;
 }) {
   const { ui, profile } = useApp();
   const harnesses = useHost((s) => s.harnesses);
+  const savedRuns = useHost((s) => s.runs);
+  const readChoices = () => conversationTask
+    ? conversationMemory(conversationTask, savedRuns, readEffortMemory(profile.profileId, conversationTask.task_id))
+    : readEffortMemory(profile.profileId);
+  // Keep last known choices even when a later snapshot cannot fit older runs.
+  // This is a history cache, never a project or task-type preference.
+  useEffect(() => {
+    if (conversationTask) saveEffortMemory(profile.profileId, readChoices(), conversationTask.task_id);
+  }, [conversationTask, savedRuns, profile.profileId]);
   // A task on its own has no project yet to keep defaults for.
   const canSetDefaults = useHost((s) => (s.grants?.admin ?? false) && !!s.projects[project.project_id]);
   const link = useLink();
@@ -92,13 +117,21 @@ export function AgentSheet({
   const [effortChange, setEffortChange] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const wasOpen = useRef(false);
-  const choices = useRef(readEffortMemory(profile.profileId));
+  const [allModels, setAllModels] = useState(false);
+  const moreModelsId = useId();
+  const shortModelGroup = useRef<HTMLDivElement>(null);
+  const focusChosenModel = useRef(false);
+  const [initialChoices] = useState(readChoices);
+  const preferredChoices = useRef(initialChoices);
+  const choices = useRef(initialChoices);
   const launches = useRef(new Map<string, AgentChoice["launchPolicy"]>());
   const launchSupported = useHost(s => !!s.capabilities?.features.includes(LAUNCH_POLICY_FEATURE)) || !launchFlags;
 
   useEffect(() => {
     if (open && !wasOpen.current) {
-      choices.current = readEffortMemory(profile.profileId);
+      choices.current = readChoices();
+      preferredChoices.current = readChoices();
+      setAllModels(false);
       keepEffort(choices.current, value);
       launches.current.clear();
       setPick({ ...value, launchPolicy: value.launchPolicy === undefined ? defaultLaunchPolicy(value.harness) : value.launchPolicy });
@@ -110,9 +143,19 @@ export function AgentSheet({
 
   const h = harnesses.find((x) => x.kind === pick.harness);
   const efforts = modelEfforts(h, pick.model);
+  const shortModels = h ? shortlistModels(h, pick.model, preferredChoices.current) : [];
+  const moreModels = orderExtraModels(h?.models.filter(m => !shortModels.some(s => s.id === m.id)) ?? []);
+  const otherModels = moreModels.filter(m => !isFixedModel(m));
+  const fixedModels = moreModels.filter(isFixedModel);
+  const selectedFixed = shortModels.some(m => m.id === pick.model && isFixedModel(m));
   const signInOn = useSignInOn();
   const signInFor = h?.account.state === "signed_out" && signInOn ? HARNESS_ACCOUNT[h.kind] : undefined;
-  const choiceBlocker = agentChoiceBlocker(h, pick, signInOn) ?? (computerUse && h ? agentUnavailable(h, signInOn) : null)
+  const modeBlocker = (x: HarnessInfo) => {
+    if (!nextMessage) return null;
+    const support = availabilityText(modeSupport(x, "ask").availability);
+    return support.ok ? null : support.detail ?? "Can’t hold a conversation on this computer.";
+  };
+  const choiceBlocker = agentChoiceBlocker(h, pick, signInOn) ?? (h ? modeBlocker(h) : null) ?? (computerUse && h ? agentUnavailable(h, signInOn) : null)
     ?? (pick.launchPolicy != null && !launchSupported ? LAUNCH_POLICY_UPDATE : null);
   const valid = !choiceBlocker && modelChoiceValid(h, pick.model, computerUse ? null : pick.effort);
   const flags = launchFlags && !computerUse ? launchChoices(pick.harness) : [];
@@ -125,7 +168,57 @@ export function AgentSheet({
   const isProjectDefault =
     project.default_harness === pick.harness && project.default_model === pick.model && project.default_effort === pick.effort;
 
+  // On a card each valid pick shows at once; closing keeps it.
+  useEffect(() => {
+    if (!compact || !open || !valid) return;
+    const out = computerUse ? { ...pick, effort: null, launchPolicy: null } : pick;
+    if (out.harness === value.harness && out.model === value.model && out.effort === value.effort
+      && out.launchPolicy === (computerUse ? value.launchPolicy ?? null : value.launchPolicy === undefined ? defaultLaunchPolicy(value.harness) : value.launchPolicy)) return;
+    onChange(out);
+  }, [compact, open, valid, pick, value, computerUse, onChange]);
+
+  const managed = harnesses.filter((x) => x.integration === "managed");
+  const usable = (x: HarnessInfo) => canStart(x) && x.account.state === "signed_in" && !modeBlocker(x) && !(computerUse && agentUnavailable(x));
+  const unusable = (x: HarnessInfo) => (computerUse ? agentUnavailable(x) : null)
+    ?? (!canStart(x) ? whyNot(x) : x.account.state !== "signed_in" ? account(x, signInOn) : modeBlocker(x) ?? account(x, signInOn));
+  const chooseAgent = (x: HarnessInfo) => {
+    if (x.kind === pick.harness) return;
+    setAllModels(false);
+    keepEffort(choices.current, pick);
+    // History may have arrived while this sheet was open. Only fill providers
+    // not already touched here; an explicit current selection always wins.
+    const saved = readChoices();
+    for (const kind of Object.keys(saved.models)) {
+      if (Object.hasOwn(choices.current.models, kind)) continue;
+      choices.current.models[kind] = saved.models[kind]!;
+      for (const [key, effort] of Object.entries(saved.efforts)) {
+        if (key.startsWith(`${kind}/`)) choices.current.efforts[key] = effort;
+      }
+    }
+    const priorModel = choices.current.models[x.kind];
+    const removed = !!priorModel && (x.capabilities.model_selection.state !== "available" || !x.models.some(m => m.id === priorModel));
+    const model = removed ? null : rememberedModel(profile.profileId, x, choices.current);
+    const restored = switchEffort(profile.profileId, x, model, pick, choices.current);
+    const effort = removed ? null : restored.effort;
+    setEffortChange(removed
+      ? `Your previous model (${priorModel}) is unavailable for ${x.display_name}. Using the agent’s default model and effort.`
+      : conversationTask && !Object.hasOwn(choices.current.models, x.kind)
+      ? `No earlier model choice is available for ${x.display_name} in this chat. Using the agent’s default model.`
+      : restored.notice);
+    launches.current.set(pick.harness, pick.launchPolicy);
+    setPick({ harness: x.kind, model, effort, launchPolicy: launches.current.has(x.kind) ? launches.current.get(x.kind) : defaultLaunchPolicy(x.kind) });
+  };
+
+  // A choice from the full list moves into the short group. Carry keyboard
+  // focus with it rather than leaving focus on a button that was removed.
+  useEffect(() => {
+    if (!focusChosenModel.current) return;
+    focusChosenModel.current = false;
+    shortModelGroup.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
+  }, [pick.model]);
+
   const chooseModel = (model: string | null) => {
+    focusChosenModel.current = moreModels.some(m => m.id === model);
     keepEffort(choices.current, pick);
     const { effort, notice } = switchEffort(profile.profileId, h, model, pick, choices.current);
     setEffortChange(notice);
@@ -144,19 +237,19 @@ export function AgentSheet({
       if (!receipt) return;
     }
     keepEffort(choices.current, pick);
-    saveEffortMemory(profile.profileId, choices.current);
+    if (!nextMessage) saveEffortMemory(profile.profileId, choices.current);
     onChange(computerUse ? { ...pick, effort: null, launchPolicy: null } : pick);
     onClose();
   };
 
   return (
     <Sheet
-      className="agent-sheet"
+      className={compact ? "agent-sheet agent-sheet--compact" : "agent-sheet"}
       open={open}
       onClose={onClose}
       title={title}
-      subtitle={fixedAgent ? h?.display_name ?? project.name : project.name}
-      size="tall"
+      subtitle={compact && note ? note : fixedAgent ? h?.display_name ?? project.name : project.name}
+      size={compact ? "auto" : "tall"}
       footer={
         <div className="talk-agents__footer">
           <Button variant="primary" block disabled={!valid} pending={saving} onClick={() => void done()}>
@@ -165,63 +258,49 @@ export function AgentSheet({
         </div>
       }
     >
-      {note && <p className="fine">{note}</p>}
+      {note && !compact && <p className="fine agent-sheet__note">{note}</p>}
       {choiceBlocker && <Notice tone="warn" action={signInFor ? <SignInAgainButton accountId={signInFor} leave={onClose} /> : undefined}>{choiceBlocker}</Notice>}
       {!fixedAgent && <Section title="Agent">
-        <div className="group" role="group" aria-label="Agent">
-          {harnesses.filter((h) => h.integration === "managed").map((x) => {
-            const unable = computerUse ? agentUnavailable(x) : null;
-            const ok = canStart(x) && x.account.state === "signed_in" && !unable;
-            const selected = x.kind === pick.harness;
-            return (
-              <ListRow
-                key={x.kind}
-                icon={x.integration === "terminal_only" ? SquareTerminal : Bot}
-                title={
-                  <>
-                    {x.display_name}
-                    {x.native_version && <span className="talk-agents__version"> {x.native_version}</span>}
-                  </>
-                }
-                subtitle={ok ? account(x, signInOn) : unable ?? (x.integration === "managed" && x.installed.state === "available" ? account(x, signInOn) : whyNot(x))}
-                selected={selected}
-                className={ok ? undefined : "talk-agents__off"}
-                trailing={selected ? <Check className="row__check" aria-label="Chosen" /> : undefined}
-                onClick={ok ? () => {
-                  keepEffort(choices.current, pick);
-                  const model = rememberedModel(profile.profileId, x, choices.current);
-                  const { effort, notice } = switchEffort(profile.profileId, x, model, pick, choices.current);
-                  setEffortChange(notice);
-                  launches.current.set(pick.harness, pick.launchPolicy);
-                  setPick({ harness: x.kind, model, effort, launchPolicy: launches.current.has(x.kind) ? launches.current.get(x.kind) : defaultLaunchPolicy(x.kind) });
-                } : undefined}
-              />
-            );
-          })}
+        <div className="talk-agents__chips" role="group" aria-label="Agent">
+          {managed.map((x) => (
+            <Chip key={x.kind} selected={x.kind === pick.harness} disabled={!usable(x)} onClick={() => chooseAgent(x)}>
+              {x.display_name}
+            </Chip>
+          ))}
         </div>
-        {computerUse && <p className="fine">Only agents that can use the screen are offered.</p>}
+        {managed.filter((x) => !usable(x)).map((x) => <p key={x.kind} className="fine">{`${x.display_name}: ${unusable(x)}`}</p>)}
       </Section>}
-      {h?.catalog && <p className="fine">Model choices · Checked <Age at={h.catalog.checked_at} suffix=" ago" />{link.state !== "online" ? " · Offline; choices may have changed" : ""}</p>}
       {h && (
-        <Section title="Model">
+        <Section title="Model" action={moreModels.length > 0 && <button type="button" className="agent-sheet__toggle" aria-expanded={allModels} aria-controls={moreModelsId} onClick={() => setAllModels(v => !v)}>{allModels ? "Fewer models" : "All models"}</button>}>
           {h.capabilities.model_selection.state === "available" && h.models.length > 0 ? (
-            <div className="talk-agents__chips" role="group" aria-label="Model">
-              <Chip selected={pick.model === null} onClick={() => chooseModel(null)}>Agent’s default</Chip>
-              {h.models.map((m) => {
-                const selected = pick.model === m.id;
-                return (
-                  // "Agent’s default" says which model that is; one default is enough.
-                  <Chip key={m.id} selected={selected} onClick={() => chooseModel(m.id)}>
-                    {m.label}
-                  </Chip>
-                );
-              })}
-            </div>
+            <>
+              <div ref={shortModelGroup} className="talk-agents__chips" role="group" aria-label="Model">
+                <Chip selected={pick.model === null} onClick={() => chooseModel(null)}>Agent’s default</Chip>
+                {shortModels.map(m => <Chip key={m.id} selected={pick.model === m.id} onClick={() => chooseModel(m.id)}>
+                  {pickerModelLabel(m, h.display_name)}
+                </Chip>)}
+              </div>
+              <div id={moreModelsId} hidden={!allModels} className="agent-sheet__all-models" role="group" aria-label="More models">
+                {otherModels.length > 0 && <div className="talk-agents__chips">
+                  {otherModels.map(m => <Chip key={m.id} selected={pick.model === m.id} onClick={() => chooseModel(m.id)}>
+                    {pickerModelLabel(m, h.display_name)}
+                  </Chip>)}
+                </div>}
+                {fixedModels.length > 0 && <>
+                  <p className="fine">Fixed versions stay on that version when a newer one comes out.</p>
+                  <div className="talk-agents__chips">
+                    {fixedModels.map(m => <Chip key={m.id} selected={pick.model === m.id} onClick={() => chooseModel(m.id)}>
+                      {pickerModelLabel(m, h.display_name)}
+                    </Chip>)}
+                  </div>
+                </>}
+              </div>
+            </>
           ) : (
             <Notice tone="unknown">The computer hasn’t reported model choices. The agent’s default is still available.</Notice>
           )}
-          {defaultModel && !pick.model && <p className="fine">Uses {h.display_name}’s default on the computer, currently {defaultModel.label}.</p>}
-          {computerUse && suggested.length > 0 && <p className="fine">Suggested for computer use: {suggested.map((m) => m.label).join(", ")}.</p>}
+          {defaultModel && !pick.model && <p className="fine">Default on the computer: {pickerModelLabel(defaultModel, h.display_name)}.</p>}
+          {computerUse && suggested.length > 0 && <p className="fine">Suggested for computer use: {suggested.map(m => pickerModelLabel(m, h.display_name)).join(", ")}.</p>}
         </Section>
       )}
       {h && !computerUse && (
@@ -241,9 +320,11 @@ export function AgentSheet({
           ) : (
             <p className="fine">No effort choices reported for this model. The agent uses its own default.</p>
           )}
-          <p className="fine">The agent reports what it actually used; Chat shows both if they differ.</p>
         </Section>
       )}
+      {selectedFixed && (!allModels || fixedModels.length === 0) && <p className="fine">Fixed versions stay on that version when a newer one comes out.</p>}
+      {h && open && <AgentModelUpdate harness={h} leave={onClose} />}
+      {h?.catalog && !compact && <p className="fine">Model choices · Checked <Age at={h.catalog.checked_at} suffix=" ago" />{link.state !== "online" ? " · Offline; choices may have changed" : ""}</p>}
       {flags.length > 0 && <Section title="Permission prompts">
         <div className="talk-agents__chips" role="group" aria-label="Permission prompts">
           {flags.map(f => <Chip key={f.value} selected={pick.launchPolicy === f.value} onClick={() => chooseLaunch(f.value)}>{f.label}</Chip>)}
@@ -255,12 +336,13 @@ export function AgentSheet({
         <p className="fine">Saved with this task, including continuations. Device permissions, Stop and private-mode boundaries still apply.</p>
         <Button variant="quiet" onClick={() => { onClose(); ui.push({ screen: "settings", section: "launch-flags" }); }}>Defaults in Settings</Button>
       </Section>}
-          {canSetDefaults && !computerUse && !fixedAgent && !isProjectDefault && link.state === "online" && (
+          {canSetDefaults && !nextMessage && !compact && !computerUse && !fixedAgent && !isProjectDefault && link.state === "online" && (
             <Chip selected={asDefault} onClick={() => setAsDefault((v) => !v)}>
               Also use this agent, model and effort for new tasks in {project.name}
             </Chip>
           )}
-      {!fixedAgent && <details className="agent-sheet__more"><summary>Other agents</summary><div className="group">{harnesses.filter((h) => h.integration !== "managed").map((h) => <ListRow key={h.kind} icon={Bot} title={h.display_name} subtitle={h.installed.state === "available" ? "Installed, not supported by this version of the app yet" : "Not found on this computer"} />)}</div></details>}
+      {after}
+      {!fixedAgent && !compact && <details className="agent-sheet__more"><summary>Other agents</summary><div className="group">{harnesses.filter((h) => h.integration !== "managed").map((h) => <ListRow key={h.kind} icon={Bot} title={h.display_name} subtitle={h.installed.state === "available" ? "Installed, not supported by this version of the app yet" : "Not found on this computer"} />)}</div></details>}
     </Sheet>
   );
 }

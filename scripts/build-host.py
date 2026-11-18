@@ -10,8 +10,8 @@ import sys
 from release_common import ROOT, TARGET_TRIPLES, ReleaseError, phone_app_bytes, release_environment
 import windows_runtime
 
-if len(sys.argv) != 2 or sys.argv[1] not in {"linux", "windows"}:
-    sys.exit("usage: build-host.py linux|windows")
+if len(sys.argv) != 2 or sys.argv[1] not in {"linux", "windows", "macos"}:
+    sys.exit("usage: build-host.py linux|windows|macos")
 
 artifact = sys.argv[1]
 cargo = ["--locked", "--offline", "--release", "--target", TARGET_TRIPLES[artifact]]
@@ -23,9 +23,14 @@ try:
 except ReleaseError as error:
     sys.exit(f"Release check failed: {error}")
 
-if artifact == "linux":
+if artifact in {"linux", "macos"}:
+    # The Linux sandbox's helper program ships beside the others; a Mac uses
+    # the system's own sandbox and needs none.
+    shipped = ["-p", "companion", "-p", "computer-mcp"]
+    if artifact == "linux":
+        shipped += ["-p", "sandbox"]
     result = subprocess.run(
-        ["cargo", "build", *cargo, "-p", "companion", "-p", "computer-mcp", "-p", "sandbox"],
+        ["cargo", "build", *cargo, *shipped],
         cwd=ROOT,
         env=environment,
         check=False,

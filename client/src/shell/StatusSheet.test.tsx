@@ -6,7 +6,7 @@ import { AppProvider, type App } from "../app/context";
 import { UiStore } from "../app/ui";
 import { createSimPlatform } from "../dev/sim/platform";
 import { HostSession } from "../host/session";
-import { StatusSheet, availabilityStatus, plainAvailability, usageLimitNow } from "./StatusSheet";
+import { StatusSheet, availabilityStatus, plainAvailability, startupGuidance, usageLimitNow } from "./StatusSheet";
 
 let app: App;
 const advance = async (ms = 600) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
@@ -28,6 +28,43 @@ beforeEach(async () => {
 afterEach(() => {
   cleanup(); app.session.stop(); window.__sim?.host.dispose();
   vi.clearAllTimers(); vi.useRealTimers();
+});
+
+it("uses Mac login-agent instructions only when the companion advertises them", () => {
+  const mac = startupGuidance("linux", ["macos_startup_v1"]);
+  expect(mac).toBe("On the Mac, install the login agent from your desktop session. It starts now and each time you sign in to your Mac account.");
+  expect(mac).not.toContain("graphical-session.target");
+  expect(mac).not.toContain("Windows");
+});
+
+it("preserves Linux startup instructions without the Mac feature", () => {
+  const linux = startupGuidance("linux", ["reports_v1"]);
+  expect(linux).toContain("install the user service from your desktop session");
+  expect(linux).toContain("graphical-session.target");
+  expect(startupGuidance("linux", [])).toBe(linux);
+  expect(startupGuidance("linux")).toBe(linux);
+});
+
+it("preserves Windows startup instructions even with an unrelated Mac hint", () => {
+  const windows = "On the computer, register startup for your Windows account. It runs after you sign in to the desktop; Startup Apps can disable it.";
+  expect(startupGuidance("windows", [])).toBe(windows);
+  expect(startupGuidance("windows", ["macos_startup_v1"])).toBe(windows);
+  expect(startupGuidance("windows")).toBe(windows);
+});
+
+it("refreshes startup guidance when the Mac hint arrives or disappears", async () => {
+  render(<StatusSheet open onClose={vi.fn()} />, { wrapper });
+  const host = window.__sim!.host;
+  const caps = { ...host.host.capabilities, os: "linux" as const, features: ["macos_startup_v1"] };
+  act(() => host.emit({ type: "capabilities_changed", capabilities: caps }));
+  await advance();
+  expect(screen.getByText(startupGuidance("linux", caps.features))).toBeTruthy();
+  expect(screen.queryByText(/graphical-session.target/)).toBeNull();
+  expect(screen.getByText("ophio service install")).toBeTruthy();
+  act(() => host.emit({ type: "capabilities_changed", capabilities: { ...caps, features: [] } }));
+  await advance();
+  expect(screen.getByText(startupGuidance("linux"))).toBeTruthy();
+  expect(screen.queryByText(/On the Mac/)).toBeNull();
 });
 
 it("says an agent tool is out of usage, with its reset time, until that time passes", async () => {
@@ -66,7 +103,8 @@ it("words each capability check for the person and keeps the tool's reason on re
   const details = delegation.querySelector("details");
   expect(details?.querySelector("summary")?.textContent).toBe("Details");
   expect(details?.textContent).toContain(reason);
-  expect(row("Not known whether you can steer Claude Code while it works").textContent).toContain("Unknown");
+  expect(row("Not known whether Pi is signed in").textContent).toContain("Unknown");
+  expect(row("You can steer Claude Code while it works").textContent).not.toContain("Unknown");
   // Checks from a computer that doesn't word them keep their label and detail.
   expect(row("Codex sign-in").textContent).toContain("Personal · Pro.");
 });

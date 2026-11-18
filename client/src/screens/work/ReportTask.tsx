@@ -83,7 +83,8 @@ export function ReportTask({ reportId, open }: { reportId: string; open: boolean
       <Button variant="quiet" disabled={!online || !allowed || busy} onClick={() => setChoosing(true)}>Use another project</Button>
     </div>
     {!allowed && <p className="work-muted">This phone doesn’t have permission to start tasks or answer reports.</p>}
-    <Sheet open={choosing} title="Which project holds Ophio’s source?" subtitle="The agent works there. Ophio remembers your choice." onClose={() => setChoosing(false)}>
+    {/* Asked for after the computer answers, so it waits for Back if another screen is in front by then. */}
+    <Sheet open={choosing} keepWhenHidden title="Which project holds Ophio’s source?" subtitle="The agent works there. Ophio remembers your choice." onClose={() => setChoosing(false)}>
       {choices.length === 0
         ? <p className="work-muted">Add the project that holds Ophio’s source on the computer first.</p>
         : choices.map((p) => <ListRow key={p.project_id} icon={Folder} title={p.name} subtitle={p.host_path} chevron onClick={() => void start(p.project_id)} />)}

@@ -9,9 +9,14 @@
 // offers "Allow" in a chat and "Switch to Work" in a Plan or Ask task.
 //
 // A computer older than `switch_to_work_v1` sends no actions, and takes no
-// `switch_to_work`: the card then offers Allow and Deny as it always did.
+// `switch_to_work`: the card then offers Allow and Reject as it always did.
+//
+// Saying no has a word per kind of card: a request is rejected, a question
+// is declined (nobody rejects a question), and an agent's request for more
+// access is answered "Not now".
 
 import { readOnlyLink } from "../../app/github";
+import { refusalWord } from "../../design/approvalWords";
 import type { Approval, ApprovalAction, Command, HostCapabilities, Task } from "../../protocol/types";
 
 /** The feature a computer advertises once it takes `switch_to_work` and sends `Approval.actions`. */
@@ -63,10 +68,11 @@ export function approvalWays(
   // a chat more access.
   const actions = offered.filter((a) => (switches || (a !== "switch_to_work" && a !== "turn_into_task"))
     && (changesTasks || (a !== "switch_to_work" && a !== "turn_into_task" && !(access && a === "allow"))));
+  const no = refusalWord(approval);
   const label = (a: ApprovalAction): string => {
     switch (a) {
       case "allow": return "Allow";
-      case "deny": return access ? "Not now" : "Decline";
+      case "deny": return no;
       case "answer": return "Answer";
       case "switch_to_work": return access ? "Switch to Work" : "Switch to Work and allow";
       case "turn_into_task": return "Turn into a task";
@@ -77,7 +83,7 @@ export function approvalWays(
   const switching = actions.includes("switch_to_work") || actions.includes("turn_into_task");
   let note: string | null = null;
   if (!changesTasks && offered.some((a) => a === "switch_to_work" || a === "turn_into_task" || (access && a === "allow"))) {
-    note = "This phone may answer requests but not change tasks, so it can’t do this. Decline it, or answer from a phone that can.";
+    note = `This phone may answer requests but not change tasks, so it can’t do this. ${access ? "Choose Not now" : `${no} it`}, or answer from a phone that can.`;
   } else if (switching && holder) {
     note = `${holder.title ? `“${holder.title}”` : "Another task"} is changing ${project}, so this waits its turn in Next up, then ${agent} carries on in Work.`;
   } else if (actions.includes("turn_into_task")) {
@@ -85,8 +91,7 @@ export function approvalWays(
   } else if (actions.includes("switch_to_work") && !access) {
     note = `This task only reads. Switched to Work, ${agent} carries on in the same session and does this.`;
   } else if (!actions.includes("allow") && !actions.includes("answer") && !switching && approval.kind !== "login_code" && approval.actions) {
-    note = task?.conversation ? "A chat can’t allow this. Decline it, and the agent finishes without it."
-      : "This can’t be allowed here. Decline it, and the agent finishes without it.";
+    note = `${task?.conversation ? "A chat can’t allow this." : "This can’t be allowed here."} ${access ? "Choose Not now" : `${no} it`}, and the agent finishes without it.`;
   }
   return { ways, note };
 }

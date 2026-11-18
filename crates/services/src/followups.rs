@@ -8,7 +8,7 @@
 
 use crate::{CompanionHub, github_watch::as_creator};
 use protocol::{
-    ApprovalId, CommandId, ErrorCode, Event, ProtocolError, TaskId,
+    ApprovalId, CheckJobId, CommandId, ErrorCode, Event, ProtocolError, TaskId,
     command::{Command, CommandEnvelope, MessageDelivery, ReceiptStatus},
     model::{Project, Run, Task, TaskMode, TaskState, TimelineBody, TimelineItem},
     queue::{QueueAuthorization, QueueView},
@@ -133,6 +133,11 @@ pub(crate) fn waiting_for_turn(
     task: &Task,
     wake: bool,
 ) -> store::Result<bool> {
+    // Checks belong to the turn that just ended. Its follow-ups wait until
+    // that complete result is published, rather than steering an ended agent.
+    if task.checking.is_some() {
+        return Ok(true);
+    }
     // A wake never bypasses the person's pending turn. An answer may start
     // it with the queued message once the project is free, as before.
     let queued = r
@@ -203,15 +208,37 @@ fn held_by_another(r: &store::Read<'_>, task: &Task) -> store::Result<bool> {
         return Ok(false);
     };
     Ok(match project.active_writer {
-        Some(run) => r
-            .get::<Run>("run", run)?
-            .is_some_and(|run| run.task_id != task.task_id),
+        Some(run) => match r.check_job(CheckJobId(run.0))? {
+            Some(_) => true,
+            None => r
+                .get::<Run>("run", run)?
+                .is_some_and(|run| run.task_id != task.task_id),
+        },
         None => false,
     })
 }
 
 pub(crate) fn wake_key(task_id: TaskId) -> String {
     format!("wake:{task_id}")
+}
+
+/// A change of agent withdraws messages intended for its predecessor,
+/// including an already answered request. Delete the stored deliveries, not
+/// just pending approvals: a guard may have copied them into a due batch.
+/// `require_current` then rejects such copies at admission time. Clearing the
+/// wake prevents a later switch back from resurrecting the old reminder.
+pub(crate) fn cancel_for_agent_switch(
+    tx: &mut store::Write<'_>,
+    task_id: TaskId,
+    now: Timestamp,
+) -> store::Result<()> {
+    for (key, followup) in tx.read().entries::<Followup>(FOLLOWUP)? {
+        if followup.task_id == task_id {
+            tx.delete(FOLLOWUP, &key)?;
+        }
+    }
+    crate::watching::stop_watching(tx, task_id, now)?;
+    Ok(())
 }
 
 /// Whether anything is still to pass on, so the guard keeps looking.
@@ -343,6 +370,8 @@ impl CompanionHub {
                         authorization: QueueAuthorization::AutoStart,
                     },
                     false => Command::ResumeTask {
+                        observed_reply: None,
+                        harness: None,
                         task_id: task.task_id,
                         text: Some(f.text.clone()),
                         bundle: None,
@@ -396,6 +425,8 @@ impl CompanionHub {
             crate::checklist::for_another(&f.text)
         );
         let envelope = CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             project_id: archived.project_id,
             kind: protocol::model::TaskKind::Coding,
             mode: Some(TaskMode::Ask),
@@ -479,5 +510,49 @@ impl CompanionHub {
     /// Looks again now, for what was just stored.
     pub(crate) fn wake_guard(&self) {
         self.inner.guard.notify_one();
+    }
+}
+
+#[cfg(test)]
+mod agent_switch_tests {
+    use super::*;
+
+    #[test]
+    fn old_answer_and_helper_reply_do_not_survive_switch_or_switch_back() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut db = store::Store::open(
+            dir.path().join("followups.sqlite"),
+            store::Retention::default(),
+        )
+        .unwrap();
+        let task = TaskId::new();
+        let other = TaskId::new();
+        let answer = Followup::answer(task, ApprovalId::new(), "old answer".into(), Timestamp(1));
+        let reply = Followup::reply(task, TaskId::new(), "old helper".into(), Timestamp(1));
+        let wake = Followup::wake(task, "old reminder".into(), Timestamp(2), Timestamp(1));
+        let checklist = Followup::checklist(
+            "checklist:old".into(),
+            task,
+            "old item".into(),
+            Timestamp(1),
+        );
+        let other_answer =
+            Followup::answer(other, ApprovalId::new(), "other task".into(), Timestamp(1));
+        db.write(Timestamp(1), |tx| {
+            for f in [&answer, &reply, &wake, &checklist, &other_answer] {
+                f.put(tx)?;
+            }
+            cancel_for_agent_switch(tx, task, Timestamp(2))?;
+            for stale in [&answer, &reply, &wake, &checklist] {
+                assert!(!stale.is_current(&tx.read())?);
+                assert!(stale.require_current(&tx.read()).is_err());
+            }
+            assert!(other_answer.is_current(&tx.read())?);
+            // The earlier agent may be selected again later; its old answer
+            // still has no stored delivery to revive.
+            assert!(!answer.is_current(&tx.read())?);
+            Ok(())
+        })
+        .unwrap();
     }
 }

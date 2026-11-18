@@ -512,9 +512,9 @@ export default function Terminal({ route }: RouteProps<"terminal">) {
     setWanted(false);
   };
   const closable = online && !!info && info.state.state !== "exited";
-  // Short for the text size the output fills the screen, so the session's
-  // own controls move up into the bar rather than below the output.
-  const barActions = tight && !sessionEnded && !typing ? <>
+  // Session controls stay outside scrollback at every size, including while
+  // typing: the pinned command bar must never hide Detach or Close.
+  const barActions = !sessionEnded ? <>
     {wanted
       ? <IconButton icon={LogOut} label="Detach" onClick={detach} />
       : <IconButton icon={LogIn} label="Attach again" variant="primary" disabled={!online} onClick={() => setWanted(true)} />}
@@ -739,30 +739,6 @@ export default function Terminal({ route }: RouteProps<"terminal">) {
       </details>
       {!sessionEnded && <div className="terminal-session" hidden={typing}>
         {info && <p className="control-path mono">{info.cwd}</p>}
-        {!tight && <div className="control-keys">
-          {wanted ? (
-            <Button icon={LogOut} onClick={detach}>
-              Detach
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              disabled={!online}
-              onClick={() => setWanted(true)}
-            >
-              Attach again
-            </Button>
-          )}
-          <Button
-            icon={X}
-            variant="stop-outline"
-            disabled={!closable}
-            pending={closing && !close}
-            onClick={askClose}
-          >
-            Close terminal
-          </Button>
-        </div>}
         <p className="fine">
           Detach leaves programs running. Close terminal ends the session and its
           running programs.

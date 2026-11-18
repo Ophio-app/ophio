@@ -13,15 +13,18 @@ protocol.workspace = true
 async-trait.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+voice-control = { path = "../voice-control" }
+sha2 = "0.10.9"
 
 [target.'cfg(target_os = "macos")'.dependencies]
+containment.workspace = true
 libc = "0.2"
-platform-windows = { path = "../platform-windows" }
+platform-desktop.workspace = true
 block2 = "0.6"
 dispatch2 = "0.3"
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "objc2-core-foundation", "NSApplication", "NSButton", "NSControl", "NSMenu", "NSMenuItem", "NSResponder", "NSRunningApplication", "NSStatusBar", "NSStatusBarButton", "NSStatusItem", "NSView"] }
-objc2-core-foundation = { version = "0.3", default-features = false, features = ["std", "CFCGTypes", "CFDictionary", "CFString", "CFNumber"] }
+objc2-core-foundation = { version = "0.3", default-features = false, features = ["std", "CFCGTypes", "CFArray", "CFData", "CFDictionary", "CFError", "CFPropertyList", "CFString", "CFNumber"] }
 objc2-core-media = { version = "0.3", default-features = false, features = ["std", "objc2-core-video", "CMSampleBuffer", "CMTime", "CMFormatDescription", "CMBase"] }
 objc2-core-video = { version = "0.3", default-features = false, features = ["std", "CVBase", "CVBuffer", "CVImageBuffer", "CVPixelBuffer", "CVReturn"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSEnumerator", "NSError", "NSObject", "NSString", "NSRunLoop", "NSThread", "block2"] }

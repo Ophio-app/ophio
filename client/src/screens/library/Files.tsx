@@ -11,7 +11,6 @@ import { describeError, useApp, useHost, useLink } from "../../app/context";
 import { useStore } from "../../state/store";
 import { Age } from "../../design/Age";
 import { Button } from "../../design/Button";
-import { TextField } from "../../design/Field";
 import { Empty, ListRow, Section } from "../../design/ListRow";
 import type { Project, SearchHit } from "../../protocol/types";
 import {
@@ -143,6 +142,7 @@ export function LibraryFiles({ scope }: { scope: Project | null }) {
             matches(h.root_id, h.path),
         )
       : null;
+  const grouped = groupSearchHits(results ?? []);
   return (
     <div className="lib-stack">
       <StorageNote />
@@ -229,13 +229,6 @@ export function LibraryFiles({ scope }: { scope: Project | null }) {
         </Section>
       )}
       <RecoveryList />
-      <TextField
-        label="Search files"
-        placeholder="Names and words in your files"
-        value={text}
-        onChange={(v) => store.form("search", v)}
-        type="search"
-      />
       <Filters value={filter} onChange={setFilter} />
       {error && (
         <LoadError error={error} retry={() => setRetry((n) => n + 1)} />
@@ -254,28 +247,14 @@ export function LibraryFiles({ scope }: { scope: Project | null }) {
               Searching the computer…
             </p>
           )}
-          {results?.length ? (
+          {grouped.size ? (
             <div className="group">
-              {results.map((h) => (
-                <ListRow
-                  key={`${h.root_id}/${h.path}#${h.line ?? "name"}`}
-                  icon={FileText}
-                  title={basename(h.path)}
-                  subtitle={
-                    <>
-                      <span className="lib-path">
-                        {roots.find((r) => r.root_id === h.root_id)?.label} ›{" "}
-                        {h.path}
-                        {/* A name match has no line to show. */}
-                        {h.line !== undefined && ` · line ${h.line}`}
-                      </span>
-                      {h.line !== undefined && (
-                        <span className="lib-snippet">{h.snippet}</span>
-                      )}
-                    </>
-                  }
-                  onClick={() => open(h.root_id, h.path)}
-                  chevron
+              {[...grouped].map(([key, fileHits]) => (
+                <SearchFileRow
+                  key={`${resultText}/${key}`}
+                  hits={fileHits}
+                  rootLabel={roots.find((r) => r.root_id === fileHits[0]!.root_id)?.label ?? "Folder"}
+                  open={() => open(fileHits[0]!.root_id, fileHits[0]!.path)}
                 />
               ))}
             </div>
@@ -322,6 +301,50 @@ export function LibraryFiles({ scope }: { scope: Project | null }) {
       >
         Transfers
       </Button>
+    </div>
+  );
+}
+
+/** One file stays one result, even when its name and many lines match. */
+export function groupSearchHits(hits: SearchHit[]): Map<string, SearchHit[]> {
+  const grouped = new Map<string, SearchHit[]>();
+  for (const hit of hits) {
+    const key = JSON.stringify([hit.root_id, hit.path]);
+    const file = grouped.get(key);
+    if (file) file.push(hit);
+    else grouped.set(key, [hit]);
+  }
+  return grouped;
+}
+
+export function SearchFileRow({ hits, rootLabel, open }: { hits: SearchHit[]; rootLabel: string; open: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const first = hits[0]!;
+  const lines = hits.filter((hit) => hit.line !== undefined);
+  const visible = expanded ? lines : lines.slice(0, 3);
+  const remaining = lines.length - 3;
+  return (
+    <div className="lib-search-file">
+      <ListRow
+        icon={FileText}
+        title={basename(first.path)}
+        subtitle={
+          <>
+            <span className="lib-path">{rootLabel} › {first.path}</span>
+            <span className="lib-meta">{lines.length ? `${lines.length} matching ${lines.length === 1 ? "line" : "lines"}` : "Name matches"}</span>
+            {visible.map((hit) => (
+              <span className="lib-snippet" key={hit.line}>Line {hit.line}: {hit.snippet}</span>
+            ))}
+          </>
+        }
+        onClick={open}
+        chevron
+      />
+      {remaining > 0 && (
+        <Button variant="quiet" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+          {expanded ? "Show fewer lines" : `Show ${remaining} more matching ${remaining === 1 ? "line" : "lines"}`}
+        </Button>
+      )}
     </div>
   );
 }

@@ -25,7 +25,17 @@ withdrawn_by_stop?: boolean,
  * A `Cancelled` message that was still held when the chat that sent
  * it had its access revoked.
  */
-withdrawn_by_revocation?: boolean, } | { "kind": "agent_message", text: string, partial: boolean, } | { "kind": "activity", tool: string, summary: string, status: ActivityStatus, detail: string | null, 
+withdrawn_by_revocation?: boolean, } | { "kind": "agent_message", text: string, partial: boolean, 
+/**
+ * Stable identity of this streamed message incarnation within its run.
+ * Absent on older companions; never infer identity from an offset alone.
+ */
+message_key?: string, 
+/**
+ * UTF-8 byte position of `text` in that message, including partials
+ * already journaled before this segment. Advertised as `chat_reply_recovery_v1`.
+ */
+text_offset?: number, } | { "kind": "activity", tool: string, summary: string, status: ActivityStatus, detail: string | null, 
 /**
  * The native tool call this reports on; later reports with the same
  * key update the same call.

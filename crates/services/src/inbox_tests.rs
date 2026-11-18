@@ -12,7 +12,8 @@ async fn configured_inbox_preserves_collisions_and_admitted_destination_across_r
         .path()
         .canonicalize()
         .unwrap()
-        .join("Downloads/companion");
+        .join("Downloads")
+        .join("companion");
     let other = temp.path().join("Other");
     let hub = CompanionHub::builder()
         .data_dir(&data)
@@ -36,9 +37,10 @@ async fn configured_inbox_preserves_collisions_and_admitted_destination_across_r
     let Some(CommandResult::Transfer { transfer }) = receipt.result else {
         panic!("{receipt:?}")
     };
-    assert_eq!(
-        transfer.destination_folder.as_deref(),
-        expected_folder.to_str()
+    crate::testing::assert_path_eq(
+        transfer.destination_folder.as_deref().unwrap(),
+        &expected_folder,
+        true,
     );
     hub.set_inbox_folder(&other).await.unwrap();
     let mut upload = hub.upload(&owner, transfer.transfer_id).await.unwrap();
@@ -47,9 +49,10 @@ async fn configured_inbox_preserves_collisions_and_admitted_destination_across_r
     let done: TransferRecord = hub
         .read(|r| r.require("transfer", transfer.transfer_id))
         .unwrap();
-    assert_eq!(
-        done.host_path.as_deref(),
-        expected_folder.join("note.txt").to_str()
+    crate::testing::assert_path_eq(
+        done.host_path.as_deref().unwrap(),
+        expected_folder.join("note.txt"),
+        true,
     );
     assert_eq!(std::fs::read(folder.join("note.txt")).unwrap(), b"x");
     hub.set_inbox_folder(&folder).await.unwrap();
@@ -90,7 +93,7 @@ async fn configured_inbox_preserves_collisions_and_admitted_destination_across_r
     })
     .unwrap();
     hub.shutdown().await.unwrap();
-    drop(hub);
+    crate::testing::drop_hub_and_wait(hub, std::time::Duration::from_secs(10)).await;
     let hub = CompanionHub::builder()
         .data_dir(&data)
         .inbox_dir(&other)
@@ -104,10 +107,7 @@ async fn configured_inbox_preserves_collisions_and_admitted_destination_across_r
         recovered.state,
         TransferState::ReconciliationRequired { .. }
     ));
-    assert_eq!(
-        recovered.publication.unwrap().root,
-        expected_folder.to_string_lossy()
-    );
+    crate::testing::assert_path_eq(&recovered.publication.unwrap().root, &expected_folder, true);
     assert!(!other.exists());
     hub.shutdown().await.unwrap();
 }
@@ -185,13 +185,63 @@ fn inbox_refuses_data_paths_including_dot_components_and_symlinks() {
         std::os::unix::fs::symlink(&data, &link).unwrap();
         assert!(crate::inbox::outside_data(&link.join("new"), &data).is_err());
     }
-    assert_eq!(
+    crate::testing::assert_path_eq(
         crate::inbox::outside_data(&temp.path().join("Downloads/companion"), &data).unwrap(),
         temp.path()
             .canonicalize()
             .unwrap()
-            .join("Downloads/companion")
+            .join("Downloads")
+            .join("companion"),
+        true,
     );
+}
+
+#[cfg(windows)]
+#[test]
+#[ignore = "requires the owned Windows SUBST fixture as its working directory"]
+fn inbox_subst_destination_stays_in_the_mapped_folder_and_refuses_physical_data_aliases() {
+    use std::path::Component;
+
+    // Use the runner's existing mapping; never create or remove a drive mapping,
+    // and never create the destination returned by outside_data. The old bug
+    // could otherwise write under the physical drive's root outside the fixture.
+    let current = std::env::current_dir().unwrap();
+    let temp = tempfile::tempdir_in(&current).unwrap();
+    let mapped = temp.path();
+    let physical = ports::library::canonical(mapped).unwrap();
+    let drive = |path: &std::path::Path| match path.components().next() {
+        Some(Component::Prefix(prefix)) => match prefix.kind() {
+            std::path::Prefix::Disk(drive) | std::path::Prefix::VerbatimDisk(drive) => drive,
+            other => panic!("Expected a drive path, got {other:?}"),
+        },
+        other => panic!("Expected a drive prefix, got {other:?}"),
+    };
+    assert_ne!(
+        drive(mapped),
+        drive(&physical),
+        "Run this regression from the owned SUBST drive, not its physical path"
+    );
+    let mapped_data = mapped.join("private-data");
+    let physical_data = physical.join("private-data");
+    std::fs::create_dir(&mapped_data).unwrap();
+    let destination = mapped.join("Downloads").join("received");
+    let expected = physical.join("Downloads").join("received");
+    assert_eq!(
+        crate::inbox::outside_data(&destination, &physical_data).unwrap(),
+        expected,
+        "Canonicalizing the drive prefix must not discard the SUBST target"
+    );
+    assert!(!destination.exists(), "Resolving must not create the inbox");
+    for (path, data) in [
+        (mapped_data.clone(), physical_data.clone()),
+        (mapped_data.join("nested"), physical_data.clone()),
+        (physical_data.clone(), mapped_data.clone()),
+        (physical_data.join("nested"), mapped_data.clone()),
+    ] {
+        let error = crate::inbox::outside_data(&path, &data)
+            .expect_err("Mapped and physical names must protect the same private folder");
+        assert_eq!(error.code, protocol::ErrorCode::InvalidRequest);
+    }
 }
 
 // A file already named like a transfer's staging file, left by a publication

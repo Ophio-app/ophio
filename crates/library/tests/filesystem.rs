@@ -90,6 +90,329 @@ fn request(revision: String, text: &str) -> SaveRequest {
     }
 }
 
+async fn expect_external_change(
+    library: &FsLibrary,
+    events: &mut tokio::sync::broadcast::Receiver<ports::library::LibraryChange>,
+    id: LibraryRootId,
+    path: &str,
+) {
+    let expected = library.read(id, path).await.unwrap().revision;
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            let event = events.recv().await.unwrap();
+            if event.path == path && event.revision.as_ref() == Some(&expected) {
+                assert_eq!(event.root_id, id);
+                break;
+            }
+        }
+    })
+    .await
+    .expect("registered roots must announce the current external revision");
+}
+
+#[tokio::test]
+async fn root_refresh_installs_fresh_grants_and_notification_ids() {
+    let f = Fixture::new().await;
+    f.write("agents/note.md", "before");
+    let mut original = spec(f.id, f.root.clone());
+    original.only = Some(vec!["agents".into()]);
+    f.fs.set_roots(vec![original.clone()]).await.unwrap();
+    let mut refreshed = original.clone();
+    refreshed.root_id = LibraryRootId::new();
+    refreshed.label = "Refreshed".into();
+    refreshed.writable = false;
+    f.fs.set_roots(vec![refreshed.clone()]).await.unwrap();
+    assert!(matches!(
+        f.fs.read(original.root_id, "agents/note.md").await,
+        Err(LibraryError::UnknownRoot)
+    ));
+    assert_eq!(f.fs.roots().await[0].label, "Refreshed");
+    assert!(matches!(
+        f.fs.create(refreshed.root_id, "agents/new.md", "refused")
+            .await,
+        Err(LibraryError::ReadOnly)
+    ));
+    assert!(matches!(
+        f.fs.read(refreshed.root_id, "outside.md").await,
+        Err(LibraryError::PathNotAllowed(_))
+    ));
+    let mut events = f.fs.changes();
+    f.write("agents/note.md", "after");
+    expect_external_change(&f.fs, &mut events, refreshed.root_id, "agents/note.md").await;
+}
+
+#[tokio::test]
+async fn root_refresh_monitors_replaced_and_newly_existing_limited_directories() {
+    let f = Fixture::new().await;
+    let mut root = spec(f.id, f.root.clone());
+    root.only = Some(vec!["agents".into()]);
+    f.fs.set_roots(vec![root.clone()]).await.unwrap();
+    std::fs::create_dir(f.root.join("agents")).unwrap();
+    f.fs.set_roots(vec![root.clone()]).await.unwrap();
+    let mut events = f.fs.changes();
+    f.write("agents/first.md", "newly existing");
+    expect_external_change(&f.fs, &mut events, f.id, "agents/first.md").await;
+
+    // These renames must also succeed on Windows. Do not pin extra identity
+    // handles whose sharing modes prevent the person moving their folders.
+    std::fs::rename(f.root.join("agents"), f.root.join("old-agents")).unwrap();
+    std::fs::create_dir(f.root.join("agents")).unwrap();
+    f.fs.set_roots(vec![root.clone()]).await.unwrap();
+    f.write("agents/second.md", "replaced subtree");
+    expect_external_change(&f.fs, &mut events, f.id, "agents/second.md").await;
+
+    #[cfg(windows)]
+    {
+        // Limited roots deliberately retain separate descendant watches on
+        // Windows. A full-access root keeps the parent-move guarantee.
+        f.fs.set_roots(vec![spec(f.id, f.root.clone())])
+            .await
+            .unwrap();
+    }
+    std::fs::rename(&f.root, f._temp.path().join("old-root")).unwrap();
+    std::fs::create_dir_all(f.root.join("agents")).unwrap();
+    f.fs.set_roots(vec![root]).await.unwrap();
+    f.write("agents/third.md", "replaced root");
+    expect_external_change(&f.fs, &mut events, f.id, "agents/third.md").await;
+    assert!(matches!(
+        f.fs.read(f.id, "agents/first.md").await,
+        Err(LibraryError::NotFound)
+    ));
+}
+
+#[tokio::test]
+async fn root_refresh_repairs_move_return_without_subscribers() {
+    let f = Fixture::new().await;
+    f.write("agents/note.md", "before");
+    let mut root = spec(f.id, f.root.clone());
+    root.only = Some(vec!["agents".into()]);
+    f.fs.set_roots(vec![root.clone()]).await.unwrap();
+    // The same directory comes back with exactly the same native identity.
+    // There are deliberately no change subscribers during either move.
+    let displaced = f._temp.path().join("displaced");
+    std::fs::rename(f.root.join("agents"), &displaced).unwrap();
+    std::fs::rename(&displaced, f.root.join("agents")).unwrap();
+    f.fs.set_roots(vec![root.clone()]).await.unwrap();
+    let mut events = f.fs.changes();
+    f.write("agents/note.md", "after subtree returned");
+    expect_external_change(&f.fs, &mut events, f.id, "agents/note.md").await;
+    drop(events);
+
+    #[cfg(windows)]
+    {
+        f.fs.set_roots(vec![spec(f.id, f.root.clone())])
+            .await
+            .unwrap();
+    }
+    std::fs::rename(&f.root, &displaced).unwrap();
+    std::fs::rename(&displaced, &f.root).unwrap();
+    f.fs.set_roots(vec![root]).await.unwrap();
+    let mut events = f.fs.changes();
+    f.write("agents/note.md", "after root returned");
+    expect_external_change(&f.fs, &mut events, f.id, "agents/note.md").await;
+}
+
+#[tokio::test]
+async fn replacement_root_cannot_inherit_a_grant_without_refresh() {
+    let f = Fixture::new().await;
+    f.write("note.md", "original");
+    let original = f.fs.read(f.id, "note.md").await.unwrap();
+    let displaced = f._temp.path().join("displaced");
+    std::fs::rename(&f.root, &displaced).unwrap();
+    f.write("note.md", "replacement");
+
+    assert!(matches!(
+        f.fs.read(f.id, "note.md").await,
+        Err(LibraryError::PathNotAllowed(_))
+    ));
+    assert!(matches!(
+        f.fs.list(f.id, "").await,
+        Err(LibraryError::PathNotAllowed(_))
+    ));
+    assert!(matches!(
+        f.fs.create(f.id, "new.md", "refused").await,
+        Err(LibraryError::PathNotAllowed(_))
+    ));
+    assert!(matches!(
+        f.fs.save(f.id, "note.md", request(original.revision, "refused"))
+            .await,
+        Err(LibraryError::PathNotAllowed(_))
+    ));
+    assert_eq!(
+        std::fs::read(displaced.join("note.md")).unwrap(),
+        b"original"
+    );
+    assert_eq!(
+        std::fs::read(f.root.join("note.md")).unwrap(),
+        b"replacement"
+    );
+    assert!(!f.root.join("new.md").exists());
+
+    f.fs.set_roots(vec![spec(f.id, f.root.clone())])
+        .await
+        .unwrap();
+    assert_eq!(
+        f.fs.read(f.id, "note.md").await.unwrap().text,
+        "replacement"
+    );
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn long_windows_roots_watch_and_retire_multi_component_grants() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut root = temp.path().join("long-root");
+    while root.as_os_str().len() < 300 {
+        root.push("a-long-enough-directory-component");
+    }
+    std::fs::create_dir_all(root.join(".claude").join("agents")).unwrap();
+    let file = root.join(".claude").join("agents").join("note.md");
+    std::fs::write(&file, "before").unwrap();
+    let canonical = ports::library::canonical(&root).unwrap();
+    assert!(canonical.as_os_str().to_string_lossy().starts_with(r"\\?\"));
+    let fs = FsLibrary::new(
+        LibraryConfig::new(temp.path().join("data"), temp.path().join("home")),
+        Arc::new(FakeClock {
+            now: AtomicI64::new(1000),
+            monotonic: Instant::now(),
+        }),
+    )
+    .unwrap();
+    let id = LibraryRootId::new();
+    let mut limited = spec(id, root.clone());
+    limited.only = Some(vec![".claude/agents".into()]);
+    fs.set_roots(vec![limited]).await.unwrap();
+    assert!(!fs.rescan_required());
+    let mut changes = fs.changes();
+    std::fs::write(&file, "after").unwrap();
+    expect_external_change(&fs, &mut changes, id, ".claude/agents/note.md").await;
+    fs.set_roots(Vec::new()).await.unwrap();
+    std::fs::rename(&root, temp.path().join("moved-root")).unwrap();
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn removing_overlapping_windows_watches_closes_every_descendant_handle() {
+    let f = Fixture::new().await;
+    f.write("agents/note.md", "unchanged");
+    let moved = f._temp.path().join("moved-root");
+    for _ in 0..3 {
+        let mut limited = spec(f.id, f.root.clone());
+        limited.only = Some(vec!["agents".into()]);
+        let nested = spec(LibraryRootId::new(), f.root.join("agents"));
+        // Both roots require a watch at agents. Duplicate native registrations
+        // leak an overwritten handle in notify 8.2's Windows bookkeeping.
+        f.fs.set_roots(vec![limited, nested]).await.unwrap();
+        assert_eq!(f.fs.roots().await.len(), 2);
+        f.fs.set_roots(vec![spec(f.id, f.root.clone())])
+            .await
+            .unwrap();
+        assert_eq!(f.fs.roots().await.len(), 1);
+        std::fs::rename(&f.root, &moved).unwrap();
+        assert!(!f.root.exists());
+        assert_eq!(
+            std::fs::read(moved.join("agents/note.md")).unwrap(),
+            b"unchanged"
+        );
+        std::fs::rename(&moved, &f.root).unwrap();
+        assert_eq!(
+            f.fs.read(f.id, "agents/note.md").await.unwrap().text,
+            "unchanged"
+        );
+    }
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn limited_windows_root_move_is_refused_without_grant_or_event_leaks() {
+    let f = Fixture::new().await;
+    f.write("Skills/note.md", "before");
+    f.write("Skillsx/private.md", "private");
+    let mut limited = spec(f.id, f.root.clone());
+    // Native events must retain the grant's spelling even though the disk uses
+    // another case. The subfolder watch, not a whole-tree watch, supplies it.
+    limited.only = Some(vec!["skills".into()]);
+    f.fs.set_roots(vec![limited]).await.unwrap();
+    let mut changes = f.fs.changes();
+    let moved = f._temp.path().join("moved-root");
+    let error = std::fs::rename(&f.root, &moved).unwrap_err();
+    assert_eq!(error.raw_os_error(), Some(5), "{error:?}");
+    assert!(f.root.is_dir());
+    assert!(!moved.exists());
+    assert_eq!(f.fs.roots().await.len(), 1);
+    assert!(matches!(
+        f.fs.read(f.id, "Skillsx/private.md").await,
+        Err(LibraryError::PathNotAllowed(_))
+    ));
+    assert!(matches!(
+        f.fs.create(f.id, "Skillsx/leak.md", "refused").await,
+        Err(LibraryError::PathNotAllowed(_))
+    ));
+    assert!(!f.root.join("Skillsx/leak.md").exists());
+    f.write("Skillsx/private.md", "still private");
+    f.write("Skills/note.md", "after");
+    let expected = f.fs.read(f.id, "skills/note.md").await.unwrap().revision;
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            let event = changes.recv().await.unwrap();
+            assert_eq!(event.root_id, f.id);
+            assert_eq!(event.path, "skills/note.md");
+            if event.revision.as_ref() == Some(&expected) {
+                break;
+            }
+        }
+    })
+    .await
+    .expect("the grant-spelled subfolder watch must remain live after a refused move");
+    let deadline = tokio::time::Instant::now() + Duration::from_millis(300);
+    while let Ok(Ok(event)) = tokio::time::timeout_at(deadline, changes.recv()).await {
+        assert_eq!(event.root_id, f.id);
+        assert_eq!(event.path, "skills/note.md");
+    }
+    assert_eq!(
+        std::fs::read(f.root.join("Skillsx/private.md")).unwrap(),
+        b"still private"
+    );
+}
+
+#[tokio::test]
+async fn many_limited_roots_watch_every_tree() {
+    let f = Fixture::new().await;
+    let mut roots = Vec::new();
+    for n in 0..6 {
+        let path = f._temp.path().join(format!("agents-{n}"));
+        std::fs::create_dir_all(path.join("agents/nested")).unwrap();
+        let mut root = spec(LibraryRootId::new(), path);
+        root.only = Some(vec!["AGENTS.md".into(), "agents".into()]);
+        roots.push(root);
+    }
+    f.fs.set_roots(roots.clone()).await.unwrap();
+    let mut events = f.fs.changes();
+    let mut pending: std::collections::BTreeSet<_> =
+        roots.iter().map(|root| root.root_id).collect();
+    for root in &roots {
+        std::fs::write(root.path.join("agents/nested/new.md"), "outside edit").unwrap();
+        assert!(matches!(
+            f.fs.create(root.root_id, "unlisted.md", "not allowed")
+                .await,
+            Err(LibraryError::PathNotAllowed(_))
+        ));
+    }
+    tokio::time::timeout(Duration::from_secs(10), async {
+        while !pending.is_empty() {
+            let event = events.recv().await.unwrap();
+            if event.path == "agents/nested/new.md" && event.revision.is_some() {
+                pending.remove(&event.root_id);
+            }
+        }
+    })
+    .await
+    .expect("every registered subtree must announce outside edits");
+    // An empty batch must also work, including on FSEvents.
+    f.fs.set_roots(Vec::new()).await.unwrap();
+    assert!(f.fs.roots().await.is_empty());
+}
+
 #[tokio::test]
 async fn portable_path_escapes_and_aliases_are_rejected() {
     let f = Fixture::new().await;

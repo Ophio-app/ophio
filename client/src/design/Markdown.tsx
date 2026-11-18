@@ -3,7 +3,7 @@
 // Safe Markdown rendering: no raw HTML, no remote images fetched implicitly,
 // links open outside the app only when tapped.
 
-import { createContext, memo, useContext, type ReactNode } from "react";
+import { createContext, memo, useContext, type CSSProperties, type ReactNode } from "react";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { splitFrontMatter } from "./frontMatter";
@@ -32,6 +32,17 @@ function Link({ href, children }: { href?: string; children?: ReactNode }) {
 // screen around it changed, and snap back to where it started scrolling.
 const components: Components = {
   a: ({ href, children }) => <Link href={href}>{children}</Link>,
+  ol: ({ node, start = 1, children, ...props }) => {
+    // Size each list's own gutter, including lists that start at 100 or grow
+    // past it while streaming. Nested lists must not inherit a parent's width.
+    const count = node?.children.filter((child) => child.type === "element" && child.tagName === "li").length ?? 0;
+    const digits = String(start + Math.max(0, count - 1)).length;
+    return (
+      <ol {...props} start={start} style={{ "--md-marker-width": `${digits}ch` } as CSSProperties}>
+        {children}
+      </ol>
+    );
+  },
   img: ({ alt, src }) => (
     <span className="md__img">
       [{alt || "image"}

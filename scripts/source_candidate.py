@@ -61,6 +61,7 @@ FORBIDDEN_DIRS = {
     ".reviews",
 }
 FORBIDDEN_FILES = {"claude.md", "private-readme.md"}
+REVIEW_RULES = "REVIEW.md"
 # A file named after a work item such as U32 or m2 says how it was made, not
 # what it covers. These technical names only look like work items.
 WORK_ITEM = re.compile(r"[A-Za-z]{1,2}[0-9]{1,2}")
@@ -170,8 +171,11 @@ def inspect(
         hit("private-directory")
     if any(p.lower() in FORBIDDEN_FILES for p in parts):
         hit("private-document")
+    # REVIEW.md, spelled exactly so, holds a project's review rules, which
+    # Øphio's own reviews read (docs/github.md); other review files are notes.
     if any(
-        re.fullmatch(
+        p != REVIEW_RULES
+        and re.fullmatch(
             r"(?:review|review[-_]?notes?|.*[-_]review|review[-_].*)\.(?:md|txt|json)",
             p,
             re.I,

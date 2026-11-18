@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Attention items as the phone's background watcher shows them.
 use crate::{CompanionHub, api::Caller};
+use ports::tool_approval::plain_tool_title;
 use protocol::{
     alerts::{
         Alert, AlertQuestion, MAX_ALERT_CHOICE, MAX_ALERT_CHOICES, MAX_ALERT_QUESTION,
         MAX_OPEN_ALERTS, alert_text, cut,
     },
-    model::{Approval, ApprovalKind, ApprovalState, AttentionItem, AttentionKind, Project, Task},
+    model::{
+        Approval, ApprovalKind, ApprovalState, AttentionItem, AttentionKind, Project, Run, Task,
+    },
     notifications::{AlertTopic, AlertType, NotificationSettings, Tier},
     *,
 };
@@ -165,7 +168,7 @@ impl CompanionHub {
                 task: String::new(),
                 harness: protocol::capability::HarnessKind::ClaudeCode,
                 created_at: item.created_at,
-                headline: Some(alert_text(&item.title)),
+                headline: Some(alert_text(&plain_tool_title(&item.title))),
                 question: None,
                 topic: Some(AlertTopic::Reports),
                 // In no project: only each phone's own choice applies.
@@ -173,6 +176,8 @@ impl CompanionHub {
                 bundle: false,
                 report: None,
                 sign_in: None,
+                agent_update: None,
+                new_version: None,
                 alert_type: AlertType::of(&item, false),
                 project_tier: None,
                 follow: false,
@@ -212,6 +217,83 @@ impl CompanionHub {
                 alert_type: AlertType::of(&item, false),
                 report: Some(Box::new(report)),
                 sign_in: None,
+                agent_update: None,
+                new_version: None,
+                project_tier: None,
+                follow: false,
+            }));
+        }
+        // Agent release/model news is host-wide, never a fabricated task.
+        if let Some(update) = &item.agent_update
+            && item.task_id.is_none()
+        {
+            if item.resolved_at.is_some()
+                || !Self::visible(r, caller, &Event::AttentionUpserted { item: item.clone() })?
+            {
+                return Ok(None);
+            }
+            let mut update = update.clone();
+            update.version = update.version.as_deref().map(alert_text);
+            update.models = update
+                .models
+                .iter()
+                .take(20)
+                .map(|m| alert_text(m))
+                .collect();
+            return Ok(Some(Alert {
+                attention_id: item.attention_id,
+                kind: item.kind,
+                project_id: ProjectId(uuid::Uuid::nil()),
+                project: String::new(),
+                task_id: TaskId(uuid::Uuid::nil()),
+                task: String::new(),
+                harness: update.harness,
+                created_at: item.created_at,
+                headline: Some(alert_text(&plain_tool_title(&item.title))),
+                question: None,
+                topic: None,
+                quiet: quiet(&item, false),
+                bundle: false,
+                alert_type: AlertType::of(&item, false),
+                report: None,
+                sign_in: None,
+                new_version: None,
+                agent_update: Some(Box::new(update)),
+                project_tier: None,
+                follow: false,
+            }));
+        }
+        // A newer Øphio out for this computer.
+        if let Some(version) = &item.new_version
+            && item.task_id.is_none()
+        {
+            if item.resolved_at.is_some()
+                || !Self::visible(r, caller, &Event::AttentionUpserted { item: item.clone() })?
+            {
+                return Ok(None);
+            }
+            return Ok(Some(Alert {
+                attention_id: item.attention_id,
+                kind: item.kind,
+                project_id: ProjectId(uuid::Uuid::nil()),
+                project: String::new(),
+                task_id: TaskId(uuid::Uuid::nil()),
+                task: String::new(),
+                harness: protocol::capability::HarnessKind::ClaudeCode,
+                created_at: item.created_at,
+                headline: Some(alert_text(&plain_tool_title(&item.title))),
+                question: None,
+                topic: None,
+                // In no project: only each phone's own choice applies.
+                quiet: quiet(&item, false),
+                bundle: false,
+                alert_type: AlertType::of(&item, false),
+                report: None,
+                sign_in: None,
+                agent_update: None,
+                new_version: Some(Box::new(protocol::alerts::NewVersionAlert {
+                    version: alert_text(version),
+                })),
                 project_tier: None,
                 follow: false,
             }));
@@ -240,7 +322,7 @@ impl CompanionHub {
                 task: String::new(),
                 harness,
                 created_at: item.created_at,
-                headline: Some(alert_text(&item.title)),
+                headline: Some(alert_text(&plain_tool_title(&item.title))),
                 question: None,
                 topic: Some(AlertTopic::NeedsYou),
                 quiet: quiet(&item, false),
@@ -251,6 +333,8 @@ impl CompanionHub {
                     account_id: account_id.clone(),
                     service: service.into(),
                 })),
+                agent_update: None,
+                new_version: None,
                 project_tier: None,
                 follow: false,
             }));
@@ -279,6 +363,13 @@ impl CompanionHub {
             _ => None,
         };
         let alert_type = AlertType::of(&item, task.conversation);
+        let harness = match item.run_id {
+            Some(id) => r
+                .get::<Run>("run", id)?
+                .map(|run| run.harness)
+                .unwrap_or(task.harness),
+            None => task.harness,
+        };
         let follow = task.notify_done && alert_type.is_some_and(AlertType::follows_task);
         Ok(Some(Alert {
             topic: item.topic(),
@@ -298,12 +389,14 @@ impl CompanionHub {
             project: alert_text(&project.name),
             task_id,
             task: alert_text(&task.title),
-            harness: task.harness,
+            harness,
             created_at: item.created_at,
             headline: r.get::<String>(HEADLINE, item.attention_id)?,
             question,
             report: None,
             sign_in: None,
+            agent_update: None,
+            new_version: None,
         }))
     }
 }
@@ -342,7 +435,7 @@ fn as_question(approval: &Approval) -> Option<AlertQuestion> {
     Some(AlertQuestion {
         approval_id: approval.approval_id,
         revision: approval.revision,
-        text: cut(text, MAX_ALERT_QUESTION),
+        text: cut(&plain_tool_title(text), MAX_ALERT_QUESTION),
         asked,
         choices,
     })

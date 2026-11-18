@@ -71,8 +71,11 @@ impl DriverFactory for Browsers {
         Ok(browser)
     }
 }
-#[derive(Debug)]
-struct DesktopAccessibility;
+#[derive(Debug, Default)]
+struct DesktopAccessibility {
+    #[cfg(target_os = "macos")]
+    mac: platform_macos::a11y::Ax,
+}
 #[async_trait]
 impl Accessibility for DesktopAccessibility {
     async fn snapshot(&self) -> Result<Snapshot, Error> {
@@ -87,7 +90,11 @@ impl Accessibility for DesktopAccessibility {
         {
             platform_windows::a11y::Uia.snapshot().await
         }
-        #[cfg(not(any(target_os = "linux", windows)))]
+        #[cfg(target_os = "macos")]
+        {
+            self.mac.snapshot().await
+        }
+        #[cfg(not(any(target_os = "linux", windows, target_os = "macos")))]
         {
             Err(Error::Unavailable(
                 "Desktop accessibility is unavailable".into(),
@@ -110,12 +117,34 @@ impl Accessibility for DesktopAccessibility {
         {
             platform_windows::a11y::Uia.activate(element, focus).await
         }
-        #[cfg(not(any(target_os = "linux", windows)))]
+        #[cfg(target_os = "macos")]
+        {
+            self.mac.activate(element, focus).await
+        }
+        #[cfg(not(any(target_os = "linux", windows, target_os = "macos")))]
         {
             let _ = (element, focus);
             Err(Error::Unavailable(
                 "Desktop accessibility is unavailable".into(),
             ))
+        }
+    }
+    async fn activate_authorized(
+        &self,
+        element: &protocol::voice::VoiceElement,
+        focus: bool,
+        authority: Arc<dyn voice_control::Authority>,
+    ) -> Result<bool, Error> {
+        #[cfg(target_os = "macos")]
+        {
+            self.mac
+                .activate_authorized(element, focus, authority)
+                .await
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            authority.check()?;
+            self.activate(element, focus).await
         }
     }
 }
@@ -129,9 +158,19 @@ fn launcher(
             environment,
         ))
     }
-    // Owed: Windows (Start menu shortcuts and AppsFolder ids) and macOS
-    // (application bundles through Launch Services).
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(windows)]
+    {
+        Arc::new(platform_windows::launch::WindowsLauncher::from_environment(
+            environment,
+        ))
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Arc::new(platform_macos::launch::MacLauncher::from_environment(
+            environment,
+        ))
+    }
+    #[cfg(not(any(target_os = "linux", windows, target_os = "macos")))]
     {
         let _ = environment;
         Arc::new(voice_control::NoLauncher(
@@ -152,7 +191,7 @@ pub(crate) async fn configure(
             data,
             retained: Default::default(),
         }),
-        desktop: Arc::new(DesktopAccessibility),
+        desktop: Arc::new(DesktopAccessibility::default()),
         launcher: launcher(environment),
         assessor,
     })

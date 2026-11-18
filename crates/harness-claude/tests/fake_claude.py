@@ -18,9 +18,12 @@ def gate(name):
             connection.sendall(b"ready")
             connection.recv(1)
 
-def after_turn():
+def after_turn(result):
+    # Record the finished turn before reporting its result: the adapter may
+    # close a stopped run as soon as it receives the result line.
     with open("turns.jsonl", "a") as log:
         log.write("completed\n")
+    send(result)
     if Path("exit-after-turn").exists():
         sys.exit(int(Path("exit-code").read_text()) if Path("exit-code").exists() else 0)
 
@@ -99,8 +102,7 @@ initial = True
 def complete():
     gate("turn.sock")
     result = json.loads(Path("result.json").read_text()) if Path("result.json").exists() else {"type": "result", "subtype": "success", "is_error": False, "usage": {"input_tokens": 12, "output_tokens": 4}}
-    send(result)
-    after_turn()
+    after_turn(result)
 
 for line in sys.stdin:
     with open("stdin.jsonl", "a") as log:
@@ -235,8 +237,7 @@ for line in sys.stdin:
                 bridge.stdin.close()
                 bridge.wait(timeout=5)
             send({"type": "assistant", "message": {"id": "permission-done", "content": [{"type": "text", "text": "Permission " + decision["behavior"]}]}})
-            send({"type": "result", "subtype": "success", "is_error": False, "usage": {"input_tokens": 1, "output_tokens": 1}})
-            after_turn()
+            after_turn({"type": "result", "subtype": "success", "is_error": False, "usage": {"input_tokens": 1, "output_tokens": 1}})
             continue
 
         send({"type": "stream_event", "event": {"type": "message_start", "message": {"id": "m1"}}})
@@ -245,6 +246,16 @@ for line in sys.stdin:
         send({"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": "t1", "content": "fixture"}]}})
         send({"type": "future_native_type", "extra": 1})
     else:
+        # Lets a test hold a later message unread, as between two turns.
+        gate("echo.sock")
+        shape = Path("echo-shape").read_text() if Path("echo-shape").exists() else ""
+        if shape == "string":
+            # The echo's content as a plain string.
+            value["message"]["content"] = "".join(part.get("text", "") for part in value["message"]["content"])
+        elif shape == "no-text":
+            # A picture with no words: the echo carries no text part.
+            value["message"]["content"] = [part for part in value["message"]["content"] if part["type"] != "text"] or [
+                {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": ""}}]
         send(value)
         complete()
 

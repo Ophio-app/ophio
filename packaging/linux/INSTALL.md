@@ -14,8 +14,20 @@ Plasma 6.7 and Hyprland 0.56 on Arch Linux, all in x86_64 virtual machines
 with software rendering. Later changes are covered by automated tests, not by
 another such install. Other distributions and desktops have not been tested.
 
-Unpack the archive, enter the folder it makes, and run the installer as your
-ordinary user. The 0.2.0 archive is `ophio-0.2.0-x86_64-linux.tar.gz` and
+The quickest way to install is one command, run as your ordinary user in a
+terminal. It downloads the newest release, checks it against the release's
+`SHA256SUMS`, and then does the steps below for you, including starting setup:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ophio-app/ophio/main/scripts/get-ophio.sh | sh
+```
+
+It is [scripts/get-ophio.sh](../../scripts/get-ophio.sh) in the source.
+`sh -s -- --version 0.3.0` in place of `sh` installs a chosen release, and
+`--no-setup` skips setup.
+
+To install by hand, unpack the archive, enter the folder it makes, and run the
+installer as your ordinary user. The 0.2.0 archive is `ophio-0.2.0-x86_64-linux.tar.gz` and
 unpacks to `ophio-0.2.0-x86_64-linux`; use the name of the file you
 downloaded. In the folder you downloaded it to:
 

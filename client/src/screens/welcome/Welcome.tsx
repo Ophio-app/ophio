@@ -32,6 +32,7 @@ import type { Grants, PairingOffer } from "../../protocol/types";
 
 import { alertsPreset } from "../../platform/alerts";
 import { CompanionDownload } from "./CompanionDownloadScreen";
+import { oneLineInstall } from "./companionDownload";
 import { InlineCode } from "../../design/InlineCode";
 
 /** A pairing link another app opened this one with, such as `ophio setup`
@@ -134,7 +135,7 @@ function Intro({ platform, headingRef, onNext }: { platform: Platform; headingRe
       </p>
       <details className="welcome__install"><summary>Get {PRODUCT_NAME} for your computer</summary>
         <CompanionDownload platform={platform} />
-        <p className="fine">Extract the Linux archive and follow INSTALL.md. Then choose Pair a computer for the startup and pairing steps.</p>
+        <p className="fine">Extract the archive for your computer and follow INSTALL.md. Then choose Pair a computer for the startup and pairing steps.</p>
       </details>
       <ul className="facts">
         <li className="facts__item">
@@ -156,7 +157,7 @@ function Intro({ platform, headingRef, onNext }: { platform: Platform; headingRe
         <li className="facts__item">
           <MonitorSmartphone className="facts__icon" aria-hidden />
           <div>
-            <p className="facts__title">Runs on Linux computers</p>
+            <p className="facts__title">Runs on Linux, Windows and Mac computers</p>
             <p className="facts__body">
               Install {PRODUCT_NAME} on your computer and stay signed in to its desktop. Agents keep running there when you
               put the {kind} away.
@@ -228,6 +229,7 @@ function Connect({
     if (rejected) notice.current?.scrollIntoView?.({ block: "start" });
   }, [rejected]);
 
+  const quick = oneLineInstall();
   const accept = (link: string, scanned: boolean, linked = false) => {
     const parsed = platform.parsePairingLink(link);
     if ("offer" in parsed && parsed.offer.expires_at > Date.now()) {
@@ -262,13 +264,19 @@ function Connect({
         <li className="steps__item">
           <span className="steps__num" aria-hidden>1</span>
           <div className="steps__text"><p>Install {PRODUCT_NAME} on your computer</p>
-            <p className="fine">Extract the Linux archive and open <InlineCode>INSTALL.md</InlineCode> inside the archive. Keep both executables together.</p>
+            {quick && <>
+              <p className="fine">Quickest: one command downloads it, checks it and starts setup. In a terminal on Linux or a Mac:</p>
+              <code className="cmd">{quick.unix}</code>
+              <p className="fine">In PowerShell on Windows, not as administrator:</p>
+              <code className="cmd">{quick.windows}</code>
+            </>}
+            <p className="fine">{quick ? "Or by hand: e" : "E"}xtract the archive for your computer and open <InlineCode>INSTALL.md</InlineCode> inside the archive. Keep both executables together.</p>
             <details className="welcome__install">
               <summary>Set up {PRODUCT_NAME}</summary>
-              <p className="fine">Linux: the installer starts setup when it finishes. Otherwise run it as your ordinary user, in a terminal in your graphical login session.</p>
+              <p className="fine">Linux and Mac: the installer starts setup when it finishes. Otherwise run it as your ordinary user, signed in to the desktop.</p>
               <code className="cmd">{`"$HOME/.local/bin/${PROGRAM_NAME}" setup`}</code>
-              <p className="fine">Windows: in PowerShell in the extracted folder, not as administrator.</p>
-              <code className="cmd">.\{PROGRAM_NAME}.exe setup</code>
+              <p className="fine">Windows: once the install has finished, in PowerShell, not as administrator.</p>
+              <code className="cmd">{`& "$env:LOCALAPPDATA\\Programs\\Ophio\\${PROGRAM_NAME}.exe" setup`}</code>
               <p className="fine">Setup starts {PRODUCT_NAME} now and whenever you sign in, and its phone step shows the code to scan here.</p>
             </details>
           </div>
@@ -280,6 +288,7 @@ function Connect({
           <div className="steps__text">
             <p>On your computer, go on to setup's phone step, or open a terminal and run</p>
             <code className="cmd">{PROGRAM_NAME} pair</code>
+            <p className="fine">If the terminal can't find it, use the full path from Set up above, with pair in place of setup.</p>
           </div>
         </li>
         <li className="steps__item">

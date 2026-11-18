@@ -24,7 +24,17 @@ fn said_in(command: &str, cwd: Option<&str>) -> String {
 fn shown(subject: &Subject) -> String {
     facts(subject, &place())
         .iter()
-        .map(|f| format!("{}{}", if f.risky { "!" } else { "" }, f.text))
+        .map(|f| {
+            // These shared cases describe Unix shell commands and Unix paths.
+            // Windows' PathBuf renders separators differently; risk flags and
+            // the rest of each complete sentence must still match exactly.
+            let text = if cfg!(windows) {
+                f.text.replace('\\', "/")
+            } else {
+                f.text.clone()
+            };
+            format!("{}{}", if f.risky { "!" } else { "" }, text)
+        })
         .collect::<Vec<_>>()
         .join(", ")
 }
@@ -490,10 +500,119 @@ fn other_requests_say_where_they_reach() {
     assert_eq!(shown(&Subject::None), "");
 }
 
+#[cfg(windows)]
+#[test]
+fn native_windows_files_keep_drive_unc_and_project_boundaries() {
+    let place = Place {
+        project: Some(r"C:\Users\sam\Projects\ophio".into()),
+        project_name: "ophio".into(),
+        home: Some(r"C:\Users\sam".into()),
+    };
+    for (path, text, risky) in [
+        (
+            r"C:\Users\sam\Projects\ophio\src\main.rs",
+            r"changes src\main.rs",
+            false,
+        ),
+        (
+            r"C:\Users\sam\Projects\ophio-other\x",
+            r"changes ~/Projects\ophio-other\x outside ophio",
+            true,
+        ),
+        (r"D:\outside\x", r"changes D:\outside\x outside ophio", true),
+        (
+            r"\\server\share\x",
+            r"changes \\server\share\x outside ophio",
+            true,
+        ),
+        (
+            r"..\sibling.txt",
+            r"changes ~/Projects\sibling.txt outside ophio",
+            true,
+        ),
+    ] {
+        let said = facts(
+            &Subject::Files {
+                changes: vec![FileChange::Change(path.into())],
+                grant_root: None,
+            },
+            &place,
+        );
+        assert_eq!(said.len(), 1, "{path}: {said:?}");
+        assert_eq!(said[0].text, text, "{path}");
+        assert_eq!(said[0].risky, risky, "{path}");
+    }
+    let mut remote_place = place;
+    remote_place.project = Some(r"\\server\share\project".into());
+    let said = facts(
+        &Subject::Files {
+            changes: vec![FileChange::Change(
+                r"\\server\share\project\src\main.rs".into(),
+            )],
+            grant_root: None,
+        },
+        &remote_place,
+    );
+    assert_eq!(said[0].text, r"changes src\main.rs");
+    assert!(!said[0].risky);
+}
+
+#[cfg(windows)]
+#[test]
+fn native_windows_absolute_files_remain_known_after_an_unknown_cwd() {
+    let place = Place {
+        project: Some(r"C:\Users\sam\Projects\ophio".into()),
+        project_name: "ophio".into(),
+        home: Some(r"C:\Users\sam".into()),
+    };
+    for (command, text, risky) in [
+        (
+            r#"cd "$DIR" && touch 'D:outside\x'"#,
+            r"changes D:outside\x, which may be outside ophio",
+            true,
+        ),
+        (
+            r#"cd "$DIR" && touch '\outside\x'"#,
+            r"changes \outside\x, which may be outside ophio",
+            true,
+        ),
+        (
+            r#"cd "$DIR" && touch 'D:\outside\x'"#,
+            r"changes D:\outside\x outside ophio",
+            true,
+        ),
+        (
+            r#"cd "$DIR" && touch '\\server\share\x'"#,
+            r"changes \\server\share\x outside ophio",
+            true,
+        ),
+        (
+            r#"cd "$DIR" && cd 'C:\Users\sam\Projects\ophio' && touch 'src/main.rs'"#,
+            r"changes src\main.rs",
+            false,
+        ),
+    ] {
+        let said = facts(
+            &Subject::Command {
+                command: command.into(),
+                cwd: None,
+            },
+            &place,
+        );
+        assert_eq!(said.len(), 1, "{command}: {said:?}");
+        assert_eq!(said[0].text, text, "{command}");
+        assert_eq!(said[0].risky, risky, "{command}");
+    }
+}
+
 #[test]
 fn names_cannot_reorder_the_line() {
-    let said = said("touch 'a\u{202e}txt.exe'");
-    assert!(said.contains("\\u202e"), "{said}");
+    let subject = Subject::Command {
+        command: "touch 'a\u{202e}txt.exe'".into(),
+        cwd: None,
+    };
+    let said = facts(&subject, &place());
+    assert!(said.iter().any(|f| f.text.contains("\\u202e")), "{said:?}");
 }
 
 // Cheap fuzzing: every prefix of awkward commands reads without a panic.

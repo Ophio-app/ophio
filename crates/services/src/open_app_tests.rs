@@ -78,8 +78,17 @@ impl voice_control::Launcher for Opened {
     }
     async fn launch(
         &self,
+        _: &protocol::voice::VoiceApp,
+        _: &dyn voice_control::Authority,
+    ) -> Result<(), voice_control::Error> {
+        Err(voice_control::Error::Unavailable(
+            "The agent app-opening path must retain owned authority".into(),
+        ))
+    }
+    async fn launch_authorized(
+        &self,
         app: &protocol::voice::VoiceApp,
-        authority: &dyn voice_control::Authority,
+        authority: Arc<dyn voice_control::Authority>,
     ) -> Result<(), voice_control::Error> {
         let after = self.2.after_check.load(std::sync::atomic::Ordering::SeqCst);
         if !after && self.2.closed.load(std::sync::atomic::Ordering::SeqCst) {
@@ -182,6 +191,7 @@ async fn a_computer_use_agent_opens_apps_by_name_under_its_lease() {
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,
@@ -253,6 +263,7 @@ async fn a_launch_that_could_not_be_stopped_ends_control_and_stop_says_an_app_ma
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,
@@ -358,6 +369,7 @@ async fn a_local_stop_during_an_agents_launch_stops_the_app_opening() {
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,
@@ -432,6 +444,7 @@ async fn a_dropped_launch_is_waited_for_and_kept_when_it_cannot_be_stopped() {
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,
@@ -503,6 +516,7 @@ async fn a_launch_that_panics_after_its_call_is_dropped_is_kept_as_unresolved() 
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,
@@ -567,6 +581,7 @@ async fn stop_task_on_a_marked_display_records_it_truthfully() {
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,
@@ -679,6 +694,7 @@ async fn a_display_an_agents_launch_marked_clears_once_the_launch_is_confirmed_s
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,

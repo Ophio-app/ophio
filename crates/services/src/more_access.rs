@@ -115,6 +115,38 @@ pub(crate) fn missing(
     missing
 }
 
+/// How a card's warning that Allow lifts every limit begins.
+const LIFTS: &str = "lifts this ";
+
+/// Why an Allow is refused once the access has changed under its card.
+pub(crate) const ACCESS_CHANGED: &str = "The access has changed since the agent asked, so Allow would no longer do just what this card says. Nothing was changed, and the request was withdrawn. If it's still needed, ask the agent to request it again.";
+
+/// What the agent hears when its request is withdrawn for that.
+pub(crate) const WITHDRAWN: &str = "Ophio withdrew this request without an answer: the access changed while you waited, so its card no longer said what Allow would do. If you still need it, ask again.";
+
+/// The access an Allow of `a` gives from `access`, if that is no more than
+/// its card showed: nothing it didn't list, and every limit lifted only if
+/// the card warned of that. The access may have changed since it was asked.
+pub(crate) fn as_shown(
+    a: &Approval,
+    access: &ConversationAccess,
+    project: ProjectId,
+) -> Option<ConversationAccess> {
+    let shown = (a.access_request.as_ref())
+        .map(|r| r.needs.as_slice())
+        .unwrap_or_default();
+    let turns_on = missing(access, project, shown);
+    if !turns_on.iter().all(|need| shown.contains(need)) {
+        return None;
+    }
+    let widened = widen(access, project, &turns_on);
+    let warned = (a.facts.iter()).any(|f| f.risky && f.text.starts_with(LIFTS));
+    if !access.unrestricted() && widened.unrestricted() && !warned {
+        return None;
+    }
+    Some(widened)
+}
+
 /// `access` with exactly `needs` turned on for a run in `project`, and
 /// nothing else.
 pub(crate) fn widen(
@@ -221,6 +253,13 @@ impl CompanionHub {
             None => needs.clone(),
         };
         if missing.is_empty() {
+            if needs
+                .iter()
+                .any(|need| matches!(need, AccessNeed::ChangeFiles | AccessNeed::WholeComputer))
+                && let Some((note, _)) = self.writer_note(task, run_id, false)?
+            {
+                return Ok(note);
+            }
             return Ok(match task.access {
                 Some(_) => format!(
                     "You already have that: you may {}. If something is still refused, say exactly what failed and why.",
@@ -272,7 +311,7 @@ impl CompanionHub {
         let facts = match (held, unheld) {
             (true, true) => vec![fact(
                 &format!(
-                    "lifts this {}'s limits, so it reaches whatever this computer reaches, your own network included",
+                    "{LIFTS}{}'s limits, so it reaches whatever this computer reaches, your own network included",
                     if task.conversation { "chat" } else { "task" }
                 ),
                 true,
@@ -317,7 +356,9 @@ impl CompanionHub {
             delivery: None,
             outcome: None,
             requested_at: now,
-            expires_at: Some(protocol::time::Timestamp(now.0.saturating_add(600_000))),
+            // No deadline of its own: unanswered, it goes back to the agent
+            // like any request that carries on, and stays open after.
+            expires_at: None,
             resolved_by: None,
             resolved_at: None,
         };
@@ -328,6 +369,14 @@ impl CompanionHub {
             }
             Err(e) => return Err(e),
         };
+        if matches!(decision, ApprovalDecision::Allow) && held {
+            let current: Task = self.read(|r| r.require("task", task.task_id))?;
+            if let Some((note, _)) = self.writer_note(&current, run_id, false)? {
+                return Ok(format!(
+                    "The person allowed the access you asked for, but this reply keeps its temporary limits. Newly allowed project changes must wait for a later reply.\n\n{note}"
+                ));
+            }
+        }
         Ok(match decision {
             ApprovalDecision::Allow => match held {
                 true => format!(
@@ -338,6 +387,13 @@ impl CompanionHub {
                 // Allow while it lasts.
                 false => "The person agreed. Ophio is switching this task to Work mode: stop here, and your next turn carries on in this session.".into(),
             },
+            // Nobody has answered yet: the answer comes as its next message.
+            // Or its card no longer said what Allow would do.
+            ApprovalDecision::Deny { reason }
+                if matches!(reason.as_deref(), Some(crate::carry_on::GUIDANCE | WITHDRAWN)) =>
+            {
+                reason.unwrap_or_default()
+            }
             ApprovalDecision::Deny { reason } => match reason.as_deref().map(str::trim) {
                 Some(reason) if !reason.is_empty() => {
                     format!("The person said not now: {reason}. {DECLINED_TEXT}")
@@ -391,6 +447,56 @@ impl CompanionHub {
         {
             crate::access::AccessApplied::Restarted => Ok(()),
             crate::access::AccessApplied::Live => self.resolve_approval(caller, id, decision).await,
+        }
+    }
+}
+
+impl CompanionHub {
+    /// Withdraws access request `id` if Allow would no longer do just what
+    /// its card says ([`as_shown`]), so it doesn't sit there unusable. Its
+    /// agent, if still waiting, is told; otherwise its turn has moved on.
+    pub(crate) async fn withdraw_if_changed(&self, id: ApprovalId) {
+        let now = self.inner.clock.now();
+        let withdrawn = self.write(|tx| {
+            let Some(mut a) = tx.read().get::<Approval>("approval", id)? else {
+                return Ok(false);
+            };
+            let task: Task = tx.read().require("task", a.task_id)?;
+            let changed = a.state == ApprovalState::Pending
+                && a.access_request.is_some()
+                && (tx.read().get::<CommandId>("approval_claim", id)?).is_none()
+                && (task.access.as_ref())
+                    .is_some_and(|access| as_shown(&a, access, task.project_id).is_none());
+            if !changed {
+                return Ok(false);
+            }
+            tx.delete(crate::carry_on::CARRIED_ON, id)?;
+            a.state = ApprovalState::Cancelled;
+            a.revision += 1;
+            a.resolved_at = Some(now);
+            tx.put("approval", id, &a)?;
+            tx.emit(Event::ApprovalUpserted {
+                approval: a.clone(),
+            })?;
+            crate::runs::resolve_attention(tx, id, now)?;
+            crate::carry_on::back_to_work(tx, a.run_id, now)?;
+            crate::carry_on::note(
+                tx,
+                &a,
+                now,
+                format!(
+                    "The access changed after the agent asked “{}”, so the request was withdrawn and nothing was changed.",
+                    a.title
+                ),
+            )?;
+            Ok(true)
+        });
+        if withdrawn.unwrap_or(false)
+            && let Some(wait) = self.inner.waits.lock().await.remove(&id)
+        {
+            let _ = wait.send(ApprovalDecision::Deny {
+                reason: Some(WITHDRAWN.into()),
+            });
         }
     }
 }

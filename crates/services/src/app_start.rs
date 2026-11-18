@@ -236,6 +236,8 @@ impl CompanionHub {
         };
         let title = cut(&format!("How to start {}", project.name), 79);
         let envelope = CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             project_id: task.project_id,
             kind: TaskKind::Coding,
             mode: Some(TaskMode::Ask),

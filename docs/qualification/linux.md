@@ -1120,7 +1120,9 @@ after this candidate, and the next candidate's lab pass checks them again.
   the sandbox creates the missing agent settings folder, private to the user.
 - **"Steer now" is not offered for Claude Code**, so messages sent during a
   turn wait until it ends. This is by design for Claude Code; Stop withdraws
-  them. Not changed.
+  them. Not changed in this pass. Changed since: Claude Code now takes
+  "Steer now". It reads the message at its next step, and one that misses
+  the last step is answered in a turn of its own straight after the reply.
 
 Lab-only artefacts, not product defects: the stand-in agent's help-call log
 was not writable for the new user; "Claude Code sent an update this
@@ -1138,6 +1140,120 @@ opening message.
   path is the one the personal phone uses for every update.
 - Other desktops. Earlier sections cover Hyprland and Plasma on older builds;
   the changes since are covered by tests, not by a lab pass there.
+
+## Instructions and skills in limited chats (2026-11-09)
+
+Limited chats now get the person's own instructions and skills read-only (see
+[agent files](../agent-files.md#in-a-limited-chat)). Checked on Arch Linux
+with bubblewrap 0.13.1, not in the lab guests:
+
+- `cargo test -p sandbox --test live -- --ignored` through `systemd-run
+  --user`: in a throwaway home, for both agents and for a chat kept to its
+  project, one that may change it, one that may read the home folder, and
+  whole-computer read and write, the shared files and skills are readable and
+  can't be written, removed or moved; settings, plugins, agents, commands,
+  history and Codex's `rules/` aren't there; Codex's `.system` stays writable;
+  a skill that says it changes files is shown only when the chat may change
+  files; skills added or removed show up on the next turn; and a skill
+  swapped after it was checked stops the run before the agent starts; and an
+  instruction file and a linked skill disabled in Øphio are left out; and a
+  link the agent leaves in place of its `skills/` folder doesn't lead the next
+  turn to remove anything of the person's.
+- The same test file's `real_agents_see_shared_and_project_skills`, with
+  Claude Code 2.1.322 (Haiku) and Codex 0.167.0, signed in with the person's
+  accounts mounted over a throwaway home: both agents listed the shared
+  global skills, the project's skills and a project skill linked inside the
+  project, read the global and project instructions (and Claude Code's global
+  and project rules), and left out the two global skills marked as changing
+  files only when the chat could not change files.
+- A Mac: `cargo test -p sandbox` on a Mac, including a real
+  Seatbelt run of the same reading, writing and hiding checks.
+
+Not covered: a limited chat through the installed Øphio and the phone.
+
+## 0.3.0 release-file checks
+
+The final Linux archive and release-key-signed Android app were checked on
+2026-11-18. The computer was a disposable Ubuntu 24.04.5 virtual machine with
+glibc 2.39, GNOME Wayland, eight virtual CPUs and 6 GiB of memory. Installation
+used an ordinary user without administrator rights. The Android 15 emulator
+ran the ARM64 app through ARM translation. There was no physical phone, real
+provider sign-in or paid inference. Synthetic agents replied through the
+installed application; their output was not injected into its saved history.
+
+The Linux archive is 48,786,907 bytes, with SHA-256:
+
+```text
+a7b6c0914a9a1ff37dee159f2ec01d58a63b0b4224ce5236b26dd0f244edf641
+```
+
+The Android app is 32,116,850 bytes, with SHA-256:
+
+```text
+4a6c3adce72fb8033b2996be8c3be1e1ee829be7446812963c39a298c4583fb2
+```
+
+### Passed on these files
+
+- Fresh installation, interactive setup, user background service, compared-code
+  pairing, a project and synthetic reply, and pairing/history after restart.
+- Updating the computer from published 0.2.0, keeping managed-agent files and
+  current/previous selections unchanged. Choosing **Don't check** kept them.
+- Updating the 0.2.0 phone through its real **Update now** offer and Android's
+  installer. One retry after granting installation permission was needed. The
+  installed app matched the release checksum and kept its pairing/history.
+- Computer rollback to 0.2.0 and re-upgrade. Chat replies and completed Tasks
+  worked with the old phone/new computer and with the new phone/old computer.
+  The [upgrade guide](../upgrading.md#going-back-to-020) records the older
+  version's agent-update and previous-selection limits.
+- Read-only enforcement, refusing and then allowing file changes, and keeping
+  an unrelated project's permissions separate.
+- Matching attachment bytes through Android's picker, agent switching and
+  reconnect; cancelling a selection and clearly rejecting an oversized file.
+- Chat agent switching, a queued next-agent choice surviving reopen, one writer
+  per project, and independent projects running concurrently. **Stop** paused
+  Next up; resuming and reviewing the queued Task started it once.
+- Partial replies retained after computer restart with a truthful **Cut off**
+  result and successful continuation. Reopening only the phone kept the same
+  running reply. A saved draft and next-agent choice survived reopen.
+- Replies with notifications denied, no system notification for an on-screen
+  chat, and notification taps from another screen or the background opening
+  the right conversation. A locked-screen notification record was observed;
+  tapping it from the lock screen was not tested.
+- Explicit managed-agent updates failing during a restricted-network metadata
+  lookup, including a broken version probe and one retry after restart, without
+  losing current/previous programs or leaving download staging. Synthetic saved
+  newer-version metadata enabled the real update buttons. This was not an
+  installed-package download, extraction or activation failure test.
+- Reminder timing, tap routing and no immediate repeat after restart, using
+  synthetic saved version/age metadata. Young and recently used reminder budgets
+  suppressed notices. This did not qualify a real external feed.
+
+Separate frozen-source tests passed: 27 unit tests and one integration test for
+agent updates, including deeper failed-download/activation retention cases.
+They are source-test results, not installed-package download evidence.
+
+### Partial and unqualified checks
+
+The final app passed partial foldable-emulator checks: actual open/half/closed
+postures, two projects and drafts, both close-side actions, restart retention,
+native keyboard/Back and large text in landscape. Not every screen, scroll,
+focus or text-selection case was covered. The tablet emulator crashed twice in
+its renderer, including one retry; its full two-pane and lifecycle checks did
+not finish. No app crash was established by those emulator failures.
+
+No physical phone/tablet/foldable, real provider conversation, audible sound,
+vibration, Do Not Disturb or battery-managed delivery was qualified. The full
+selected-settings, logical reply-sound, locked-screen tap, attention dismissal,
+transport-reconnection and focus/selection matrices remain incomplete. A Task
+cannot switch agents in this version; Chat can.
+
+This run did not repeat the compositor capture/input checks above, hardware GPU
+checks, or a real project's approved checks passing and failing after a Task.
+Those earlier desktop results and source tests are not passes for these final
+release files. The application's daily release check was not tested against a
+newly published release. Windows and Mac have
+[separate results](windows-macos.md).
 
 ## Remaining limits and release status
 

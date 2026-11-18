@@ -15,18 +15,39 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Platform } from "../host/link";
 import { backgroundAlerts } from "./alerts";
 import { appLock } from "./lock";
+import type { HostSession } from "../host/session";
 
 /** Every id already told, by computer, for as long as the app runs. */
 const told = new Map<string, Set<string>>();
-let waiting = new Map<string, { platform: Platform; ids: string[] }>();
+const acknowledging = new Set<string>();
+let waiting = new Map<string, { platform: Platform; ids: string[]; session?: HostSession }>();
 let flushing = false;
 
 function flush(): void {
   flushing = false;
   const batch = waiting;
   waiting = new Map();
-  for (const [profileId, { platform, ids }] of batch) {
-    backgroundAlerts(platform)?.handled(profileId, ids);
+  for (const [profileId, { platform, ids, session }] of batch) {
+    const watcher = backgroundAlerts(platform);
+    watcher?.handled(profileId, ids);
+    // Without Android's watcher, as on iPhone, a new version's notice is
+    // put away on the computer itself, which clears it everywhere.
+    if (!watcher && session?.link.get().state === "online")
+      for (const id of ids) {
+        const item = session.state.get().attention[id];
+        const tag = `${profileId}/${id}`;
+        if (item?.new_version && !item.task_id && item.resolved_at === null && !acknowledging.has(tag) && !told.get(profileId)?.has(id)) {
+          acknowledging.add(tag);
+          void session.command({ command: "acknowledge_attention", attention_id: id })
+            .then(() => {
+              const done = told.get(profileId) ?? new Set<string>();
+              done.add(id);
+              told.set(profileId, done);
+            })
+            .catch(() => {})
+            .finally(() => acknowledging.delete(tag));
+        }
+      }
     const tags = ids.map((id) => `${profileId}/${id}`);
     for (let i = 0; i < tags.length; i += 256)
       void Promise.resolve(platform.cancelNotifications?.(tags.slice(i, i + 256))).catch(() => {});
@@ -35,13 +56,19 @@ function flush(): void {
 
 /** The person saw these items of `profileId`'s on screen. Each is told
  * once; ids from one moment go together. */
-export function markHandled(platform: Platform, profileId: string, attentionIds: Iterable<string>): void {
+export function markHandled(platform: Platform, profileId: string, attentionIds: Iterable<string>, session?: HostSession): void {
   const done = told.get(profileId) ?? new Set<string>();
   told.set(profileId, done);
   const fresh = [...attentionIds].filter((id) => id && !done.has(id));
   if (!fresh.length) return;
-  for (const id of fresh) done.add(id);
-  const entry = waiting.get(profileId) ?? { platform, ids: [] };
+  for (const id of fresh) {
+    const item = session?.state.get().attention[id];
+    // An iPhone has no background watcher: the computer must accept this
+    // command before the notice counts as told, so another visit can retry.
+    if (!session || backgroundAlerts(platform) || !item?.new_version || item.task_id || item.resolved_at !== null)
+      done.add(id);
+  }
+  const entry = waiting.get(profileId) ?? { platform, ids: [], session };
   entry.ids.push(...fresh);
   waiting.set(profileId, entry);
   if (!flushing) { flushing = true; void Promise.resolve().then(flush); }
@@ -51,7 +78,7 @@ export function markHandled(platform: Platform, profileId: string, attentionIds:
 export const wasHandled = (profileId: string, attentionId: string): boolean => !!told.get(profileId)?.has(attentionId);
 
 /** For tests: forgets what was told, and that the person used the app. */
-export function forgetHandled(): void { told.clear(); waiting.clear(); lastUsed = -Infinity; }
+export function forgetHandled(): void { told.clear(); acknowledging.clear(); waiting.clear(); lastUsed = -Infinity; }
 
 const subscribeVisibility = (listener: () => void) => {
   document.addEventListener("visibilitychange", listener);
@@ -71,12 +98,19 @@ export function useScreenSeen(platform: Platform): boolean {
  * While `attentionIds` are on the screen the person can see, they count as
  * handled. `active` is whether this screen is the one in front.
  */
-export function useHandledOnScreen(platform: Platform, profileId: string, attentionIds: readonly string[], active: boolean): void {
+export function useHandledOnScreen(platform: Platform, profileId: string, attentionIds: readonly string[], active: boolean, session?: HostSession): void {
   const seen = useScreenSeen(platform);
   const key = attentionIds.join(" ");
   useEffect(() => {
-    if (active && seen && key) markHandled(platform, profileId, key.split(" "));
-  }, [platform, profileId, key, active, seen]);
+    if (active && seen && key) markHandled(platform, profileId, key.split(" "), session);
+  }, [platform, profileId, key, active, seen, session]);
+  useEffect(() => {
+    if (!active || !seen || !key || !session || backgroundAlerts(platform)) return;
+    const retry = () => {
+      if (session.link.get().state === "online") markHandled(platform, profileId, key.split(" "), session);
+    };
+    return session.link.subscribe(retry);
+  }, [platform, profileId, key, active, seen, session]);
 }
 
 /** How lately the person must have used the app for a row to count as seen. */

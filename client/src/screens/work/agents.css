@@ -1,4 +1,14 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Keep each urgent request and its actions in sight without placing a tall
+   readiness panel ahead of the work the person came to monitor. */
+.agents-screen .agents-attention .section__head { margin-bottom: var(--s2); }
+.agents-needs-link { display: inline-flex; align-items: center; min-height: var(--target); color: var(--warn-text); font-size: var(--text-sm); font-weight: 650; text-decoration: underline; text-underline-offset: 0.2em; }
+.agents-screen .agents-attention { scroll-margin-top: var(--s4); }
+.agents-screen .agents-attention .row { min-height: var(--target); padding-block: var(--s2); }
+.agents-screen .agents-attention .work-attention-may { padding-bottom: var(--s2); }
+.agents-readiness-action { margin-top: var(--s4); }
+.agents-readiness-action .readiness-check__actions .btn { width: auto; }
+
 .agent-children { display: grid; gap: var(--s3); border-top: 1px solid var(--line); padding-top: var(--s4); }
 .agent-children ul, .agent-facts { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s4); }
 .agent-child { border-left: 2px solid var(--line-strong); padding-left: var(--s3); min-width: 0; }
@@ -24,8 +34,8 @@
 .agent-outside-confirm__actions .btn { flex: 1 1 100%; }
 /* At large text, reading the scope takes precedence over pinning a second
    footer beside the shell’s always-reachable safety controls. */
-:root.app-narrow .agent-outside-confirm__actions,
-:root.app-tight .agent-outside-confirm__actions { position: static; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .agent-outside-confirm__actions,
+:is(:root:not(:has(.pane)), .pane).app-tight .agent-outside-confirm__actions { position: static; }
 .agent-child .agent-child-stop { min-height: var(--target-intervention); padding-inline: var(--s3); }
-:root.app-narrow .agent-stop-summary { display: block; }
-:root.app-narrow .agent-stop-summary > .notice__icon { display: none; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .agent-stop-summary { display: block; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .agent-stop-summary > .notice__icon { display: none; }

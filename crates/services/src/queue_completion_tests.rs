@@ -404,6 +404,9 @@ async fn linked_chat(f: &Fixture, owner: &Caller) -> (ChannelIdentity, Caller) {
 
 fn follow_up(task_id: TaskId, text: &str) -> CommandEnvelope {
     CommandEnvelope::new(Command::SendMessage {
+        harness: None,
+        model: None,
+        effort: None,
         task_id,
         text: text.into(),
         bundle: None,
@@ -450,6 +453,9 @@ async fn held_message_withdrawal_is_durable_and_a_second_withdrawal_is_refused()
         .submit(
             &owner,
             CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id: task,
                 text: "Withdraw this correction".into(),
                 bundle: None,
@@ -1159,6 +1165,9 @@ async fn a_message_the_agent_refuses_before_writing_fails_with_its_reason() {
         .submit(
             &owner,
             CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id,
                 text: "Look at these".into(),
                 bundle: None,

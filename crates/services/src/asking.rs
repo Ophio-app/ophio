@@ -35,9 +35,17 @@ const LOOK_BACK: usize = 50;
 struct Consult {
     /// The task whose agent asked.
     caller: TaskId,
+    /// The agent generation that asked. Old saved consultations predate the
+    /// first agent switch and therefore belong to generation zero.
+    #[serde(default)]
+    generation: u64,
     title: String,
     /// The agent asked, as the asking agent reads it.
     by: String,
+}
+
+fn belongs_to_current_agent(r: &store::Read<'_>, consult: &Consult) -> store::Result<bool> {
+    Ok(crate::carry_on::agent_generation(r, consult.caller)? == consult.generation)
 }
 
 /// Tasks whose helper has not answered yet, or whose answer is still to
@@ -83,12 +91,28 @@ impl CompanionHub {
         let choice = self.chosen_agent(task, Some(agent))?;
         let by = via(choice.harness, choice.model.as_deref());
         let asker = self.this_run(run_id, task)?;
+        // Read the generation with the persisted current run. A switch away
+        // and back between separate reads must not let this old invocation
+        // acquire the returned agent's newer generation.
+        let generation = self.read(|r| {
+            let current: Task = r.require("task", task.task_id)?;
+            let original: Run = r.require("run", run_id)?;
+            if current.current_run != Some(run_id)
+                || original.task_id != task.task_id
+                || original.harness != current.harness
+            {
+                return Err(error(ErrorCode::Expired, "The asking agent's turn has ended").into());
+            }
+            crate::carry_on::agent_generation(r, task.task_id)
+        })?;
         let title = title.unwrap_or_else(|| cut(&format!("Question from “{}”", task.title), 79));
         let prompt = format!(
             "{asker} is working on “{}” in this project and asks for your help. It can't see this conversation and you can't see its; Ophio passes your last message back to it as your answer.\n\n{prompt}\n\nYou're read-only here: read the project, don't change it. End with your whole answer in your last message.",
             task.title
         );
         let envelope = CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             project_id: task.project_id,
             kind: TaskKind::Coding,
             mode: Some(TaskMode::Ask),
@@ -125,8 +149,17 @@ impl CompanionHub {
         };
         let now = self.inner.clock.now();
         self.write(|tx| {
+            if crate::carry_on::agent_generation(&tx.read(), task.task_id)? != generation {
+                return Err(error(ErrorCode::Expired, "The asking agent changed while its helper was starting").into());
+            }
+            let original: Run = tx.read().require("run", run_id)?;
+            let caller_now: Task = tx.read().require("task", task.task_id)?;
+            if original.harness != caller_now.harness {
+                return Err(error(ErrorCode::Expired, "The asking agent changed while its helper was starting").into());
+            }
             let consult = Consult {
                 caller: task.task_id,
+                generation,
                 title: title.clone(),
                 by: by.clone(),
             };
@@ -147,6 +180,7 @@ impl CompanionHub {
                 caller.wake = Some(TaskWake {
                     at,
                     reason: format!("{by}’s answer to “{title}”"),
+                    person_reason: None,
                     answer: true,
                 });
                 caller.updated_at = now;
@@ -187,6 +221,9 @@ pub(crate) fn answered(
         return Ok(false);
     };
     tx.delete(CONSULT, task.task_id)?;
+    if !belongs_to_current_agent(&tx.read(), &c)? {
+        return Ok(true);
+    }
     let text = match state {
         RunState::Completed => match last_message(&tx.read(), task.task_id, run_id)? {
             Some(answer) => format!(
@@ -271,4 +308,34 @@ pub(crate) fn let_go(tx: &mut store::Write<'_>, caller: TaskId) -> store::Result
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod agent_switch_tests {
+    use super::*;
+
+    #[test]
+    fn a_helper_answer_cannot_return_after_switching_away_and_back() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut db = store::Store::open(
+            dir.path().join("consult.sqlite"),
+            store::Retention::default(),
+        )
+        .unwrap();
+        let caller = TaskId::new();
+        let consult = Consult {
+            caller,
+            generation: 0,
+            title: "Help".into(),
+            by: "a helper".into(),
+        };
+        db.write(Timestamp(1), |tx| {
+            assert!(belongs_to_current_agent(&tx.read(), &consult)?);
+            // Two changes bring the first agent back, but not the old answer.
+            tx.put(crate::carry_on::AGENT_GENERATION, caller, &2_u64)?;
+            assert!(!belongs_to_current_agent(&tx.read(), &consult)?);
+            Ok(())
+        })
+        .unwrap();
+    }
 }

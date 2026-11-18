@@ -31,7 +31,7 @@ from source_candidate import (
 PUBLIC_TOP_LEVEL = frozenset({
     ".cargo", ".github", ".gitattributes", ".gitignore",
     "BUILDING.md", "CHANGELOG.md", "CODE_OF_CONDUCT.md", "CONTRIBUTING.md",
-    "Cargo.lock", "Cargo.toml", "LICENSE", "NOTICE", "README.md", "SECURITY.md", "SUPPORT.md",
+    "Cargo.lock", "Cargo.toml", "LICENSE", "NOTICE", "README.md", "REVIEW.md", "SECURITY.md", "SUPPORT.md",
     "client", "crates", "docs", "fuzz", "packaging", "scripts", "tools",
 })
 

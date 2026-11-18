@@ -59,6 +59,17 @@ macro_rules! asking {
     };
 }
 
+/// What a chat's agent does with work that deserves its own task: puts it
+/// in front of the person as a card with `ophio_propose`
+/// ([`crate::bridge::PROPOSE_TOOL`]) rather than doing it in the chat.
+/// It comes before asking for more: such work is proposed, not done in
+/// the chat once access is granted. Only a chat's turn is told it.
+macro_rules! proposing {
+    () => {
+        "A change that deserves its own branch (a feature, a fix across several files, anything worth reviewing on its own) is work to propose with ophio_propose, not to do in this chat or to ask for access for, unless the person says to do it here. Write each task's brief for an agent that never saw this conversation, then say in one line that it is on a card for them to start. Steps that must happen one after another go in one call, in order. When they ask for every open GitHub issue to be fixed, say overnight, propose all_issues on its own. Proposing starts nothing unless the person lets this project start what you propose."
+    };
+}
+
 /// How a Work run with the bridge asks for more than it has
 /// (`crate::bridge::ACCESS_TOOL`), and what it does when the person says no.
 macro_rules! more {
@@ -119,10 +130,30 @@ pub fn person_instruction(spec: &RunSpec) -> Option<&'static str> {
     match &spec.bridge {
         Some(b) if b.computer_use => None,
         Some(b) if b.checklist_answers => Some(reading!()),
+        // What a chat proposes comes before asking for more, so work that
+        // deserves its own task goes on a card rather than into the chat.
+        Some(b) if b.read_only && b.chat => Some(concat!(
+            reading!(),
+            "\n\n",
+            proposing!(),
+            "\n\n",
+            read_more!()
+        )),
         Some(b) if b.read_only => Some(concat!(reading!(), "\n\n", read_more!())),
         Some(b) if spec.mode == TaskMode::Work && b.github => {
             Some(concat!(talking!(), "\n\n", asking!(), "\n\n", more!()))
         }
+        Some(b) if spec.mode == TaskMode::Work && b.chat => Some(concat!(
+            talking!(),
+            "\n\n",
+            planning!(),
+            "\n\n",
+            proposing!(),
+            "\n\n",
+            asking!(),
+            "\n\n",
+            more!()
+        )),
         Some(_) if spec.mode == TaskMode::Work => Some(concat!(
             talking!(),
             "\n\n",
@@ -220,7 +251,7 @@ macro_rules! checks {
 /// it. Read by the companion's `reported` module.
 macro_rules! outcome {
     () => {
-        "End the last message of every turn, after your summary for the person, with a report for Ophio: a fenced code block tagged ophio-outcome holding one JSON object. Ophio hides it from them and uses it to offer what comes next. Leave out what is empty:\n- status: \"done\" when what was asked is finished; \"needs_you\" when you can't go on without the person's answer, decision or action; \"unfinished\" when you stopped with work left that you could do yourself.\n- questions: what you need them to answer or do, each asked as above.\n- remaining: what is left undone, one short line each.\n- new_work: each separate piece of work this turn found or proposed that should be a task of its own, as {\"title\", \"brief\", \"mode\"}, the brief written for an agent that never saw this conversation; mode \"work\" to change things, \"plan\" to plan first, \"ask\" to find something out; \"issue\" with its number if it is a GitHub issue you filed. Not a plan you were asked to write: Ophio offers to carry that out. Nothing here starts by itself, so ask them in your summary to start what should come next.\nFor example:\n```ophio-outcome\n{\"status\":\"needs_you\",\"questions\":[\"Keep the old export beside the new one, or remove it? I'd remove it: nothing has used it since March.\"]}\n```"
+        "End the last message of every turn, after your summary for the person, with a report for Ophio: a fenced code block tagged ophio-outcome holding one JSON object. Ophio hides it from them and uses it to offer what comes next. Leave out what is empty:\n- status: \"done\" when what was asked is finished; \"needs_you\" when you can't go on without the person's answer, decision or action; \"unfinished\" when you stopped with work left that you could do yourself.\n- questions: what you need them to answer or do, each asked as above.\n- remaining: what is left undone, one short line each.\n- new_work: each separate piece of work this turn found or proposed that should be a task of its own, as {\"title\", \"brief\", \"mode\"}, the brief written for an agent that never saw this conversation; mode \"ask\" to find out, \"plan\" to show the choices first, \"work\" to change things; \"issue\": a GitHub issue's number; \"needs\" only what it must have: {\"internet\", \"local_network\", \"whole_computer\", \"desktop\": true, \"read\": [projects], \"changes\": project}. Not a plan you were asked for: Ophio offers to carry that out. Each becomes a card they can start.\nFor example:\n```ophio-outcome\n{\"status\":\"needs_you\",\"questions\":[\"Keep the old export beside the new one, or remove it? I'd remove it: nothing has used it since March.\"]}\n```"
     };
 }
 
@@ -334,6 +365,35 @@ pub fn branch_instruction(branch: &TaskBranch) -> String {
             "The person wants this task's work done on the Git branch `{name}`. If another branch is checked out, switch only if that keeps every uncommitted change; otherwise tell them before changing anything."
         )
     }
+}
+
+/// The project's enabled approved checks, only when this run can read them.
+/// The service supplies the names from its own store, not from project files.
+pub fn checks_instruction(spec: &RunSpec) -> Option<String> {
+    let bridge = spec.bridge.as_ref()?;
+    if !bridge.checks
+        || bridge.computer_use
+        || bridge.checklist_answers
+        || bridge.check_names.is_empty()
+    {
+        return None;
+    }
+    // JSON quotes keep names visibly separate from the instructions around them.
+    let names = serde_json::to_string(&bridge.check_names).ok()?;
+    let work = spec.mode == TaskMode::Work && !bridge.read_only;
+    let before_finishing = if work {
+        "; run them before finishing work"
+    } else {
+        ""
+    };
+    let changes = if work {
+        "Propose changes with checks_propose; they apply only when the person accepts them."
+    } else {
+        "This turn cannot change them; changes need a Work task and the person's acceptance."
+    };
+    Some(format!(
+        "Ophio runs this project's approved checks itself after a Work task changes files: {names}{before_finishing}. Use checks_read to see their full definitions. {changes}"
+    ))
 }
 
 /// What a run starts from, as it was read when the task was made. Later runs
@@ -527,6 +587,11 @@ pub struct RunSpec {
     /// The task's scratch folder, for files nobody needs to keep; see
     /// [`scratch_instruction`]. Ophio deletes it once the task is done.
     pub scratch: Option<PathBuf>,
+    /// The conversation's folder of files the person attached, outside the
+    /// project and holding only plain files under names Ophio chose. The
+    /// agent may read it, wherever its sandbox lets it read, and never
+    /// write it. Files sent while the run goes on appear in it.
+    pub attached: Option<PathBuf>,
     /// Whether the person welcomes questions, their setting for every task.
     /// Off, the run makes its own choices and asks only when it truly
     /// can't; see [`conduct_instruction`].
@@ -646,10 +711,20 @@ pub struct ToolBridge {
     /// (`crate::bridge::ANSWER_TOOLS`), whatever the mode: a read-only turn
     /// answering the person's question about the checklist.
     pub checklist_answers: bool,
-    /// Only `request_access` (`crate::bridge::ACCESS_TOOL`) is exposed: a
-    /// read-only run (Plan, Ask) asks for more with it, and has no other
-    /// tool of Ophio's.
+    /// Only `request_access` and `ophio_propose`
+    /// (`crate::bridge::READ_ONLY_TOOLS`) are exposed: a read-only run
+    /// (Plan, Ask) asks for more and proposes work with them, and has no
+    /// other tool of Ophio's.
     pub read_only: bool,
+    /// The run is a chat's turn. Only a chat proposes work as cards
+    /// (`crate::bridge::PROPOSE_TOOL`), so only a chat is told when to.
+    pub chat: bool,
+    /// The ordinary run has a project: expose checks_read, and checks_propose
+    /// only in Work. True even when the project has no approved checks yet.
+    pub checks: bool,
+    /// Enabled approved check names for the run prompt, supplied by the service.
+    /// Empty keeps the checks prompt out of projects with no enabled checks.
+    pub check_names: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -767,6 +842,14 @@ pub trait RunControl: Send + Sync + 'static {
         None
     }
 
+    /// The kernel group (a Linux cgroup directory) holding every process the
+    /// run started, when there is one. A later companion reads it to learn,
+    /// without guessing, whether anything the run began could still be
+    /// running. `None` when the run has no such group.
+    fn run_group(&self) -> Option<std::path::PathBuf> {
+        None
+    }
+
     /// Native, child-scoped control. A process-group interrupt is not a substitute.
     fn child_stop_availability(&self, _native_ref: &str) -> protocol::capability::Availability {
         protocol::capability::Availability::Unsupported {
@@ -846,6 +929,11 @@ pub enum HarnessEvent {
     Warning {
         text: String,
     },
+    /// A provider usage notice, separate from the reply and from other warnings.
+    /// The computer stores identical wording at most once per conversation/day.
+    UsageNotice {
+        text: String,
+    },
     /// Cumulative native result evidence for this run. Emitted before turn completion.
     Results {
         outcome: RunOutcome,
@@ -893,6 +981,7 @@ impl HarnessEvent {
             Self::AgentTextDelta { text, .. }
             | Self::AgentMessage { text, .. }
             | Self::Warning { text }
+            | Self::UsageNotice { text }
             | Self::ReadinessWarning { reason: text }
             | Self::Child { label: text, .. } => f(text),
             Self::Activity {

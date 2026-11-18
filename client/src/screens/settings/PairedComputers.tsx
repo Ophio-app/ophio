@@ -37,6 +37,7 @@ export function PairedComputers() {
   const entries = useComputerEntries();
   const profiles = useMemo(() => entries.map((e) => e.profile), [entries]);
   const [renaming, setRenaming] = useState<ComputerEntry | null>(null);
+  const renamed = renaming && entries.find((e) => e.profile.profileId === renaming.profile.profileId);
   const shared = useMemo(() => sharedNames(profiles), [profiles]);
   const heard = useHeardInBackground(shared.size > 0);
   // A computer let go of while the app was away is known from what this device kept.
@@ -60,7 +61,8 @@ export function PairedComputers() {
         ))}
         <Button onClick={app.pairAnother}>Pair another computer</Button>
       </div>
-      {renaming && <Rename entry={entries.find((e) => e.profile.profileId === renaming.profile.profileId) ?? renaming} onClose={() => setRenaming(null)} />}
+      {/* A computer let go of meanwhile is not renamed when its sheet comes back. */}
+      {renamed && <Rename entry={renamed} onClose={() => setRenaming(null)} />}
     </Section>
   );
 }
@@ -102,12 +104,12 @@ function Computer({ entry, lastReached, heard, distinguish, onSwitch, onRename }
       )}
       <div className="settings-actions">
         {!current && (
-          <Button onClick={onSwitch} aria-describedby={distinguish ? facts : undefined}>
-            Switch to {computer.name}
+          <Button onClick={onSwitch} aria-label={`Switch to ${computer.name}`} aria-describedby={distinguish ? facts : undefined}>
+            Switch
           </Button>
         )}
-        <Button icon={Pencil} onClick={onRename} aria-describedby={distinguish ? facts : undefined}>
-          Rename {computer.name}
+        <Button icon={Pencil} onClick={onRename} aria-label={`Rename ${computer.name}`} aria-describedby={distinguish ? facts : undefined}>
+          Rename
         </Button>
       </div>
     </div>
@@ -143,6 +145,8 @@ function Rename({ entry, onClose }: { entry: ComputerEntry; onClose(): void }) {
   return (
     <Sheet
       open
+      // The typed name outlasts another screen in front.
+      keepWhenHidden
       title={`Rename ${computer.name}`}
       onClose={() => { if (!pending) onClose(); }}
       footer={

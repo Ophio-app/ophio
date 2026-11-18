@@ -9,7 +9,8 @@ import { Notice } from "../../design/Notice";
 import { Sheet } from "../../design/Sheet";
 import { reportPlatformError } from "../../platform/errors";
 import { useStore } from "../../state/store";
-import { AppUpdate } from "./AppUpdate";
+import { AppUpdate, useAppOffer } from "./AppUpdate";
+import { NewVersion } from "./NewVersion";
 import { compatibility, installerWords, versionText } from "./compatibility";
 import packageInfo from "../../../package.json";
 
@@ -83,6 +84,12 @@ export function Versions() {
   const link = useLink();
   const host = useHost((s) => s.host);
   const [notices, setNotices] = useState(false);
+  // One check for the page: where the update sits depends on what it finds.
+  const found = useAppOffer();
+  const offered = !!found?.offer;
+  const openNotices = (
+    <Button onClick={() => setNotices(true)}>Open-source notices</Button>
+  );
   const [info, setInfo] = useState<Awaited<
     ReturnType<NonNullable<typeof platform.appInfo>>
   > | null>(null);
@@ -107,8 +114,23 @@ export function Versions() {
       alive = false;
     };
   }, [platform, profile.profileId]);
+  const incompatible = link.state === "failed" && link.reason === "incompatible_version";
+  const app = info?.protocol ?? null;
+  // Anything that asks for an update stays in view.
+  const needsAction = incompatible || (!!app && !!negotiated && (negotiated.major !== app.major || negotiated.minor < app.minor));
+  const compatibilityNotice = <Notice tone={incompatible ? "warn" : "info"}>{compatibility(app, negotiated, incompatible, link.state === "failed" ? link.detail : undefined)}</Notice>;
   return (
     <Section title="Versions" id="settings-versions">
+      {/* A newer app for this phone leads, with its Update now and the notices
+          button under it: neither is ever pushed below the first screen. */}
+      {offered && (
+        <div className="settings-card settings-card--update settings-stack">
+          <AppUpdate found={found} />
+          {openNotices}
+        </div>
+      )}
+      {/* A notification about a newer version for the computer opens here. */}
+      <NewVersion />
       <div className="settings-card settings-stack">
         <dl className="settings-facts">
           <div>
@@ -126,22 +148,34 @@ export function Versions() {
             <dt>Computer</dt>
             <dd>{host?.companion_version ?? "Unknown"}</dd>
           </div>
-          <div>
-            <dt>App protocol</dt>
-            <dd>{versionText(info?.protocol)}</dd>
-          </div>
-          <div>
-            <dt>Negotiated protocol</dt>
-            <dd>{versionText(negotiated)}</dd>
-          </div>
         </dl>
-        <Notice tone={link.state === "failed" && link.reason === "incompatible_version" ? "warn" : "info"}>{compatibility(info?.protocol ?? null, negotiated, link.state === "failed" && link.reason === "incompatible_version", link.state === "failed" ? link.detail : undefined)}</Notice>
+        {needsAction && compatibilityNotice}
         <p>{protectionWords(profile.keyProtection ?? info?.keyProtection)}</p>
         <p className="settings-meta">
           {installerWords(info?.installerPackage, !!platform.appUpdate)}
         </p>
-        <AppUpdate />
-        <Button onClick={() => setNotices(true)}>Open-source notices</Button>
+        {/* Protocol numbers are for support; they come forward only when
+            the two sides can't work together fully. */}
+        <details className="settings-support">
+          <summary>Details for support</summary>
+          <dl className="settings-facts">
+            <div>
+              <dt>App protocol</dt>
+              <dd>{versionText(info?.protocol)}</dd>
+            </div>
+            <div>
+              <dt>Negotiated protocol</dt>
+              <dd>{versionText(negotiated)}</dd>
+            </div>
+          </dl>
+          {!needsAction && compatibilityNotice}
+        </details>
+        {!offered && (
+          <>
+            <AppUpdate found={found} />
+            {openNotices}
+          </>
+        )}
       </div>
       <Sheet
         open={notices}

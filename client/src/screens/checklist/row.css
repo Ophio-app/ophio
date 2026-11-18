@@ -27,3 +27,18 @@
 .checklist-row--blocker .checklist-row__icon::after {
   background: var(--stop);
 }
+/* One line: the count first, so a long next step is what gets cut. */
+.checklist-row .row__subtitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The rest of the summary, for a screen reader, sits at the line's start
+   rather than past the cut-off end of a line that doesn't wrap. */
+.checklist-row .row__subtitle {
+  position: relative;
+}
+.checklist-row .row__subtitle > .visually-hidden {
+  inset-block-start: 0;
+  inset-inline-start: 0;
+}

@@ -14,6 +14,8 @@ voice-control = { path = "../voice-control" }
 protocol.workspace = true
 domain.workspace = true
 ports.workspace = true
+containment.workspace = true
+check-runner = { path = "../check-runner" }
 store.workspace = true
 async-trait.workspace = true
 thiserror.workspace = true
@@ -57,10 +59,10 @@ axum = "0.8"
 terminal.workspace = true
 store = { workspace = true, features = ["testing"] }
 accounts.workspace = true
-harness-claude.workspace = true
+harness-claude = { workspace = true, features = ["test-fixtures"] }
 harness-codex.workspace = true
 test-support = { path = "../test-support" }
-rusqlite = { version = "0.38.0", features = ["bundled"] }
+rusqlite = { version = "0.41.0", features = ["bundled"] }
 tempfile = "3.23.0"
 library.workspace = true
 sandbox.workspace = true

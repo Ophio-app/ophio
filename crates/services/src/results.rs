@@ -164,6 +164,35 @@ pub(crate) fn link_bundle(
         tx.put("artifact", artifact.artifact_id, &artifact)?;
         tx.emit(Event::ArtifactCreated { artifact })?;
     }
+    // Files belong to the conversation they were sent in, within its limit.
+    crate::attached::record(tx, task_id, &bundle.files)?;
+    for file in &bundle.files {
+        let mut artifact: ArtifactMeta = tx.read().require("artifact", file.artifact_id)?;
+        let link = ArtifactLink {
+            task_id,
+            run_id,
+            annotation: Some(ArtifactAnnotation {
+                bundle_id: bundle.bundle_id,
+                revision: bundle.revision,
+                mark_ids: Vec::new(),
+            }),
+            role: ArtifactRole::Source,
+        };
+        if artifact.links.contains(&link) {
+            continue;
+        }
+        if artifact.links.len() >= 256 {
+            return Err(error(
+                ErrorCode::LimitExceeded,
+                "This artifact has reached its task reference limit",
+            )
+            .into());
+        }
+        artifact.links.push(link);
+        artifact.task_id = artifact.task_id.or(Some(task_id));
+        tx.put("artifact", artifact.artifact_id, &artifact)?;
+        tx.emit(Event::ArtifactCreated { artifact })?;
+    }
     Ok(())
 }
 
@@ -257,7 +286,7 @@ async fn git_read(path: &str, args: &[&str]) -> Option<(bool, Vec<u8>)> {
     use tokio::io::AsyncReadExt;
     let mut command = crate::git::read_only(path);
     command.args(args);
-    let mut child = command.spawn().ok()?;
+    let mut child = containment::inherit::tokio_spawn(&mut command).ok()?;
     let mut stdout = child.stdout.take()?;
     let result = tokio::time::timeout(std::time::Duration::from_secs(2), async {
         let mut bytes = Vec::new();

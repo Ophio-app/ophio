@@ -42,6 +42,7 @@ fn spec(project: PathBuf, disabled: Disabled, project_settings: bool, text: &str
         env: RunEnv::default(),
         github: None,
         scratch: None,
+        attached: None,
         questions: true,
         sandbox: None,
         web: false,

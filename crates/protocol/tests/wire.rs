@@ -13,6 +13,7 @@ use ts_rs::TS;
 #[test]
 fn nested_frame_tags_and_optional_results_match_the_wire() {
     let live = ServerFrame::Live(LiveEvent::AgentTextDelta {
+        text_offset: None,
         task_id: TaskId::new(),
         run_id: RunId::new(),
         message_key: "fixture-message".into(),

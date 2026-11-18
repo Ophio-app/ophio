@@ -3,10 +3,12 @@
 use super::*;
 mod background;
 mod boundary;
+mod checks;
 mod containment;
 mod launch;
 mod models;
 mod sandbox;
+mod shutdown;
 use ports::bridge::*;
 use protocol::{
     ids::{RunId, TaskId},
@@ -33,13 +35,19 @@ fn told(spec: &RunSpec, before: Option<&str>) -> String {
 /// 5,000, the one on running checks so their exit status says whether
 /// they passed past 5,200, and how to word a question, naming the choices
 /// and the one it would pick, past 5,700. Asking for more access with
-/// request_access, and not again once declined, past 6,100.
+/// request_access, and not again once declined, past 6,100. A chat's turn
+/// is also told when to propose work as a card, which only a chat does.
 #[test]
 fn what_a_run_is_told_stays_within_its_budget() {
     let (_dir, _adapter, mut spec) = fixture();
     spec.questions = false;
     let told = told(&spec, None);
     assert!(told.len() <= 6_150, "{} characters", told.len());
+    assert!(!told.contains("ophio_propose"));
+    spec.bridge.as_mut().unwrap().chat = true;
+    let told = self::told(&spec, None);
+    assert!(told.contains("ophio_propose"));
+    assert!(told.len() <= 6_800, "{} characters", told.len());
 }
 
 /// Every run asks the person the way the Sort writes its notes: plain
@@ -110,13 +118,17 @@ pub(super) fn fixture() -> (tempfile::TempDir, ClaudeAdapter, RunSpec) {
             computer_use: false,
             browser: false,
             github: false,
+            checks: false,
+            check_names: vec![],
             checklist_answers: false,
             read_only: false,
+            chat: false,
         }),
         project_settings: false,
         env: Default::default(),
         github: None,
         scratch: None,
+        attached: None,
         questions: true,
         sandbox: None,
         web: false,
@@ -1737,14 +1749,15 @@ fn a_read_only_turn_answering_on_the_checklist_gets_the_disabled_block() {
     assert_eq!(settings["skillOverrides"]["hidden-skill"], "off");
 }
 
-/// A read-only Ask turn asks for more with request_access, its one tool of
-/// Ophio's, and is told when to. A Plan turn keeps Claude Code's plan mode,
+/// A read-only Ask turn asks for more with request_access and proposes work
+/// with ophio_propose, its two tools of Ophio's, and is told when to. A Plan turn keeps Claude Code's plan mode,
 /// which refuses every MCP tool, so it gets no server and is told to say in
 /// one line that the work needs Work mode.
 #[test]
-fn a_read_only_turn_has_request_access_alone_or_is_told_to_ask_to_switch() {
+fn a_read_only_turn_may_ask_for_more_and_propose_or_is_told_to_ask_to_switch() {
     let (_dir, _adapter, mut spec) = fixture();
     spec.bridge.as_mut().unwrap().read_only = true;
+    spec.bridge.as_mut().unwrap().chat = true;
     let values = |args: &[String], name: &str| -> Vec<String> {
         (args.windows(2))
             .filter(|pair| pair[0] == name)
@@ -1756,7 +1769,7 @@ fn a_read_only_turn_has_request_access_alone_or_is_told_to_ask_to_switch() {
     let args = launch.args.clone();
     assert_eq!(
         values(&args, "--allowedTools"),
-        ["mcp__computer__request_access"]
+        ["mcp__computer__request_access,mcp__computer__ophio_propose"]
     );
     assert_eq!(values(&args, "--permission-mode"), ["manual"]);
     assert_eq!(values(&args, "--permission-prompts"), ["none"]);
@@ -1767,6 +1780,7 @@ fn a_read_only_turn_has_request_access_alone_or_is_told_to_ask_to_switch() {
     assert!(config.contains("/fixture/computer-mcp"), "{config}");
     let told = values(&args, "--append-system-prompt").join("\n");
     assert!(told.contains("call request_access at once"), "{told}");
+    assert!(told.contains("to propose with ophio_propose"), "{told}");
     assert!(
         !told.contains("wake_me") && !told.contains("can_ask"),
         "{told}"
@@ -1781,5 +1795,180 @@ fn a_read_only_turn_has_request_access_alone_or_is_told_to_ask_to_switch() {
     assert_eq!(config, "{\"mcpServers\":{}}");
     let told = values(&args, "--append-system-prompt").join("\n");
     assert!(told.contains(ports::harness::PLAN_SWITCH), "{told}");
-    assert!(!told.contains("request_access"), "{told}");
+    assert!(
+        !told.contains("request_access") && !told.contains("ophio_propose"),
+        "{told}"
+    );
+}
+
+#[test]
+fn shared_skills_change_only_the_sandboxed_work_tool_list() {
+    let (_dir, _adapter, mut spec) = fixture();
+    let normalized = |launch: &Launch| {
+        launch
+            .args
+            .iter()
+            .enumerate()
+            .map(|(i, arg)| {
+                if i > 0 && ["--mcp-config", "--settings"].contains(&launch.args[i - 1].as_str()) {
+                    "<file>".to_owned()
+                } else {
+                    arg.clone()
+                }
+            })
+            .collect::<Vec<_>>()
+    };
+    // Compare every argument, not just the presence of Skill. Bridges must
+    // retain their exact permissions, and safe mode/settings must not loosen.
+    for sandboxed in [false, true] {
+        for mode in [TaskMode::Work, TaskMode::Ask, TaskMode::Plan] {
+            for bridge in ["none", "work", "read-only", "computer"] {
+                if bridge == "computer" && mode != TaskMode::Work {
+                    continue;
+                }
+                spec.mode = mode;
+                spec.sandbox = sandboxed.then(sandbox::with_skills);
+                let (_, _, base) = fixture();
+                spec.bridge = if bridge == "none" { None } else { base.bridge };
+                if let Some(b) = &mut spec.bridge {
+                    b.computer_use = bridge == "computer";
+                    b.read_only = bridge == "read-only";
+                }
+                let baseline = Launch::build(&spec).unwrap();
+                for shared in [false, true] {
+                    let mut launch = Launch::build(&spec).unwrap();
+                    launch.shared_skills(&spec, shared);
+                    let mut expected = normalized(&baseline);
+                    if sandboxed && shared && mode == TaskMode::Work && bridge != "computer" {
+                        let index = expected.iter().position(|a| a == "--tools").unwrap() + 1;
+                        assert_eq!(
+                            expected[index],
+                            "Bash,Read,Write,Edit,Glob,Grep,TaskOutput,TaskStop"
+                        );
+                        expected[index].push_str(",Skill");
+                    }
+                    assert_eq!(
+                        normalized(&launch),
+                        expected,
+                        "{sandboxed} {mode:?} {bridge} {shared}"
+                    );
+                    if mode != TaskMode::Work {
+                        assert!(
+                            launch
+                                .args
+                                .windows(2)
+                                .any(|p| p == ["--tools", "Read,Glob,Grep"])
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn nonessential_traffic_is_disabled_only_inside_a_sandbox() {
+    let (_dir, _adapter, mut spec) = fixture();
+    for mode in [TaskMode::Work, TaskMode::Ask, TaskMode::Plan] {
+        for sandboxed in [false, true] {
+            spec.mode = mode;
+            spec.sandbox = sandboxed.then(sandbox::with_skills);
+            let launch = Launch::build(&spec).unwrap();
+            assert_eq!(
+                launch
+                    .env
+                    .contains(&("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1")),
+                sandboxed
+            );
+        }
+    }
+}
+
+#[test]
+fn project_checks_tools_follow_bridge_and_mode_permissions() {
+    let (_dir, _adapter, mut spec) = fixture();
+    for enabled in [false, true] {
+        for mode in [TaskMode::Work, TaskMode::Ask, TaskMode::Plan] {
+            for read_only in [false, true] {
+                for special in ["ordinary", "computer", "checklist"] {
+                    spec.mode = mode;
+                    let bridge = spec.bridge.as_mut().unwrap();
+                    bridge.checks = enabled;
+                    bridge.read_only = read_only;
+                    bridge.computer_use = special == "computer";
+                    bridge.checklist_answers = special == "checklist";
+                    // Computer delegation itself is a Work-only path.
+                    if special == "computer" && mode != TaskMode::Work {
+                        continue;
+                    }
+                    let launch = Launch::build(&spec).unwrap();
+                    let tools = launch
+                        .args
+                        .windows(2)
+                        .filter(|pair| pair[0] == "--allowedTools")
+                        .map(|pair| pair[1].as_str())
+                        .collect::<Vec<_>>()
+                        .join(",");
+                    let ordinary = special == "ordinary";
+                    let bridged = mode == TaskMode::Work || (mode == TaskMode::Ask && read_only);
+                    let read = enabled && ordinary && bridged;
+                    assert_eq!(
+                        tools.contains("mcp__computer__checks_read"),
+                        read,
+                        "{enabled} {mode:?} {read_only} {special}: {tools}"
+                    );
+                    assert_eq!(
+                        tools.contains("mcp__computer__checks_propose"),
+                        read && mode == TaskMode::Work && !read_only,
+                        "{enabled} {mode:?} {read_only} {special}: {tools}"
+                    );
+                }
+            }
+        }
+    }
+    spec.bridge = None;
+    let launch = Launch::build(&spec).unwrap();
+    assert!(
+        !launch
+            .args
+            .iter()
+            .any(|arg| arg.contains("mcp__computer__checks_"))
+    );
+}
+
+#[test]
+fn enabled_checks_prompt_is_conditional_and_plan_never_promises_checks_tools() {
+    let (_dir, _adapter, mut spec) = fixture();
+    spec.bridge.as_mut().unwrap().checks = true;
+    let framing = |spec: &RunSpec| {
+        Launch::build(spec)
+            .unwrap()
+            .args
+            .windows(2)
+            .filter(|pair| pair[0] == "--append-system-prompt")
+            .map(|pair| pair[1].clone())
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    assert!(ports::harness::checks_instruction(&spec).is_none());
+    assert!(!framing(&spec).contains("checks_read"));
+    spec.bridge.as_mut().unwrap().check_names =
+        vec!["App builds correctly".into(), "Tests pass".into()];
+    let expected = ports::harness::checks_instruction(&spec).unwrap();
+    let prompt = framing(&spec);
+    assert!(prompt.contains(&expected));
+    for name in &spec.bridge.as_ref().unwrap().check_names {
+        assert!(prompt.contains(name));
+    }
+    spec.mode = TaskMode::Plan;
+    spec.bridge.as_mut().unwrap().read_only = true;
+    let prompt = framing(&spec);
+    assert!(!prompt.contains("checks_read"));
+    assert!(!prompt.contains("checks_propose"));
+    for name in &spec.bridge.as_ref().unwrap().check_names {
+        assert!(!prompt.contains(name));
+    }
+    spec.mode = TaskMode::Work;
+    spec.bridge.as_mut().unwrap().checks = false;
+    assert!(!framing(&spec).contains("checks_read"));
 }

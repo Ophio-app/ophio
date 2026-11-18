@@ -39,7 +39,7 @@ If conversation sandboxes are unavailable, the turn waits in **Needs you**
 at **Start without project limits?** It explains that the request came from
 someone outside the project and this computer cannot hold the agent to the
 project. Only **Allow** starts that turn with the task's ordinary computer
-and internet access; declining, stopping or leaving it unanswered starts
+and internet access; rejecting, stopping or leaving it unanswered starts
 no agent. Later turns ask again. GitHub tools remain off.
 
 With a sandbox, widen access through the task's existing access bar, just as

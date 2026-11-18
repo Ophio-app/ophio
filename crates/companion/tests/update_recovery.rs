@@ -75,13 +75,13 @@ fn check_installed_cli(symlinked_home: bool) {
                 vec!["--version"]
             };
             for _ in 0..2 {
-                let output = Command::new(&entry)
+                let mut command = Command::new(&entry);
+                command
                     .args(&args)
                     .env_clear()
                     .env("HOME", &startup_home)
-                    .env("PATH", home.path().join("empty-path"))
-                    .output()
-                    .unwrap();
+                    .env("PATH", home.path().join("empty-path"));
+                let output = companion::executable::retry(|| command.output()).unwrap();
                 assert!(output.status.success(), "{output:?}");
                 assert_eq!(identity(&opt.join("bin")), new_bin);
                 assert_eq!(

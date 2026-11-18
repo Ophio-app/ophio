@@ -278,6 +278,8 @@ impl HarnessAdapter for CodexAdapter {
             .map(|(file, _)| file.path().to_owned())
             .into_iter()
             .chain(spec.prompt.images.iter().map(|i| i.path.clone()))
+            // The person's attached files, to read.
+            .chain(spec.attached.clone())
             .collect();
         let wrapped = match &spec.sandbox {
             Some(sandbox) => sandbox.wrap(ports::sandbox::WrapRequest {
@@ -285,6 +287,7 @@ impl HarnessAdapter for CodexAdapter {
                 visible: &visible,
                 env: &spec.env,
                 resume: spec.resume_session.as_deref(),
+                disabled: &spec.disabled,
             })?,
             None => ports::sandbox::unwrapped(&binary),
         };
@@ -312,9 +315,20 @@ impl HarnessAdapter for CodexAdapter {
                     .filter(|_| !wrapped.clear_env)
                     .map(|(k, v)| (k, v)),
             );
+        // Account and inherited keys must not replace this run's local relay
+        // capability. Only the sandbox's wrapped environment supplies it.
+        let relay_key = wrapped
+            .env
+            .iter()
+            .rev()
+            .find(|(key, _)| key == launch::RELAY_KEY_ENV)
+            .map(|(_, value)| value.clone());
         command.envs(wrapped.env);
         if launch::relay(&spec).is_some() {
-            command.env(launch::RELAY_KEY_ENV, "ophio-relay-not-a-key");
+            command.env(
+                launch::RELAY_KEY_ENV,
+                relay_key.as_deref().unwrap_or("ophio-relay-not-a-key"),
+            );
         }
         if let Some(sandbox) = &spec.sandbox {
             sandbox.prepare(command.as_std_mut())?;
@@ -357,6 +371,8 @@ impl HarnessAdapter for CodexAdapter {
         let readiness_warning = self.readiness_warning.clone();
         let guard = containment::Guard::new(container);
         tokio::spawn(async move {
+            let mut receipt = results::Results::default();
+            receipt.kept_in(spec.sandbox.clone());
             let mut actor = Actor {
                 child,
                 stdin: Some(stdin),
@@ -376,7 +392,7 @@ impl HarnessAdapter for CodexAdapter {
                 turn: None,
                 starting: false,
                 usage: None,
-                results: results::Results::default(),
+                results: receipt,
                 turn_exit: None,
                 account_label: None,
                 finished_turns: VecDeque::new(),
@@ -562,7 +578,15 @@ fn arguments(
     }
     if spec.sandbox.is_some() {
         // Provider-hosted search bypasses the local network namespace.
-        args.extend(["-c".into(), "web_search=\"disabled\"".into()]);
+        for setting in [
+            "web_search=\"disabled\"",
+            // The private config does not import telemetry exporters. Disable
+            // the built-in analytics exporter and centrally managed updates.
+            "analytics.enabled=false",
+            "check_for_update_on_startup=false",
+        ] {
+            args.extend(["-c".into(), setting.into()]);
+        }
     }
     launch::arguments(spec, &mut args);
     disabled::arguments(spec, &mut args);
@@ -582,7 +606,7 @@ fn bridge_server(
     spec: &RunSpec,
 ) -> Result<Option<(tempfile::NamedTempFile, String)>, HarnessError> {
     // A read-only turn has one only to answer on the checklist, or to ask
-    // for more with request_access alone.
+    // for more with request_access or propose work with ophio_propose.
     let Some(bridge) = (spec.bridge.as_ref())
         .filter(|b| spec.mode == TaskMode::Work || b.checklist_answers || b.read_only)
     else {
@@ -617,10 +641,10 @@ fn bridge_server(
         .chain([ports::bridge::BRIDGE_FILE_ARG, &path])
         .map(toml_string)
         .collect();
-    let tools: Vec<String> = if bridge.checklist_answers {
+    let mut tools = if bridge.checklist_answers {
         ports::bridge::ANSWER_TOOLS.to_vec()
     } else if bridge.read_only {
-        vec![ports::bridge::ACCESS_TOOL]
+        ports::bridge::READ_ONLY_TOOLS.to_vec()
     } else if bridge.computer_use {
         ports::bridge::COMPUTER_TOOLS.to_vec()
     } else {
@@ -637,10 +661,14 @@ fn bridge_server(
             tools.extend(ports::bridge::WORK_TOOLS);
         }
         tools
+    };
+    if bridge.checks && !bridge.computer_use && !bridge.checklist_answers {
+        tools.push(ports::bridge::CHECKS_READ_TOOL);
+        if spec.mode == TaskMode::Work && !bridge.read_only {
+            tools.push(ports::bridge::CHECKS_PROPOSE_TOOL);
+        }
     }
-    .into_iter()
-    .map(toml_string)
-    .collect();
+    let tools: Vec<String> = tools.into_iter().map(toml_string).collect();
     let server = format!(
         "mcp_servers.{}={{command={},args=[{}],enabled_tools=[{}],\
          default_tools_approval_mode=\"approve\",startup_timeout_sec=20,tool_timeout_sec=900}}",
@@ -755,6 +783,7 @@ fn task_instructions(spec: &RunSpec) -> Result<Option<String>, HarnessError> {
     let started =
         (spec.start.as_ref()).and_then(|start| ports::harness::start_instruction(start, loaded));
     let scratch = ports::harness::scratch_instruction(spec);
+    let checks = ports::harness::checks_instruction(spec);
     let computer = ports::harness::computer_instruction(spec)
         .map(|text| format!("{text} {}", computer::ASKING));
     for framing in [
@@ -766,6 +795,7 @@ fn task_instructions(spec: &RunSpec) -> Result<Option<String>, HarnessError> {
         ports::harness::conduct_instruction(spec),
         computer.as_deref(),
         scratch.as_deref(),
+        checks.as_deref(),
     ]
     .into_iter()
     .flatten()
@@ -920,6 +950,9 @@ impl RunControl for Control {
     }
     fn containment(&self) -> Option<Containment> {
         Some(self.container.containment())
+    }
+    fn run_group(&self) -> Option<std::path::PathBuf> {
+        self.container.group_dir().map(std::path::Path::to_path_buf)
     }
     async fn send_message(
         &self,

@@ -14,7 +14,7 @@ pub use recovery::{RecoveryEntry, RecoverySnapshot};
 
 use async_trait::async_trait;
 use cap_std::fs::Dir;
-use path::{Root, denied, io_error, new_file, open_file, read_file, sync_dir};
+use path::{Directory, Root, denied, io_error, new_file, open_file, read_file, sync_dir};
 use ports::{
     clock::Clock,
     library::{LibraryChange, LibraryError, LibraryFs, RootSpec, SaveRequest, TrashEntry},
@@ -34,7 +34,7 @@ use std::{
     collections::BTreeMap,
     fs, io,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, MutexGuard, atomic::AtomicBool},
+    sync::{Arc, Mutex, MutexGuard},
     time::Duration,
 };
 use tokio::sync::broadcast;
@@ -79,7 +79,7 @@ struct Core {
     state: Mutex<State>,
     events: broadcast::Sender<LibraryChange>,
     watch_queue: std::sync::mpsc::SyncSender<notify::Result<notify::Event>>,
-    rescan_required: Arc<AtomicBool>,
+    rescan_required: Arc<watch::Rescan>,
 }
 #[derive(Debug, Clone)]
 pub struct FsLibrary {
@@ -236,13 +236,16 @@ impl FsLibrary {
             harness: None,
             only: None,
         })?;
-        #[cfg(unix)]
         {
-            use std::os::unix::fs::PermissionsExt;
-            path::directory_file(&data.dir)?.set_permissions(fs::Permissions::from_mode(0o700))?;
+            let dir = data.directory("")?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                path::directory_file(&dir)?.set_permissions(fs::Permissions::from_mode(0o700))?;
+            }
+            dir.create_dir_all("trash")?;
+            dir.create_dir_all("recovery")?;
         }
-        data.dir.create_dir_all("trash")?;
-        data.dir.create_dir_all("recovery")?;
         let (watch_queue, receiver) = std::sync::mpsc::sync_channel(4096);
         let core = Arc::new(Core {
             config,
@@ -254,7 +257,7 @@ impl FsLibrary {
             }),
             events: broadcast::channel(1024).0,
             watch_queue,
-            rescan_required: Arc::new(AtomicBool::new(false)),
+            rescan_required: Arc::new(watch::Rescan::default()),
         });
         watch::start(&core, receiver)?;
         Ok(Self { core })
@@ -275,9 +278,7 @@ impl FsLibrary {
 
     /// A watcher overflow or native error requires a fresh list/read snapshot.
     pub fn rescan_required(&self) -> bool {
-        self.core
-            .rescan_required
-            .load(std::sync::atomic::Ordering::Acquire)
+        self.core.rescan_required.required()
     }
 
     /// Existing suggestions only; this never registers roots or reads settings.
@@ -365,6 +366,10 @@ impl Core {
         if write && !root.spec.writable {
             return Err(LibraryError::ReadOnly);
         }
+        #[cfg(windows)]
+        if write {
+            root.ensure_mutations_supported()?;
+        }
         Ok(root)
     }
     fn read(&self, root: &Root, path: &str) -> Result<FileContent, LibraryError> {
@@ -392,10 +397,10 @@ impl Core {
             displaced: None,
         }
     }
-    fn store_record(&self, kind: &str, record: &Record) -> Result<Dir, LibraryError> {
+    fn store_record(&self, kind: &str, record: &Record) -> Result<Directory, LibraryError> {
         let base = self.data.directory(kind)?;
         base.create_dir(&record.id)?;
-        let dir = base.open_dir(&record.id)?;
+        let dir = self.data.directory(&format!("{kind}/{}", record.id))?;
         let bytes = serde_json::to_vec(record).map_err(io::Error::other)?;
         new_file(&dir, "record.json", &bytes, None)?;
         sync_dir(&dir)?;
@@ -462,15 +467,16 @@ impl LibraryFs for FsLibrary {
             }) {
                 return Err(denied());
             }
-            let watcher = watch::watcher(core, &next)?;
-            state.roots = next;
-            state.watcher = Some(watcher);
-            // Startup recovery waits for configured roots, never trusting paths
-            // from old records as authority to reopen an unregistered root.
-            core.sweep_confirmed(state)?;
-            core.rescan_required
-                .store(false, std::sync::atomic::Ordering::Release);
-            Ok(())
+            core.rescan_required.refresh(|| {
+                let watcher = watch::watcher(core, &next)?;
+                #[cfg(windows)]
+                watch::retire_watcher(core, state);
+                state.roots = next;
+                state.watcher = Some(watcher);
+                // Startup recovery waits for configured roots, never trusting paths
+                // from old records as authority to reopen an unregistered root.
+                core.sweep_confirmed(state)
+            })
         })
         .await
     }

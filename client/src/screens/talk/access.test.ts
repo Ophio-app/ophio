@@ -10,6 +10,9 @@ const home = project("p-home", "Home", true);
 const projects = { [tide.project_id]: tide, [site.project_id]: site, [home.project_id]: home };
 
 it("says what a new conversation's agent may reach, adapting to each choice", () => {
+  // Where the agent suggests work as cards, the chat says so.
+  expect(describeAccess(defaultAccess(tide.project_id), tide, projects, true))
+    .toBe("The agent can read tidewater-api but can’t change anything. It can look things up on the internet. When something needs doing, it suggests a task you can start with one tap.");
   expect(describeAccess(askAccess(tide.project_id), tide, projects))
     .toBe("The agent can read tidewater-api but can’t change anything. It can’t reach the internet. Turn it into a task when you want something done.");
   expect(describeAccess(defaultAccess(tide.project_id), tide, projects))

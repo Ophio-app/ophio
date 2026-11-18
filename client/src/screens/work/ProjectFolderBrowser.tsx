@@ -8,6 +8,7 @@ import { Notice } from "../../design/Notice";
 import { PathText } from "../../design/PathText";
 import type { ProjectFolder, ProjectFolderListing } from "../../protocol/types";
 import { CommandFeedback, useUnconfirmedCommand } from "./shared";
+import { selectAddedProject } from "./selectAddedProject";
 import "./projectFolders.css";
 
 // Folder names are read from the paired computer, never from this device.
@@ -104,7 +105,7 @@ export function ProjectFolderBrowser({ onClose, footer }: {
     if (!active.current) return;
     setPending(false);
     if (added === batch.length && first) {
-      ui.selectProject(first);
+      selectAddedProject(session, ui, first);
       onClose();
     } else {
       setOutcome(`${added} of ${batch.length} confirmed added. Stopped here; review the result below before adding the remaining folders.`);

@@ -380,7 +380,7 @@ async fn everywhere(project: &Path, revision: &str) -> Option<Vec<String>> {
         "--name-only",
         revision,
     ]);
-    let mut child = command.spawn().ok()?;
+    let mut child = containment::inherit::tokio_spawn(&mut command).ok()?;
     let stdout = child.stdout.take()?;
     let listing = async {
         let mut lines = tokio::io::BufReader::new(stdout).split(0);
@@ -491,7 +491,7 @@ async fn text(project: &Path, args: &[&str]) -> Option<String> {
 async fn bytes(project: &Path, args: &[&str], limit: usize) -> Option<(Vec<u8>, bool)> {
     let mut command = crate::git::read_only(project);
     command.args(args);
-    let mut child = command.spawn().ok()?;
+    let mut child = containment::inherit::tokio_spawn(&mut command).ok()?;
     let stdout = child.stdout.take()?;
     let run = async {
         let mut out = Vec::new();

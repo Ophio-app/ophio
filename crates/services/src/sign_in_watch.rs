@@ -258,6 +258,8 @@ fn raise(
         account_id: Some(account.to_owned()),
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     };
     lapses.insert(
         account.to_owned(),

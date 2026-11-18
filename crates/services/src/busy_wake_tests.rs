@@ -64,6 +64,7 @@ fn wake(f: &Fixture, task_id: TaskId, text: &str) -> Followup {
             task.wake = Some(TaskWake {
                 at: followup.due_at,
                 reason: text.into(),
+                person_reason: None,
                 answer: false,
             });
             tx.put("task", task_id, &task)
@@ -256,6 +257,8 @@ async fn ask_wake_also_waits_for_another_work_writer() {
             &Caller::local_owner(),
             edit(
                 Command::ResumeTask {
+                    observed_reply: None,
+                    harness: None,
                     task_id,
                     text: Some(followup.text.clone()),
                     bundle: None,
@@ -386,6 +389,8 @@ async fn direct_person_resume_finishes_before_its_pending_wake() {
             &Caller::local_owner(),
             edit(
                 Command::ResumeTask {
+                    observed_reply: None,
+                    harness: None,
                     task_id,
                     text: Some("person's direct turn".into()),
                     bundle: None,

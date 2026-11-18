@@ -32,6 +32,8 @@ impl Repo {
             .submit(
                 &Caller::local_owner(),
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: Some(Box::new(link)),
                     agent_chosen: None,
                     mode: None,
@@ -111,6 +113,8 @@ impl Repo {
     async fn resume(&self, task_id: TaskId, mode: Option<TaskMode>) -> Result<(), ErrorCode> {
         let command = edit(
             Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 task_id,
                 text: Some("Again".into()),
                 bundle: None,
@@ -1224,6 +1228,9 @@ async fn a_round_ophio_started_ends_quietly_unless_the_person_spoke_into_it() {
         .submit(
             &Caller::local_owner(),
             CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id: task,
                 text: "Rename it too".into(),
                 bundle: None,
@@ -3453,6 +3460,8 @@ async fn a_reviewer_that_uses_the_app_works_on_a_screen_and_is_told_who_to_be() 
         (r.f.hub).submit(
             &owner,
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: Some(Box::new(link)),
                 agent_chosen: None,
                 mode: Some(TaskMode::Work),

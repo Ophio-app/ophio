@@ -30,6 +30,42 @@ pub struct AnnotationBundle {
     /// Free-text instruction that applies to the whole bundle.
     pub general_note: Option<String>,
     pub speech: Option<SpeechTrack>,
+    /// Files of any kind attached to the message, in the order chosen. A
+    /// bundle may carry only files. Advertised as `chat_files_v1`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<Vec<AttachedFile>>", optional)]
+    pub files: Vec<AttachedFile>,
+}
+
+/// Most files one message carries.
+pub const MAX_ATTACHED_FILES: usize = 10;
+/// Largest single attached file: 100 MB, as the phone shows sizes.
+pub const MAX_ATTACHED_FILE_BYTES: u64 = 100_000_000;
+/// Most bytes of files one message carries: 250 MB.
+pub const MAX_MESSAGE_FILE_BYTES: u64 = 250_000_000;
+/// Most bytes of files one conversation keeps on the computer: 1 GB.
+pub const MAX_CONVERSATION_FILE_BYTES: u64 = 1_000_000_000;
+/// Most files one conversation keeps on the computer.
+pub const MAX_CONVERSATION_FILES: usize = 500;
+/// Longest display name, in characters, the computer keeps for a file.
+pub const MAX_ATTACHED_NAME_CHARS: usize = 120;
+
+/// A file sent with a message. Its bytes are an uploaded artifact; the name
+/// is only what the person's device called it. The computer chooses where
+/// the agent reads it and never uses this name as a path as it is.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
+#[ts(export)]
+pub struct AttachedFile {
+    pub artifact_id: ArtifactId,
+    /// Lowercase hex SHA-256 of the exact bytes sent.
+    pub sha256: String,
+    /// The file's name on the device, shown to people.
+    pub name: String,
+    /// What the device said the file is, such as `application/pdf`; empty
+    /// when it didn't know.
+    pub media_type: String,
+    #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
+    pub size: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]

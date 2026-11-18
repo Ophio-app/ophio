@@ -11,11 +11,12 @@ import { commandResult } from "../host/commandResult";
 import type { HostSession } from "../host/session";
 import { GITHUB_FEATURE, GITHUB_ISSUES_FEATURE, GITHUB_REVIEW_FEATURE, GITHUB_UAT_FEATURE } from "./githubFeature";
 import { defaultLaunchPolicy } from "./launchPolicy";
-import { draftKey, freshReview, type AgentChoice, type UiStore } from "./ui";
+import { draftKey, freshReview, type AgentChoice, type ReviewDetails, type UiStore } from "./ui";
 import type {
-  CheckState, CommandResult, FindFocus, FindScope, FixFindings, GithubAction, GithubItem, GithubItemKind, GithubItems, GithubLink,
+  CheckState, CommandResult, ConversationAccess, FindFocus, FindScope, FixFindings, GithubAction, GithubItem, GithubItemKind, GithubItems, GithubLink,
   GithubMode, GithubPrView, GithubProjectView, ItemStatus, LaunchChoice, MergeMethod, PrStage, PrSummary, TaskGithub,
   TaskMode, TriageGroup,
+  TaskOrigin,
 } from "../protocol/types";
 import { itemStatus, linkedTask } from "../state/githubStatus";
 import { projectTasks } from "../state/projection";
@@ -500,11 +501,12 @@ export function draftGithubTask(ui: UiStore, projectId: string, d: { link: Githu
  * proposed. Words the person wrote for another task are set aside in Saved
  * drafts, as with GitHub work.
  */
-export function draftNewTask(ui: UiStore, projectId: string, d: { text: string; mode: TaskMode; title?: string; link?: GithubLink; agent?: AgentChoice | null; from?: TaskMode }): { setAside: boolean } {
+export function draftNewTask(ui: UiStore, projectId: string, d: { text: string; mode: TaskMode; title?: string; link?: GithubLink; proposalGithub?: ReviewDetails["proposalGithub"]; agent?: AgentChoice | null; from?: TaskMode; access?: ConversationAccess | null; fromChat?: string; origin?: TaskOrigin; ordered?: ReviewDetails["ordered"]; paused?: boolean }): { setAside: boolean } {
   const prev = ui.draft(projectId, null);
   if (prev?.attempt) throw new Error("This project’s new-task draft is waiting to hear about its last send. Open it in Chat first.");
-  // GitHub work can be drafted again from GitHub; the person's own words can't.
-  const setAside = !!prev && !prev.review?.github && (!!prev.text.trim() || !!prev.annotationId);
+  // GitHub-generated work can be drafted again there. A proposal's words
+  // and Review choices belong to the person, even when linked to GitHub.
+  const setAside = !!prev && (!!prev.review?.origin || (!prev.review?.github && (!!prev.text.trim() || !!prev.annotationId)));
   const key = draftKey(projectId, null);
   ui.set((s) => {
     const drafts = { ...s.drafts };
@@ -512,13 +514,18 @@ export function draftNewTask(ui: UiStore, projectId: string, d: { text: string; 
     return { ...s, drafts, savedDrafts: setAside ? { ...s.savedDrafts, [key]: [...(s.savedDrafts[key] ?? []), prev!] } : s.savedDrafts };
   });
   ui.saveDraft(projectId, null, {
-    review: { ...freshReview(), title: d.title?.slice(0, 120) ?? "", github: d.link ?? null, ...(d.from ? { from: d.from } : {}) },
+    review: { ...freshReview(), title: d.title?.slice(0, 120) ?? "", github: d.link ?? (d.proposalGithub ? undefined : null), ...(d.proposalGithub ? { proposalGithub: d.proposalGithub } : {}), ...(d.from ? { from: d.from } : {}), ...(d.fromChat ? { fromChat: d.fromChat } : {}), ...(d.origin ? { origin: d.origin } : {}),
+      ...(d.ordered ? { ordered: d.ordered, placement: "queue", authorization: d.paused ? "ask_before_start" : "auto_start" } : {}),
+    },
     mode: d.mode,
     text: d.text,
     agent: d.agent ?? prev?.agent ?? null,
+    // What an Ask task may reach, as the card it came from said.
+    access: d.access ?? undefined,
   });
   if (!ui.persistNow()) throw new Error("The draft couldn’t be saved on this device.");
-  ui.selectTask(projectId, null);
+  // Ordered proposals return to their Chat card even when Review is cancelled.
+  if (!d.ordered) ui.selectTask(projectId, null);
   ui.push({ screen: "review", projectId, taskId: null, intent: "new_task" }, "talk");
   return { setAside };
 }

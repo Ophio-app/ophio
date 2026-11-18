@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* A nonmodal dialog supplies its own scrim within its pane, not ::backdrop.
+   PaneFrame provides the positioned, clipped size container. */
+dialog.sheet.pane-sheet {
+  --sheet-max: 92cqh;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  overflow: hidden;
+  background: var(--scrim);
+  align-items: flex-end;
+  justify-content: center;
+}
+dialog.sheet.pane-sheet[open] { display: flex; }
+dialog.sheet.pane-sheet:not([open]) { display: none; }
+dialog.sheet.pane-sheet > .sheet__panel {
+  width: 100%;
+  max-width: 640px;
+  max-height: var(--sheet-max);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+}
+dialog.sheet.pane-sheet.sheet--full { --sheet-max: 100cqh; }
+dialog.sheet.pane-sheet.sheet--full > .sheet__panel {
+  height: 100%;
+  max-width: none;
+  border-radius: 0;
+}
+dialog.sheet.pane-sheet.sheet--drop {
+  --sheet-max: 85cqh;
+  align-items: flex-start;
+}
+dialog.sheet.pane-sheet.sheet--drop > .sheet__panel {
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
+}
+@container pane (min-width: 720px) {
+  dialog.sheet.pane-sheet:not(.sheet--full, .sheet--drop) { align-items: center; }
+  dialog.sheet.pane-sheet:not(.sheet--full, .sheet--drop) > .sheet__panel { border-radius: var(--r-xl); }
+}
+/* Holds one sheet's dialog in the pane or in its screen, and moves between
+   them when the window folds or widens; it never draws a box of its own. */
+.sheet-host { display: contents; }

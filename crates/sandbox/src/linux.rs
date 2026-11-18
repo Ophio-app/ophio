@@ -2,10 +2,11 @@
 use crate::{
     error,
     history::History,
+    own::{self, OwnSettings},
     program,
     proxy::{Policy, Proxy},
     relay::Relay,
-    sys,
+    setup, sys,
 };
 use ports::{
     HarnessError,
@@ -52,6 +53,8 @@ pub(crate) struct LinuxSandbox {
     gate_read: UnixStream,
     gate_write: Mutex<UnixStream>,
     run: Mutex<Run>,
+    /// Where the agent's own settings are, once its command is built.
+    own: Mutex<Option<OwnSettings>>,
 }
 
 pub fn runtime_paths() -> &'static [&'static str] {
@@ -240,6 +243,7 @@ impl LinuxSandbox {
             gate_read,
             gate_write: Mutex::new(gate_write),
             run: Mutex::new(run),
+            own: Mutex::new(None),
         })
     }
     fn build(
@@ -463,20 +467,36 @@ impl LinuxSandbox {
         }
         programs.push(self.shim.clone());
         for path in programs {
+            let real = canonical(&path)?;
+            if real != path {
+                // A path reached through a link (its own name or a folder on
+                // the way) must lead to the real file inside the sandbox, not
+                // have the file bound onto it: /proc/self/exe would then name
+                // the alias, and Codex looks for its helper beside that.
+                // The real file is bound by its own entry in this list.
+                link(&mut args, &path, &real)?;
+                continue;
+            }
             if ["/usr", "/bin", "/sbin", "/lib", "/lib64"]
                 .iter()
                 .any(|root| path.starts_with(root))
             {
                 continue;
             }
-            // Copy aliases from the resolved executable, not the host symlink.
-            bind(&mut args, "--ro-bind", &canonical(&path)?, &path);
+            bind(&mut args, "--ro-bind", &path, &path);
         }
+        let mut shared_check = String::new();
+        // Each place in the agent's own settings, as it sees it, and what is there.
+        let mut places: Vec<(PathBuf, PathBuf)> = Vec::new();
+        let mut own_places: Vec<PathBuf> = Vec::new();
+        let mut own_files: Vec<PathBuf> = Vec::new();
         let history = if let Some(native) = &self.native {
             if request.resume.is_some() {
                 return Err(error("relay runs start with fresh provider state"));
             }
             bind(&mut args, "--bind", native.path(), &config);
+            places.push((config.clone(), native.path().to_owned()));
+            own_places.push(native.path().to_owned());
             None
         } else {
             let history = History::isolated(
@@ -492,7 +512,51 @@ impl LinuxSandbox {
             })?;
             for (source, destination) in &history.binds {
                 bind(&mut args, "--bind", source, destination);
+                places.push((destination.clone(), source.clone()));
             }
+            own_places.extend([
+                self.spec.state.join("native"),
+                self.spec.state.join("claude-history"),
+            ]);
+            // The person's own instructions and skills, read-only, over this
+            // conversation's settings folder.
+            let mut history = history;
+            let mut forbidden = private.clone();
+            forbidden.push(self.spec.state.clone());
+            forbidden.extend(self.spec.given.iter().cloned());
+            forbidden.extend(
+                ["CLAUDE_CONFIG_DIR", "CODEX_HOME"]
+                    .into_iter()
+                    .filter_map(|k| env(k).map(PathBuf::from)),
+            );
+            let forbidden = setup::private(&home, forbidden);
+            let cwd = canonical(&self.spec.cwd).unwrap_or_else(|_| self.spec.cwd.clone());
+            let withheld = setup::withheld(request.disabled);
+            let bounds = setup::Bounds {
+                home: &home,
+                cwd: &cwd,
+                private: &forbidden,
+                writes: reach.writes(),
+                withheld: &withheld,
+            };
+            let shared = setup::select(self.spec.harness, &config, &bounds);
+            let shared = setup::place(
+                &self.spec.state.join("native"),
+                &self.spec.state,
+                shared,
+                false,
+            );
+            for item in &shared {
+                bind(
+                    &mut args,
+                    "--ro-bind",
+                    &item.source,
+                    &config.join(&item.relative),
+                );
+                places.push((config.join(&item.relative), item.source.clone()));
+            }
+            shared_check = setup::expected(&config, &shared);
+            history.shared = shared;
             Some(history)
         };
         // Legacy Claude account/project metadata must not reappear through a
@@ -505,6 +569,9 @@ impl LinuxSandbox {
                 file.write_all(b"{}").map_err(error)?;
             }
             bind(&mut args, "--bind", &profile, &legacy);
+            places.push((legacy.clone(), profile.clone()));
+            own_places.push(profile);
+            own_files.push(legacy);
         }
         // Parent masks stay writable only during construction, so nested
         // scratch/program bind destinations can be created. Seal before exec.
@@ -574,6 +641,9 @@ impl LinuxSandbox {
             ));
             env.push(("LANG".into(), "C.UTF-8".into()));
         }
+        // Always set, empty when nothing is shared, so a copy in Ophio's own
+        // environment never reaches the sandbox's check.
+        env.push((setup::VARIABLE.into(), shared_check));
         env.push(("HOME".into(), home.to_string_lossy().into_owned()));
         env.push((
             if self.spec.harness == HarnessKind::ClaudeCode {
@@ -584,12 +654,23 @@ impl LinuxSandbox {
             .into(),
             config.to_string_lossy().into_owned(),
         ));
+        *self.own.lock().unwrap() = Some(OwnSettings {
+            harness: self.spec.harness,
+            folder: config,
+            files: own_files,
+            places,
+            own: own::real(own_places),
+            cwd: self.spec.cwd.clone(),
+        });
         Ok((
             Wrapped {
                 program: "/usr/bin/bwrap".into(),
                 args,
                 env,
                 clear_env: self.relay.is_some() || self.spec.offline,
+                shared_skills: history
+                    .as_ref()
+                    .is_some_and(|h| h.shared.iter().any(|s| s.relative.starts_with("skills"))),
             },
             history,
         ))
@@ -604,6 +685,154 @@ fn bind(args: &mut Vec<OsString>, mode: &str, source: &Path, destination: &Path)
 }
 fn cover(args: &mut Vec<OsString>, path: &Path) {
     args.extend(["--tmpfs".into(), path.as_os_str().into()]);
+}
+/// What the sandbox will have at `path` once bubblewrap has applied `args`.
+/// `path`'s folders must be real ones (no links), which is how [`link`] asks.
+#[derive(Debug, PartialEq)]
+enum Shown {
+    /// The host's own entry, through a folder bound onto itself.
+    Host,
+    /// An entry these arguments make there themselves: a link, a folder or
+    /// a mount point.
+    Made,
+    /// Nothing: the path lies under a covering empty folder.
+    Absent,
+    /// Something other than the host's entry, under a folder bound from
+    /// elsewhere. Nothing may be created there.
+    Foreign,
+}
+fn shown(args: &[OsString], path: &Path) -> Shown {
+    let mut shown = Shown::Absent;
+    let mut i = 0;
+    while i < args.len() {
+        let operands = |n: usize| args.get(i + 1..i + 1 + n).unwrap_or_default();
+        // Operands of these options are absolute paths, never option names,
+        // and the other options' operands ("ALL", descriptor numbers) are
+        // not these names either, so stepping one word otherwise is exact.
+        let step = match args[i].to_str() {
+            Some(
+                "--bind" | "--ro-bind" | "--dev-bind" | "--bind-try" | "--ro-bind-try"
+                | "--dev-bind-try",
+            ) => {
+                if let [source, destination] = operands(2)
+                    && path.starts_with(destination)
+                {
+                    shown = if source == destination {
+                        Shown::Host
+                    } else if path == Path::new(destination) {
+                        Shown::Made
+                    } else {
+                        Shown::Foreign
+                    };
+                }
+                3
+            }
+            Some("--tmpfs" | "--proc" | "--dev" | "--mqueue" | "--dir") => {
+                if let [destination] = operands(1)
+                    && path.starts_with(destination)
+                {
+                    shown = if path == Path::new(destination) {
+                        Shown::Made
+                    } else {
+                        Shown::Absent
+                    };
+                }
+                2
+            }
+            Some("--symlink") => {
+                if let [_, destination] = operands(2)
+                    && path.starts_with(destination)
+                {
+                    shown = if path == Path::new(destination) {
+                        Shown::Made
+                    } else {
+                        Shown::Foreign
+                    };
+                }
+                3
+            }
+            _ => 1,
+        };
+        i += step;
+    }
+    shown
+}
+/// Make `path`, which the host resolves to `real` through one or more links,
+/// resolve the same way inside the sandbox.
+///
+/// The host's own resolution is walked one name at a time. A link the
+/// sandbox will already show (the folder holding it is readable) is left
+/// alone and followed, so nothing is placed on top of it; a link it will
+/// not show is created there, pointing at that link's real target. Links are
+/// only ever created in folders whose own path has no links, under an empty
+/// covering folder, so bubblewrap never meets an existing destination, never
+/// creates folders through a link, and never writes into a host folder. No
+/// file or folder becomes readable that was not already: the real file is
+/// bound by its own entry.
+fn link(args: &mut Vec<OsString>, path: &Path, real: &Path) -> Result<(), HarnessError> {
+    use std::path::Component;
+    let failed = |e: io::Error| error(format!("{}: {e}", path.display()));
+    let mut at = PathBuf::from("/");
+    let mut rest: std::collections::VecDeque<PathBuf> = path
+        .components()
+        .map(|c| PathBuf::from(c.as_os_str()))
+        .collect();
+    let mut hops = 0;
+    while let Some(part) = rest.pop_front() {
+        match part.components().next() {
+            Some(Component::RootDir) => at = PathBuf::from("/"),
+            Some(Component::ParentDir) => {
+                // Going up needs the folder itself to exist in the sandbox.
+                if matches!(shown(args, &at), Shown::Absent) {
+                    args.extend(["--dir".into(), at.as_os_str().into()]);
+                }
+                at.pop();
+            }
+            Some(Component::Normal(name)) => {
+                let entry = at.join(name);
+                if !std::fs::symlink_metadata(&entry)
+                    .map_err(failed)?
+                    .file_type()
+                    .is_symlink()
+                {
+                    at = entry;
+                    continue;
+                }
+                match shown(args, &entry) {
+                    Shown::Host => {
+                        hops += 1;
+                        if hops > 40 {
+                            return Err(error(format!("{}: too many links", path.display())));
+                        }
+                        let text = std::fs::read_link(&entry).map_err(failed)?;
+                        for part in text.components().rev() {
+                            rest.push_front(PathBuf::from(part.as_os_str()));
+                        }
+                    }
+                    Shown::Made => at = canonical(&entry)?,
+                    Shown::Absent => {
+                        let target = canonical(&entry)?;
+                        bind(args, "--symlink", &target, &entry);
+                        at = target;
+                    }
+                    Shown::Foreign => {
+                        return Err(error(format!(
+                            "{}: the agent program is reached through a folder the sandbox replaces",
+                            path.display()
+                        )));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    if at != real {
+        return Err(error(format!(
+            "{}: the agent program changed while its sandbox was prepared",
+            path.display()
+        )));
+    }
+    Ok(())
 }
 fn private_paths(home: &Path) -> Result<Vec<PathBuf>, HarnessError> {
     let mut paths = vec![
@@ -656,6 +885,13 @@ impl Sandbox for LinuxSandbox {
         run.history = history;
         run.wrapped = true;
         Ok(wrapped)
+    }
+    fn own_settings_file(&self, path: &Path) -> bool {
+        self.own
+            .lock()
+            .unwrap()
+            .as_ref()
+            .is_some_and(|own| own.holds(path))
     }
     fn prepare(&self, command: &mut Command) -> io::Result<()> {
         let mut run = self.run.lock().unwrap();
@@ -915,6 +1151,7 @@ mod tests {
         let (wrapped, history) = sandbox
             .build(
                 WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: Path::new("/bin/sh"),
                     visible: &[],
                     env: &f.env,
@@ -959,6 +1196,7 @@ mod tests {
             let (wrapped, history) = sandbox
                 .build(
                     WrapRequest {
+                        disabled: &ports::Disabled::default(),
                         program: Path::new("/bin/sh"),
                         visible: &[],
                         env: &env,
@@ -972,6 +1210,14 @@ mod tests {
                 (key == "CODEX_HOME" || key == "CLAUDE_CONFIG_DIR")
                     && value == "/run/ophio-provider"
             }));
+            // Nothing is shared, and the check list says so whatever Ophio's
+            // own environment holds.
+            assert!(
+                wrapped
+                    .env
+                    .iter()
+                    .any(|(key, value)| key == setup::VARIABLE && value.is_empty())
+            );
         }
         assert!(!home.join(".codex").exists());
         assert!(!home.join(".claude").exists());
@@ -989,6 +1235,7 @@ mod tests {
         let (wrapped, history) = sandbox
             .build(
                 WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: Path::new("/usr/bin/true"),
                     visible: &[],
                     env: &f.env,
@@ -1067,6 +1314,7 @@ mod tests {
                     .unwrap()
                     .build(
                         WrapRequest {
+                            disabled: &ports::Disabled::default(),
                             program: Path::new("/usr/bin/true"),
                             visible: &visible,
                             env: &f.env,
@@ -1106,6 +1354,7 @@ mod tests {
             let build = || {
                 sandbox.build(
                     WrapRequest {
+                        disabled: &ports::Disabled::default(),
                         program: Path::new("/usr/bin/true"),
                         visible: &[],
                         env: &f.env,
@@ -1180,6 +1429,7 @@ mod tests {
         sandbox
             .build(
                 WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: Path::new("/usr/bin/true"),
                     visible: &[],
                     env: &env,
@@ -1191,6 +1441,94 @@ mod tests {
         for folder in config.ancestors().take_while(|p| *p != home) {
             let mode = std::fs::metadata(folder).unwrap().permissions().mode();
             assert_eq!(mode & 0o777, 0o700);
+        }
+    }
+    #[test]
+    fn only_what_the_agent_writes_in_its_own_settings_is_its_own() {
+        for harness in [HarnessKind::ClaudeCode, HarnessKind::Codex] {
+            let dir = tempfile::tempdir().unwrap();
+            let root = std::fs::canonicalize(dir.path()).unwrap();
+            let home = root.join("home");
+            let claude = harness == HarnessKind::ClaudeCode;
+            let config = home.join(if claude { ".claude" } else { ".codex" });
+            let cwd = root.join("project");
+            let state = root.join("state");
+            for path in [&config, &cwd] {
+                std::fs::create_dir_all(path).unwrap();
+            }
+            let instructions = if claude { "CLAUDE.md" } else { "AGENTS.md" };
+            std::fs::write(config.join(instructions), "the person's own").unwrap();
+            let credential = crate::history::credential(harness);
+            std::fs::write(config.join(credential), "{}").unwrap();
+            std::fs::write(home.join(".claude.json"), "{}").unwrap();
+            let spec = SandboxSpec {
+                offline: false,
+                reach: reach(),
+                harness,
+                cwd: cwd.clone(),
+                state: state.clone(),
+                always: vec![],
+                programs: vec![],
+                candidates: vec![],
+                private: vec![],
+                given: vec![],
+                relay: None,
+                on_blocked: None,
+            };
+            let sandbox = LinuxSandbox::new(spec, PathBuf::from("/usr/bin/true")).unwrap();
+            // As the agent names it, and where it really lands.
+            let (note, kept) = if claude {
+                (
+                    config.join("projects/-p/memory/note.md"),
+                    state.join("claude-history/projects/-p/memory/note.md"),
+                )
+            } else {
+                (
+                    config.join("memories/note.md"),
+                    state.join("native/memories/note.md"),
+                )
+            };
+            std::fs::create_dir_all(kept.parent().unwrap()).unwrap();
+            std::fs::write(&kept, "remember this").unwrap();
+            assert!(
+                !sandbox.own_settings_file(&note),
+                "not known before it is built"
+            );
+            let env = ports::harness::RunEnv(vec![("HOME".into(), home.to_str().unwrap().into())]);
+            let (_, history) = sandbox
+                .build(
+                    WrapRequest {
+                        disabled: &ports::Disabled::default(),
+                        program: Path::new("/usr/bin/true"),
+                        visible: &[],
+                        env: &env,
+                        resume: None,
+                    },
+                    &reach(),
+                )
+                .unwrap();
+            assert!(
+                history
+                    .unwrap()
+                    .shared
+                    .iter()
+                    .any(|s| s.relative == Path::new(instructions))
+            );
+            // What bubblewrap leaves where it mounts a file of the person's.
+            for name in [instructions, credential] {
+                std::fs::write(state.join("native").join(name), "").unwrap();
+            }
+            std::fs::write(cwd.join("lib.rs"), "fn main() {}").unwrap();
+            assert!(sandbox.own_settings_file(&note), "{harness:?}");
+            assert!(sandbox.own_settings_file(&home.join(".claude.json")));
+            for path in [
+                config.join(instructions),
+                config.join(credential),
+                cwd.join("lib.rs"),
+                config.join("missing.md"),
+            ] {
+                assert!(!sandbox.own_settings_file(&path), "{}", path.display());
+            }
         }
     }
     #[test]
@@ -1225,6 +1563,7 @@ mod tests {
         let (wrapped, history) = sandbox
             .build(
                 WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: Path::new("/usr/bin/true"),
                     visible: &[],
                     env: &env,
@@ -1271,6 +1610,7 @@ mod tests {
         assert!(
             sandbox
                 .wrap(WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: Path::new("/usr/bin/true"),
                     visible: &[],
                     env: &env,
@@ -1281,6 +1621,7 @@ mod tests {
         assert!(
             sandbox
                 .wrap(WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: Path::new("/usr/bin/true"),
                     visible: &[],
                     env: &env,
@@ -1323,6 +1664,7 @@ mod tests {
         let (wrapped, _) = sandbox
             .build(
                 WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: Path::new("/usr/bin/true"),
                     visible: &[],
                     env: &env,
@@ -1345,6 +1687,297 @@ mod tests {
             "shown after the mask, so the mask can't hide it"
         );
         assert!(!args.iter().any(|a| a == gone.to_str().unwrap()));
+    }
+    #[test]
+    fn symlinked_codex_keeps_its_native_helper_beside_the_executed_binary() {
+        use std::os::unix::fs::{PermissionsExt, symlink};
+        let dir = tempfile::tempdir().unwrap();
+        let home = dir.path().join("home");
+        let cwd = home.join("project");
+        let native = dir.path().join("install/bin");
+        let alias_dir = home.join("bin");
+        for path in [&cwd, &native, &alias_dir] {
+            std::fs::create_dir_all(path).unwrap();
+        }
+        let codex = native.join("codex");
+        let helper = native.join("codex-code-mode-host");
+        for executable in [&codex, &helper] {
+            std::fs::write(executable, b"native executable fixture").unwrap();
+            std::fs::set_permissions(executable, std::fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        let alias = alias_dir.join("codex");
+        symlink(&codex, &alias).unwrap();
+        let spec = SandboxSpec {
+            offline: true,
+            reach: reach(),
+            harness: HarnessKind::Codex,
+            cwd,
+            state: dir.path().join("state"),
+            always: vec![],
+            programs: vec![],
+            candidates: vec![],
+            private: vec![],
+            given: vec![],
+            relay: None,
+            on_blocked: None,
+        };
+        let sandbox = LinuxSandbox::new(spec, "/usr/bin/true".into()).unwrap();
+        let env = ports::RunEnv(vec![("HOME".into(), home.to_string_lossy().into_owned())]);
+        let (wrapped, _) = sandbox
+            .build(
+                WrapRequest {
+                    disabled: &ports::Disabled::default(),
+                    program: &alias,
+                    visible: &[],
+                    env: &env,
+                    resume: None,
+                },
+                &reach(),
+            )
+            .unwrap();
+        let args: Vec<_> = wrapped.args.iter().map(PathBuf::from).collect();
+        assert!(
+            args.windows(3)
+                .any(|w| { w[0] == Path::new("--symlink") && w[1] == codex && w[2] == alias })
+        );
+        assert!(
+            args.windows(3)
+                .any(|w| { w[0] == Path::new("--ro-bind") && w[1] == helper && w[2] == helper })
+        );
+        assert!(
+            !args
+                .windows(3)
+                .any(|w| { w[0] == Path::new("--ro-bind") && w[1] == codex && w[2] == alias })
+        );
+    }
+    /// A Codex install with its helper, and a home folder to reach it from.
+    struct Install {
+        _dir: tempfile::TempDir,
+        root: PathBuf,
+        home: PathBuf,
+        codex: PathBuf,
+        helper: PathBuf,
+    }
+    impl Install {
+        fn new() -> Self {
+            Self::within(&std::env::temp_dir())
+        }
+        fn within(base: &Path) -> Self {
+            use std::os::unix::fs::PermissionsExt;
+            let dir = tempfile::tempdir_in(base).unwrap();
+            let root = dir.path().canonicalize().unwrap();
+            let home = root.join("home");
+            let native = root.join("install/bin");
+            for path in [&home.join("project"), &home.join("bin"), &native] {
+                std::fs::create_dir_all(path).unwrap();
+            }
+            let codex = native.join("codex");
+            let helper = native.join("codex-code-mode-host");
+            for executable in [&codex, &helper] {
+                std::fs::write(executable, b"native executable fixture").unwrap();
+                std::fs::set_permissions(executable, std::fs::Permissions::from_mode(0o700))
+                    .unwrap();
+            }
+            Self {
+                _dir: dir,
+                root,
+                home,
+                codex,
+                helper,
+            }
+        }
+        fn args(&self, reach: Reach, program: &Path) -> Vec<PathBuf> {
+            let spec = SandboxSpec {
+                offline: true,
+                reach: reach.clone(),
+                harness: HarnessKind::Codex,
+                cwd: self.home.join("project"),
+                state: self.root.join("state"),
+                always: vec![],
+                programs: vec![],
+                candidates: vec![],
+                private: vec![],
+                given: vec![],
+                relay: None,
+                on_blocked: None,
+            };
+            let sandbox = LinuxSandbox::new(spec, "/usr/bin/true".into()).unwrap();
+            let env = ports::RunEnv(vec![(
+                "HOME".into(),
+                self.home.to_string_lossy().into_owned(),
+            )]);
+            let (wrapped, _) = sandbox
+                .build(
+                    WrapRequest {
+                        disabled: &ports::Disabled::default(),
+                        program,
+                        visible: &[],
+                        env: &env,
+                        resume: None,
+                    },
+                    &sandbox.spec.reach,
+                )
+                .unwrap();
+            wrapped.args.iter().map(PathBuf::from).collect()
+        }
+    }
+    fn has(args: &[PathBuf], op: &str, source: &Path, destination: &Path) -> bool {
+        args.windows(3)
+            .any(|w| w[0] == Path::new(op) && w[1] == source && w[2] == destination)
+    }
+    /// Whether any operation puts something at `path`.
+    fn touches(args: &[PathBuf], path: &Path) -> bool {
+        args.windows(3).any(|w| {
+            ["--symlink", "--ro-bind", "--bind"]
+                .iter()
+                .any(|op| w[0] == Path::new(op))
+                && w[2] == path
+        })
+    }
+    fn reading(folder: &Path) -> Reach {
+        Reach {
+            read: vec![folder.to_owned()],
+            ..reach()
+        }
+    }
+    #[test]
+    fn a_shortcut_in_a_readable_folder_is_left_to_the_hosts_own_link() {
+        use std::os::unix::fs::symlink;
+        for relative in [false, true] {
+            let f = Install::new();
+            let alias = f.home.join("bin/codex");
+            if relative {
+                symlink("../../install/bin/codex", &alias).unwrap();
+            } else {
+                symlink(&f.codex, &alias).unwrap();
+            }
+            let args = f.args(reading(&f.home), &alias);
+            // A link or a bind there meets the host's own link and stops the run.
+            assert!(!touches(&args, &alias), "relative {relative}: {args:?}");
+            assert!(has(&args, "--ro-bind", &f.codex, &f.codex));
+            assert!(has(&args, "--ro-bind", &f.helper, &f.helper));
+        }
+    }
+    #[test]
+    fn a_shortcut_under_whole_computer_read_is_left_to_the_hosts_own_link() {
+        use std::os::unix::fs::symlink;
+        // Whole-computer read still masks these host folders. Choose a writable
+        // location independently of the test binary, which may itself be in /tmp.
+        // Canonicalize first so a symlink into a masked folder cannot qualify.
+        let masked = ["/tmp", "/run", "/dev", "/proc"];
+        let base = [
+            Some(std::env::temp_dir()),
+            std::env::var_os("HOME").map(PathBuf::from),
+            Some(PathBuf::from(env!("CARGO_MANIFEST_DIR"))),
+            Some(PathBuf::from("/var/tmp")),
+        ]
+        .into_iter()
+        .flatten()
+        .find_map(|candidate| {
+            let candidate = candidate.canonicalize().ok()?;
+            if masked.iter().any(|p| candidate.starts_with(p)) {
+                return None;
+            }
+            tempfile::tempdir_in(candidate).ok()
+        })
+        .expect("whole-computer read fixture needs a writable, unmasked host folder");
+        assert!(!masked.iter().any(|p| base.path().starts_with(p)));
+        let f = Install::within(base.path());
+        let alias = f.home.join("bin/codex");
+        symlink("../../install/bin/codex", &alias).unwrap();
+        let whole = Reach {
+            whole_read: true,
+            ..reach()
+        };
+        let args = f.args(whole, &alias);
+        assert!(!touches(&args, &alias), "{args:?}");
+        assert!(has(&args, "--ro-bind", &f.codex, &f.codex));
+    }
+    #[test]
+    fn a_real_file_reached_through_a_folder_link_runs_as_the_real_file() {
+        use std::os::unix::fs::symlink;
+        let f = Install::new();
+        let tools = f.home.join("tools");
+        symlink(f.root.join("install"), &tools).unwrap();
+        let program = tools.join("bin/codex");
+        // Hidden: the folder link is made, not the file bound onto the alias.
+        let args = f.args(reach(), &program);
+        assert!(has(&args, "--symlink", &f.root.join("install"), &tools));
+        assert!(!touches(&args, &program), "{args:?}");
+        assert!(has(&args, "--ro-bind", &f.codex, &f.codex));
+        assert!(has(&args, "--ro-bind", &f.helper, &f.helper));
+        // Readable: the host's own folder link is already there.
+        let args = f.args(reading(&f.home), &program);
+        assert!(!touches(&args, &tools) && !touches(&args, &program));
+        assert!(has(&args, "--ro-bind", &f.codex, &f.codex));
+    }
+    #[test]
+    fn a_shown_shortcut_whose_way_passes_a_hidden_link_gets_only_that_link() {
+        use std::os::unix::fs::symlink;
+        let f = Install::new();
+        let versions = f.root.join("opt");
+        std::fs::create_dir_all(&versions).unwrap();
+        std::fs::rename(f.root.join("install"), versions.join("1.0")).unwrap();
+        let current = versions.join("current");
+        symlink("1.0", &current).unwrap();
+        let alias = f.home.join("bin/codex");
+        symlink(current.join("bin/codex"), &alias).unwrap();
+        let codex = versions.join("1.0/bin/codex");
+        let args = f.args(reading(&f.home), &alias);
+        assert!(!touches(&args, &alias), "{args:?}");
+        assert!(has(&args, "--symlink", &versions.join("1.0"), &current));
+        assert!(has(&args, "--ro-bind", &codex, &codex));
+    }
+    #[test]
+    fn a_shortcut_behind_private_data_is_made_there_and_not_left_dangling() {
+        use std::os::unix::fs::symlink;
+        // Read: Home, but the shortcut sits under a folder kept private.
+        let f = Install::new();
+        let private = f.home.join(".local/share/ophio/agents");
+        std::fs::create_dir_all(&private).unwrap();
+        let alias = private.join("codex");
+        symlink(&f.codex, &alias).unwrap();
+        let args = f.args(reading(&f.home), &alias);
+        assert!(has(&args, "--symlink", &f.codex, &alias), "{args:?}");
+    }
+    #[test]
+    fn what_the_sandbox_shows_follows_the_last_operation_over_a_path() {
+        let args: Vec<OsString> = [
+            "--tmpfs",
+            "/",
+            "--ro-bind",
+            "/h",
+            "/h",
+            "--tmpfs",
+            "/h/p",
+            "--ro-bind",
+            "/h/p/s",
+            "/h/p/s",
+            "--bind",
+            "/x",
+            "/h/y",
+            "--symlink",
+            "/t",
+            "/h/p/l",
+            "--cap-drop",
+            "ALL",
+        ]
+        .into_iter()
+        .map(Into::into)
+        .collect();
+        for (path, expected) in [
+            ("/a", Shown::Absent),
+            ("/h", Shown::Host),
+            ("/h/q", Shown::Host),
+            ("/h/p", Shown::Made),
+            ("/h/p/q", Shown::Absent),
+            ("/h/p/s/q", Shown::Host),
+            ("/h/y", Shown::Made),
+            ("/h/y/q", Shown::Foreign),
+            ("/h/p/l", Shown::Made),
+        ] {
+            assert_eq!(shown(&args, Path::new(path)), expected, "{path}");
+        }
     }
     #[test]
     fn accepts_nested_candidates_for_restart_based_changes() {

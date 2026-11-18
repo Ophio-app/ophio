@@ -13,6 +13,8 @@ use std::{
 };
 
 pub(crate) const LABEL: &str = "app.ophio";
+/// The job an update runs in, apart from the login service.
+pub(crate) const UPDATE_LABEL: &str = "app.ophio.update";
 
 /// launchd gives its agents only the system's own folders, and people's tools
 /// are in Homebrew's. An agent's own folder is found separately.
@@ -111,11 +113,12 @@ fn service_name() -> String {
 }
 
 async fn launchctl(args: &[&str]) -> std::io::Result<std::process::Output> {
-    tokio::process::Command::new("/bin/launchctl")
-        .args(args)
-        .stdin(std::process::Stdio::null())
-        .output()
-        .await
+    containment::inherit::tokio_output(
+        tokio::process::Command::new("/bin/launchctl")
+            .args(args)
+            .stdin(std::process::Stdio::null()),
+    )
+    .await
 }
 
 /// Whether launchd holds the agent in this session.
@@ -220,6 +223,7 @@ pub(super) async fn service(command: super::ServiceCommand, paths: &Paths) -> Re
             if managed(&path)?.is_some() {
                 std::fs::remove_file(&path)?;
             }
+            forget_finished_update().await?;
             Ok("Øphio is stopped and no longer starts when you log in. Your settings, paired devices and data are kept; `ophio uninstall-data` deletes them.".into())
         }
         Status => {
@@ -324,6 +328,32 @@ pub(super) async fn stop_now(paths: &Paths) -> Result<bool> {
     }
 }
 
+/// Whether launchd says a job it holds has ended.
+fn ended(printed: &str) -> bool {
+    printed
+        .lines()
+        .find_map(|line| line.strip_prefix("\tstate = "))
+        .is_some_and(|state| state == "not running")
+}
+
+/// launchd keeps a finished update job listed until logout, pointing at a
+/// program in the install folder. Uninstalling takes it away so nothing is left
+/// behind once that folder is deleted. A waiting update is left alone:
+/// `ophio update --cancel` stops it.
+async fn forget_finished_update() -> Result<()> {
+    let name = format!("{}/{UPDATE_LABEL}", domain());
+    let printed = launchctl(&["print", &name]).await?;
+    if printed.status.success() && ended(&String::from_utf8_lossy(&printed.stdout)) {
+        let output = launchctl(&["bootout", &name]).await?;
+        // Already gone counts as done.
+        let still = launchctl(&["print", &name]).await?;
+        if !output.status.success() && still.status.success() {
+            return Err(failed("remove the finished update job", &output));
+        }
+    }
+    Ok(())
+}
+
 /// Starts a one-off job in this session that launchd keeps apart from whatever
 /// started it, for an update that must outlive the login service and this
 /// terminal. `file` is where its description is kept. A finished one from before
@@ -422,6 +452,22 @@ pub(super) async fn login_service(paths: &Paths) -> Result<Option<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_an_update_job_that_has_ended_is_taken_away() {
+        // As launchctl print shows a job: a finished one, one waiting to be
+        // idle, and one just loaded.
+        let finished = "gui/501/app.ophio.update = {\n\tactive count = 0\n\ttype = LaunchAgent\n\tstate = not running\n\n\tprogram = /x/ophio\n\tdefault environment = {\n\t\tstate = not running\n\t}\n}\n";
+        assert!(ended(finished));
+        assert!(!ended(
+            &finished.replace("\tstate = not running\n\n", "\tstate = running\n\n")
+        ));
+        assert!(!ended(&finished.replace(
+            "\tstate = not running\n\n",
+            "\tstate = spawn scheduled\n\n"
+        )));
+        assert!(!ended(""));
+    }
 
     #[test]
     fn the_agent_starts_this_program_in_the_graphical_session() {

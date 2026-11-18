@@ -331,7 +331,7 @@ impl Actor {
             return Ok(false);
         }
         if !std::mem::replace(&mut self.usage_limited, true) {
-            self.emit(HarnessEvent::Warning {
+            self.emit(HarnessEvent::UsageNotice {
                 text: "Codex reports the usage limit is reached".into(),
             })?;
             self.emit(HarnessEvent::UsageLimited {

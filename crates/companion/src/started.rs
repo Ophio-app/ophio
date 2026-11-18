@@ -185,11 +185,11 @@ mod unix {
         impl Sleeper {
             /// The shell exits at once, the way `nohup … &` detaches a program.
             fn detached() -> Self {
-                let output = Command::new("/bin/sh")
-                    .args(["-c", "sleep 30 </dev/null >/dev/null 2>&1 & echo $!"])
-                    .stdout(Stdio::piped())
-                    .output()
-                    .unwrap();
+                let output = containment::inherit::output(
+                    Command::new("/bin/sh")
+                        .args(["-c", "sleep 30 </dev/null >/dev/null 2>&1 & echo $!"]),
+                )
+                .unwrap();
                 Self(
                     String::from_utf8(output.stdout)
                         .unwrap()
@@ -211,11 +211,12 @@ mod unix {
         #[test]
         fn children_and_their_descendants_are_started_here_and_the_rest_are_not() {
             let started = Started::claim().unwrap();
-            let mut shell = Command::new("/bin/sh")
-                .args(["-c", "sleep 30 </dev/null >/dev/null 2>&1 & echo $!; wait"])
-                .stdout(Stdio::piped())
-                .spawn()
-                .unwrap();
+            let mut shell = containment::inherit::spawn(
+                Command::new("/bin/sh")
+                    .args(["-c", "sleep 30 </dev/null >/dev/null 2>&1 & echo $!; wait"])
+                    .stdout(Stdio::piped()),
+            )
+            .unwrap();
             let mut line = String::new();
             std::io::BufRead::read_line(
                 &mut std::io::BufReader::new(shell.stdout.take().unwrap()),

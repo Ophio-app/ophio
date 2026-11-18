@@ -14,10 +14,15 @@ import { pendingQueueItems, queueItemState } from "../work/useQueue";
 // turned into a task.
 
 import { useCarryPlan, reviewPlan } from "./carryPlan";
-import { Bot, ChevronDown, ChevronRight, GitPullRequest, Hammer, ListChecks, ListPlus, NotebookPen, Paperclip, ScrollText, SendHorizontal, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { Bot, ChevronDown, ChevronRight, File as FileIcon, GitPullRequest, Hammer, ListChecks, ListPlus, NotebookPen, Paperclip, ScrollText, SendHorizontal, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { shallowEqual, useApp, useHost, useLink, useUi } from "../../app/context";
-import { draftKey, type AgentChoice, type ReviewIntent, type SendAttempt, type SourceStart } from "../../app/ui";
+import { draftKey, hasReviewDetails, type AgentChoice, type ReviewIntent, type SendAttempt, type SourceStart } from "../../app/ui";
+import { rememberedPr, rememberPr, usualAgent } from "../../app/launchMemory";
+import { draftNewTask, useGithubProject, useGithubSupported } from "../../app/github";
+import { useSignInOn } from "../settings/signIn";
+import { HEARS_BACK_FEATURE, planTyped } from "./workCards";
+import "./workCards.css";
 import { announce } from "../../design/Announcer";
 import { Button, IconButton } from "../../design/Button";
 import { Chip } from "../../design/Chip";
@@ -29,13 +34,14 @@ import type { HarnessInfo, Project, Run, Task } from "../../protocol/types";
 import { annotationStore, describe, summarize, useAnnotation } from "../../state/annotations";
 import { TaskRecipient, useRetryRecipient, useTaskRecipient } from "./TaskRecipient";
 import { AgentSheet } from "./AgentSheet";
+import { kindOf, rememberUsual } from "../../app/launchMemory";
 import { TaskAgentChip, TaskAgentSheet, useTaskAgent } from "./TaskAgent";
-import { agentLabel, resolveAgent, composerMode, defaultIntent, modeSupport, writerBlockLine, writerHold, writerQueueLine, HOLDER_TITLE, needsReview, sameIntent, sendLabel, type Intent, type IntentOption } from "./intent";
-import { CONVERSATIONS_FEATURE, CONVERSATIONS_UPDATE, NEW_CONVERSATION, conversationSummary, intoTask, nextChoice, startConversation, turnModel } from "./conversation";
+import { agentLabel, resolveAgent, composerMode, CHAT_CARRY_ON_FEATURE, defaultIntent, modeSupport, writerBlockLine, writerHold, writerQueueLine, HOLDER_TITLE, needsReview, sameIntent, sendLabel, type Intent, type IntentOption } from "./intent";
+import { CHAT_AGENT_SWITCH_FEATURE, CONVERSATIONS_FEATURE, CONVERSATIONS_UPDATE, NEW_CONVERSATION, conversationSummary, intoTask, nextChoice, startConversation, turnAgent } from "./conversation";
 import { INTO_TASK_TEXT, IntoTaskSheet } from "./IntoTask";
 import { SwitchToWorkChip } from "./SwitchToWorkChip";
 import { availabilityText } from "../../design/Notice";
-import { check, repeatable, resend, send, useAutoSettle, type SendRequest } from "./send";
+import { check, repeatable, resend, send, useAutoSettle, useSendBusy, type SendRequest } from "./send";
 import { READ_ONLY_TURN_FEATURE, summarizable, summaryRequest } from "./summarize";
 
 import { continuationBlocker } from "../control/readiness";
@@ -43,11 +49,15 @@ import { Unlock, useUnlockable } from "../control/Unlock";
 import { continuationSelection, planReviewSelection } from "./continuationSelection";
 import { removeMarkup } from "./removedMarkup";
 import { AttachSheet } from "./Attach";
+import { addFiles, amount, CHAT_FILES_FEATURE, removeFile, useFileProgress, type FileDraft } from "./chatFiles";
 import { useStore } from "../../state/store";
 import { LAUNCHERS_FEATURE, setDraftStart, startedLabel } from "../../app/launchers";
 import { QUEUE_MARKUP_FEATURE, QUEUE_MARKUP_UPDATE } from "../../app/queueMarkupFeature";
 import { StartFromSheet } from "../launch/StartFrom";
-import { accessHeld, defaultAccess } from "./access";
+import { accessHeld, newChatAccess, normalizedAccess } from "./access";
+import { rememberChatAccess } from "./AccessBar";
+import { newAsk, useChatAsk } from "./chatRequests";
+import { toast } from "../../design/Toast";
 
 function reviewIntent(i: Intent): ReviewIntent {
   return i.kind === "message" ? i.delivery : i.kind === "continue_later" ? "continue" : i.kind;
@@ -87,6 +97,8 @@ function shortPlaceholder(i: Intent, agent: string, tight: boolean, separate = f
 
 /** The end of the bar that is not in use: out of sight, reach and speech. */
 const away = { inert: true, "aria-hidden": true } as const;
+const FILES_UPDATE = "Update Øphio on this computer to send files. Until then, remove them to send your message.";
+const NO_FEATURES: readonly string[] = [];
 
 export function Composer({
   project,
@@ -109,7 +121,7 @@ export function Composer({
   agent: AgentChoice | null;
 }) {
   const app = useApp();
-  const [planError, setPlanError] = useState<string | null>(null);
+  const [planFailure, setPlanFailure] = useState<{ context: { key: string }; message: string } | null>(null);
   const plan = useCarryPlan(task);
   const { ui, profile } = app;
   const projectId = project.project_id;
@@ -133,8 +145,19 @@ export function Composer({
   const readinessHint = useRef<HTMLParagraphElement>(null);
 
   const writer = useHost((s) => writerHold(s.projects[projectId]?.active_writer, s), shallowEqual);
-  const mode = useMemo(() => composerMode(task, run, harness, writer, project.name), [task, run, harness, writer, project.name]);
-  const options: IntentOption[] = mode.mode === "running" || mode.mode === "ended" ? mode.options : [];
+  const carryOn = useHost((s) => !!s.capabilities?.features.includes(CHAT_CARRY_ON_FEATURE));
+  const switchAgent = useHost((s) => !!s.capabilities?.features.includes(CHAT_AGENT_SWITCH_FEATURE));
+  const next = task?.conversation ? nextChoice(task, draft?.agent, switchAgent) : null;
+  const changingAgent = !!next && next.harness !== (run?.harness ?? task?.harness);
+  const destination = changingAgent ? harnesses.find(h => h.kind === next.harness) ?? null : undefined;
+  const runningHarness = run ? harnesses.find(h => h.kind === run.harness) ?? null : harness;
+  const mode = useMemo(() => composerMode(task, run, runningHarness, writer, project.name, carryOn, destination), [task, run, runningHarness, writer, project.name, carryOn, destination]);
+  // A chat whose last reply was cut off: the next message carries on from it.
+  const cutOff = mode.mode === "ended" && !!mode.cutOff;
+  const options: IntentOption[] = (mode.mode === "running" || mode.mode === "ended" ? mode.options : []).map(o =>
+    changingAgent && o.intent.kind === "message" && o.intent.delivery !== "next_turn"
+      ? { ...o, unavailable: "Another agent can reply after this turn. It can’t steer or interrupt this agent’s reply." }
+      : o);
   const [chosen, setChosen] = useState<Intent | null>(null);
   const [picking, setPicking] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -145,11 +168,21 @@ export function Composer({
   const [choosingModel, setChoosingModel] = useState(false);
   /** Turn into a task is open, with the words it opened with. */
   const [carrying, setCarrying] = useState<string | null>(null);
+  const [carryPick, setCarryPick] = useState<AgentChoice | null>(null);
   const conversations = useHost((s) => !!s.capabilities?.features.includes(CONVERSATIONS_FEATURE));
   const launchers = useHost((s) => !!s.capabilities?.features.includes(LAUNCHERS_FEATURE));
   const readOnlyTurns = useHost((s) => !!s.capabilities?.features.includes(READ_ONLY_TURN_FEATURE));
   const queueMarkup = useHost((s) => !!s.capabilities?.features.includes(QUEUE_MARKUP_FEATURE));
-  const [sending, setSending] = useState<{ detail: string | null } | null>(null);
+  // Files go with a chat's messages, from a device that may upload them, to
+  // a computer that takes them.
+  const filesTaken = useHost((s) => !!s.capabilities?.features.includes(CHAT_FILES_FEATURE));
+  const mayUpload = useHost((s) => !!s.grants?.transfers);
+  const chatFiles = filesTaken && talking && mayUpload;
+  const [fileRefusal, setFileRefusal] = useState<string | null>(null);
+  const [localSending, setSending] = useState<{ detail: string | null } | null>(null);
+  const sharedSending = useSendBusy(projectId, taskId);
+  const sending = localSending ?? sharedSending;
+  const sendInFlight = useRef(false);
   const [checking, setChecking] = useState(false);
 
   useEffect(() => setChosen(null), [taskId]);
@@ -164,7 +197,7 @@ export function Composer({
   const readOnly = mode.mode === "waiting" || mode.mode === "reconcile" || mode.mode === "archived";
   const intent: Intent = (() => {
     if (readOnly || mode.mode === "new") return { kind: "new_task" };
-    if (mode.mode === "starting") return { kind: "message", delivery: "next_turn" };
+    if (mode.mode === "starting" || (mode.mode === "running" && changingAgent)) return { kind: "message", delivery: "next_turn" };
     // A way that can't be used now, such as Continue while another task
     // holds the project, gives way to the default, so an answer to the agent
     // can still wait in Next up.
@@ -188,12 +221,15 @@ export function Composer({
   const context = currentPlanContext.current;
   const mounted = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  useEffect(() => { setPlanError(null); }, [planContext]);
+  // An old plan error belongs only to the request that produced it. Derive
+  // its visibility instead of resetting state in an effect on every edit:
+  // that extra update can hit React's nested-update limit during fast input.
+  const planError = planFailure?.context === context ? planFailure.message : null;
   const carryPlan = task && plan ? ({ send }: { send?: boolean } = {}) => {
-    setPicking(false); setToolsOpen(false); setPlanError(null);
+    setPicking(false); setToolsOpen(false); setPlanFailure(null);
     const stillCurrent = () => mounted.current && currentPlanContext.current === context;
     void reviewPlan(app, task, stillCurrent, { send }).catch((e: unknown) => {
-      if (stillCurrent()) setPlanError(e instanceof Error ? e.message : "Couldn’t load the plan.");
+      if (stillCurrent()) setPlanFailure({ context, message: e instanceof Error ? e.message : "Couldn’t load the plan." });
     });
   } : undefined;
   const planSelection = planReviewSelection(ui);
@@ -204,11 +240,13 @@ export function Composer({
       carryPlan?.({ send: planRequest.send });
     }
   }, [planRequest, taskId, planSelection, carryPlan]);
-  const hasContent = text.trim().length > 0 || annotation !== null;
+  const files = draft?.files ?? [];
+  const hasContent = text.trim().length > 0 || annotation !== null || files.length > 0;
   const attempt = draft?.attempt ?? null;
   const newDraft = useUi(s => s.drafts[draftKey(projectId, fresh ? NEW_CONVERSATION : null)]);
-  const recipient = intent.kind === "new_task" ? resolveAgent(project, harnesses, newDraft?.agent ?? agent)?.harness : harness?.kind;
+  const recipient = intent.kind === "new_task" ? resolveAgent(project, harnesses, newDraft?.agent ?? agent)?.harness : next?.harness ?? run?.harness ?? harness?.kind;
   const agentName = harnesses.find(h => h.kind === recipient)?.display_name ?? "the agent";
+  const currentAgentName = harnesses.find(h => h.kind === (run?.harness ?? task?.harness))?.display_name ?? agentName;
   const online = link.state === "online";
   const tight = useTightLayout();
   const cramped = useCrampedLayout();
@@ -216,7 +254,8 @@ export function Composer({
   const taskRecipient = useTaskRecipient(project, task);
   const retryRecipient = useRetryRecipient(projectId, taskId);
   const recipientBlocked = intent.kind !== "new_task" && intent.kind !== "next_up" && taskRecipient.blocked;
-  const askUnavailable = fresh && harness ? availabilityText(modeSupport(harness, "ask").availability) : null;
+  const askHarness = next ? harnesses.find(h => h.kind === next.harness) : harness;
+  const askUnavailable = (fresh || changingAgent) && askHarness ? availabilityText(modeSupport(askHarness, "ask").availability) : null;
   const disabledReason = recipientBlocked
     ? "Confirm which agent should receive this message."
     : !online && (fresh || !needsReview(intent, annotation !== null))
@@ -233,9 +272,13 @@ export function Composer({
         ? `${agentName} can’t hold a read-only conversation here. ${askUnavailable.detail ?? ""}`.trim()
         : intent.kind === "continue_later" && annotation && !queueMarkup
           ? QUEUE_MARKUP_UPDATE
+          : files.length && !filesTaken
+          ? FILES_UPDATE
+          : files.length && intent.kind === "continue_later"
+          ? "Files can’t wait in Next up. Send them once the project is free, or remove them."
           : option?.unavailable ?? controlReason;
   const continueOption = options.find((o) => o.intent.kind === "continue");
-  const blockedByWriter = (intent.kind === "continue" || intent.kind === "continue_later") && !!continueOption?.unavailable && writer?.task;
+  const blockedByWriter = (intent.kind === "continue" || intent.kind === "continue_later") && (task?.mode ?? "work") === "work" && !(cutOff && writer?.task?.task_id === taskId) && !!continueOption?.unavailable && writer?.task;
   // Held by the writer, a message can still wait in Next up for its turn.
   const waitsInNextUp = blockedByWriter && intent.kind === "continue_later";
   const canRepeat = repeatable(attempt, app.session);
@@ -248,17 +291,51 @@ export function Composer({
   const unresolvedReason = unresolved ? `Check whether ${profile.name} received your last message first, or choose ${canRepeat ? "Send again" : "Send anyway"}.` : null;
   // Asking for a summary needs no writer, so it stays offered while another
   // task holds the project; it waits only for an earlier send to settle.
-  const summary = readOnlyTurns && !!task && mode.mode === "ended" && summarizable(task, run, harness);
+  const summary = readOnlyTurns && !!task && mode.mode === "ended" && !cutOff && summarizable(task, run, harness);
   const summaryBusy = !online || !canWork || sending !== null || attempt?.phase === "sending";
-  const review = !fresh && needsReview(intent, annotation !== null);
+  // A new task whose settings need no choosing starts from here, saying on
+  // one quiet line what it starts as; anything else is chosen in Review.
+  const typing = mode.mode === "new" && !fresh && taskId === null && !annotation && (draft?.mode ?? "work") === "work"
+    && !hasReviewDetails(draft?.review ? { ...draft.review, github: null } : null)
+    && (draft?.review?.github == null || draft.review.github.type === "new_pr");
+  const githubSupported = useGithubSupported();
+  const features = useHost((s) => s.capabilities?.features ?? NO_FEATURES);
+  // Turning a chat into a task makes a new task, as Tasks would, and the
+  // chat stays, where the computer can tell the chat how it ended.
+  const keepsChat = !!task?.conversation && features.includes(HEARS_BACK_FEATURE);
+  const carryingNew = keepsChat && carrying !== null;
+  const githubRead = useGithubProject((typing || carryingNew) && githubSupported && canWork && online && project.vcs?.kind === "git" ? projectId : null);
+  const signInOn = useSignInOn();
+  const planFor = (words: string, as: AgentChoice | null, pr: boolean) => planTyped({
+    text: words, project, agent: as, harnesses,
+    github: !githubSupported || project.vcs?.kind !== "git" ? null : githubRead.error ? undefined : githubRead.view ?? undefined,
+    pr, writer: writer ? { title: writer.task?.title ?? null } : null,
+    paused: !!queue?.paused, features, canStart: online && canWork, signInOn,
+  });
+  const typed = typing ? planFor(text, agent, draft?.review?.github !== null) : null;
+  // The person's usual agent for a change here, as a new task from Tasks gets.
+  // Or the one picked in the sheet, which becomes the usual, as a card's pick does.
+  const carryAgent = keepsChat ? carryPick ?? usualAgent(profile.profileId, project, "change", harnesses)?.agent ?? null : null;
+  const carryPr = rememberedPr(profile.profileId, projectId);
+  const carried = carryingNew ? planFor(carrying || INTO_TASK_TEXT, carryAgent, carryPr) : null;
+  const direct = typed?.start && !githubRead.error ? typed.start : null;
+  const review = !fresh && !direct && needsReview(intent, annotation !== null);
   const label = fresh ? "Start conversation"
+    : direct ? typed!.queued ? "Add to Next up" : "Start task"
     : intent.kind === "message" && intent.delivery === "interrupt_and_send" && !review ? "Stop and send" : sendLabel(intent, annotation !== null, talking);
   // What the next message in a conversation uses, and carrying it into Work.
-  const next = task?.conversation ? nextChoice(task, draft?.agent) : null;
-  const carryable = !!task?.conversation && mode.mode === "ended";
+  const carryable = !!task?.conversation && mode.mode === "ended" && !cutOff;
+  // Asked for from the chat's heading or its menu.
+  useChatAsk(task?.conversation ? task.task_id : mode.mode === "new" && agent ? newAsk(projectId) : undefined, (ask) => {
+    if (ask === "model") (task ? setChoosingModel : setChoosingAgent)(true);
+    else if (carryable) setCarrying(text.trim() || INTO_TASK_TEXT);
+    else toast("Once this reply ends, you can turn the chat into a task.");
+  });
   const carryBlocked = !task ? null
     : !online ? `Connect to ${profile.name} to start it.`
     : !canWork ? `This device isn’t allowed to work with tasks on ${profile.name}.`
+    // A new task waits its turn in Next up, or starts from Review.
+    : keepsChat ? (unresolved || attempt?.phase === "sending" || sending ? "Wait for your last message to settle first." : null)
     : writer && writer.task?.task_id !== task.task_id ? `${writerBlockLine(writer, HOLDER_TITLE)}.`
     : !harness || harness.capabilities.start_run.state !== "available" ? `${agentName} can’t start work on ${profile.name} now.`
     : unresolved || attempt?.phase === "sending" || sending ? "Wait for your last message to settle first."
@@ -289,6 +366,24 @@ export function Composer({
     onSent?.();
   };
 
+  /** Sends once however fast the taps come; true when the computer took it. */
+  const submit = async (req: SendRequest): Promise<boolean> => {
+    // Two taps can reach the same handler before React renders the busy state.
+    if (sendInFlight.current) return false;
+    sendInFlight.current = true;
+    setSending({ detail: null });
+    try {
+      const out = await send(app, req, (detail) => setSending({ detail }));
+      if (out.joined) return false;
+      if (out.ok) sent();
+      else announce(out.attempt.detail, "assertive");
+      return out.ok;
+    } finally {
+      sendInFlight.current = false;
+      setSending(null);
+    }
+  };
+
   const go = async (anyway = false) => {
     if (!hasContent || disabledReason || sending || attempt?.phase === "sending") return;
     if (unresolved && !anyway) return;
@@ -297,17 +392,30 @@ export function Composer({
       const words = text.trim();
       const chosenAgent = agent;
       // What the bar above chose, on a computer that holds the agent to it.
-      const access = accessHeld(app.session.state.get().capabilities) ? app.ui.get().drafts[draftKey(projectId, NEW_CONVERSATION)]?.access ?? defaultAccess(projectId) : null;
-      setSending({ detail: null });
-      const out = await send(app, { projectId, draftTaskId: NEW_CONVERSATION, text, annotationId: null, label, build: () => startConversation(projectId, words, chosenAgent, { access }) }, (detail) => setSending({ detail }));
-      setSending(null);
-      if (out.ok) sent();
-      else announce(out.attempt.detail, "assertive");
+      const host = app.session.state.get();
+      const drafted = app.ui.get().drafts[draftKey(projectId, NEW_CONVERSATION)]?.access;
+      const access = accessHeld(host.capabilities) ? newChatAccess(host.projects[projectId], projectId, drafted, host.projects) : null;
+      const ok = await submit({ projectId, draftTaskId: NEW_CONVERSATION, text, annotationId: null, label, build: (bundle) => startConversation(projectId, words, chosenAgent, { access, bundle }) });
+      // What the person chose for this chat is where the project's next one
+      // starts, once the computer has it. A remembered choice that named a
+      // project the computer no longer lists is kept without it.
+      const remembered = host.projects[projectId]?.chat_access;
+      if (ok && access && (drafted || remembered) && JSON.stringify(normalizedAccess(access)) !== JSON.stringify(remembered ? normalizedAccess(remembered) : null))
+        void rememberChatAccess(app.session, projectId, normalizedAccess(access));
       return;
     }
     if (intent.kind === "new_task" && taskId !== null) {
       moveToNewTask();
       ui.push({ screen: "review", projectId, taskId: null, intent: "new_task" });
+      return;
+    }
+    if (direct) {
+      const start = direct;
+      // Through the same single-flight send: a double tap starts one task.
+      const prOn = !!githubRead.view && githubRead.view.settings.mode !== "off";
+      const ok = await submit({ projectId, draftTaskId: null, text, annotationId: null, label, build: () => start });
+      // As Review keeps it: whether Work here gets its own pull request.
+      if (ok && start.command === "create_task" && prOn) rememberPr(profile.profileId, projectId, start.github?.type === "new_pr");
       return;
     }
     if (review) {
@@ -318,9 +426,9 @@ export function Composer({
     const body = text.trim();
     const req: SendRequest =
       intent.kind === "continue"
-        ? { projectId, draftTaskId: taskId, text, annotationId: null, label, expectedRevision: task.revision, build: () => ({ command: "resume_task", task_id: task.task_id, text: body, ...(task.conversation ? turnModel(task, harness ?? undefined, draft?.agent) : {}) }) }
+        ? { projectId, draftTaskId: taskId, text, annotationId: null, label, expectedRevision: task.revision, build: (bundle) => ({ command: "resume_task", task_id: task.task_id, text: body, ...(bundle ? { bundle } : {}), ...(task.conversation ? turnAgent(task, harnesses, draft?.agent, switchAgent) : {}) }) }
         : intent.kind === "continue_later"
-        ? { projectId, draftTaskId: taskId, text, annotationId: null, label: "Put in Next up", expectedRevision: task.revision, build: () => ({ command: "queue_continuation", task_id: task.task_id, text: body, authorization: "auto_start" }) }
+        ? { projectId, draftTaskId: taskId, text, annotationId: null, label: "Put in Next up", expectedRevision: task.revision, build: (bundle) => ({ command: "queue_continuation", task_id: task.task_id, text: body, ...(bundle ? { bundle } : {}), authorization: "auto_start" }) }
         : {
             projectId,
             draftTaskId: taskId,
@@ -333,35 +441,47 @@ export function Composer({
               text: body,
               bundle,
               delivery: intent.kind === "message" ? intent.delivery : "next_turn",
+              ...(task.conversation && switchAgent && intent.kind === "message" && intent.delivery === "next_turn" ? turnAgent(task, harnesses, draft?.agent, true) : {}),
             }),
           };
-    setSending({ detail: null });
-    const out = await send(app, req, (detail) => setSending({ detail }));
-    setSending(null);
-    if (out.ok) sent();
-    else announce(out.attempt.detail, "assertive");
+    await submit(req);
   };
 
   /** Ask the task's own agent, read-only, what happened. The field is left as it is. */
   const askSummary = async (anyway = false) => {
     setToolsOpen(false);
     if (!task || !summary || summaryBusy || (unresolved && !anyway)) return;
-    setSending({ detail: null });
-    const out = await send(app, task.conversation ? conversationSummary(projectId, task) : summaryRequest(projectId, task), (detail) => setSending({ detail }));
-    setSending(null);
-    if (out.ok) sent();
-    else announce(out.attempt.detail, "assertive");
+    await submit(task.conversation ? conversationSummary(projectId, task) : summaryRequest(projectId, task));
   };
 
   /** Carry the conversation on as a task in Work, in the words the sheet holds. */
-  const carry = async (words: string) => {
+  const carry = async (words: string, picked?: AgentChoice) => {
     if (!task || carryBlocked) return;
-    setSending({ detail: null });
-    const out = await send(app, intoTask(projectId, task, words), (detail) => setSending({ detail }));
-    setSending(null);
+    if (keepsChat) {
+      const as = picked ?? carryAgent;
+      const plan = planFor(words, as, carryPr);
+      const chatId = task.task_id;
+      if (plan.start?.command === "create_task" && !githubRead.error) {
+        const start = { ...plan.start, from_chat: chatId };
+        const prOn = !!githubRead.view && githubRead.view.settings.mode !== "off";
+        // Through the same single-flight send, kept with the chat's draft
+        // until the computer answers; the chat stays where it is.
+        const ok = await submit({ projectId, draftTaskId: chatId, text: words, annotationId: null, label: "Turn into a task", asTask: true, build: () => start });
+        if (ok) setCarrying(null);
+        if (ok && prOn) rememberPr(profile.profileId, projectId, start.github?.type === "new_pr");
+        return;
+      }
+      // Anything that would ask the person something is chosen in Review.
+      setCarrying(null);
+      try {
+        draftNewTask(ui, projectId, { text: words, mode: "work", agent: as, fromChat: chatId });
+      } catch (e) {
+        toast((e as Error).message, { tone: "stop" });
+      }
+      return;
+    }
+    await submit(intoTask(projectId, task, words));
     setCarrying(null);
-    if (out.ok) sent();
-    else announce(out.attempt.detail, "assertive");
   };
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -382,6 +502,17 @@ export function Composer({
     ui.push({ screen: "annotate", annotationId: id, intent: reviewIntent(intent) });
   };
 
+  /** Keeps the files chosen under Attach with this message. */
+  const attachFiles = (picked: File[]) => {
+    setAttaching(false);
+    setFileRefusal(null);
+    void addFiles(ui, projectId, taskId, picked).then((refused) => {
+      if (!refused) return;
+      setFileRefusal(refused);
+      announce(refused, "assertive");
+    });
+  };
+
   const detach = () => {
     if (draft?.annotationId) removeMarkup(ui, store, projectId, taskId, draft.annotationId);
   };
@@ -394,7 +525,7 @@ export function Composer({
     ui.push({ screen: "review", projectId, taskId, intent: "continue" });
   };
   const again = async () => {
-    if (!attempt || retryRecipient.blocked) return;
+    if (!attempt || retryRecipient.blocked || sending) return;
     setSending({ detail: null });
     let out;
     try {
@@ -406,6 +537,7 @@ export function Composer({
       return;
     }
     setSending(null);
+    if (out.joined) return;
     if (out.ok) sent();
     else announce(out.attempt.detail, "assertive");
   };
@@ -476,6 +608,9 @@ export function Composer({
           {profile.name} couldn’t confirm how the last run ended. Look at what happened before starting more work. Anything you write here becomes a separate task.
         </Notice>
       )}
+      {cutOff && task && (
+        <p className="composer__hint composer__cut-off">The last reply was cut off. Your next message carries on from there.</p>
+      )}
       {mode.mode === "archived" && (
         <Notice tone="info" title="Archived">
           This task is kept for the record. Anything you write here becomes a separate task.
@@ -492,12 +627,8 @@ export function Composer({
           ui.push({ screen: "review", projectId, taskId: null, intent: "new_task" });
         }} />}
         <div className="composer__chips">
-          {mode.mode === "new" && agent && (
-            <Chip icon={Bot} className="composer__chip composer__opt composer__extra" onClick={() => setChoosingAgent(true)} aria-haspopup="dialog">
-              {agentLabel(harnesses, agent)}
-              <ChevronDown className="composer__chip-chev" aria-hidden />
-            </Chip>
-          )}
+          {/* What a new task or chat starts with is the chip under its
+              heading, where a chat's model is. */}
           {mode.mode === "new" && !fresh && launchers && canWork && (draft?.review?.start ? (
             <span className="composer__attach">
               <button type="button" className="composer__attach-open" onClick={() => setChoosingStart(true)} aria-haspopup="dialog">
@@ -523,17 +654,8 @@ export function Composer({
               </button>
             </span>
           )}
-          {task && next && (
-            <Chip icon={Bot} className="composer__chip composer__opt" onClick={() => setChoosingModel(true)} aria-haspopup="dialog">
-              <span className="visually-hidden">Model for your next message:</span>{" "}{agentLabel(harnesses, next)}
-              <ChevronDown className="composer__chip-chev" aria-hidden />
-            </Chip>
-          )}
-          {carryable && (
-            <Chip icon={Hammer} className="composer__chip composer__opt" onClick={() => setCarrying(text.trim() || INTO_TASK_TEXT)} aria-haspopup="dialog">
-              Turn into a task
-            </Chip>
-          )}
+          {/* A chat's model is the chip under its title, and Turn into a task
+              is in its menu and Message tools: the box stays the message. */}
           {task && !carryable && <SwitchToWorkChip task={task} />}
           {options.length > (talking ? 1 : 0) && (
             <Chip className={`composer__chip composer__how${label === "Stop and send" ? " composer__how--warn" : " composer__opt"}`} onClick={() => setPicking(true)} aria-haspopup="dialog">
@@ -566,6 +688,25 @@ export function Composer({
           )}
         </div>
 
+        {files.length > 0 && (
+          <ul className="composer__files" aria-label={`${files.length} ${files.length === 1 ? "file" : "files"} to send`}>
+            {files.map((f) => <FileChip key={f.key} file={f} locked={sending !== null || attempt?.phase === "sending" || unresolved}
+              onRemove={() => { setFileRefusal(null); removeFile(ui, projectId, taskId, f.key); }} />)}
+          </ul>
+        )}
+        {fileRefusal && (
+          <Notice tone="warn" title="Not attached" className="composer__notice"
+            action={<IconButton icon={X} label="Dismiss" className="composer__notice-x" onClick={() => setFileRefusal(null)} />}>
+            {fileRefusal}
+          </Notice>
+        )}
+        {direct && hasContent && (
+          <button type="button" className="composer__launch" onClick={() => ui.push({ screen: "review", projectId, taskId: null, intent: "new_task" })}
+            aria-label={`${typed!.line}. Review or change the settings`}>
+            <span className="composer__launch-line">{typed!.line}</span>
+            <ChevronRight className="composer__launch-chev" aria-hidden strokeWidth={2.1} />
+          </button>
+        )}
         <div className="composer__row">
           {/* One bar, as in a chat app: the tools at its start, then the words,
               and at its end Attach while the field is empty or Send
@@ -588,7 +729,7 @@ export function Composer({
               autoCapitalize="sentences"
               spellCheck
             />
-            {!fresh && <IconButton icon={Paperclip} label="Attach" className="composer__pic" aria-haspopup="dialog" onClick={() => setAttaching(true)} {...(hasContent ? away : {})} />}
+            {(!fresh || chatFiles) && <IconButton icon={Paperclip} label="Attach" className="composer__pic" aria-haspopup="dialog" onClick={() => setAttaching(true)} {...(hasContent ? away : {})} />}
             {/* One icon for every way of sending; its name says which, and
                 Review only opens the review, so nothing goes unseen. */}
             <IconButton
@@ -617,31 +758,33 @@ export function Composer({
       {planError && <Notice tone="warn">{planError}</Notice>}
       <Sheet open={toolsOpen} onClose={() => setToolsOpen(false)} title="Message tools">
         <div className="group">
-          {!fresh && <ListRow icon={Paperclip} title="Attach" subtitle="Screen, images, a clip or markup" chevron onClick={() => { setToolsOpen(false); setAttaching(true); }} />}
+          {(!fresh || chatFiles) && <ListRow icon={Paperclip} title="Attach" subtitle={fresh ? "Files from this device" : chatFiles ? "Screen, images, a clip, files or markup" : "Screen, images, a clip or markup"} chevron onClick={() => { setToolsOpen(false); setAttaching(true); }} />}
           {mode.mode === "new" && agent && <ListRow icon={Bot} title="Agent, model and effort" subtitle={agentLabel(harnesses, agent)} chevron onClick={() => { setToolsOpen(false); setChoosingAgent(true); }} />}
-          {next && <ListRow icon={Bot} title="Model and effort" subtitle={`${agentLabel(harnesses, next)} · From your next message`} chevron onClick={() => { setToolsOpen(false); setChoosingModel(true); }} />}
+          {next && <ListRow icon={Bot} title={switchAgent ? "Agent, model and effort" : "Model and effort"} subtitle={`${agentLabel(harnesses, next)} · From your next message`} chevron onClick={() => { setToolsOpen(false); setChoosingModel(true); }} />}
           {mode.mode === "new" && !fresh && launchers && canWork && <ListRow icon={Sparkles} title="Start from" subtitle={startedLabel(draft?.review?.start) ?? undefined} chevron onClick={() => { setToolsOpen(false); setChoosingStart(true); }} />}
           {taskAgent && <ListRow icon={Bot} title="Agent, model and effort" subtitle={taskAgent.label} chevron onClick={() => { setToolsOpen(false); setShowingAgent(true); }} />}
           {carryPlan && <ListRow icon={ListChecks} title="Carry out this plan" subtitle="Review a new run in Work mode" chevron onClick={() => carryPlan()} />}
           {summary && <ListRow icon={ScrollText} title={talking ? "Sum up so far" : "Summarize what happened"}
-            subtitle={talking ? `Asks ${agentName} for what was discussed and decided, and what’s still open.` : `Asks ${taskAgent?.label ?? agentName} in this task’s session. It can read but not change anything.`} chevron
+            subtitle={talking ? `Asks ${currentAgentName} for what was discussed and decided, and what’s still open.` : `Asks ${taskAgent?.label ?? agentName} in this task’s session. It can read but not change anything.`} chevron
             onClick={summaryBusy || unresolved ? undefined : () => void askSummary()} className={summaryBusy || unresolved ? "talk-agents__off" : undefined} />}
-          {carryable && <ListRow icon={Hammer} title="Turn into a task" subtitle={`${agentName} carries on in Work mode and can change files`} chevron
+          {carryable && <ListRow icon={Hammer} title="Turn into a task" subtitle={`${currentAgentName} carries on in Work mode and can change files`} chevron
             onClick={() => { setToolsOpen(false); setCarrying(text.trim() || INTO_TASK_TEXT); }} />}
           {options.length > (talking ? 1 : 0) && <ListRow icon={SendHorizontal} title="How to send" subtitle={option?.label} chevron onClick={() => { setToolsOpen(false); setPicking(true); }} />}
         </div>
       </Sheet>
-      {!fresh && (
+      {(!fresh || chatFiles) && (
         <AttachSheet
           open={attaching}
           onClose={() => setAttaching(false)}
           online={online}
           computer={profile.name}
           markup={annotation && describe(summarize(annotation))}
-          onStart={(start) => {
+          // A chat's first message carries files, not markup.
+          onStart={fresh ? undefined : (start) => {
             setAttaching(false);
             attach(start);
           }}
+          onFiles={chatFiles ? attachFiles : undefined}
         />
       )}
       {options.length > 0 && (
@@ -666,7 +809,11 @@ export function Composer({
           onClose={() => setChoosingAgent(false)}
           project={project}
           value={agent}
-          onChange={(a) => ui.saveDraft(projectId, taskId, { agent: a })}
+          onChange={(a) => {
+            ui.saveDraft(projectId, taskId, { agent: a });
+            // The person's own pick for this kind of task; a chat's agent isn't one.
+            if (!fresh) rememberUsual(profile.profileId, projectId, kindOf(draft?.mode ?? "work", { issue: draft?.review?.github?.type === "issue" }), a);
+          }}
           {...(fresh ? { mode: "ask" as const, launchFlags: false, title: "Agent for this conversation", doneLabel: "Chat with this agent" } : {})}
         />
       )}
@@ -679,10 +826,12 @@ export function Composer({
           onChange={(a) => ui.saveDraft(projectId, taskId, { agent: { harness: a.harness, model: a.model, effort: a.effort } })}
           mode="ask"
           launchFlags={false}
-          fixedAgent
-          title="Model for your next message"
+          fixedAgent={!switchAgent}
+          nextMessage
+          conversationTask={task}
+          title={switchAgent ? "Agent for your next message" : "Model for your next message"}
           doneLabel="Use from the next message"
-          note={mode.mode === "running" ? "This reply finishes as it started. Your next message after it uses this." : "Your next message uses this, and later ones keep it until you change it."}
+          note={switchAgent ? mode.mode === "running" ? "After this reply, in this chat only." : "In this chat only." : mode.mode === "running" ? "This reply finishes as it started. Your next message after it uses this." : "Your next message uses this, and later ones keep it until you change it."}
         />
       )}
       {task && carryable && (
@@ -690,8 +839,9 @@ export function Composer({
           open={carrying !== null}
           onClose={() => setCarrying(null)}
           project={project}
-          agent={agentName}
+          agent={currentAgentName}
           access={task.access ?? null}
+          keeps={carried ? { line: carried.line, agent: carried.chip, review: carried.start ? null : carried.refused ?? carried.review ?? "It starts from Review." } : null}
           initial={carrying ?? ""}
           blocked={carryBlocked}
           onOpenBlocker={writer?.task && writer.task.task_id !== task.task_id ? () => {
@@ -701,7 +851,8 @@ export function Composer({
             else ui.openTask(held.project_id, held.task_id);
           } : undefined}
           pending={sending !== null}
-          onStart={(words) => void carry(words)}
+          onStart={(words, picked) => void carry(words, picked)}
+          onPick={(a) => { setCarryPick(a); if (a) rememberUsual(profile.profileId, projectId, "change", a); }}
         />
       )}
       {mode.mode === "new" && !fresh && launchers && canWork && (
@@ -713,6 +864,25 @@ export function Composer({
         />
       )}
     </div>
+  );
+}
+
+/** A file going with the message: its name and size, how far its upload
+ * has got while it goes, and a way to take it off. */
+function FileChip({ file, locked, onRemove }: { file: FileDraft; locked: boolean; onRemove(): void }) {
+  const progress = useFileProgress(file.key);
+  const going = progress !== undefined;
+  return (
+    <li className={`composer__file${going ? " is-going" : ""}`} style={going ? { ["--sent" as string]: `${Math.round(progress * 100)}%` } : undefined}>
+      <span className="composer__file-what">
+        <FileIcon aria-hidden strokeWidth={2.1} />
+        <span className="composer__file-name">{file.name}</span>
+        <span className="composer__file-size">{going ? `${Math.floor(progress * 100)}%` : amount(file.size)}</span>
+      </span>
+      <button type="button" className="composer__attach-x" aria-label={`Remove ${file.name}`} disabled={locked} onClick={onRemove}>
+        <X aria-hidden strokeWidth={2.2} />
+      </button>
+    </li>
   );
 }
 

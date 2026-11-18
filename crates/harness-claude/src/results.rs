@@ -5,7 +5,11 @@ use protocol::model::{
     ChangedFile, CheckResult, CheckStatus, FileChange, Provenance, ReportedDiff, RunOutcome,
 };
 use serde_json::Value;
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::Path,
+    sync::Arc,
+};
 
 const MAX_ITEMS: usize = 128;
 const MAX_TEXT: usize = 16 * 1024;
@@ -24,6 +28,9 @@ pub(crate) struct Results {
     lost: Option<String>,
     summary: Option<String>,
     limited: bool,
+    /// The sandbox a limited chat's agent runs in, which says which files it
+    /// writes are only its conversation's own.
+    sandbox: Option<Arc<dyn ports::sandbox::Sandbox>>,
 }
 /// A tool call that has started and not yet answered.
 struct Pending {
@@ -369,6 +376,23 @@ impl Results {
     fn lose(&mut self, why: &str) {
         self.lost.get_or_insert_with(|| why.to_owned());
     }
+    pub(crate) fn kept_in(&mut self, sandbox: Option<Arc<dyn ports::sandbox::Sandbox>>) {
+        self.sandbox = sandbox;
+    }
+    /// What the run changed of the person's files. A file only of a limited
+    /// chat's own settings folder, such as a note the agent keeps for itself,
+    /// changed nothing of theirs, so it isn't one.
+    fn changed_files(&self) -> Vec<ChangedFile> {
+        self.files
+            .values()
+            .filter(|f| {
+                self.sandbox
+                    .as_ref()
+                    .is_none_or(|s| !s.own_settings_file(Path::new(&f.path)))
+            })
+            .cloned()
+            .collect()
+    }
     pub(crate) fn outcome(&self) -> RunOutcome {
         let mut unknowns = Vec::new();
         if self.limited {
@@ -396,7 +420,7 @@ impl Results {
         checks::fit_outcome(
             RunOutcome {
                 summary: self.summary.clone(),
-                changed_files: self.files.values().cloned().collect(),
+                changed_files: self.changed_files(),
                 checks,
                 still_active: Vec::new(),
                 unknowns,

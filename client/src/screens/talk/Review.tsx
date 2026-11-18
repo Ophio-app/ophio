@@ -16,6 +16,7 @@ import { Button } from "../../design/Button";
 import { Chip, Segmented } from "../../design/Chip";
 import { TextArea, TextField } from "../../design/Field";
 import { Empty, Section } from "../../design/ListRow";
+import { Fold } from "../../design/Fold";
 import { Notice } from "../../design/Notice";
 import { toast } from "../../design/Toast";
 import type { Command, GithubLink, HarnessInfo, MessageDelivery, QueueAuthorization, Task, TaskBranch, TaskMode, TaskPlace, TaskPlacement } from "../../protocol/types";
@@ -31,6 +32,8 @@ import { BranchSheet, useBranches } from "./BranchPicker";
 import { prefs } from "../../app/prefs";
 import { useStore } from "../../state/store";
 import { AgentSheet } from "./AgentSheet";
+import { CHAT_AGENT_SWITCH_FEATURE, nextChoice, turnAgent } from "./conversation";
+import { kindOf, rememberPr, rememberUsual, usualAgent } from "../../app/launchMemory";
 import { StartFromSheet } from "../launch/StartFrom";
 import { AttemptNotice } from "./Composer";
 import { removeMarkup } from "./removedMarkup";
@@ -40,9 +43,11 @@ import { QUEUE_MARKUP_FEATURE, QUEUE_MARKUP_UPDATE } from "../../app/queueMarkup
 import { PRODUCT_NAME } from "../../brand";
 import { ModePicker, modeLabel } from "./ModePicker";
 import { accessHeld, describeAccess, heldAccess } from "./access";
+import { AccessBar } from "./AccessBar";
+import { HEARS_BACK_FEATURE, REVIEWED_FEATURE, SETS_FEATURE } from "./workCards";
 import { ModeSwitch } from "./ModeSwitch";
 import { LaunchLine } from "./LaunchLine";
-import { check, repeatable, resend, send, useAutoSettle, type SendRequest } from "./send";
+import { check, repeatable, resend, send, useAutoSettle, useSendBusy, type SendRequest } from "./send";
 import { sendAsked, takeSendAsk } from "./sendOnOpen";
 import { QueueReview } from "./QueueReview";
 import { startSummary } from "./startSummary";
@@ -216,12 +221,43 @@ function RequestReview({ route }: RouteProps<"review">) {
   const grants = useHost((s) => s.grants);
   const queue = useHost((s) => s.queues[projectId]);
   const draft = useUi((s) => s.drafts[draftKey(projectId, taskId)] ?? null);
+  const storedOrdered = intent === "new_task" && taskId === null ? draft?.review?.ordered ?? null : null;
+  const reviewOrigin = intent === "new_task" && taskId === null ? draft?.review?.origin ?? null : null;
+  const sourceRun = useHost((s) => reviewOrigin ? s.runs[reviewOrigin.run] : undefined);
+  useEffect(() => {
+    if (reviewOrigin && !sourceRun && online) void app.session.loadRun(reviewOrigin.run).catch(() => undefined);
+  }, [app.session, reviewOrigin?.run, sourceRun, online]);
+  // Use the original proposal's index, not its editable title or a guessed
+  // previous step. Like admission, prefer a retried task over one put away
+  // before it ran, and regard failed/interrupted archived runs as failures.
+  const predecessorFailed = useHost((s) => {
+    const after = sourceRun?.outcome?.report?.new_work[reviewOrigin?.index ?? -1]?.after;
+    if (!reviewOrigin || after == null) return false;
+    const candidates = Object.values(s.tasks).filter((t) => t.origin?.chat === reviewOrigin.chat
+      && t.origin.run === reviewOrigin.run && t.origin.index === after);
+    const previous = candidates.find((t) => t.state !== "archived" || t.current_run) ?? candidates[0];
+    if (!previous) return false;
+    const previousRun = s.runs[previous.current_run ?? ""];
+    return previous.state === "failed" || previous.state === "interrupted"
+      || (previous.state === "archived" && (!previous.current_run || previousRun?.state === "failed" || previousRun?.state === "interrupted"));
+  });
+  // Keep the stored relationship until a deliberate independent-work choice.
+  // In particular, an unresolved send still owns its original body and id.
+  const independentChoiceNeeded = predecessorFailed && !!storedOrdered;
+  const ordered = predecessorFailed ? null : storedOrdered;
+  const orderedSupported = useHost((s) => !!s.capabilities?.features.includes(SETS_FEATURE) && !!s.capabilities?.features.includes(REVIEWED_FEATURE));
+  const switchAgent = useHost(s => !!s.capabilities?.features.includes(CHAT_AGENT_SWITCH_FEATURE));
+  const chatChoice = task?.conversation && !carryingPlan ? nextChoice(task, draft?.agent, switchAgent) : null;
+  const chatTurn = task?.conversation && !carryingPlan ? turnAgent(task, harnesses, draft?.agent, switchAgent) : {};
   // A new task on its own gets a new folder, so nothing of the draft's
   // project (its writer, branches or Next up) applies to it.
-  const alone = intent === "new_task" && taskId === null && (projectId === ONE_OFF_DRAFT || draft?.review?.place === "one_off");
+  const alone = !storedOrdered && !predecessorFailed && intent === "new_task" && taskId === null && (projectId === ONE_OFF_DRAFT || draft?.review?.place === "one_off");
+  // An Ask task drafted with what it may reach, as a suggestion's card says,
+  // starts with that, shown and changeable under Mode.
   const launchersSupported = useHost((s) => !!s.capabilities?.features.includes(LAUNCHERS_FEATURE));
   const browserSupported = useHost((s) => !!s.capabilities?.features.includes(AGENT_LOGINS_FEATURE));
   const queueMarkup = useHost((s) => !!s.capabilities?.features.includes(QUEUE_MARKUP_FEATURE));
+  const hearsBack = useHost((s) => !!s.capabilities?.features.includes(HEARS_BACK_FEATURE));
   const store = annotationStore(profile.profileId);
   const annotation = useAnnotation(store, draft?.annotationId ?? null);
 
@@ -267,7 +303,10 @@ function RequestReview({ route }: RouteProps<"review">) {
   useStore(prefs, p => p);
   const launchSupported = useHost(s => !!s.capabilities?.features.includes(LAUNCH_POLICY_FEATURE));
   const fixLaunchSupported = useHost(s => !!s.capabilities?.features.includes(FIX_LAUNCH_FEATURE));
-  const agent = creates ? resolveAgent(project, harnesses, base) : null;
+  // Otherwise the person's usual agent for this kind of task in this project.
+  const kind = kindOf(draft?.mode ?? "work", { issue: (draft?.review?.github ?? draft?.review?.proposalGithub)?.type === "issue" });
+  const usual = creates && !base && project ? usualAgent(profile.profileId, project, kind, harnesses)?.agent ?? null : null;
+  const agent = creates ? resolveAgent(project, harnesses, base ?? usual) : null;
   const harness = harnesses.find((h) => h.kind === (creates ? agent?.harness : task?.harness));
   // Kept locally as well as on the draft, so clearing the text never resets
   // the mode. A new task starts in Work, even from a task that only reads:
@@ -276,6 +315,7 @@ function RequestReview({ route }: RouteProps<"review">) {
   // keeps its task's mode on the draft.
   const fromMode: TaskMode | null = !creates ? null : task ? (task.mode ?? "work") : (draft?.review?.from ?? null);
   const [mode, setModeState] = useState<TaskMode>(draft?.mode ?? (task?.github?.from_stranger && intent === "next_up" ? fromMode ?? "work" : "work"));
+  const reach = creates && taskId === null && !alone && mode === "ask" && accessIsHeld ? draft?.access ?? null : null;
   const setMode = (m: TaskMode) => {
     setModeState(m);
     ui.saveDraft(projectId, taskId, { mode: m });
@@ -289,13 +329,26 @@ function RequestReview({ route }: RouteProps<"review">) {
   // Title, stopping point and placement live on the draft, so going Back to
   // adjust the request, or a restart, never loses them.
   const details: ReviewDetails = draft?.review ?? freshReview();
+  // A task made from a chat, which stays: the computer tells that chat how
+  // it ended. Only in the chat's project, on a computer that does that.
+  const fromChat = creates && taskId === null && !alone && hearsBack ? details.fromChat ?? null : null;
+  // Opened from a chat's card: started here, it is still that card's task.
+  const cardOrigin = creates && taskId === null && !alone ? details.origin ?? null : null;
   const setDetails = (patch: Partial<ReviewDetails>) => ui.saveDraft(projectId, taskId, { review: { ...details, ...(ui.draft(projectId, taskId)?.review ?? {}), ...patch } });
-  const placement = alone ? "start_now" : writerBlocks ? "queue" : (details.placement ?? (intent === "next_up" ? "queue" : "start_now"));
+  const placement = alone || predecessorFailed ? "start_now" : ordered || writerBlocks ? "queue" : (details.placement ?? (intent === "next_up" ? "queue" : "start_now"));
   // A Next up item starts as its source task did until another start is
   // chosen or this one is removed (null).
   const start = !creates ? null : details.start !== undefined ? details.start : intent === "next_up" && task ? inheritedStart(task) : null;
-  const setPlacement = (p: "start_now" | "queue") => setDetails({ placement: p });
-  const { authorization, title, stopWhen: stop } = details;
+  const setPlacement = (p: "start_now" | "queue") => {
+    if (predecessorFailed) {
+      if (p !== "start_now" || sending || draft?.attempt?.phase === "unknown" || draft?.attempt?.phase === "sending") return;
+      setGoing(false);
+      setDetails({ ordered: undefined, placement: "start_now" });
+    } else setDetails({ placement: p });
+  };
+  const { title, stopWhen: stop } = details;
+  // Reviewing any card never resumes a Next up the person paused.
+  const authorization = cardOrigin && queue?.paused ? "ask_before_start" : details.authorization;
   const setAuthorization = (a: QueueAuthorization) => setDetails({ authorization: a });
   const setTitle = (t: string) => setDetails({ title: t });
   const setStop = (t: string) => setDetails({ stopWhen: t });
@@ -325,7 +378,12 @@ function RequestReview({ route }: RouteProps<"review">) {
   const githubOn = !!githubView && githubView.settings.mode !== "off";
   const sourcePr = intent === "next_up" && task?.github?.pr?.state === "open" ? task.github.pr.number : null;
   const defaultLink: GithubLink | null = !githubOn ? null : sourcePr !== null ? { type: "pr", number: sourcePr } : mode === "work" ? { type: "new_pr" } : null;
-  const link: GithubLink | null = !creates || alone ? null : details.github !== undefined ? details.github : defaultLink;
+  // Keep a proposal's issue and resolve its reviewer only once settings are
+  // known. An unavailable setting is not a choice to unlink the task.
+  const proposalLink: GithubLink | null = details.proposalGithub?.type === "issue"
+    ? { ...details.proposalGithub, ...(githubView?.settings.workflow.review_with ? { review_with: githubView.settings.workflow.review_with } : {}) }
+    : details.proposalGithub?.type === "new_pr" && (!githubView || githubOn) ? { type: "new_pr" } : null;
+  const link: GithubLink | null = !creates || alone ? null : details.github !== undefined ? details.github : details.proposalGithub ? proposalLink : defaultLink;
   // A Find's own limit and what follows it, else the project's.
   const findThen = link?.type === "find" ? link.fix_findings ?? githubView?.settings.workflow.fix_findings ?? null : null;
   const findMost = link?.type === "find" ? link.max_issues ?? githubView?.settings.workflow.findings_per_run ?? null : null;
@@ -335,7 +393,10 @@ function RequestReview({ route }: RouteProps<"review">) {
   const [choosingGithub, setChoosingGithub] = useState(false);
   const [choosingFix, setChoosingFix] = useState(false);
   const warning = useGithubRun();
-  const [sending, setSending] = useState<{ label: string; detail: string | null } | null>(null);
+  const [localSending, setSending] = useState<{ label: string; detail: string | null } | null>(null);
+  const sharedSending = useSendBusy(projectId, taskId);
+  const sending = localSending ?? sharedSending;
+  const submitting = useRef(false);
   const [checking, setChecking] = useState(false);
   const [done, setDone] = useState(false);
   // A button that already said what to send, such as Start on work an agent
@@ -397,6 +458,7 @@ function RequestReview({ route }: RouteProps<"review">) {
     : link.type === "issue" && link.when_green && !whenGreenSupported ? WHEN_GREEN_UPDATE
     : !githubView ? githubProject.error ?? "Checking the project’s GitHub setting…"
     : githubView.settings.mode === "off" ? "Turn on the GitHub workflow for this project in Tasks › GitHub first."
+    : ordered && !readOnlyLink(link) && githubView.settings.mode === "through_merge" && !githubView.settings.warning_answered ? "Confirm the project’s merge setting below before creating this task."
     : readOnlyLink(link) && mode !== "plan" ? planOnlyText(link)
     : fixBlocker ? `Fix with: ${fixBlocker}`
     : null;
@@ -410,6 +472,16 @@ function RequestReview({ route }: RouteProps<"review">) {
     ? `Connect to ${profile.name} to send. Your draft stays on this device.`
     : !grants?.tasks
     ? `This device isn’t allowed to work with tasks on ${profile.name}.`
+    : cardOrigin && !sourceRun
+      ? "Checking the proposed task…"
+    : independentChoiceNeeded
+      ? "The previous task didn’t succeed. Choose Start now below only if you want this task to work independently."
+    : predecessorFailed && writerBlocks
+      ? `${writerHoldText(writer!, project.name)} Wait for it to finish before starting this task independently.`
+    : ordered && (!orderedSupported || !cardOrigin?.reviewed)
+      ? "Update Øphio on this computer to keep these tasks in order through Review."
+    : chatChoice && chatChoice.harness !== (run?.harness ?? task?.harness) && (intent === "steer" || intent === "interrupt_and_send")
+      ? "Another agent can reply after this turn. Go back and choose After this turn."
     : controlReason
       ? controlReason
     : carryingPlan && (task?.mode !== "plan" || task.state !== "completed" || run?.state !== "completed")
@@ -439,7 +511,19 @@ function RequestReview({ route }: RouteProps<"review">) {
         : !text.trim() && !annotation
           ? "Write what you want done first."
           : null;
-  const blocked = controlReason ?? (!online ? newRequestBlocked : unresolved
+  // An unresolved request must keep its command identity and original body.
+  // If that body would now resume paused Next up, only check its receipt;
+  // once confirmed not received, a fresh send uses the current paused choice.
+  const cardRetryBlocker = cardOrigin && unresolved
+    ? predecessorFailed
+      ? "The previous task didn’t succeed. Check whether the computer received this task before choosing independent work."
+      : !online || !grants?.tasks || (storedOrdered && !orderedSupported) ? newRequestBlocked
+      : unresolved.body?.command === "create_task" && unresolved.body.placement.mode === "queue"
+        && unresolved.body.placement.authorization === "auto_start" && queue?.paused
+        ? "Next up is paused. Check whether the computer received this task before trying again."
+        : null
+    : null;
+  const blocked = cardRetryBlocker ?? controlReason ?? (!online ? newRequestBlocked : unresolved
     ? !grants?.tasks
       ? newRequestBlocked
       : repeatable(unresolved, app.session)
@@ -455,7 +539,7 @@ function RequestReview({ route }: RouteProps<"review">) {
   const primary = creates ? (placement === "queue" ? "Add to Next up" : "Start task") : carryingPlan ? "Start Work" : later ? "Put in Next up" : intent === "continue" ? "Continue" : intent === "interrupt_and_send" ? "Stop and send" : handingBack ? "Send and resume" : "Send";
 
   const submit = async (anyway = false) => {
-    if (sending || attempt?.phase === "sending") return;
+    if (submitting.current || sending || attempt?.phase === "sending") return;
     if (unresolved && !anyway) {
       if (!blocked) void again(unresolved);
       return;
@@ -473,7 +557,11 @@ function RequestReview({ route }: RouteProps<"review">) {
       // A project's last finder and fixer are offered again next time.
       if (agent && (link?.type === "find" || link?.type === "triage")) rememberRole(profile.profileId, projectId, "find", choiceOf(agent));
       if (link?.type === "find") rememberRole(profile.profileId, projectId, "fix", link.fix_with);
-      const p: TaskPlacement = placement === "queue" ? { mode: "queue", position: null, authorization } : { mode: "start_now" };
+      // Whether Work gets its own pull request, as the person sent it, for a suggestion's card.
+      if (!alone && mode === "work" && githubOn && (link === null || link.type === "new_pr")) rememberPr(profile.profileId, projectId, link?.type === "new_pr");
+      const p: TaskPlacement = placement === "queue" ? { mode: "queue", position: null,
+        authorization: cardOrigin && app.session.state.get().queues[projectId]?.paused ? "ask_before_start" : authorization,
+      } : { mode: "start_now" };
       // On its own, the task's new project is named for it and made with it.
       const place: TaskPlace | null = alone ? { type: "one_off", name: title.trim() || firstLine(prompt, 60), date: localDate() } : null;
       const target = alone ? uuidv7() : projectId;
@@ -498,6 +586,9 @@ function RequestReview({ route }: RouteProps<"review">) {
             place,
             browser: browserSupported && mode === "work" ? details.browser !== false : null,
             github: link?.type === "find" && fixWith ? { ...link, fix_with: fixWith } : link,
+            ...(reach ? { access: reach } : {}),
+            ...(fromChat ? { fromChat } : {}),
+            ...(cardOrigin ? { origin: cardOrigin } : {}),
           }),
       };
     } else if (continues) {
@@ -508,7 +599,7 @@ function RequestReview({ route }: RouteProps<"review">) {
         annotationId: draft?.annotationId ?? null,
         label: carryingPlan ? "Carry out this plan" : later ? "Put in Next up" : "Continue",
         expectedRevision: reviewedTask?.revision,
-        build: (bundle): Command => later ? { command: "queue_continuation", task_id: taskId!, text: prompt, ...(bundle ? { bundle } : {}), authorization: "auto_start" } : ({ command: "resume_task", task_id: taskId!, text: carryingPlan && route.plan ? withPlan(prompt, route.plan) : prompt || null, ...(carryingPlan ? { mode: "work" as const } : {}), ...(carryingPlan && route.plan ? { carried_plan: { run_id: route.plan.runId, text: route.plan.text } } : {}), ...(bundle ? { bundle } : {}) }),
+        build: (bundle): Command => later ? { command: "queue_continuation", task_id: taskId!, text: prompt, ...(bundle ? { bundle } : {}), authorization: "auto_start" } : ({ command: "resume_task", task_id: taskId!, text: carryingPlan && route.plan ? withPlan(prompt, route.plan) : prompt || null, ...(carryingPlan ? { mode: "work" as const } : {}), ...(carryingPlan && route.plan ? { carried_plan: { run_id: route.plan.runId, text: route.plan.text } } : {}), ...(bundle ? { bundle } : {}), ...chatTurn }),
       };
     } else {
       req = {
@@ -517,15 +608,22 @@ function RequestReview({ route }: RouteProps<"review">) {
         text,
         annotationId: draft?.annotationId ?? null,
         label: DELIVERY[intent].label,
-        build: (bundle) => ({ command: "send_message", task_id: taskId!, text: prompt, bundle, delivery: intent }),
+        build: (bundle) => ({ command: "send_message", task_id: taskId!, text: prompt, bundle, delivery: intent, ...(switchAgent && intent === "next_turn" ? chatTurn : {}) }),
       };
     }
     const label = UNDERWAY[primary]!;
+    submitting.current = true;
     setSending({ label, detail: null });
     setDone(true);
-    const out = await send(app, req, (detail) => setSending({ label, detail }));
-    if (out.ok) await giveBack();
-    setSending(null);
+    let out;
+    try {
+      out = await send(app, req, (detail) => setSending({ label, detail }));
+      if (out.ok && !out.joined) await giveBack();
+    } finally {
+      submitting.current = false;
+      setSending(null);
+    }
+    if (out.joined) { setDone(false); return; }
     if (!out.ok) {
       setDone(false);
       reportFailure(out.attempt.detail);
@@ -547,21 +645,25 @@ function RequestReview({ route }: RouteProps<"review">) {
   };
 
   const again = async (a: SendAttempt) => {
-    if (retryRecipient.blocked) return;
+    if (retryRecipient.blocked || cardRetryBlocker || submitting.current || sending) return;
+    submitting.current = true;
     setSending({ label: UNDERWAY[primary]!, detail: null });
     setDone(true);
     let out;
     try {
       out = await resend(app, projectId, taskId, a, primary);
-      if (out.ok) await giveBack();
+      if (out.ok && !out.joined) await giveBack();
     } catch (e) {
       // Refused before anything left: the draft already says why.
       setSending(null);
       setDone(false);
       reportFailure((e as Error).message);
       return;
+    } finally {
+      submitting.current = false;
     }
     setSending(null);
+    if (out.joined) { setDone(false); return; }
     if (!out.ok) {
       setDone(false);
       reportFailure(out.attempt.detail);
@@ -595,7 +697,7 @@ function RequestReview({ route }: RouteProps<"review">) {
   // The task's own choice, chosen on the issue, over the project's.
   const ownWhenGreen = link?.type === "issue" ? link.when_green ?? null : null;
   const pickLink = (l: GithubLink | null) => {
-    setDetails({ github: l });
+    setDetails({ github: l, proposalGithub: undefined });
     if (readOnlyLink(l)) {
       if (mode !== "plan") setMode("plan");
       const finder = lastRole(profile.profileId, projectId, "find");
@@ -606,7 +708,7 @@ function RequestReview({ route }: RouteProps<"review">) {
   return (
     <Screen
       className="review-screen"
-      title={TITLE[intent]}
+      title={ordered ? `Review task ${ordered.step} of ${ordered.total}` : TITLE[intent]}
       subtitle={task ? task.title : project.name}
       footer={
         <div className="review-foot">
@@ -647,8 +749,16 @@ function RequestReview({ route }: RouteProps<"review">) {
         </div>
       }
     >
-      {going && <SendWhenClear clear={capabilitiesKnown && blocked === null && !unresolved && !requestError && !sending && attempt?.phase !== "sending"} onSend={() => void submit()} setGoing={setGoing} />}
+      {going && <SendWhenClear clear={!predecessorFailed && capabilitiesKnown && blocked === null && !unresolved && !requestError && !sending && attempt?.phase !== "sending"} onSend={() => void submit()} setGoing={setGoing} />}
       <div className="review">
+        {predecessorFailed && <Notice tone="warn" title="The previous task didn’t succeed">
+          <p>This task no longer follows the previous task. Your changes are kept. Choose Start now below only if you want it to work independently, then press Start task.</p>
+          {(unresolved || attempt?.phase === "sending") && <p>The earlier request may already have arrived. Check its receipt before choosing independent work.</p>}
+        </Notice>}
+        {ordered && <Notice tone="info" title={`Task ${ordered.step} of ${ordered.total}, in order`}>
+          <p>This creates only this task in Next up. {ordered.step < ordered.total ? "Then return to the Chat card to start or review the rest." : "Then return to the Chat card to follow their progress."}</p>
+          {ordered.after && <p>It waits for “{ordered.after}” to finish successfully.</p>}
+        </Notice>}
         {!creates && <TaskRecipient recipient={taskRecipient} />}
         {repeatable(attempt, app.session) && <TaskRecipient recipient={retryRecipient} retry />}
         {taskChanged && task && <Notice tone="warn" title="The task changed" action={<Button onClick={() => { setReviewedTask(task); setReviewedRun(run); }}>Review current task</Button>}>
@@ -663,7 +773,7 @@ function RequestReview({ route }: RouteProps<"review">) {
             checking={checking}
             canCheck={attempt.commandId !== null}
             repeatable={repeatable(attempt, app.session)}
-            retryBlocked={repeatable(attempt, app.session) ? retryRecipient.blocked : taskRecipient.blocked}
+            retryBlocked={!!cardRetryBlocker || (repeatable(attempt, app.session) ? retryRecipient.blocked : taskRecipient.blocked)}
             onCheck={() => void recheck()}
             onRetry={() => void (repeatable(attempt, app.session) ? again(attempt) : submit(true))}
             onDismiss={() => ui.saveDraft(projectId, taskId, { attempt: null })}
@@ -709,8 +819,10 @@ function RequestReview({ route }: RouteProps<"review">) {
 
         {annotation && <ReproductionReview draft={annotation} />}
 
-        <Section title="Where">
-          {intent === "new_task" && taskId === null && hostProject && !hostProject.one_off && launchersSupported && (
+        {(() => {
+          const where = (
+            <>
+          {intent === "new_task" && taskId === null && hostProject && !hostProject.one_off && launchersSupported && !ordered && !predecessorFailed && (
             <Segmented
               label="Where it works"
               value={alone ? "one_off" : "project"}
@@ -819,10 +931,23 @@ function RequestReview({ route }: RouteProps<"review">) {
               void warning.run(a.action, a.label, a.done).then(githubProject.reload);
             }} />
           )}
-        </Section>
+            </>
+          );
+          if (!creates) return <Section title="Where">{where}</Section>;
+          const place = alone ? "A new folder" : project.name;
+          const route = [linkBranch ?? (chosenBranch ? chosenBranch.name : null), !alone && githubSupported && (githubOn || link !== null) ? linkWords(link) : null].filter(Boolean).join(" · ");
+          return (
+            <Fold title="Where" value={`${place} on ${profile.name}${route ? ` · ${route}` : ""}`}
+              openWhen={writesLink && githubView?.settings.mode === "through_merge" && !githubView.settings.warning_answered}>
+              {where}
+            </Fold>
+          );
+        })()}
 
         {creates ? (
-          <Section title={link?.type === "find" ? "Find with" : link?.type === "triage" ? "Sort with" : "Agent"}>
+          <Fold title={link?.type === "find" ? "Find with" : link?.type === "triage" ? "Sort with" : "Agent"}
+            value={agent ? `${agentLabel(harnesses, agent)}${start ? ` · from ${startedLabel(start)}` : ""}` : "None can start here yet"}
+            openWhen={!agent || !harnesses.some(canStart) || account?.state === "signed_out"}>
             {agent ? (
               <>
                 {!harnesses.some(canStart) && <Notice tone="warn" title="No agent can start work here yet" action={<ReadinessCheck />}>
@@ -878,9 +1003,10 @@ function RequestReview({ route }: RouteProps<"review">) {
                 Check which agents are installed and signed in on {profile.name}.
               </Notice>
             )}
-          </Section>
+          </Fold>
         ) : (
           <Section title="How">
+            {chatChoice && <p className="review__permission">Reply from {agentLabel(harnesses, chatChoice)}.</p>}
             {task?.conversation && !carryingPlan && (
               <p className="review__permission">
                 <span className="review__strong">What it may reach.</span> {describeAccess(heldAccess(task, accessIsHeld), project, projects)}
@@ -928,9 +1054,11 @@ function RequestReview({ route }: RouteProps<"review">) {
         )}
 
         {creates && agent && (
-          <Section title="Mode">
+          <Fold title="Mode" value={`${modeLabel(mode)} · ${mode === "work" ? "can change files" : "read-only"}`}
+            openWhen={mode === "work" && !!launchRisk(agent.harness, agent.launchPolicy)}>
             <ModePicker harness={harness} value={mode} onChange={setMode}
               only={link && readOnlyLink(link) ? { mode: "plan", why: `${planOnlyWhy(link)} To ask or work instead, change GitHub above.` } : undefined} />
+            {reach && <AccessBar project={project} task={undefined} newTask />}
             {mode === "work" ? <>
               <Permission risky={!!launchRisk(agent.harness, agent.launchPolicy)}>{permissionText(harness, profile.name, grants?.approvals ?? false, agent.launchPolicy)}</Permission>
               {browserSupported && (
@@ -956,7 +1084,7 @@ function RequestReview({ route }: RouteProps<"review">) {
                 </>
               )
             )}
-          </Section>
+          </Fold>
         )}
 
         {creates && alone && (
@@ -966,7 +1094,17 @@ function RequestReview({ route }: RouteProps<"review">) {
         )}
         {creates && !alone && (
           <Section title="When">
-            <Segmented
+            {ordered ? <p className="review__sub">Added to Next up{ordered.after ? ` after “${ordered.after}”` : " as the first task in this set"}. The tasks keep their order.</p> : predecessorFailed ? (
+              <label className="review__check">
+                <input type="radio" aria-label="Start now" checked={!independentChoiceNeeded}
+                  disabled={writerBlocks || !!sending || !!unresolved || attempt?.phase === "sending"}
+                  onChange={() => setPlacement("start_now")} />
+                <span>
+                  <span className="review__strong">Start now</span>
+                  <span className="review__permission">Works independently, without waiting for the previous task.</span>
+                </span>
+              </label>
+            ) : <Segmented
               label="When to start"
               value={placement}
               onChange={setPlacement}
@@ -974,7 +1112,7 @@ function RequestReview({ route }: RouteProps<"review">) {
                 { value: "start_now", label: "Start now", disabled: writerBlocks },
                 { value: "queue", label: "Add to Next up" },
               ]}
-            />
+            />}
             {writer && (writerBlocks || placement === "start_now") && (
               <div className="review__held">
                 <p className="review__sub">
@@ -998,7 +1136,7 @@ function RequestReview({ route }: RouteProps<"review">) {
                     onChange={setAuthorization}
                     options={[
                       { value: "ask_before_start", label: "Ask me first" },
-                      { value: "auto_start", label: "Start by itself" },
+                      { value: "auto_start", label: "Start by itself", disabled: !!cardOrigin && queuePaused },
                     ]}
                   />
                 </div>
@@ -1014,8 +1152,7 @@ function RequestReview({ route }: RouteProps<"review">) {
         )}
 
         {creates && (
-          <details className="review__optional" open={optionalOpen}>
-            <summary>Optional: title, boundaries, checks, when to stop</summary>
+          <Fold className="review__optional" title="Optional" value="Title, boundaries, checks, when to stop" defaultOpen={optionalOpen}>
             <div className="review__optional-fields">
               <TextField label="Title" value={title} onChange={setTitle} placeholder={firstLine(text, 60) || "Named from your request"} />
               <TextArea label="Boundaries" value={details.bounds ?? ""} onChange={(bounds) => setDetails({ bounds })}
@@ -1030,7 +1167,7 @@ function RequestReview({ route }: RouteProps<"review">) {
                 hint="Given to the agent as your stopping point. The computer can’t enforce it."
               />
             </div>
-          </details>
+          </Fold>
         )}
 
         {!grants?.approvals && (
@@ -1041,7 +1178,7 @@ function RequestReview({ route }: RouteProps<"review">) {
       </div>
 
       {creates && agent && project && (
-        <AgentSheet open={choosing} onClose={() => setChoosing(false)} project={project} value={agent} mode={mode} onChange={(a) => ui.saveDraft(projectId, taskId, { agent: a })} />
+        <AgentSheet open={choosing} onClose={() => setChoosing(false)} project={project} value={agent} mode={mode} onChange={(a) => { ui.saveDraft(projectId, taskId, { agent: a }); rememberUsual(profile.profileId, projectId, kind, a); }} />
       )}
       {creates && launchersSupported && (
         <StartFromSheet

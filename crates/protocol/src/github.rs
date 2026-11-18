@@ -304,6 +304,10 @@ pub struct IssueRun {
     pub ended_at: Option<Timestamp>,
     /// Ended by the person rather than by running out of issues.
     pub stopped: bool,
+    /// The chat card it was started from, which hears how it went.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub origin: Option<crate::work_cards::TaskOrigin>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ts_rs::TS)]
@@ -914,6 +918,10 @@ pub enum GithubAction {
     RunIssues {
         project_id: ProjectId,
         step: RunStep,
+        /// A Start from a chat's card for it: the chat hears how it went.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        origin: Option<crate::work_cards::TaskOrigin>,
     },
     /// Close an issue in the person's name: done, or not going to be done.
     /// Its fix leaves Next up and Run all, and what it asked of the person

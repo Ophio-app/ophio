@@ -139,7 +139,6 @@ struct Run {
 }
 
 pub struct Orchestrator {
-    _lock: std::fs::File,
     db: Connection,
     budget: Budget,
     oscillation: Oscillation,
@@ -160,7 +159,31 @@ pub struct Orchestrator {
     check_wall_ms: i64,
     /// Main's tip from the last successful fetch, for a check that can't run.
     last_main: Option<String>,
+    // Last, so it is released only after the database and everything else.
+    _lock: WorkerLock,
 }
+
+/// The pipeline's single-worker lock, released explicitly when dropped.
+///
+/// A program started by another thread shares this open file between fork
+/// and exec. Closing only our descriptor would leave the lock held until that
+/// program starts, so a pipeline reopened at once would wrongly find itself
+/// already running.
+struct WorkerLock(std::fs::File);
+impl WorkerLock {
+    fn acquire(file: std::fs::File) -> Result<Self> {
+        file.try_lock()
+            .map_err(|_| Error::Operation("pipeline already running"))?;
+        Ok(Self(file))
+    }
+}
+impl Drop for WorkerLock {
+    fn drop(&mut self) {
+        // Closing the file stays the fallback if unlocking reports an error.
+        let _ = self.0.unlock();
+    }
+}
+
 impl std::fmt::Debug for Orchestrator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Orchestrator")
@@ -202,8 +225,7 @@ impl Orchestrator {
             .truncate(false)
             .write(true)
             .open(directory.join("worker.lock"))?;
-        lock.try_lock()
-            .map_err(|_| Error::Operation("pipeline already running"))?;
+        let lock = WorkerLock::acquire(lock)?;
         let db_path = directory.join("pipeline.sqlite");
         let db = Connection::open(&db_path)?;
         db.pragma_update(None, "journal_mode", "WAL")?;
@@ -1639,5 +1661,32 @@ impl Orchestrator {
             State::Shipped | State::Stopped => {}
         }
         Ok(())
+    }
+}
+
+#[cfg(all(test, unix))]
+mod worker_lock_tests {
+    use super::WorkerLock;
+
+    #[test]
+    fn released_while_a_started_program_still_shares_the_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let open = || {
+            std::fs::OpenOptions::new()
+                .create(true)
+                .truncate(false)
+                .write(true)
+                .open(dir.path().join("worker.lock"))
+                .unwrap()
+        };
+        let file = open();
+        // fork shares the open file as dup does; keep it deterministically.
+        let inherited = file.try_clone().unwrap();
+        let held = WorkerLock::acquire(file).unwrap();
+        assert!(WorkerLock::acquire(open()).is_err());
+        drop(held);
+        let again = WorkerLock::acquire(open());
+        drop(inherited);
+        assert!(again.is_ok(), "a dropped pipeline must not stay locked");
     }
 }

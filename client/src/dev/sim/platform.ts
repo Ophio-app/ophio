@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { githubActionAllowed } from "./githubGrants";
 import { PRODUCT_NAME } from "../../brand";
 import { parseHostVariant } from "./variants";
 //
@@ -258,14 +259,16 @@ class SimControlLink implements ControlLink {
             ? "This device or chat wasn’t given permission for that"
             : body.command === "github" && body.action.action === "set_when_green" && body.action.when_green === "merge" && !this.env.grants.approvals
             ? "This device or chat wasn’t given permission for that"
-            : body.command === "github" && !(["mark_pr_ready", "merge_pr", "merge_together", "stop_together", "file_issue", "run_issues", "set_group", "close_issue", "set_when_green"].includes(body.action.action) ? this.env.grants.tasks : this.env.grants.admin)
+            : body.command === "github" && !githubActionAllowed(this.env.grants, body.action)
             ? "This device or chat wasn’t given permission for that"
             : body.command === "unlock_desktop" && !(this.env.grants.control_input && this.env.grants.admin)
             ? "This device or chat wasn’t given permission for that"
             // Only the person does these on the computer (`person_only.rs`), so
             // no agent may; a paired device is the person, held to its tasks grant.
+            : body.command === "set_auto_start" && !(this.env.grants.tasks && this.env.grants.approvals)
+            ? "This device or chat wasn’t given permission for that"
             : (["checklist_tick", "checklist_answer", "checklist_ask", "checklist_deliver", "remove_checklist", "set_task_notify"].includes(body.command) && !this.env.grants.tasks)
-              || (["set_file_delivery", "rename_computer"].includes(body.command) && !this.env.grants.admin)
+              || (["set_file_delivery", "rename_computer", "set_agent_updates", "set_agent_update_mode", "check_agent_updates", "update_agent"].includes(body.command) && !this.env.grants.admin)
             ? "This device or chat wasn’t given permission for that"
             : null;
         const result = refusal
@@ -755,7 +758,7 @@ class SimEnv {
   }
   incompatible = false;
   grants: Grants = { ...allGrants };
-  host = new SimHost({ variant: parseHostVariant(new URLSearchParams(location.search).get("host")), indicator: new URLSearchParams(location.search).get("indicator") !== "missing" });
+  host = new SimHost({ variant: parseHostVariant(new URLSearchParams(location.search).get("host")), indicator: new URLSearchParams(location.search).get("indicator") !== "missing", cards: new URLSearchParams(location.search).get("cards") === "1", checks: new URLSearchParams(location.search).get("checks") === "1" });
   links = new Set<SimControlLink>();
   forcedOffline = false;
   offlineReason = "Can't reach studio";
@@ -820,9 +823,8 @@ export function createSimPlatform(): Platform {
       .flatMap(([taskId, items]) => items.map((s) => ({ taskId, at: now - s.ago, runId: s.runId, body: s.body })))
       .sort((a, b) => a.at - b.at);
     for (const s of seeds) other.host.emit({ type: "timeline_appended", task_id: s.taskId, item: { seq: other.host.seq + 1, at: s.at, run_id: s.runId, item: s.body } }, undefined, "native", s.at);
-    // The checklists replace studio's once they are seeded, before any query reads them.
-    const lists = work?.checklists ?? [];
-    void other.host.checklists.ready.then(() => { other.host.checklists.lists = new Map(lists.map((l) => [l.project_id, l])); });
+    // The checklists replace studio's seeded ones, before any query reads them.
+    other.host.checklists.lists = new Map((work?.checklists ?? []).map((l) => [l.project_id, l]));
     other.offlineReason = `Can't reach ${profile.name}`;
   };
   const spareWork = !params.has("same-name");
@@ -910,7 +912,7 @@ export function createSimPlatform(): Platform {
       return handoffs().receive(packetJson, handoffJson)?.id ?? null;
     },
     restart() {
-      const next = new SimHost({ variant: env.host.variant, indicator: env.host.indicator });
+      const next = new SimHost({ variant: env.host.variant, indicator: env.host.indicator, cards: env.host.cards, checks: env.host.checksDemo });
       next.terminals = [];
       env.host.dispose();
       env.host = next;
@@ -1059,6 +1061,10 @@ export function simPairingLink(): string {
 /** The computer's query grants (`domain::grants::query`). */
 function queryAllowed(g: Grants, q: Query): boolean {
   switch (q.kind) {
+    case "checks_list":
+    case "checks_history":
+    case "task_checks":
+    case "check_job": return g.tasks;
     case "project_stages":
       return g.tasks || g.admin;
     case "snapshot":
@@ -1083,6 +1089,7 @@ function queryAllowed(g: Grants, q: Query): boolean {
     case "windows":
     case "system_stats":
     case "agent_updates":
+    case "release_check":
     case "agent_preferences":
     case "notification_settings":
     case "reports":

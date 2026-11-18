@@ -42,12 +42,13 @@ const CHECK_LIMIT: Duration = Duration::from_millis(2500);
 
 /// An authority that keeps what its launcher tells of a launch it couldn't
 /// stop, for the display's later checks.
-pub(crate) struct Recording<'a> {
-    inner: &'a dyn voice_control::Authority,
+pub(crate) struct Recording {
+    inner: Arc<dyn voice_control::Authority>,
     launch: std::sync::Mutex<Unconfirmed>,
 }
-impl<'a> Recording<'a> {
-    pub(crate) fn new(inner: &'a dyn voice_control::Authority) -> Self {
+impl Recording {
+    /// Keeps authority alive through delayed native launch dispatch.
+    pub(crate) fn owned(inner: Arc<dyn voice_control::Authority>) -> Self {
         Self {
             inner,
             launch: Default::default(),
@@ -58,7 +59,7 @@ impl<'a> Recording<'a> {
         self.launch.lock().ok().and_then(|mut launch| launch.take())
     }
 }
-impl voice_control::Authority for Recording<'_> {
+impl voice_control::Authority for Recording {
     fn check(&self) -> Result<(), voice_control::Error> {
         self.inner.check()
     }
@@ -202,5 +203,54 @@ impl CompanionHub {
         if let Err(e) = recorded {
             tracing::warn!(code = ?e.code, "a confirmed launch stop went unrecorded");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::AtomicBool;
+    use voice_control::{Authority, Error};
+
+    struct LiveAuthority(Arc<AtomicBool>);
+    impl Authority for LiveAuthority {
+        fn check(&self) -> Result<(), Error> {
+            if self.0.load(SeqCst) {
+                Ok(())
+            } else {
+                Err(Error::Stopped)
+            }
+        }
+    }
+    #[derive(Debug)]
+    struct UnknownLaunch;
+    #[async_trait::async_trait]
+    impl ports::LaunchCheck for UnknownLaunch {
+        async fn stopped(&self, _: bool) -> bool {
+            false
+        }
+    }
+
+    #[test]
+    fn owned_recording_keeps_live_authority_and_uncertain_launch_tracking() {
+        let allowed = Arc::new(AtomicBool::new(true));
+        let inner = Arc::new(LiveAuthority(allowed.clone()));
+        let weak = Arc::downgrade(&inner);
+        let recording = Arc::new(Recording::owned(inner));
+        assert!(
+            weak.upgrade().is_some(),
+            "the worker must retain the actual authority"
+        );
+        assert!(recording.check().is_ok());
+        allowed.store(false, SeqCst);
+        let worker = recording.clone();
+        assert!(matches!(worker.check(), Err(Error::Stopped)));
+        let launch: Arc<dyn ports::LaunchCheck> = Arc::new(UnknownLaunch);
+        worker.unstopped(launch.clone());
+        assert!(Arc::ptr_eq(&recording.take().unwrap(), &launch));
+        assert!(recording.take().is_none());
+        drop(worker);
+        drop(recording);
+        assert!(weak.upgrade().is_none());
     }
 }

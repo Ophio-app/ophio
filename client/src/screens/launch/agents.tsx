@@ -300,6 +300,8 @@ function NewAgentSheet({ open, onClose, onMade }: { open: boolean; onClose: () =
   return (
     <Sheet
       open={open}
+      // Its name and description outlast another screen in front.
+      keepWhenHidden
       onClose={close}
       title="New agent"
       subtitle={`On ${profile.name}`}

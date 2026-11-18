@@ -407,6 +407,7 @@ async fn a_stopped_run_or_the_computer_specialist_shows_nothing() {
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,
@@ -778,6 +779,7 @@ async fn a_picture_an_agent_showed_can_be_drawn_on_and_sent_back() {
         steps: vec![],
         general_note: Some("This header".into()),
         speech: None,
+        files: vec![],
     };
     let reader = super::artifact_access::device_with(
         &f,

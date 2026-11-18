@@ -60,13 +60,17 @@ fn fixture() -> (tempfile::TempDir, CodexAdapter, RunSpec) {
             computer_use: false,
             browser: false,
             github: false,
+            checks: false,
+            check_names: vec![],
             checklist_answers: false,
             read_only: false,
+            chat: false,
         }),
         project_settings: false,
         env: Default::default(),
         github: None,
         scratch: None,
+        attached: None,
         questions: true,
         sandbox: None,
         web: false,
@@ -1322,9 +1326,11 @@ async fn a_turn_refused_for_usage_reports_the_limit_once_with_its_reset_time() {
     spec.resume_session = None;
     let mut run = adapter.start_run(spec).await.unwrap();
     let mut limits = Vec::new();
+    let mut notices = Vec::new();
     loop {
         match event(&mut run.events).await {
             HarnessEvent::UsageLimited { resets_at } => limits.push(resets_at),
+            HarnessEvent::UsageNotice { text } => notices.push(text),
             HarnessEvent::Warning { text } => {
                 assert!(!text.contains("error"), "{text}")
             }
@@ -1334,6 +1340,7 @@ async fn a_turn_refused_for_usage_reports_the_limit_once_with_its_reset_time() {
     }
     // The five-hour window is exhausted; the weekly one is not.
     assert_eq!(limits, [Some(protocol::time::Timestamp(1_790_000_000_000))]);
+    assert_eq!(notices, ["Codex reports the usage limit is reached"]);
     run.control.shutdown().await.unwrap();
 }
 
@@ -2032,4 +2039,69 @@ fn a_repeated_request_is_known_by_what_it_asks_not_its_ids() {
         &ApprovalDecision::Deny { reason: None }
     ));
     assert!(asks_the_person("item/tool/requestUserInput"));
+}
+
+#[test]
+fn project_checks_tools_follow_bridge_and_mode_permissions() {
+    let (_dir, _adapter, mut spec) = fixture();
+    for enabled in [false, true] {
+        for mode in [TaskMode::Work, TaskMode::Ask, TaskMode::Plan] {
+            for read_only in [false, true] {
+                for special in ["ordinary", "computer", "checklist"] {
+                    spec.mode = mode;
+                    let bridge = spec.bridge.as_mut().unwrap();
+                    bridge.checks = enabled;
+                    bridge.read_only = read_only;
+                    bridge.computer_use = special == "computer";
+                    bridge.checklist_answers = special == "checklist";
+                    let server = bridge_server(&spec)
+                        .unwrap()
+                        .map(|(_, server)| server)
+                        .unwrap_or_default();
+                    let bridged = mode == TaskMode::Work || read_only;
+                    let read = enabled && special == "ordinary" && bridged;
+                    assert_eq!(
+                        server.contains("\"checks_read\""),
+                        read,
+                        "{enabled} {mode:?} {read_only} {special}: {server}"
+                    );
+                    assert_eq!(
+                        server.contains("\"checks_propose\""),
+                        read && mode == TaskMode::Work && !read_only,
+                        "{enabled} {mode:?} {read_only} {special}: {server}"
+                    );
+                }
+            }
+        }
+    }
+    spec.bridge = None;
+    assert!(bridge_server(&spec).unwrap().is_none());
+}
+
+#[test]
+fn enabled_checks_prompt_is_conditional() {
+    let (_dir, _adapter, mut spec) = fixture();
+    spec.bridge.as_mut().unwrap().checks = true;
+    assert!(ports::harness::checks_instruction(&spec).is_none());
+    assert!(
+        !task_instructions(&spec)
+            .unwrap()
+            .unwrap_or_default()
+            .contains("checks_read")
+    );
+    spec.bridge.as_mut().unwrap().check_names =
+        vec!["App builds correctly".into(), "Tests pass".into()];
+    let expected = ports::harness::checks_instruction(&spec).unwrap();
+    let prompt = task_instructions(&spec).unwrap().unwrap();
+    assert!(prompt.contains(&expected));
+    for name in &spec.bridge.as_ref().unwrap().check_names {
+        assert!(prompt.contains(name));
+    }
+    spec.bridge.as_mut().unwrap().checks = false;
+    assert!(
+        !task_instructions(&spec)
+            .unwrap()
+            .unwrap_or_default()
+            .contains("checks_read")
+    );
 }

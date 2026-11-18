@@ -163,6 +163,52 @@ it("keeps older-run helper Stop independent of an archived parent’s current ru
 });
 
 
+it("puts live work ahead of requests and setup without losing Stop or the request action", async () => {
+  const { task } = fixture();
+  app.ui.selectProject(task.project_id);
+  render(<Agents route={{ screen: "agents" }} />, { wrapper });
+  await advance();
+  const headings = screen.getAllByRole("heading").map(h => h.textContent ?? "");
+  const running = headings.indexOf("Running and unresolved");
+  const needs = headings.findIndex(h => h.startsWith("Needs you"));
+  expect(running).toBeGreaterThan(-1);
+  expect(needs).toBeGreaterThan(running);
+  const readiness = headings.indexOf("Agent readiness");
+  if (readiness !== -1) expect(readiness).toBeGreaterThan(needs);
+  expect(screen.getByRole("link", { name: "Needs you · 2" }).getAttribute("href")).toBe("#agents-needs");
+  expect(screen.getByRole("button", { name: "Stop helper · Check small-screen spacing" })).toBeTruthy();
+  const request = document.querySelector(".agents-attention");
+  expect(request?.querySelector("button.row--action, details summary")).toBeTruthy();
+});
+it("omits empty requests, finished agents and healthy readiness panels", async () => {
+  const { task } = fixture();
+  app.ui.selectProject(task.project_id);
+  act(() => app.session.state.set(s => ({ ...s,
+    attention: {},
+    tasks: { ...s.tasks, [task.task_id]: { ...task, state: "archived" } },
+    harnesses: s.harnesses.map(h => h.kind === "claude_code" || h.kind === "codex"
+      ? { ...h, capabilities: { ...h.capabilities, start_run: { state: "available" as const } } } : h),
+  })));
+  render(<Agents route={{ screen: "agents" }} />, { wrapper });
+  await advance();
+  expect(screen.queryByRole("heading", { name: /Needs you/ })).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Agent readiness" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Check agent readiness" })).toBeTruthy();
+});
+
+it("omits a successfully empty outside scan but keeps observation failures visible", async () => {
+  const { host } = fixture();
+  const empty = { ...host.children.query(), sessions: [] };
+  const query = vi.spyOn(host.children, "query").mockReturnValue(empty);
+  render(<Agents route={{ screen: "agents" }} />, { wrapper });
+  await advance();
+  expect(screen.queryByRole("heading", { name: "Outside the app" })).toBeNull();
+  query.mockReturnValue({ ...empty, error: "The scan could not finish." });
+  await advance(10_000);
+  expect(screen.getByRole("heading", { name: "Outside the app" })).toBeTruthy();
+  expect(screen.getByText("The scan could not finish.")).toBeTruthy();
+});
+
 it.each(["finished", "marked_completed", "running", "stale_task"] as const)("scopes the steering note to a running turn: %s", async scenario => {
   const { task } = fixture();
   const running = scenario === "running";

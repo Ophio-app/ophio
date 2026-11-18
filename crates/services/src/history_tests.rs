@@ -86,6 +86,8 @@ impl Template {
             account_id: None,
             alert: None,
             alert_handled_at: None,
+            agent_update: None,
+            new_version: None,
         };
         f.hub
             .write(|tx| {
@@ -136,6 +138,8 @@ impl Template {
                     account_id: None,
                     alert: None,
                     alert_handled_at: None,
+                    agent_update: None,
+                    new_version: None,
                 };
                 f.hub
                     .write(|tx| {
@@ -754,6 +758,8 @@ impl<'a> Queued<'a> {
             .submit(
                 caller,
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: None,
                     agent_chosen: None,
                     mode: None,
@@ -981,6 +987,8 @@ async fn a_task_names_its_model_and_effort_in_a_label() {
             .submit(
                 &Caller::local_owner(),
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: None,
                     agent_chosen: None,
                     mode: None,
@@ -1073,6 +1081,8 @@ async fn next_up_asks_before_a_start_that_would_outgrow_a_first_load() {
         .submit(
             &device,
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: None,
@@ -1518,6 +1528,8 @@ async fn snapshot_preserves_live_reasons_and_grants() {
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     };
     let orphan = AttentionItem {
         attention_id: AttentionId::new(),

@@ -1039,15 +1039,23 @@ impl DesktopDriver {
     /// as unstopped.
     async fn launching(
         &self,
-        authority: &dyn voice_control::Authority,
+        authority: Arc<dyn voice_control::Authority>,
         app: Option<&VoiceApp>,
         url: Option<&str>,
     ) -> Result<(), VoiceError> {
         let guard = self.launches.begin();
-        let authority = crate::launch_recheck::Recording::new(authority);
+        let authority = Arc::new(crate::launch_recheck::Recording::owned(authority));
         let outcome = match (app, url) {
-            (Some(app), _) => self.launcher.launch(app, &authority).await,
-            (None, Some(url)) => self.launcher.open_url(url, &authority).await,
+            (Some(app), _) => {
+                self.launcher
+                    .launch_authorized(app, authority.clone())
+                    .await
+            }
+            (None, Some(url)) => {
+                self.launcher
+                    .open_url_authorized(url, authority.clone())
+                    .await
+            }
             (None, None) => Err(VoiceError::StaleTarget),
         };
         let unstopped = matches!(outcome, Err(VoiceError::LaunchUnstopped));
@@ -1070,6 +1078,16 @@ fn keys(keys: &[&str]) -> InputAction {
         keys: keys.iter().map(|k| (*k).to_owned()).collect(),
     }
 }
+/// Mac apps use Command with brackets for history; Alt is Option there.
+/// The shared input vocabulary calls the Command modifier `super`.
+fn history_keys(macos: bool, forward: bool) -> InputAction {
+    match (macos, forward) {
+        (true, false) => keys(&["super", "["]),
+        (true, true) => keys(&["super", "]"]),
+        (false, false) => keys(&["alt", "ArrowLeft"]),
+        (false, true) => keys(&["alt", "ArrowRight"]),
+    }
+}
 #[async_trait]
 impl Driver for DesktopDriver {
     async fn snapshot(&self) -> Result<Snapshot, VoiceError> {
@@ -1085,12 +1103,12 @@ impl Driver for DesktopDriver {
             VoiceActionKind::Launch => {
                 let app = action.app.as_ref().ok_or(VoiceError::StaleTarget)?;
                 authority.check()?;
-                return self.launching(&*authority, Some(app), None).await;
+                return self.launching(authority, Some(app), None).await;
             }
             VoiceActionKind::Navigate => {
                 let url = action.literal.as_deref().ok_or(VoiceError::StaleTarget)?;
                 authority.check()?;
-                return self.launching(&*authority, None, Some(url)).await;
+                return self.launching(authority, None, Some(url)).await;
             }
             _ => {}
         }
@@ -1134,11 +1152,12 @@ impl Driver for DesktopDriver {
             && matches!(action.kind, VoiceActionKind::Click | VoiceActionKind::Focus)
             && self
                 .a11y
-                .activate(e, action.kind == VoiceActionKind::Focus)
+                .activate_authorized(e, action.kind == VoiceActionKind::Focus, authority.clone())
                 .await?
         {
             return Ok(());
         }
+        let mut focused_for_typing = false;
         let input = match action.kind {
             VoiceActionKind::Click | VoiceActionKind::Focus => InputAction::Click {
                 button: PointerButton::Left,
@@ -1146,6 +1165,8 @@ impl Driver for DesktopDriver {
                 count: 1,
             },
             VoiceActionKind::Type => {
+                // Validate the text before focusing: focus is already an effect.
+                let text = action.literal.clone().ok_or(VoiceError::StaleTarget)?;
                 // With no readable controls, the text goes to the focused
                 // app, as the remote keyboard's would.
                 if let Some(e) = &action.target {
@@ -1154,13 +1175,18 @@ impl Driver for DesktopDriver {
                             "Use the remote keyboard for sensitive fields".into(),
                         ));
                     }
-                    if !e.focused && !self.a11y.activate(e, true).await? {
-                        return Err(VoiceError::StaleTarget);
+                    if !e.focused {
+                        if !self
+                            .a11y
+                            .activate_authorized(e, true, authority.clone())
+                            .await?
+                        {
+                            return Err(VoiceError::StaleTarget);
+                        }
+                        focused_for_typing = true;
                     }
                 }
-                InputAction::Text {
-                    text: action.literal.clone().ok_or(VoiceError::StaleTarget)?,
-                }
+                InputAction::Text { text }
             }
             VoiceActionKind::Scroll => InputAction::Scroll {
                 at,
@@ -1179,8 +1205,8 @@ impl Driver for DesktopDriver {
                     .collect(),
             },
             // The shortcuts browsers, file managers and most apps share.
-            VoiceActionKind::Back => keys(&["alt", "ArrowLeft"]),
-            VoiceActionKind::Forward => keys(&["alt", "ArrowRight"]),
+            VoiceActionKind::Back => history_keys(cfg!(target_os = "macos"), false),
+            VoiceActionKind::Forward => history_keys(cfg!(target_os = "macos"), true),
             VoiceActionKind::SwitchTab if action.previous_tab => keys(&["ctrl", "shift", "Tab"]),
             VoiceActionKind::SwitchTab => keys(&["ctrl", "Tab"]),
             _ => {
@@ -1190,10 +1216,19 @@ impl Driver for DesktopDriver {
             }
         };
         let mut sink = self.sink.lock().await;
-        authority.check()?;
+        // Stop still prevents typing, but an acknowledged focus means this
+        // command already changed the desktop before the refusal.
+        authority.check().map_err(|error| {
+            if focused_for_typing {
+                VoiceError::OutcomeUnknown
+            } else {
+                error
+            }
+        })?;
         sink.inject(&input, &t.geometry)
             .await
             .map_err(|e| match e {
+                _ if focused_for_typing => VoiceError::OutcomeUnknown,
                 ports::PlatformError::OutcomeUnknown(_) => VoiceError::OutcomeUnknown,
                 ports::PlatformError::TextUnavailable { .. } => VoiceError::Unavailable(
                     "Some of these characters can’t be typed with the computer’s keyboard layout. Nothing was typed. Use the remote keyboard’s Paste".into(),
@@ -1243,5 +1278,7 @@ impl Driver for DesktopDriver {
     }
 }
 
+#[cfg(test)]
+mod desktop_tests;
 #[cfg(test)]
 mod tests;

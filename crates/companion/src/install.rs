@@ -276,6 +276,18 @@ enum Started {
     Ended(std::process::ExitStatus),
 }
 
+/// A Windows launcher can exit successfully after the background companion
+/// detaches from its console. Only the owner pipe can confirm that startup;
+/// an unsuccessful launcher exit is still an immediate failure.
+#[cfg(any(target_os = "linux", windows, target_os = "macos"))]
+fn startup_exit(status: std::process::ExitStatus) -> Option<Started> {
+    if cfg!(windows) && status.success() {
+        None
+    } else {
+        Some(Started::Ended(status))
+    }
+}
+
 /// Waits for an Øphio just started to answer, so that a failure to start is
 /// reported rather than lost. `child` is its process, when this started it.
 #[cfg(any(target_os = "linux", windows, target_os = "macos"))]
@@ -288,10 +300,15 @@ async fn started(
         if running(paths).await? {
             return Ok(Started::Running);
         }
-        if let Some(child) = child.as_deref_mut()
-            && let Some(status) = child.try_wait()?
+        if let Some(process) = child.as_deref_mut()
+            && let Some(status) = process.try_wait()?
         {
-            return Ok(Started::Ended(status));
+            if let Some(ended) = startup_exit(status) {
+                return Ok(ended);
+            }
+            // The wrapper has finished its handoff; wait for the companion
+            // under the original deadline, without repeatedly observing it.
+            child = None;
         }
         if Instant::now() >= deadline {
             return Ok(Started::Starting);
@@ -380,7 +397,7 @@ mod windows {
     pub(super) async fn service(command: ServiceCommand, paths: &Paths) -> Result<String> {
         match command {
             ServiceCommand::Install => {
-                let executable = std::env::current_exe()?;
+                let executable = crate::update::startup_program(&std::env::current_exe()?)?;
                 startup::install(&executable)?;
                 start(paths, &executable).await
             }
@@ -557,7 +574,16 @@ async fn systemctl(systemctl: &impl Systemctl, args: &[&str]) -> Result<()> {
 #[cfg(target_os = "macos")]
 pub(crate) const LABEL: &str = macos::LABEL;
 #[cfg(target_os = "macos")]
+pub(crate) const UPDATE_LABEL: &str = macos::UPDATE_LABEL;
+#[cfg(target_os = "macos")]
 pub(crate) use macos::run_job;
+
+/// Windows uses a stable per-user executable path in its Run entry. Updating
+/// files does not grant permission to replace registration for another copy.
+#[cfg(windows)]
+pub(crate) async fn refresh_unit(_executable: &Path) -> Result<Option<String>> {
+    Ok(None)
+}
 
 /// After an update, rewrites the login agent as this version writes it, if it is
 /// one Øphio wrote for `executable`. launchd reads it when it next starts.
@@ -711,6 +737,38 @@ async fn linux_service(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn successful_windows_launcher_exit_still_waits_for_owner_pipe() {
+        use std::os::windows::process::ExitStatusExt;
+        assert!(startup_exit(std::process::ExitStatus::from_raw(0)).is_none());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn failed_windows_launcher_exit_is_reported_immediately() {
+        use std::os::windows::process::ExitStatusExt;
+        let Some(Started::Ended(status)) = startup_exit(std::process::ExitStatus::from_raw(17))
+        else {
+            panic!("unsuccessful startup must remain a failure");
+        };
+        assert_eq!(status.code(), Some(17));
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn unix_child_exit_does_not_imply_a_windows_launcher_handoff() {
+        use std::os::unix::process::ExitStatusExt;
+        for raw in [0, 17 << 8] {
+            let Some(Started::Ended(status)) =
+                startup_exit(std::process::ExitStatus::from_raw(raw))
+            else {
+                panic!("Unix startup must still report the ended process");
+            };
+            assert_eq!(status.code(), Some(raw >> 8));
+        }
+    }
 
     #[test]
     fn exact_unit_text_for_both_targets() {

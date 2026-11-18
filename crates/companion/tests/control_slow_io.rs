@@ -92,6 +92,8 @@ async fn stop_during_file_work(download: bool) {
         .submit(
             &owner,
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 project_id,
                 kind: TaskKind::Coding,
                 mode: None,

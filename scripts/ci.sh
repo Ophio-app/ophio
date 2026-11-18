@@ -15,7 +15,7 @@ export SHELL=/bin/sh
 mkdir -p "$CARGO_TARGET_DIR/ci"
 CARGO_TARGET_DIR=$(cd -- "$CARGO_TARGET_DIR" && pwd)
 export CARGO_TARGET_DIR
-stages=(fmt clippy test parallel windows client intake-e2e tauri python source licenses advisories package-linux package-windows)
+stages=(quick fmt clippy test parallel windows macos client intake-e2e tauri python source licenses advisories package-linux package-windows)
 
 missing() {
     printf 'MISSING: %s\n' "$*"
@@ -34,16 +34,47 @@ windows_tools() {
     linker="${CARGO_TARGET_X86_64_PC_WINDOWS_GNULLVM_LINKER:-x86_64-w64-mingw32-clang}"
     command -v "$linker" > /dev/null || missing 'LLVM/MinGW linker for x86_64-pc-windows-gnullvm'
 }
+quick() {
+    # Resolve the phone's separate workspace before spending time on builds.
+    # Offline keeps a missing dependency from turning this into a network wait.
+    if ! cargo metadata --locked --offline --format-version 1 --manifest-path client/src-tauri/Cargo.toml > /dev/null; then
+        printf '%s\n' 'Phone dependency check failed. If its lock file is stale, regenerate and commit client/src-tauri/Cargo.lock with your dependency change. If only cached packages are missing, run cargo fetch --locked --manifest-path client/src-tauri/Cargo.toml with network access, then retry.' >&2
+        return 1
+    fi
+    python3 scripts/check_crate_dependencies.py
+    python3 scripts/check_suppressions.py
+    require node
+    node client/scripts/request-gate-check.mjs
+    node --test client/scripts/request-gate-check.test.mjs
+}
 fmt() { cargo fmt --all --check; }
 clippy() { cargo clippy --locked --workspace --all-targets -- -D warnings; }
-test_stage() { cargo test --locked --workspace; }
+test_stage() { cargo test --locked --workspace --no-fail-fast; }
 parallel() { bash crates/test-support/check-parallel.sh; }
 windows() {
     windows_tools
     cargo check --locked -p companion -p computer-mcp --target x86_64-pc-windows-gnullvm
     cargo check --locked --target x86_64-pc-windows-gnullvm --tests -p harness-claude
-    cargo clippy --locked -p harness-claude -p services -p companion -p library --all-targets --target x86_64-pc-windows-gnullvm -- -D warnings
+    # Native-only test modules must compile too, especially Job limits and
+    # Windows updater recovery. Wayland is the sole non-Windows workspace crate.
+    cargo clippy --locked --workspace --exclude platform-linux --all-targets --target x86_64-pc-windows-gnullvm -- -D warnings
 }
+macos() (
+    local libdir archiver
+    libdir=$(rustc --print target-libdir --target aarch64-apple-darwin)
+    compgen -G "$libdir/libstd-*.rlib" > /dev/null || missing 'Rust target aarch64-apple-darwin'
+    require clang
+    # CI already provides llvm-ar in its pinned Windows cross toolchain.
+    archiver="${AR_x86_64_pc_windows_gnullvm:-llvm-ar}"
+    require "$archiver"
+    # Empty native objects are only suitable for check/clippy, never linking.
+    # Keep both the compiler override and its outputs out of normal builds.
+    export CC_aarch64_apple_darwin="$repo_dir/scripts/macos-check-cc.sh"
+    export AR_aarch64_apple_darwin="$archiver"
+    export CARGO_TARGET_DIR="$CARGO_TARGET_DIR/macos-check-only"
+    cargo check --locked --workspace --exclude platform-linux --all-targets --target aarch64-apple-darwin
+    cargo clippy --locked --workspace --exclude platform-linux --all-targets --target aarch64-apple-darwin -- -D warnings
+)
 client() {
     require node
     require npm

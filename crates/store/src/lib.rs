@@ -5,6 +5,7 @@
 //! rolls back both the projection and the journal. Sequence allocation uses
 //! AUTOINCREMENT so retention cannot recycle a previously published cursor.
 mod approvals;
+pub mod checks;
 mod diagnostics;
 mod history;
 mod instance_lock;
@@ -139,11 +140,13 @@ pub struct JournalRead {
 impl Store {
     /// Observe executed SQL in downstream regression tests.
     #[cfg(feature = "testing")]
-    pub fn trace(&self, callback: Option<fn(rusqlite::trace::TraceEvent<'_>)>) {
-        self.connection.trace_v2(
-            rusqlite::trace::TraceEventCodes::SQLITE_TRACE_STMT,
-            callback,
-        );
+    pub fn trace(&mut self, callback: Option<fn(rusqlite::trace::TraceEvent<'_>)>) {
+        self.connection
+            .trace_v2(
+                rusqlite::trace::TraceEventCodes::SQLITE_TRACE_STMT,
+                callback,
+            )
+            .expect("SQL tracing must be configured for the regression test");
     }
 
     pub fn open(path: impl AsRef<Path>, retention: Retention) -> Result<Self> {
@@ -184,6 +187,7 @@ impl Store {
         )?;
         history::install(&mut connection)?;
         approvals::install(&connection)?;
+        checks::install(&connection)?;
         native_sessions::install(&connection)?;
         secret_answers::scrub(&mut connection)?;
         // Room for every statement the store runs, so none is parsed twice.
@@ -288,6 +292,29 @@ impl Read<'_> {
             .prepare_cached("SELECT json FROM documents WHERE kind=?1 ORDER BY id")?;
         statement
             .query_map([kind], |r| r.get::<_, String>(0))?
+            .map(|s| decode(&s?))
+            .collect()
+    }
+    /// `list` of only the records whose id starts with `prefix`, which ends in
+    /// an ASCII character, found by the key's index rather than read in full.
+    pub fn list_prefixed<T: DeserializeOwned>(&self, kind: &str, prefix: &str) -> Result<Vec<T>> {
+        let mut end = prefix.as_bytes().to_vec();
+        match end.last_mut() {
+            Some(last) if *last < 0x7f => *last += 1,
+            _ => {
+                return Err(protocol::ProtocolError::new(
+                    protocol::ErrorCode::Internal,
+                    "A listing prefix must end in an ASCII character",
+                )
+                .into());
+            }
+        }
+        let end = String::from_utf8(end).expect("an ASCII byte was raised within ASCII");
+        let mut statement = self.connection.prepare_cached(
+            "SELECT json FROM documents WHERE kind=?1 AND id>=?2 AND id<?3 ORDER BY id",
+        )?;
+        statement
+            .query_map(params![kind, prefix, end], |r| r.get::<_, String>(0))?
             .map(|s| decode(&s?))
             .collect()
     }
@@ -688,6 +715,34 @@ mod tests {
                 .unwrap(),
             protocol::MAX_SAFE_INTEGER
         );
+        drop(db);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+    #[test]
+    fn a_prefixed_listing_reads_only_ids_that_start_with_the_prefix() {
+        let path = path();
+        let mut db = Store::open(&path, Retention::default()).unwrap();
+        db.write(Timestamp(0), |tx| {
+            for (id, n) in [
+                ("a:1", 1),
+                ("a:2", 2),
+                ("a;", 3),
+                ("a", 4),
+                ("ab:1", 5),
+                ("b:1", 6),
+            ] {
+                tx.put("thing", id, &n)?;
+            }
+            tx.put("other", "a:9", &9)
+        })
+        .unwrap();
+        db.read(|r| {
+            assert_eq!(r.list_prefixed::<i32>("thing", "a:")?, vec![1, 2]);
+            assert!(r.list_prefixed::<i32>("thing", "c:")?.is_empty());
+            assert!(r.list_prefixed::<i32>("thing", "").is_err());
+            Ok(())
+        })
+        .unwrap();
         drop(db);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }

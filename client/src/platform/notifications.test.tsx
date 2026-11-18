@@ -8,14 +8,19 @@ import { createSimPlatform } from "../dev/sim/platform";
 import { ids } from "../dev/sim/scenario";
 import { Toasts } from "../design/Toast";
 import { HostSession, type PendingCommand } from "../host/session";
-import type { NotificationPermission } from "../host/link";
+import type { LocalNotification, NotificationPermission } from "../host/link";
+import { recommendedTiers } from "./alertTypes";
 import { AlertsOffer, TaskAlerts } from "../shell/AlertsOffer";
 import { RouteProvider } from "../shell/Screen";
 import { Notifications } from "../screens/settings/Notifications";
+import { attentionDestination } from "../screens/work/AttentionScreen";
+import { openAttention, replyAttention } from "../state/projection";
 import { notificationSettings } from "./notificationSettings";
 import { Store } from "../state/store";
 import { appLock } from "./lock";
-import { notificationAccess, notificationDetail, taskAlertsOffer, TaskAlertsOffer, viewingTask, watchAttention } from "./notifications";
+import { deviceTiers } from "./deviceTiers";
+import { backgroundAlerts } from "./alerts";
+import { choose, notificationFor, parseOpenRoute, notificationAccess, notificationDetail, taskAlertsOffer, TaskAlertsOffer, viewingTask, watchAttention } from "./notifications";
 
 let app: App;
 let stop = () => {};
@@ -64,6 +69,26 @@ function older() {
 }
 function offer() { render(<><TaskAlerts /><AlertsOffer projectId={ids.pTide} taskId={ids.tHeaders} /></>, { wrapper }); }
 
+it("routes a quiet agent update to agent settings only on capable computers", () => {
+  const state = app.session.state.get();
+  const original = state.attention[ids.atReady];
+  if (!original || !state.capabilities) throw new Error("Missing fixture alert");
+  const item = { ...original, alert: undefined, task_id: null, run_id: null, agent_update: { harness: "codex" as const, kind: "new_models_available" as const, version: null, models: ["model-x"] } };
+  const capable = { ...state, capabilities: { ...state.capabilities, features: [...state.capabilities.features, "agent_update_policy_v1"] } };
+  const older = { ...state, capabilities: { ...state.capabilities, features: state.capabilities.features.filter(f => f !== "agent_update_policy_v1") } };
+  const settings = notificationSettings(app.session).current();
+  const device = { tier: () => "silent" as const };
+  expect(choose(item, older, settings, device)).toBeNull();
+  expect(choose(item, capable, settings, device)).toEqual({ type: "agent_update", tier: "silent" });
+  const note = notificationFor(item, capable, app.profile, "minimal", { type: "agent_update", tier: "silent" });
+  expect(note).toMatchObject({ category: "finished", silent: true, route: { kind: "agent_updates", profileId: app.profile.profileId } });
+  expect(note?.title).toContain("new model options");
+  expect(note?.body).not.toContain("model-x");
+  expect(parseOpenRoute(note?.route)).toEqual(note?.route);
+  expect(parseOpenRoute({ kind: "agent_updates", profileId: "" })).toBeNull();
+  expect(notificationFor(item, older, app.profile, "minimal")).toBeNull();
+});
+
 it("asks only after an accepted task action, remembers Not now across reload, and keeps profiles separate", async () => {
   older();
   permission("promptable"); offer(); await advance();
@@ -98,6 +123,28 @@ it("after an accepted task action, offers to tell you when the task is done, and
   expect(window.__sim!.host.tasks.find((t) => t.task_id === ids.tHeaders)?.notify_done).toBe(true);
   expect(screen.getByRole("status").textContent).toContain("We’ll tell you when it’s done");
   expect(screen.queryByText("Tell you when this task is done?")).toBeNull();
+});
+
+it("turning a chat into a task, or starting a chat's suggestion, brings no offer", async () => {
+  offer(); await advance();
+  act(() => app.session.state.set((s) => ({ ...s, tasks: { ...s.tasks, [ids.tHeaders]: { ...s.tasks[ids.tHeaders]!, conversation: true } } })));
+  const chat = app.session.state.get().tasks[ids.tHeaders]!;
+  const into: PendingCommand = { id: "into", body: { command: "resume_task", task_id: chat.task_id, mode: "work", text: "Go ahead" }, label: "Turn into a task", issuedAt: Date.now(), phase: "accepted", error: null, receipt: { command_id: "into", status: "accepted", seq: 1, result: null, error: null } };
+  act(() => app.session.commands.set((s) => ({ ...s, into })));
+  await advance();
+  expect(screen.queryByText(/^Tell you when this/)).toBeNull();
+  const started: PendingCommand = {
+    id: "card",
+    body: { command: "create_task", project_id: chat.project_id, prompt: "Look", title: "Look", harness: "claude_code", model: null, effort: null, mode: "ask", placement: { mode: "start_now" }, mission: null, bundle: null, branch: null, start: null, place: null, browser: null, github: null, origin: { chat: chat.task_id, run: "r", index: 0 } } as unknown as PendingCommand["body"],
+    label: "Start", issuedAt: Date.now(), phase: "accepted", error: null,
+    receipt: { command_id: "card", status: "accepted", seq: 1, result: { kind: "task_created", task_id: ids.tHeaders } as never, error: null },
+  };
+  act(() => app.session.commands.set((s) => ({ ...s, card: started })));
+  await advance();
+  expect(screen.queryByText(/^Tell you when this/)).toBeNull();
+  // An ordinary action still brings it.
+  command("continue"); await advance();
+  expect(screen.getByText(/^Tell you when this/)).toBeTruthy();
 });
 
 it("someone who answered the older Get alerts offer is still offered the bell once", async () => {
@@ -155,23 +202,28 @@ it("accepted new task offers in its exact task context, queued work does not", a
 
 it("settings displays all three real states and refreshes on foreground return", async () => {
   permission("promptable"); render(<Notifications />, { wrapper }); await advance();
-  expect(screen.getByText("Alerts are off")).toBeTruthy();
+  const summary = screen.getByText("Background delivery and phone settings").closest("summary")!;
+  expect(within(summary).getByText("Alerts are off")).toBeTruthy();
+  expect(summary.closest("details")?.open).toBe(false);
+  fireEvent.click(summary);
   expect(screen.getByRole("button", { name: "Allow alerts" })).toBeTruthy();
   act(() => visibility("hidden")); permission("blocked"); act(() => visibility("visible")); await advance();
-  expect(screen.getByText("Alerts are blocked in the phone’s settings")).toBeTruthy();
+  expect(within(summary).getByText("Alerts are blocked in the phone’s settings")).toBeTruthy();
   fireEvent.click(screen.getAllByRole("button", { name: "Open Android settings" })[0]!); await advance();
   expect(window.__sim?.device.notificationSettingsOpened).toBe(1);
   act(() => visibility("hidden")); permission("granted"); act(() => visibility("visible")); await advance();
-  expect(screen.getByText("Alerts are on")).toBeTruthy();
+  expect(within(summary).getByText("Alerts are on")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Allow alerts" })).toBeNull();
 });
 
 it("denial is not reported as permission granted and query failure stays unknown", async () => {
   permission("promptable"); window.__sim?.device.notificationRequestResult("blocked");
   render(<Notifications />, { wrapper }); await advance();
+  const summary = screen.getByText("Background delivery and phone settings").closest("summary")!;
+  fireEvent.click(summary);
   fireEvent.click(screen.getByRole("button", { name: "Allow alerts" })); await advance();
   expect(screen.queryByText("Alerts are on")).toBeNull();
-  expect(screen.getByText("Alerts are blocked in the phone’s settings")).toBeTruthy();
+  expect(within(summary).getByText("Alerts are blocked in the phone’s settings")).toBeTruthy();
   vi.spyOn(app.platform, "notificationPermission").mockRejectedValue(new Error("Unavailable"));
   act(() => visibility("visible")); await advance();
   expect(screen.getByText(/couldn’t check whether task alerts/)).toBeTruthy();
@@ -304,6 +356,285 @@ it("opening a task takes its alerts out of the shade, answered or not, and they 
   offLock();
 });
 
+it("a cut-off reply uses reply settings, opens Chat, and leaves the shade when seen without a Home decision", async () => {
+  const device = window.__sim!.device;
+  const original = app.session.state.get().attention[ids.atReady]!;
+  const taskId = original.task_id!;
+  const item = { ...original, attention_id: "cut-off-reply", kind: "completed" as const, topic: "finished" as const, alert: undefined, title: "Reply cut off. Write to carry on.", quiet: false };
+  visibility("hidden");
+  act(() => app.session.state.set((s) => ({ ...s,
+    tasks: { ...s.tasks, [taskId]: { ...s.tasks[taskId]!, conversation: true, state: "reconciliation_required", attention_count: 0 } },
+    attention: { ...s.attention, [item.attention_id]: item },
+  })));
+  await advance();
+  const state = app.session.state.get();
+  const settings = notificationSettings(app.session).current();
+  expect(choose(item, state, settings, { tier: () => "off" })).toBeNull();
+  expect(choose(item, state, settings, { tier: () => "silent" })).toEqual({ type: "reply", tier: "silent" });
+  const note = device.notifications.find(n => n.id.endsWith("/cut-off-reply"));
+  expect(note).toMatchObject({ title: item.title, category: "finished", alertType: "reply", want: "alert",
+    route: { kind: "attention", profileId: app.profile.profileId, attentionId: item.attention_id } });
+  expect(attentionDestination(item, state, Date.now())).toMatchObject({ kind: "talk", task: { task_id: taskId } });
+  expect(openAttention(state).some(a => a.attention_id === item.attention_id)).toBe(false);
+  expect(replyAttention(state).some(a => a.attention_id === item.attention_id)).toBe(true);
+  // Ordinary replies still use their ordinary heading, not the task's title.
+  expect(notificationFor({ ...item, topic: undefined, title: "A chat title" }, state, app.profile, "minimal", { type: "reply", tier: "silent" })?.title).toBe("New reply");
+  const offLock = appLock(app.platform).start();
+  visibility("visible"); await advance();
+  const close = viewingTask(app.profile.profileId, taskId);
+  await advance();
+  expect(device.cancelled).toContain(note!.id);
+  close();
+  const count = device.notifications.length;
+  visibility("hidden"); await advance();
+  expect(device.notifications).toHaveLength(count);
+  offLock();
+});
+
+function chatReply(id: string) {
+  const original = app.session.state.get().attention[ids.atReady]!;
+  const taskId = original.task_id!;
+  act(() => app.session.state.set(s => ({ ...s,
+    tasks: { ...s.tasks, [taskId]: { ...s.tasks[taskId]!, conversation: true, notify_done: false } },
+    attention: { ...s.attention, [id]: { ...original, attention_id: id, kind: "completed", alert: "reply", quiet: false } },
+  })));
+  return taskId;
+}
+
+it.each(["home", "same chat", "different chat", "background"] as const)("only a reply outside the exact visible chat alerts: %s", async where => {
+  const offLock = appLock(app.platform).start();
+  await advance();
+  const taskId = app.session.state.get().attention[ids.atReady]!.task_id!;
+  const close = where === "same chat" || where === "background" ? viewingTask(app.profile.profileId, taskId)
+    : where === "different chat" ? viewingTask(app.profile.profileId, "another-chat") : () => {};
+  if (where === "background") visibility("hidden");
+  const notify = vi.spyOn(app.platform, "notify");
+  chatReply("reply");
+  await advance();
+  if (where === "same chat") {
+    expect(notify).not.toHaveBeenCalled();
+    close();
+    visibility("hidden");
+    await advance();
+    expect(notify).not.toHaveBeenCalled();
+  } else {
+    expect(notify).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ alertType: "reply", want: "alert" }));
+    expect(notify.mock.calls[0]![0].silent).not.toBe(true);
+    close();
+  }
+  offLock();
+});
+
+it("the foreground app handles unseen replies even with a watcher and never marks them seen just for showing Home", async () => {
+  const offLock = appLock(app.platform).start();
+  await advance();
+  vi.spyOn(backgroundAlerts(app.platform)!, "covers").mockReturnValue(true);
+  const reported = vi.spyOn(app.platform.alerts!, "seen");
+  const notify = vi.spyOn(app.platform, "notify");
+  chatReply("unseen-reply");
+  await advance();
+  expect(notify).toHaveBeenCalledTimes(1);
+  expect(reported.mock.calls.flatMap(([, ids]) => ids)).not.toContain("unseen-reply");
+  // A caught-up snapshot and replay carry the same identity, not new news.
+  act(() => app.session.state.set(s => ({ ...s, caughtUp: false })));
+  act(() => app.session.state.set(s => ({ ...s, caughtUp: true, attention: { ...s.attention } })));
+  chatReply("unseen-reply");
+  visibility("hidden"); visibility("visible");
+  await advance();
+  expect(notify).toHaveBeenCalledTimes(1);
+  stop();
+  stop = watchAttention(app.platform, app.session, app.profile.name);
+  await advance();
+  expect(notify).toHaveBeenCalledTimes(1);
+  offLock();
+});
+
+it.each(["silent", "off"] as const)("explicit %s reply settings survive the new default", async tier => {
+  await advance();
+  await deviceTiers(app.platform).setTier("reply", tier);
+  const notify = vi.spyOn(app.platform, "notify");
+  chatReply("chosen-reply");
+  await advance();
+  if (tier === "off") expect(notify).not.toHaveBeenCalled();
+  else expect(notify).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ alertType: "reply", want: "silent", silent: true }));
+});
+
+it("a muted project and a blocked notification permission still hold back reply alerts", async () => {
+  await advance();
+  const settings = notificationSettings(app.session);
+  settings.set({ view: { off: [], bundle: false, revision: 1, projects: [{ project_id: ids.pTide, mute: true, on: [], off: [] }] }, error: null });
+  chatReply("muted-reply");
+  await advance();
+  expect(window.__sim!.device.notifications).toHaveLength(0);
+  settings.set({ view: { off: [], bundle: false, revision: 2, projects: [] }, error: null });
+  permission("blocked");
+  chatReply("blocked-reply");
+  await advance();
+  expect(window.__sim!.device.notifications).toHaveLength(0);
+  expect(notificationAccess(app.platform).get().missed[app.profile.profileId]?.off).toBe(true);
+});
+
+/** Android routing at its real typed defaults, including Finished = Off.
+ * Run the actual watchAttention producer against a shade, not just a notify spy. */
+function typedShade() {
+  const delivered = new Map<string, LocalNotification>();
+  const sounded: string[] = [];
+  const tiers = deviceTiers(app.platform);
+  const cancel = app.platform.cancelNotifications!.bind(app.platform);
+  vi.spyOn(app.platform, "cancelNotifications").mockImplementation(async ids => {
+    for (const id of ids) delivered.delete(id);
+    await cancel(ids);
+  });
+  vi.spyOn(app.platform, "notify").mockImplementation(async note => {
+    const type = note.alertType ?? (note.category === "finished" ? "finished" : "decision");
+    const wanted = note.want ?? tiers.tier(type);
+    if (wanted === "off") return;
+    const replacing = delivered.has(note.id);
+    delivered.set(note.id, note);
+    if (!note.silent && wanted === "alert" && !replacing) sounded.push(note.id);
+  });
+  return { delivered, sounded };
+}
+
+it.each(["alert", "silent"] as const)("folded foreground replies survive default Android routing and silent recount: %s", async tier => {
+  const offLock = appLock(app.platform).start();
+  await advance();
+  // Undo this file's historical Finished=Alert fixture override.
+  await deviceTiers(app.platform).setTier("finished", recommendedTiers().finished);
+  await deviceTiers(app.platform).setTier("reply", tier);
+  const settings = notificationSettings(app.session);
+  act(() => settings.set({ view: { off: [], projects: [], bundle: true, revision: 1 }, error: null }));
+  const shade = typedShade();
+  chatReply("fold-one"); await advance();
+  expect(shade.delivered.size).toBe(1);
+  chatReply("fold-two"); await advance();
+  const tag = `${app.profile.profileId}/project:${ids.pTide}`;
+  expect([...shade.delivered.keys()]).toEqual([tag]);
+  expect(shade.delivered.get(tag)).toMatchObject({ alertType: "reply", want: tier, handles: [`${app.profile.profileId}/fold-one`, `${app.profile.profileId}/fold-two`], title: "tidewater-api has 2 notifications" });
+  // A later replacement and a recount must not make another sound.
+  const before = shade.sounded.length;
+  chatReply("fold-three"); await advance();
+  act(() => app.session.state.set(s => ({ ...s, resolvedAttention: { ...s.resolvedAttention, "fold-one": Date.now() } })));
+  await advance();
+  expect(shade.delivered.get(tag)).toMatchObject({ alertType: "reply", want: tier, silent: true, handles: [`${app.profile.profileId}/fold-two`, `${app.profile.profileId}/fold-three`], title: "tidewater-api has 2 notifications" });
+  expect(shade.sounded).toHaveLength(before);
+  if (tier === "silent") expect(shade.sounded).toHaveLength(0);
+  // An off choice must remove all folded membership, not resurrect it on recount.
+  await deviceTiers(app.platform).setTier("reply", "off");
+  await advance();
+  expect(shade.delivered.size).toBe(0);
+  chatReply("fold-off"); await advance();
+  expect(shade.delivered.size).toBe(0);
+  offLock();
+});
+
+it("folded mixed needs-you membership keeps the loudest remaining type and honors project mute", async () => {
+  visibility("hidden");
+  await advance();
+  await deviceTiers(app.platform).setTier("finished", "off");
+  const settings = notificationSettings(app.session);
+  act(() => settings.set({ view: { off: [], projects: [], bundle: true, revision: 1 }, error: null }));
+  const shade = typedShade();
+  chatReply("mixed-reply"); await advance();
+  const sample = app.session.state.get().attention[ids.atReady]!;
+  act(() => app.session.state.set(s => ({ ...s, attention: { ...s.attention, "mixed-question": { ...sample, attention_id: "mixed-question", kind: "question", alert: "question", quiet: false } } })));
+  await advance();
+  const tag = `${app.profile.profileId}/project:${ids.pTide}`;
+  expect(shade.delivered.get(tag)).toMatchObject({ category: "needs_you", alertType: "question", want: "alert" });
+  act(() => app.session.state.set(s => ({ ...s, resolvedAttention: { ...s.resolvedAttention, "mixed-question": Date.now() } })));
+  await advance();
+  expect(shade.delivered.get(tag)).toMatchObject({ category: "finished", alertType: "reply", want: "alert", silent: true });
+  act(() => settings.set({ view: { off: [], bundle: true, revision: 2, projects: [{ project_id: ids.pTide, mute: true, on: [], off: [] }] }, error: null }));
+  await advance();
+  expect(shade.delivered.size).toBe(0);
+});
+
+it("round2 leaves Android membership authoritative across foreground A/B, hidden C, and opening A", async () => {
+  stop();
+  Object.assign(app.platform, { nativeNotificationFolding: true });
+  stop = watchAttention(app.platform, app.session, app.profile.name);
+  const offLock = appLock(app.platform).start();
+  await advance();
+  vi.spyOn(backgroundAlerts(app.platform)!, "covers").mockReturnValue(true);
+  act(() => notificationSettings(app.session).set({ view: { off: [], projects: [], bundle: true, revision: 1 }, error: null }));
+  const notify = vi.spyOn(app.platform, "notify");
+  const cancel = vi.spyOn(app.platform, "cancelNotifications");
+  const aTask = chatReply("round2-a"); await advance();
+  // Give B and C different chats, so opening A only clears A.
+  const original = app.session.state.get().attention[ids.atReady]!;
+  const add = (id: string) => act(() => app.session.state.set(s => ({ ...s,
+    tasks: { ...s.tasks, [id]: { ...s.tasks[aTask]!, task_id: id, conversation: true } },
+    attention: { ...s.attention, [id]: { ...original, attention_id: id, task_id: id, kind: "completed", alert: "reply", quiet: false } },
+  })));
+  add("round2-b"); await advance();
+  visibility("hidden");
+  add("round2-c"); await advance();
+  expect(notify).toHaveBeenCalledTimes(2);
+  visibility("visible"); await advance();
+  const close = viewingTask(app.profile.profileId, aTask); await advance();
+  expect(cancel.mock.calls.flatMap(([ids]) => ids)).toContain(`${app.profile.profileId}/round2-a`);
+  // No JavaScript recount may replace Android's B/C summary with only B.
+  expect(notify).toHaveBeenCalledTimes(2);
+  for (const [note] of notify.mock.calls) {
+    expect(note.id).not.toContain("/project:");
+    expect(note).toMatchObject({ fold: { projectId: ids.pTide, project: "tidewater-api", computer: app.profile.name } });
+  }
+  close(); offLock();
+});
+
+it.each(["off", "mute"] as const)("round2 native members update silently with choices and clear for %s", async ending => {
+  stop();
+  Object.assign(app.platform, { nativeNotificationFolding: true });
+  stop = watchAttention(app.platform, app.session, app.profile.name);
+  const offLock = appLock(app.platform).start();
+  await advance();
+  const settings = notificationSettings(app.session);
+  act(() => settings.set({ view: { off: [], projects: [], bundle: true, revision: 1 }, error: null }));
+  const notify = vi.spyOn(app.platform, "notify");
+  const cancel = vi.spyOn(app.platform, "cancelNotifications");
+  chatReply("choice-one"); await advance();
+  chatReply("choice-two"); await advance();
+  expect(notify).toHaveBeenCalledTimes(2);
+  await deviceTiers(app.platform).setTier("reply", "silent"); await advance();
+  expect(notify).toHaveBeenCalledTimes(4);
+  for (const [note] of notify.mock.calls.slice(2)) {
+    expect(note).toMatchObject({ silent: true, alertType: "reply", want: "silent", fold: { projectId: ids.pTide } });
+    expect(note.id).not.toContain("/project:");
+    expect(note.handles).toBeUndefined();
+  }
+  if (ending === "off") await deviceTiers(app.platform).setTier("reply", "off");
+  else act(() => settings.set({ view: { off: [], bundle: true, revision: 2, projects: [{ project_id: ids.pTide, mute: true, on: [], off: [] }] }, error: null }));
+  await advance();
+  expect(cancel.mock.calls.flatMap(([ids]) => ids)).toEqual(expect.arrayContaining([`${app.profile.profileId}/choice-one`, `${app.profile.profileId}/choice-two`]));
+  chatReply("choice-after"); await advance();
+  expect(notify).toHaveBeenCalledTimes(4);
+  offLock();
+});
+
+it("round3 ungrouped Android routing refresh keeps the individual identity and leaves suppression to native accounting", async () => {
+  stop();
+  Object.assign(app.platform, { nativeNotificationFolding: true });
+  stop = watchAttention(app.platform, app.session, app.profile.name);
+  const offLock = appLock(app.platform).start();
+  await advance();
+  act(() => notificationSettings(app.session).set({ view: { off: [], projects: [], bundle: false, revision: 1 }, error: null }));
+  const notify = vi.spyOn(app.platform, "notify");
+  chatReply("round3-existing"); await advance();
+  expect(notify).toHaveBeenCalledTimes(1);
+  notify.mockClear();
+  await deviceTiers(app.platform).setTier("reply", "silent"); await advance();
+  // Native eviction is not a page-level handling event. The native tests
+  // exercise suppression after eviction, free space, and this exact refresh.
+  expect(notify).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+    id: `${app.profile.profileId}/round3-existing`, alertType: "reply", want: "silent", silent: true,
+  }));
+  expect(notify.mock.calls[0]![0].fold).toBeUndefined();
+  expect(notify.mock.calls[0]![0].handles).toBeUndefined();
+  chatReply("round3-new"); await advance();
+  expect(notify.mock.calls.at(-1)![0]).toMatchObject({ id: `${app.profile.profileId}/round3-new`, want: "silent", silent: true });
+  offLock();
+});
+
 it("a choice in Settings shows on the tap, and goes back with a toast when Android refuses", async () => {
   const device = window.__sim!.device;
   render(<><Notifications /><Toasts /></>, { wrapper });
@@ -353,5 +684,21 @@ it("raises another computer's alerts while the app shows a different one, and st
   act(() => shown.set(true));
   miss("here"); await advance();
   expect(notify).toHaveBeenCalledTimes(1);
+  offLock();
+});
+
+it("posts a new-version notice in the visible app despite the watcher, without reporting it as shown", async () => {
+  const offLock = appLock(app.platform).start();
+  await advance();
+  const caps = app.session.state.get().capabilities!;
+  const native = app.platform.alerts!;
+  const covered = vi.spyOn(native, "seen");
+  // A running watcher would otherwise hold this computer's alerts for the app.
+  const watcher = (await import("./alerts")).backgroundAlerts(app.platform)!;
+  vi.spyOn(watcher, "covers").mockReturnValue(true);
+  act(() => app.session.state.set((s) => ({ ...s, capabilities: { ...caps, features: [...caps.features, "release_check_v1"] }, attention: { ...s.attention, release: { ...s.attention[ids.atReady]!, attention_id: "release", task_id: null, kind: "completed", new_version: "0.3.0", alert_handled_at: undefined, quiet: false } } })));
+  await advance();
+  expect(window.__sim!.device.notifications.some((n) => n.id.endsWith("/release"))).toBe(true);
+  expect(covered.mock.calls.flatMap(([, ids]) => ids)).not.toContain("release");
   offLock();
 });

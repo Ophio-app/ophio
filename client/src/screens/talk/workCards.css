@@ -1,0 +1,203 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Suggested work, one quiet card under the turn that suggested it. */
+
+.work-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s2);
+  margin-block: var(--s2) var(--s3);
+  padding: var(--s3);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--accent-soft);
+  border-radius: var(--r-lg);
+  min-width: 0;
+}
+
+.work-cards__opener {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "count chevron" "titles chevron";
+  align-items: center;
+  column-gap: var(--s2);
+  padding: 0;
+  text-align: start;
+  background: none;
+  border: 0;
+  color: inherit;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+.work-cards__count { grid-area: count; font-weight: 620; }
+.work-cards__titles {
+  grid-area: titles;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.work-cards__chevron {
+  grid-area: chevron;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--ink-3);
+  transition: transform 180ms ease;
+}
+.work-cards__opener[aria-expanded="true"] .work-cards__chevron { transform: rotate(180deg); }
+
+.work-cards__list {
+  display: grid;
+  gap: var(--s3);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
+}
+
+.work-card-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s2);
+  justify-items: start;
+  min-width: 0;
+}
+.work-card-item__text { display: grid; gap: 2px; min-width: 0; justify-self: stretch; }
+.work-card-item__title { font-weight: 600; overflow-wrap: anywhere; }
+.work-card-item__line,
+.work-card-item__why {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.work-card-item__why { color: var(--ink-3); }
+
+/* The agent chip and Start share one line on a phone; only a long model
+   name puts the chip on a line of its own above Start, wrapping inside the
+   chip as in the message box. Start never moves off the edge. */
+.work-card-item__go {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--s1);
+  justify-self: stretch;
+  min-width: 0;
+}
+.work-card-item__go .work-card__chip { flex: 0 1 auto; min-width: 0; margin-inline-start: calc(-1 * var(--s2)); padding-inline-end: var(--s1); }
+.work-card-item__go > .btn { flex: none; margin-inline-start: auto; padding-inline: var(--s3); gap: var(--s1); }
+/* The line under the title already says what it is: the row starts close. */
+.work-card-item:has(> .work-card-item__go) { row-gap: var(--s1); }
+.work-cards > .work-card__chip { justify-self: start; margin-inline-start: calc(-1 * var(--s2)); }
+.work-card__more { margin-top: var(--s2); }
+
+/* A started task: its name and how it stands, the whole row opening it. */
+.work-card-item--live {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: var(--s2);
+  justify-items: stretch;
+  min-height: var(--target);
+  margin-inline: calc(-1 * var(--s1));
+  padding: var(--s1);
+  width: calc(100% + 2 * var(--s1));
+  border-radius: var(--r-md);
+  background: none;
+  border: 0;
+  color: inherit;
+  text-align: start;
+  font: inherit;
+}
+.work-card-item--live:active { background: var(--surface-pressed); }
+.work-card-item--live:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.work-card-item--live .work-card-item__title { display: block; }
+.work-card-item--live .work-card-item__line { display: block; color: var(--warn-text); }
+.work-card-item__chev { width: 1rem; height: 1rem; color: var(--ink-3); }
+
+/* Anything past the project, always written out, in the warning tint. */
+.work-card__beyond {
+  color: var(--warn-text);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* The flip on Start: the row settles at once, compositor-only. */
+.work-card-item.is-starting,
+.work-card-item.is-here { animation: work-card-settle 220ms ease-out both; }
+.work-card-item.is-started { animation: work-card-settle 160ms ease-out both; }
+@keyframes work-card-settle {
+  from { opacity: 0.55; transform: translateY(2px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-cards__chevron { transition: none; }
+  .work-card-item.is-starting,
+  .work-card-item.is-here,
+  .work-card-item.is-started { animation: none; }
+}
+
+/* A typed task that starts from the message box: what it starts as, on one
+   quiet line above the box. Tapping it opens Review. */
+.composer__launch {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2rem;
+  padding: 0 var(--s1);
+  border-radius: var(--r-md);
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+  text-align: left;
+}
+/* Two lines at most: when it starts (now, or after which task) is at the
+   end and must stay readable on a narrow phone. */
+.composer__launch-line {
+  flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.composer__launch-chev {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+}
+.composer__launch:active { background: var(--surface-pressed); }
+.composer__launch:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* An ordered set: numbered, and started as a whole from Start all. */
+.work-cards__count:has(.work-cards__order) { display: inline-flex; align-items: center; gap: var(--s1); }
+.work-cards__order { inline-size: 1.05em; block-size: 1.05em; color: var(--ink-3); flex: none; }
+.work-cards__list--ordered { list-style: none; margin: 0; padding-inline: 0; counter-reset: step; }
+.work-cards__list--ordered > li {
+  display: grid;
+  grid-template-columns: 1.5em minmax(0, 1fr);
+  counter-increment: step;
+  min-width: 0;
+}
+.work-cards__list--ordered > li::before {
+  content: counter(step);
+  color: var(--ink-3);
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+.work-cards > .work-cards__all { justify-self: start; }
+/* What the set's tasks share, said once above its steps. */
+.work-cards__line {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+/* A set's step whose agent the set's chip says: its Start beside its title. */
+.work-card-item--setchip { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--s2); }
+.work-card-item--setchip > .work-card-item__go { justify-self: end; justify-content: flex-end; }

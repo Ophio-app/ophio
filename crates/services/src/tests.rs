@@ -31,8 +31,14 @@ fn written_anywhere(dir: &std::path::Path, value: &str) -> bool {
     })
 }
 
+#[path = "message_origin_tests.rs"]
+mod message_origin;
+
 #[path = "access_tests.rs"]
 mod conversation_access;
+pub(crate) use conversation_access::Backend as FakeSandboxes;
+#[path = "chat_writer_tests.rs"]
+mod chat_writer_tests;
 #[path = "more_access_tests.rs"]
 mod more_access_tests;
 #[path = "readiness_tests.rs"]
@@ -55,6 +61,9 @@ mod approvals;
 
 #[path = "restart_recovery_tests.rs"]
 mod restart_recovery;
+
+#[path = "cut_off_tests.rs"]
+mod cut_off_chat;
 
 #[path = "artifact_access_tests.rs"]
 mod artifact_access;
@@ -91,6 +100,20 @@ mod github_tests;
 
 #[path = "agent_updates_tests.rs"]
 mod agent_updates_tests;
+
+#[path = "release_check_tests.rs"]
+mod release_check_tests;
+
+#[path = "chat_news_tests.rs"]
+mod chat_news_tests;
+#[path = "proposals_tests.rs"]
+mod proposals_tests;
+#[path = "rollback_tests.rs"]
+mod rollback_tests;
+#[path = "turned_from_chat_tests.rs"]
+mod turned_from_chat_tests;
+#[path = "work_cards_origin_tests.rs"]
+mod work_cards_origin_tests;
 
 #[path = "system_hub_tests.rs"]
 mod system_hub;
@@ -178,7 +201,7 @@ impl Fixture {
             desktop,
         } = self;
         hub.shutdown().await.unwrap();
-        drop(hub);
+        drop_hub_and_wait(hub, WAIT).await;
         let hub = Self::build(&path, &clock, &harness, &desktop, configure).await;
         Self {
             path,
@@ -220,6 +243,8 @@ impl Fixture {
         computer: bool,
     ) -> (TaskId, CommandEnvelope) {
         let command = CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             github: None,
             agent_chosen: None,
             mode: None,
@@ -297,9 +322,12 @@ fn waiting() -> impl FnMut() -> bool {
 }
 const WAIT: Duration = Duration::from_secs(10);
 async fn settle(hub: &CompanionHub, id: CommandId) {
+    settle_within(hub, id, Duration::from_secs(15)).await;
+}
+async fn settle_within(hub: &CompanionHub, id: CommandId, wait: Duration) {
     // Executor yields are not a guarantee that the blocking journal worker ran.
-    // Keep the completion assertion, with the same wall-clock guard as run_started.
-    tokio::time::timeout(Duration::from_secs(15), async {
+    // Keep the completion assertion, with a wall-clock guard.
+    tokio::time::timeout(wait, async {
         loop {
             if hub
                 .read(|r| Ok(r.command(id)?.is_some_and(|c| !c.pending)))
@@ -372,7 +400,7 @@ async fn admission_deduplicates_and_recovers_intent_before_dispatch() {
         ErrorCode::Conflict
     );
     f.hub.shutdown().await.unwrap();
-    drop(f.hub);
+    drop_hub_and_wait(f.hub, WAIT).await;
     let hub = CompanionHub::builder()
         .data_dir(&f.path)
         .clock(f.clock)
@@ -405,7 +433,7 @@ async fn dispatch_without_native_ack_is_never_retried() {
         .await;
     run_started(&f, task).await;
     f.hub.shutdown().await.unwrap();
-    drop(f.hub);
+    drop_hub_and_wait(f.hub, WAIT).await;
     let hub = CompanionHub::builder()
         .data_dir(&f.path)
         .harness(f.harness.clone())
@@ -1229,6 +1257,9 @@ async fn a_message_needs_text_or_an_annotation() {
         .submit(
             &Caller::local_owner(),
             CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id: task,
                 text: " \n".into(),
                 bundle: None,
@@ -1250,6 +1281,7 @@ async fn stop_is_idempotent_and_fences_late_bridge_calls() {
     let run = run_started(&f, task).await;
     let target = f.desktop.target.lock().unwrap().target_id;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: Some(target),
         computer_use: true,
@@ -2860,7 +2892,7 @@ async fn supplied_host_identity_survives_restart_and_mismatch_fails_closed() {
         .unwrap();
     assert_eq!(hub.host_id(), host);
     hub.shutdown().await.unwrap();
-    drop(hub);
+    drop_hub_and_wait(hub, WAIT).await;
     let error = CompanionHub::builder()
         .data_dir(&path)
         .host_id(HostId::new())
@@ -2983,7 +3015,7 @@ async fn retention_change_compacts_the_running_store() {
 }
 
 #[tokio::test]
-async fn bridge_connection_is_single_use_and_disconnect_expires_pending_approval() {
+async fn bridge_connection_is_single_use_and_disconnect_keeps_a_pending_approval_open() {
     use ports::bridge::{BridgeHandler, BridgeRequest, BridgeResponse, RUN_TOKEN_ENV};
     let f = Fixture::new().await;
     let project = f.project().await;
@@ -3037,7 +3069,14 @@ async fn bridge_connection_is_single_use_and_disconnect_expires_pending_approval
         .hub
         .read(|r| r.require("approval", approval.approval_id))
         .unwrap();
-    assert_eq!(approval.state, ApprovalState::Expired);
+    // Its agent stopped waiting: the request stays open, answered later as
+    // the task's next message, and nothing is left waiting on it.
+    assert_eq!(approval.state, ApprovalState::Pending);
+    assert!(
+        f.hub
+            .read(|r| crate::carry_on::carried_on(r, approval.approval_id))
+            .unwrap()
+    );
     assert!(f.hub.inner.waits.lock().await.is_empty());
     assert!(matches!(
         f.hub
@@ -3065,6 +3104,7 @@ async fn bridge_permissions_use_typed_mcp_ids_instead_of_optional_tool_ids() {
     // Exercise the broker boundary directly with the trusted run binding.
     // Transport authentication and token handling are covered separately.
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: None,
         computer_use: false,
@@ -3161,6 +3201,8 @@ async fn initial_start_admission_preserves_availability_remedy_without_dispatch(
             .submit(
                 &Caller::local_owner(),
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: None,
                     agent_chosen: None,
                     project_id,
@@ -3448,6 +3490,7 @@ async fn subscribers_share_one_copy_of_each_event() {
         })
         .unwrap();
     f.hub.live(protocol::event::LiveEvent::AgentTextDelta {
+        text_offset: None,
         task_id: TaskId::new(),
         run_id: RunId::new(),
         message_key: "m".into(),
@@ -3478,6 +3521,7 @@ async fn a_subscription_follows_its_device_grants_and_revocation() {
         })
         .unwrap();
         hub.live(protocol::event::LiveEvent::AgentTextDelta {
+            text_offset: None,
             task_id: TaskId::new(),
             run_id: RunId::new(),
             message_key: "m".into(),
@@ -3588,10 +3632,14 @@ mod device_activity_tests;
 
 #[path = "ask_tests.rs"]
 mod ask_tests;
+#[path = "attached_flow_tests.rs"]
+mod attached_flow_tests;
 #[path = "checklist_tests.rs"]
 mod checklist_tests;
 #[path = "native_text_tests.rs"]
 mod native_text_tests;
+#[path = "outlives_turn_tests.rs"]
+mod outlives_turn_tests;
 #[path = "report_task_tests.rs"]
 mod report_task_tests;
 #[path = "reported_tests.rs"]
@@ -3701,3 +3749,11 @@ async fn preview_http_tells_a_site_from_other_servers() {
     drop(listener);
     assert_eq!(checker.page(&url).await.unwrap(), PageAnswer::Silent);
 }
+
+#[path = "checks_tests.rs"]
+mod checks_tests;
+
+#[path = "check_lifecycle_tests.rs"]
+mod check_lifecycle;
+#[path = "checks_integration_tests.rs"]
+mod checks_integration;

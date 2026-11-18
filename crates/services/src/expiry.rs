@@ -240,6 +240,13 @@ pub(crate) fn require_artifact(
     if let Some(meta) = r.get("artifact", artifact_id)? {
         return Ok(meta);
     }
+    if crate::attached::removed_at(r, artifact_id)?.is_some() {
+        return Err(error(
+            ErrorCode::Expired,
+            "Removed from the computer a week after its conversation was archived",
+        )
+        .into());
+    }
     if r.get::<Timestamp>(EXPIRED, artifact_id)?.is_some() {
         return Err(error(
             ErrorCode::Expired,

@@ -8,7 +8,9 @@
 // the project's name heads it, opening the other projects.
 
 import { Archive, ListTodo, MessageSquarePlus } from "lucide-react";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useTalkAll } from "../../app/talkScope";
+import { ProjectSheet } from "../../shell/ProjectSheet";
 import { shallowEqual, useApp, useHost, useLink, useUi } from "../../app/context";
 import { Age } from "../../design/Age";
 import { IconButton } from "../../design/Button";
@@ -28,13 +30,30 @@ import { useArchive } from "../work/archive";
 import { CONVERSATIONS_FEATURE, CONVERSATIONS_UPDATE, conversationBadge } from "./conversation";
 import { agentLabel } from "./intent";
 
-export function TalkConversations({ project }: { project: Project }) {
+export interface ConversationListPosition { part: "open" | "archived"; top: number }
+
+export function TalkConversations({ project, positions }: { project: Project; positions?: Map<string, ConversationListPosition> }) {
   const { ui } = useApp();
-  const pid = project.project_id;
-  const all = useHost((s) => projectTasks(s, pid).filter((t) => t.conversation), shallowEqual);
+  const across = useTalkAll();
+  const pid = across ? null : project.project_id;
+  const projects = useHost((s) => s.projects);
+  const chosen = useUi((s) => s.projectId);
+  const destination = (chosen ? projects[chosen] : undefined) ?? Object.values(projects).find((p) => p.home);
+  const scope = pid ?? "all";
+  const body = useRef<HTMLDivElement>(null);
+  const [picking, setPicking] = useState(false);
+  const all = useHost((s) => Object.values(s.tasks)
+    .filter((t) => t.conversation && (pid ? t.project_id === pid : !!s.projects[t.project_id]))
+    .sort((a, b) => b.updated_at - a.updated_at), shallowEqual);
   const open = all.filter((t) => t.state !== "archived");
   const archived = all.filter((t) => t.state === "archived");
-  const [part, setPart] = useState<"open" | "archived">("open");
+  const [part, setPart] = useState<"open" | "archived">(() => positions?.get(scope)?.part ?? "open");
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!el) return;
+    el.scrollTop = positions?.get(scope)?.top ?? 0;
+    return () => { positions?.set(scope, { part, top: el.scrollTop }); };
+  }, [scope, positions, part]);
   const conversations = part === "archived" && archived.length ? archived : open;
   const runs = useHost((s) => s.runs);
   const controls = useHost((s) => s.control);
@@ -45,19 +64,28 @@ export function TalkConversations({ project }: { project: Project }) {
   const online = useLink().state === "online";
   const supported = useHost((s) => !!s.capabilities?.features.includes(CONVERSATIONS_FEATURE));
   const archive = useArchive();
-  const start = () => ui.newConversation(pid);
+  const start = () => {
+    const target = across ? destination : project;
+    if (target) ui.newConversation(target.project_id);
+    else setPicking(true);
+  };
 
   const row = (t: Task) => {
     const run = latestRun(t, runs);
     const reason = reasons[t.task_id] ?? null;
     const st = conversationBadge(t, run, undefined, reason);
-    const draft = !!drafts[`${pid}/${t.task_id}`]?.text.trim();
+    const draft = !!drafts[`${t.project_id}/${t.task_id}`]?.text.trim();
     const model = agentLabel(harnesses, { harness: t.harness, model: t.model, effort: t.effort });
+    const agent = harnesses.find((h) => h.kind === t.harness)?.display_name ?? agentLabel(harnesses, { harness: t.harness, model: null, effort: null });
+    const detail = reason ?? (isActiveTask(t) ? taskStatus(t, run, controls[t.target_id ?? ""]) : null) ?? model;
     return (
       <div key={t.task_id} className="talk-task-row">
         <ListRow
           title={t.title}
-          subtitle={reason ?? (isActiveTask(t) ? taskStatus(t, run, controls[t.target_id ?? ""]) : null) ?? model}
+          subtitle={across ? <>
+            <span className="talk-conversation-line" aria-hidden><bdi className="talk-conversation-project">{projects[t.project_id]?.name}</bdi><span>·</span><span className="talk-conversation-agent">{agent}</span></span>
+            <span className="visually-hidden">{projects[t.project_id]?.name}. {model}{detail !== model ? `. ${detail}` : ""}</span>
+          </> : detail}
           meta={<Age at={t.updated_at} suffix=" ago" />}
           trailing={
             <span className="row__pills">
@@ -66,7 +94,7 @@ export function TalkConversations({ project }: { project: Project }) {
               {st && <Pill className={online ? undefined : "row__reported"} tone={online ? st.tone : "neutral"}>{!online && "Last reported · "}{st.label}</Pill>}
             </span>
           }
-          onClick={() => ui.selectTask(pid, t.task_id)}
+          onClick={() => ui.selectTask(t.project_id, t.task_id)}
         />
         {!isActiveTask(t) && t.state !== "archived" && (
           <IconButton icon={Archive} label={`Archive ${t.title}`} disabled={!archive.can}
@@ -77,12 +105,12 @@ export function TalkConversations({ project }: { project: Project }) {
   };
 
   return (
-    <Screen header={<ContextHeader heading />} className="talk-tasks">
+    <Screen header={<ContextHeader heading conversations />} className="talk-tasks" bodyRef={body}>
       {!supported && <Notice tone="unknown">{CONVERSATIONS_UPDATE}</Notice>}
       <Section>
         <div className="group">
-          <ListRow icon={MessageSquarePlus} title="New conversation" disabled={!supported} onClick={start} />
-          <ChecklistRow project={project} />
+          <ListRow icon={MessageSquarePlus} title="New conversation" subtitle={across && destination ? <span className="talk-conversation-destination">In {destination.name}</span> : undefined} disabled={!supported} onClick={start} />
+          {!across && <ChecklistRow project={project} />}
         </div>
       </Section>
       {archived.length > 0 && (
@@ -102,9 +130,10 @@ export function TalkConversations({ project }: { project: Project }) {
           : <p className="talk-muted">{archived.length ? "No open conversations." : "No conversations yet."}</p>}
       </Section>
       {archive.sheet}
+      <ProjectSheet open={picking} conversations onClose={() => setPicking(false)} onChooseProject={(p) => ui.newConversation(p.project_id)} />
       <Section>
         <div className="group">
-          <WorkDoor project={project} />
+          <WorkDoor projectId={pid} />
         </div>
       </Section>
     </Screen>
@@ -112,10 +141,9 @@ export function TalkConversations({ project }: { project: Project }) {
 }
 
 /** Tasks are Work's: a row saying what runs and waits there, which goes to it. */
-function WorkDoor({ project }: { project: Project }) {
+function WorkDoor({ projectId: pid }: { projectId: string | null }) {
   const { ui } = useApp();
-  const pid = project.project_id;
-  const running = useHost((s) => projectTasks(s, pid).filter((t) => !t.conversation && isTaskRunning(s, t)).length);
+  const running = useHost((s) => (pid ? projectTasks(s, pid) : Object.values(s.tasks)).filter((t) => !t.conversation && isTaskRunning(s, t)).length);
   const needs = useHost((s) => listedAttention(s, pid).filter((a) => !s.tasks[a.task_id ?? ""]?.conversation).length);
   const counts = [running && `${running} running`, needs && `${needs} ${needs === 1 ? "needs" : "need"} you`].filter(Boolean).join(" · ");
   return (

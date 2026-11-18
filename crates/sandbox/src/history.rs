@@ -29,10 +29,24 @@ pub struct History {
     copy_back: Option<(PathBuf, PathBuf)>,
     codex_resumed: bool,
     export: Option<(protocol::capability::HarnessKind, PathBuf, PathBuf, PathBuf)>,
+    /// The person's own instructions and skills this run reads, held open
+    /// until it ends. See [`crate::setup`].
+    pub shared: Vec<crate::setup::Shared>,
 }
+/// The agent's sign-in file, by its name in the agent's own settings folder.
+pub fn credential(kind: protocol::capability::HarnessKind) -> &'static str {
+    if kind == protocol::capability::HarnessKind::Codex {
+        "auth.json"
+    } else {
+        ".credentials.json"
+    }
+}
+
 impl History {
     /// Native state belongs to this conversation. Only the provider credential
-    /// file is shared; global sessions, hooks, MCP servers and databases are not.
+    /// file is shared to write; global sessions, settings, hooks, MCP servers,
+    /// plugins and databases are not. The person's own instructions and skills
+    /// are shared too, read-only, by [`crate::setup`], placed after these.
     pub fn isolated(
         kind: protocol::capability::HarnessKind,
         config: &Path,
@@ -44,11 +58,7 @@ impl History {
         let local = state.join("native");
         crate::sys::directories(&local)?;
         let mut binds = vec![(local.clone(), config.to_owned())];
-        let credential = if kind == HarnessKind::Codex {
-            "auth.json"
-        } else {
-            ".credentials.json"
-        };
+        let credential = credential(kind);
         let auth = config.join(credential);
         if auth.exists() {
             // Validate the file without reading its contents.
@@ -63,6 +73,7 @@ impl History {
                 copy_back: history.copy_back,
                 codex_resumed: false,
                 export: Some((kind, config.to_owned(), state.to_owned(), cwd.to_owned())),
+                shared: Vec::new(),
             });
         }
         // A new conversation keeps Codex's sqlite index and rollouts in `local`.
@@ -83,6 +94,7 @@ impl History {
             copy_back: None,
             codex_resumed: resume.is_some(),
             export: Some((kind, config.to_owned(), state.to_owned(), cwd.to_owned())),
+            shared: Vec::new(),
         })
     }
     pub fn claude(
@@ -144,6 +156,7 @@ impl History {
             copy_back,
             codex_resumed: false,
             export: None,
+            shared: Vec::new(),
         })
     }
     pub fn finished(&self, session: Option<&str>) -> io::Result<()> {
@@ -248,6 +261,25 @@ mod tests {
         /// The disk fills after this many bytes of a copy on this thread.
         pub(super) static ROOM: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(None) };
     }
+    /// A temporary folder under its real path. History is reached through
+    /// no link, and macOS keeps temporary folders behind one (`/var`).
+    struct Scratch {
+        _dir: tempfile::TempDir,
+        path: PathBuf,
+    }
+    impl Scratch {
+        fn path(&self) -> &Path {
+            &self.path
+        }
+    }
+    fn scratch() -> Scratch {
+        let dir = tempfile::tempdir().unwrap();
+        let real = dir.path().canonicalize().unwrap();
+        Scratch {
+            _dir: dir,
+            path: real,
+        }
+    }
     fn names(dir: &Path) -> Vec<String> {
         let mut names: Vec<_> = fs::read_dir(dir)
             .unwrap()
@@ -258,7 +290,7 @@ mod tests {
     }
     #[test]
     fn a_turn_stopped_before_the_agent_saved_anything_has_nothing_to_keep() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         for kind in [
             protocol::capability::HarnessKind::ClaudeCode,
@@ -276,7 +308,7 @@ mod tests {
     }
     #[test]
     fn carrying_on_from_a_conversation_never_saved_says_so() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         let error = History::claude(&config, &state, Path::new("/repo"), Some("one")).unwrap_err();
@@ -288,7 +320,7 @@ mod tests {
     }
     #[test]
     fn codex_missing_resume_reports_unsaved_with_or_without_other_sessions() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         for other in [false, true] {
@@ -312,7 +344,7 @@ mod tests {
     }
     #[test]
     fn codex_export_reports_history_lookup_errors() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let state = dir.path().join("state");
         let config = dir.path().join("config");
         let history = History::isolated(
@@ -335,7 +367,7 @@ mod tests {
     }
     #[test]
     fn codex_resumed_history_disappearing_is_not_an_unsaved_first_turn() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         fs::create_dir_all(config.join("sessions/date")).unwrap();
@@ -359,7 +391,7 @@ mod tests {
             protocol::capability::HarnessKind::ClaudeCode,
             protocol::capability::HarnessKind::Codex,
         ] {
-            let dir = tempfile::tempdir().unwrap();
+            let dir = scratch();
             let config = dir.path().join("config");
             let state = dir.path().join("state");
             let (relative, private) = if kind == protocol::capability::HarnessKind::ClaudeCode {
@@ -392,7 +424,7 @@ mod tests {
     #[test]
     fn codex_history_permission_errors_are_not_absence() {
         use std::os::unix::fs::{MetadataExt, PermissionsExt};
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         // Root bypasses file permissions; the companion runs as its owner.
         if dir.path().metadata().unwrap().uid() == 0 {
             return;
@@ -417,7 +449,7 @@ mod tests {
     }
     #[test]
     fn codex_matching_links_and_non_regular_files_are_not_missing_history() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         let history = History::isolated(
@@ -440,7 +472,7 @@ mod tests {
     }
     #[test]
     fn finishing_a_new_claude_turn_still_rejects_links_and_non_regular_files() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         let history = History::isolated(
@@ -463,7 +495,7 @@ mod tests {
     }
     #[test]
     fn missing_seed_destination_is_not_reported_as_an_unsaved_conversation() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         fs::create_dir_all(config.join("projects/-repo")).unwrap();
@@ -480,7 +512,7 @@ mod tests {
     }
     #[test]
     fn interrupted_claude_seed_is_copied_again() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         fs::create_dir_all(config.join("projects/-repo")).unwrap();
@@ -499,7 +531,7 @@ mod tests {
     }
     #[test]
     fn interrupted_codex_seed_is_copied_again() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         fs::create_dir_all(config.join("sessions/2026/10/11")).unwrap();
@@ -528,7 +560,7 @@ mod tests {
     }
     #[test]
     fn failed_export_keeps_the_host_transcript() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         fs::create_dir_all(config.join("projects/-repo")).unwrap();
@@ -573,7 +605,7 @@ mod tests {
     }
     #[test]
     fn staging_left_by_a_killed_copy_is_removed_unless_in_use() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let source = dir.path().join("source.jsonl");
         fs::write(&source, "whole").unwrap();
         let out = dir.path().join("out");
@@ -599,7 +631,7 @@ mod tests {
     }
     #[test]
     fn a_copy_whose_staging_is_swept_before_it_locks_still_publishes() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let (first, second) = (dir.path().join("first"), dir.path().join("second"));
         fs::write(&first, "first").unwrap();
         fs::write(&second, "second").unwrap();
@@ -614,7 +646,7 @@ mod tests {
     }
     #[test]
     fn export_replaces_a_planted_link_instead_of_writing_through_it() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let source = dir.path().join("source.jsonl");
         fs::write(&source, "transcript").unwrap();
         let other = dir.path().join("other");
@@ -638,7 +670,7 @@ mod tests {
     }
     #[test]
     fn only_resumed_transcript_is_seeded_and_persisted() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         fs::create_dir_all(config.join("projects/-repo")).unwrap();
@@ -658,7 +690,7 @@ mod tests {
     }
     #[test]
     fn codex_isolates_native_state_and_exports_only_the_named_session() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let config = dir.path().join("config");
         let state = dir.path().join("state");
         fs::create_dir_all(config.join("sessions/2026/10/11")).unwrap();
@@ -688,7 +720,7 @@ mod tests {
     }
     #[test]
     fn symlinked_history_is_rejected() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = scratch();
         let root = dir.path().join("state/claude-history");
         fs::create_dir_all(&root).unwrap();
         std::os::unix::fs::symlink(dir.path(), root.join("projects")).unwrap();

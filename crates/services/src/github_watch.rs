@@ -274,7 +274,7 @@ pub(crate) fn merges_when_green(
             "In Drafts the person marks the pull request ready and merges it. Stop once it's green, and say so.",
         ),
         (_, Some(WhenGreen::Leave)) => refused(
-            "The person chose to merge this pull request themselves. Stop once it's green, and say so.",
+            "The person merges this pull request themselves. Stop once it's green, and say so.",
         ),
         // Chosen for this task alone, the choice is the person's consent
         // for it, without the project's warning.
@@ -335,6 +335,8 @@ pub(crate) fn headline_item(
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     }
 }
 
@@ -1190,6 +1192,8 @@ impl CompanionHub {
             self.write(|tx| tx.put(crate::github_access::UNTRUSTED, task_id, &true))?;
         }
         let mut envelope = CommandEnvelope::new(Command::ResumeTask {
+            observed_reply: None,
+            harness: None,
             task_id,
             text: Some(handover.text.clone()),
             bundle: None,
@@ -1762,6 +1766,8 @@ pub(crate) fn round_command(
         ),
     };
     Command::CreateTask {
+        origin: None,
+        from_chat: None,
         project_id: task.project_id,
         kind: TaskKind::Coding,
         mode: None,

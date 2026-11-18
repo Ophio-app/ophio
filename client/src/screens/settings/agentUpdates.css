@@ -1,0 +1,19 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.agent-updates__choices { margin: 0; padding: 0; border: 0; display: grid; gap: 4px; min-width: 0; }
+.agent-updates__choice { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; }
+.agent-updates__choice:has(input:checked) { background: var(--surface-raised, #ffffff0a); }
+.agent-updates__choice input { flex-shrink: 0; margin-top: 4px; }
+.agent-updates__choice > span { min-width: 0; overflow-wrap: anywhere; }
+.agent-updates__choices:disabled .agent-updates__choice { cursor: default; opacity: .65; }
+.agent-updates__agent { border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 6px; }
+.agent-updates__agent .btn { justify-self: start; }
+.agent-model-update { margin-top: 12px; }
+.agent-model-update p { margin: 0; }
+
+.agent-updates__check { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.agent-update-line { display: grid; gap: 6px; }
+/* Spaced like the card's own lines around it. */
+.settings-card > p + .agent-update-line,
+.settings-card > .agent-update-line + p { margin-top: var(--s2); }
+.agent-update-line p { margin: 0; }
+.agent-update-line .btn { justify-self: start; }

@@ -29,6 +29,8 @@ async fn in_run_subscription_hides_inbox_attention_in_live_and_paged_history() {
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     };
     let ordinary = AttentionItem {
         attention_id: AttentionId::new(),
@@ -214,6 +216,7 @@ async fn private_ready_requires_native_confirmation_and_fences_old_binding() {
         let run_id = run_started(&f, task).await;
         let target_id = f.desktop.target.lock().unwrap().target_id;
         let binding = BridgeBinding {
+            checks: false,
             run_id,
             target_id: Some(target_id),
             computer_use: true,

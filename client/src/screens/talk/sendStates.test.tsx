@@ -121,7 +121,8 @@ it("Start task hands focus to the new task's heading once Chat shows it", async 
     <RouteProvider value={{ tab: "talk", depth: 1, active: true, route }}><Review route={route} /></RouteProvider>
   </AppProvider>);
   await tick(600);
-  const start = screen.getByRole("button", { name: "Start task" });
+  // Review's, not the message box's behind it.
+  const start = screen.getAllByRole("button", { name: "Start task" }).find((b) => !b.classList.contains("composer__send"))!;
   start.focus();
   fireEvent.click(start);
   await tick(3000);

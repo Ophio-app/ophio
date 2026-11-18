@@ -22,6 +22,12 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function () { this.open = false; };
   let stored = 0;
   vi.spyOn(blobs, "put").mockImplementation(async () => `blob-${++stored}`);
+  // jsdom does not decode images; the fallback also rejects broken files.
+  vi.stubGlobal("Image", class {
+    onerror: (() => void) | null = null;
+    set src(_value: string) { queueMicrotask(() => this.onerror?.()); }
+    removeAttribute() {}
+  });
   // A file named "broken" can't be decoded.
   vi.stubGlobal("createImageBitmap", async (blob: Blob) => {
     if (blob instanceof File && blob.name.startsWith("broken")) throw new Error("undecodable");
@@ -92,13 +98,13 @@ it("keeps the images that could be added when one can't", async () => {
     { kind: "phone_import", original_name: "good.png" },
     { kind: "phone_import", original_name: "fine.png" },
   ]);
-  expect(screen.getByText(/^1 file couldn’t be added\. This image couldn’t be decoded/)).toBeTruthy();
+  expect(screen.getByText(/^1 file couldn’t be added\. This device can’t open this picture/)).toBeTruthy();
 });
 
 it("keeps the sheet open with the reason when none could be added", async () => {
   await choose([image("broken.png")]);
   expect(draft().sources).toEqual([]);
-  expect(screen.getByRole("alert").textContent).toMatch(/This image couldn’t be decoded/);
+  expect(screen.getByRole("alert").textContent).toContain("Try a screenshot, or save it as PNG or JPEG and attach it again.");
   expect(screen.getByRole("button", { name: "Images from this device" })).toBeTruthy();
 });
 

@@ -80,3 +80,13 @@ it("reads an agent's catalog line as its words, then its age", async () => {
   expect(lines.length).toBeGreaterThan(1);
   for (const line of lines) expect([...line.childNodes].map((n) => n.nodeName)).toEqual(["#text", "TIME"]);
 });
+
+it("says once that an agent isn't supported yet", async () => {
+  render(<AgentsAndAccounts />, { wrapper });
+  await advance(1000);
+  const card = screen.getByRole("heading", { name: "Hermes" }).closest("article")!;
+  expect(card.textContent?.match(/not supported/gi)).toHaveLength(1);
+  expect(card.querySelector(".settings-meta")?.textContent).toBe("Version 1.0 fixture");
+  const claude = screen.getByRole("heading", { name: "Claude Code" }).closest("article")!;
+  expect(claude.querySelector(".settings-meta")?.textContent).toMatch(/^Version .+ · Full control$/);
+});

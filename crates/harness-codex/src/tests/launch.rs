@@ -172,8 +172,11 @@ fn a_browsing_work_run_gets_the_browser_tools_with_the_token_kept_off_the_comman
         computer_use: false,
         browser: true,
         github: false,
+        checks: false,
+        check_names: vec![],
         checklist_answers: false,
         read_only: false,
+        chat: false,
     });
     let (file, server) = bridge_server(&spec).unwrap().unwrap();
     let args = arguments(&spec, Some(&server), false, None, &[]).unwrap();
@@ -214,13 +217,13 @@ fn a_browsing_work_run_gets_the_browser_tools_with_the_token_kept_off_the_comman
     // person things, and only that.
     spec.mode = TaskMode::Plan;
     assert!(bridge_server(&spec).unwrap().is_none());
-    // A read-only run's bridge offers request_access alone.
+    // A read-only run's bridge offers request_access and ophio_propose.
     spec.bridge.as_mut().unwrap().read_only = true;
     for mode in [TaskMode::Plan, TaskMode::Ask] {
         spec.mode = mode;
         let (_file, server) = bridge_server(&spec).unwrap().unwrap();
         assert!(
-            server.contains("enabled_tools=[\"request_access\"]"),
+            server.contains("enabled_tools=[\"request_access\",\"ophio_propose\"]"),
             "{server}"
         );
     }
@@ -263,8 +266,11 @@ fn a_run_linked_to_github_gets_the_github_tools_and_is_told_how_to_use_them() {
         computer_use: false,
         browser: false,
         github: true,
+        checks: false,
+        check_names: vec![],
         checklist_answers: false,
         read_only: false,
+        chat: false,
     });
     spec.github = Some("## GitHub\nThis task is linked to GitHub.".into());
     let (_file, server) = bridge_server(&spec).unwrap().unwrap();
@@ -343,8 +349,11 @@ fn a_turn_answering_on_the_checklist_gets_its_read_and_reply_tools_alone() {
         computer_use: false,
         browser: false,
         github: false,
+        checks: false,
+        check_names: vec![],
         checklist_answers: true,
         read_only: false,
+        chat: false,
     });
     for mode in [TaskMode::Ask, TaskMode::Work] {
         spec.mode = mode;

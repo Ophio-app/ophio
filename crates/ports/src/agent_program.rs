@@ -106,21 +106,24 @@ pub const WINDOWS_HOME_FOLDERS: [&str; 5] = [
 /// is what Øphio's own downloaded copies do.
 ///
 /// - `codex`: `@openai/codex`'s `bin/codex.js` starts the program in the
-///   package for this computer, `@openai/codex-win32-x64`, which it finds
-///   with Node.js's `require`: inside `@openai/codex`'s own `node_modules`,
+///   package for this computer's architecture, inside its own `node_modules`
 ///   or hoisted beside it.
 /// - `claude`: `@anthropic-ai/claude-code` names its program, `bin/claude.exe`,
 ///   as its `bin`.
-const NPM_PROGRAMS: [(&str, &[&str]); 2] = [
-    (
-        "codex",
-        &[
+fn npm_programs(name: &str, arch: &str) -> &'static [&'static str] {
+    match (name, arch) {
+        ("codex", "x86_64") => &[
             "@openai/codex/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
             "@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe",
         ],
-    ),
-    ("claude", &["@anthropic-ai/claude-code/bin/claude.exe"]),
-];
+        ("codex", "aarch64") => &[
+            "@openai/codex/node_modules/@openai/codex-win32-arm64/vendor/aarch64-pc-windows-msvc/bin/codex.exe",
+            "@openai/codex-win32-arm64/vendor/aarch64-pc-windows-msvc/bin/codex.exe",
+        ],
+        ("claude", _) => &["@anthropic-ai/claude-code/bin/claude.exe"],
+        _ => &[],
+    }
+}
 
 /// On Windows, the program called `name` in the first folder that has it:
 /// each folder on `path`, then [`WINDOWS_HOME_FOLDERS`] under each of
@@ -133,6 +136,15 @@ const NPM_PROGRAMS: [(&str, &[&str]); 2] = [
 /// Written for any computer, so that it can be tested anywhere; only
 /// Windows uses it.
 pub fn windows_find(name: &str, path: Option<&OsStr>, homes: &[PathBuf]) -> Option<PathBuf> {
+    windows_find_for_arch(name, path, homes, std::env::consts::ARCH)
+}
+
+fn windows_find_for_arch(
+    name: &str,
+    path: Option<&OsStr>,
+    homes: &[PathBuf],
+    arch: &str,
+) -> Option<PathBuf> {
     let on_path = path
         .into_iter()
         .flat_map(std::env::split_paths)
@@ -142,7 +154,7 @@ pub fn windows_find(name: &str, path: Option<&OsStr>, homes: &[PathBuf]) -> Opti
         .flat_map(|home| WINDOWS_HOME_FOLDERS.map(|folder| joined(home, folder)));
     on_path
         .chain(in_homes)
-        .find_map(|folder| windows_program_in(&folder, name))
+        .find_map(|folder| windows_program_in_for_arch(&folder, name, arch))
 }
 
 /// [`windows_find`] with this process's own `PATH` and home folders: `HOME`,
@@ -171,8 +183,12 @@ pub fn windows_homes(var: impl Fn(&str) -> Option<OsString>) -> Vec<PathBuf> {
 
 /// The Windows program `name` in `folder`: `<name>.exe`, or else, when npm's
 /// `<name>.cmd` script is there, the program in the npm package it starts
-/// (see [`NPM_PROGRAMS`]). Never the script itself.
+/// (see [`npm_programs`]). Never the script itself.
 pub fn windows_program_in(folder: &Path, name: &str) -> Option<PathBuf> {
+    windows_program_in_for_arch(folder, name, std::env::consts::ARCH)
+}
+
+fn windows_program_in_for_arch(folder: &Path, name: &str, arch: &str) -> Option<PathBuf> {
     let program = folder.join(format!("{name}.exe"));
     if program.is_file() {
         return Some(program);
@@ -181,10 +197,8 @@ pub fn windows_program_in(folder: &Path, name: &str) -> Option<PathBuf> {
         return None;
     }
     let packages = folder.join("node_modules");
-    NPM_PROGRAMS
+    npm_programs(name, arch)
         .iter()
-        .filter(|(agent, _)| *agent == name)
-        .flat_map(|(_, programs)| programs.iter())
         .map(|program| joined(&packages, program))
         .find(|program| program.is_file())
 }
@@ -383,9 +397,16 @@ mod tests {
             assert_eq!(bin(&home).as_ref(), Some(expected), "default {default:?}");
         }
 
-        // nvm's own chain for `nvm install --lts`: default → lts/* → lts/jod.
-        home.write(".nvm/alias/default", "lts/*");
-        home.write(".nvm/alias/lts/*", "lts/jod");
+        // Unix nvm's wildcard alias is not a legal Windows filename. Keep
+        // the full chain on Unix and exercise the same recursion with a legal
+        // alias on Windows (which uses windows_find, not Unix nvm, in production).
+        let lts_alias = if cfg!(windows) {
+            "lts/current"
+        } else {
+            "lts/*"
+        };
+        home.write(".nvm/alias/default", lts_alias);
+        home.write(&format!(".nvm/alias/{lts_alias}"), "lts/jod");
         home.write(".nvm/alias/lts/jod", "v22.3.0");
         assert_eq!(bin(&home), Some(v22));
 
@@ -396,13 +417,60 @@ mod tests {
 
     const NESTED: &str = "node_modules/@openai/codex/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin";
     const HOISTED: &str = "node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin";
+    const ARM_NESTED: &str = "node_modules/@openai/codex/node_modules/@openai/codex-win32-arm64/vendor/aarch64-pc-windows-msvc/bin";
+    const ARM_HOISTED: &str =
+        "node_modules/@openai/codex-win32-arm64/vendor/aarch64-pc-windows-msvc/bin";
+
+    #[test]
+    fn windows_arm64_finds_only_its_own_npm_package() {
+        let home = Home::new("windows-arm-npm");
+        let npm = "AppData/Roaming/npm";
+        let homes = [home.0.clone()];
+        let found = |arch| windows_find_for_arch("codex", None, &homes, arch);
+        home.program(npm, "codex.cmd");
+        let x64 = home.program(&format!("{npm}/{NESTED}"), "codex.exe");
+        assert_eq!(found("aarch64"), None);
+        let hoisted = home.program(&format!("{npm}/{ARM_HOISTED}"), "codex.exe");
+        assert_eq!(found("aarch64"), Some(hoisted));
+        let nested = home.program(&format!("{npm}/{ARM_NESTED}"), "codex.exe");
+        assert_eq!(found("aarch64"), Some(nested));
+        assert_eq!(found("x86_64"), Some(x64));
+        assert_eq!(found("x86"), None);
+        let direct = home.program(npm, "codex.exe");
+        assert_eq!(found("aarch64"), Some(direct));
+    }
+
+    #[test]
+    fn windows_npm_package_is_found_on_path_and_home_fallback() {
+        let home = Home::new("windows-npm-path");
+        let npm = "AppData/Roaming/npm";
+        home.program(npm, "codex.cmd");
+        let packaged = home.program(&format!("{npm}/{ARM_NESTED}"), "codex.exe");
+        assert_eq!(
+            windows_find_for_arch("codex", None, std::slice::from_ref(&home.0), "aarch64"),
+            Some(packaged.clone())
+        );
+        let on_path = std::env::join_paths([home.0.join(npm)]).unwrap();
+        assert_eq!(
+            windows_find_for_arch("codex", Some(&on_path), &[], "aarch64"),
+            Some(packaged)
+        );
+        let direct = home.program("tools", "codex.exe");
+        let path = std::env::join_paths([direct.parent().unwrap(), &home.0.join(npm)]).unwrap();
+        assert_eq!(
+            windows_find_for_arch("codex", Some(&path), &[], "aarch64"),
+            Some(direct)
+        );
+    }
 
     #[test]
     fn windows_finds_the_program_behind_npm_s_script() {
         let home = Home::new("windows-npm");
         let npm = "AppData/Roaming/npm";
         let homes = [home.0.clone()];
-        let found = |name| windows_find(name, None, &homes);
+        // These fixtures contain x64 packages even on an Apple-silicon host.
+        // The separate arm64 cases exercise architecture selection explicitly.
+        let found = |name| windows_find_for_arch(name, None, &homes, "x86_64");
 
         // npm's script alone, with no package behind it: nothing to start.
         home.program(npm, "codex.cmd");
@@ -568,9 +636,15 @@ mod tests {
         for unset in [None, Some(OsStr::new(""))] {
             assert_eq!(
                 path_for(Path::new("/home/you/.local/bin/claude"), unset),
-                Some(OsString::from(
-                    "/usr/local/bin:/usr/bin:/bin:/home/you/.local/bin"
-                )),
+                Some(
+                    std::env::join_paths([
+                        "/usr/local/bin",
+                        "/usr/bin",
+                        "/bin",
+                        "/home/you/.local/bin"
+                    ])
+                    .unwrap()
+                ),
                 "{unset:?}"
             );
         }

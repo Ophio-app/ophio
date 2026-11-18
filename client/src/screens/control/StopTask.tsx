@@ -7,10 +7,12 @@ import { shallowEqual, useApp, useCommand, useHost, useLink, useUi } from "../..
 import { Button, IconButton } from "../../design/Button";
 import { toast } from "../../design/Toast";
 import type { Task } from "../../protocol/types";
+import type { HostState } from "../../state/projection";
 import { isTaskRunning } from "../../state/projection";
-import { useStore } from "../../state/store";
+import { useStore, type Store } from "../../state/store";
 import { stopStore, stopFrequency } from "./stops";
-import { pinStoppedConversation } from "../../app/taskOnScreen";
+import { pinStoppedConversation, taskOnScreen } from "../../app/taskOnScreen";
+import type { UiStore } from "../../app/ui";
 import { taskDisplayLabel } from "./taskDisplay";
 import { useWarning } from "../../app/warnings";
 import "./control.css";
@@ -29,6 +31,22 @@ export function StopStatus({ task }: { task: Task }) {
   const delivered = intent.phase === "accepted" || intent.phase === "still_running";
   return <p className={`stop-status stop-status--${intent.phase}`} role="status">{intent.count ? `Stop ${delivered ? "sent" : "requested"} ${stopFrequency(intent.count)} · not confirmed. ` : ""}{intent.detail}</p>;
 }
+/** “Stop requested” is true only until the computer says it stopped. Then
+ * the conversation or task on screen says so itself, so the toast goes;
+ * anywhere else it becomes “Stopped”, the one place that confirms it. */
+export function untilStopped(state: Store<HostState>, ui: UiStore, task: Task, dismiss: () => void, within = 10_000): void {
+  const check = () => {
+    const host = state.get();
+    if (isTaskRunning(host, host.tasks[task.task_id] ?? task)) return;
+    dismiss();
+    done();
+    if (taskOnScreen(host, ui.get())?.task_id !== task.task_id) toast(`Stopped “${task.title}”`);
+  };
+  const unsubscribe = state.subscribe(check);
+  const timer = setTimeout(() => done(), within);
+  function done() { unsubscribe(); clearTimeout(timer); }
+}
+
 export function StopTask({ task, describedBy, status = true, className = "", compact = false, displayLabel, iconOnly = false, caption }: {
   task: Task; describedBy?: string; status?: boolean; className?: string; compact?: boolean; displayLabel?: string;
   /** Only the stop symbol shows; the accessible name still says which task
@@ -66,8 +84,8 @@ export function StopTask({ task, describedBy, status = true, className = "", com
   const label = again ? "Stop again" : retry ? "Retry Stop" : pending ? "Stop requested" : "Stop";
   const name = `${label} · ${task.title}${displayLabel ? ` · ${displayLabel}` : ""}`;
   const disabled = !allowed || pending || link.state === "failed";
-  const request = () => { pin(); toast(`Stop requested for “${task.title}”`); store.request(task); };
-  const force = () => { pin(); toast(`Force stop requested for “${task.title}”`); store.request(task, true); };
+  const request = () => { pin(); untilStopped(session.state, ui, task, toast(`Stop requested for “${task.title}”`)); store.request(task); };
+  const force = () => { pin(); untilStopped(session.state, ui, task, toast(`Force stop requested for “${task.title}”`)); store.request(task, true); };
   return <div className={`named-stop${iconOnly ? " named-stop--icon" : ""} ${className}`}>
     {iconOnly ? <>
       {caption != null && <span className="named-stop__caption" aria-hidden>{caption}</span>}

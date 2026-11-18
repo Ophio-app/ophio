@@ -1,18 +1,22 @@
 # Notifications
 
-Ophio notifies you on the phone when something needs you. By default only
-what waits on you, and won't move until you act, makes a sound: an agent's
-question or approval, an agent that isn't signed in, a task that needs a
-decision or stopped with a problem, a pull request stuck on you. What is
-worth a look shows silently in the shade. Routine progress, such as a task
-finishing, waits in the app unless you ask to hear about it.
+Ophio notifies you on the phone when something needs you or a chat reply
+arrives. By default, what waits on you makes a sound: an agent's question or
+approval, an agent that isn't signed in, a task that needs a decision or
+stopped with a problem, a pull request stuck on you. Chat replies also make a
+sound unless that exact conversation is visible in the unlocked app. Other
+things worth a look show silently in the shade. Routine progress, such as a
+task finishing, waits in the app unless you ask to hear about it.
 
 Each notification names the computer and the project. **Notification detail**
 adds the task's title; titles can hold private details, and they show on the
 lock screen. An agent's question shows in full whichever detail you choose,
 so you can read and answer it; like a title, it shows on the lock screen
 unless Android hides notification content there. With app lock on, a
-notification shows only "Open the app to review."
+notification shows only "Open the app to review." Tool requests use plain
+names in notifications and linked chats (for example, "Search files" rather
+than "Use Grep"). The original tool name remains in the stored request for permission matching;
+notification wording does not change what the agent may do.
 
 Tapping a notification opens that question, approval or result. A
 notification goes away when it is answered anywhere: on this phone, another
@@ -23,7 +27,14 @@ notification: no streamed text, no progress.
 
 Settings › Notifications lists every type of notification in plain English,
 each with a line saying what it is for and a choice of **Alert** (sound and a
-pop-up), **Silent** (in the shade only) or **Off** (in the app only):
+pop-up), **Silent** (in the shade only) or **Off** (in the app only).
+These choices come before delivery setup. A warning above them stays visible
+when permission or background delivery is limited; **Delivery settings** opens
+**Background delivery and phone settings** below the choices. That section
+starts collapsed, but its status keeps checking while closed. The layout does
+not change any notification choices or defaults.
+
+The available types are:
 
 | Type | When | Recommended |
 |---|---|---|
@@ -35,20 +46,23 @@ pop-up), **Silent** (in the shade only) or **Off** (in the app only):
 | Pull requests that need you | Checks fail, a conflict, a review asks for changes, or some were left out of a merge. | Alert |
 | Questions about your reports | A problem report you sent has a question for you. | Alert |
 | Next up go-aheads | A task in Next up is waiting for your go-ahead to start. | Silent |
-| Chat replies | An agent replied in a chat you're in. | Silent |
+| Chat replies | An agent replied in a chat you aren't viewing. | Alert |
 | Pull requests ready to merge | Checks passed and it's waiting for you to merge it. | Silent |
 | Run all results | What a Run all came to, once it's through. | Silent |
 | Issues that need your call | An issue couldn't be reproduced, or looks fixed already. | Silent |
 | Problem report updates | A report you sent moved on, or someone sent you one. | Silent |
 | Øphio updates | A computer has a newer Øphio for this phone. | Silent |
+| New Øphio versions | A newer Øphio is out for one of your computers. Tap it to open Settings › Versions, which says what's new and how to update that computer; see [Upgrading](upgrading.md#finding-out-about-new-versions). Listed only while the computer in use checks for new versions. | Silent |
+| Agent updates and new models | An agent has an update, a release announces new models, or an update adds models to the computer’s actual model list. Tap it to open Settings › Agent apps; an announcement does not guarantee your account can use a model. Available only on computers with [agent update policies](agent-updates.md). | Silent |
 | Finished tasks | A task finished. | Off |
 | Merged pull requests | A pull request merged. | Off |
 | Issues filed | Issues were found and filed, or closed as duplicates. | Off |
 | Slow steps | A step is taking longer than usual. | Off |
 
-The rule behind the recommendations: a notification alerts only when
-something is waiting on you and won't move until you act. **Use the
-recommended choices** puts them all back.
+The recommendations make a sound when something waits on you or an agent
+replies in a chat you aren't viewing. Your notification choices, project
+settings and the phone's sound settings still apply. **Use the recommended
+choices** puts the type choices back to their recommendations.
 
 - **The choices belong to this phone.** They hold for every computer it is
   paired with, and a tablet keeps its own, so it can be quieter than the
@@ -74,7 +88,8 @@ project's sheet in Tasks, has:
 
 - **Mute this project**: nothing from it notifies at all;
 - for each type: **Default** (your choice on each phone), **Alert**, **Silent**
-  or **Off**;
+  or **Off**. Øphio updates, New Øphio versions and Agent updates belong to no project, so
+  they are chosen only on each phone;
 - **One notification for this project**: Default, One or Separate;
 - **Reset to the defaults**.
 
@@ -91,7 +106,8 @@ The bell in a task's or a chat's header, **Tell me when it's done**, makes
 its finish, its failure or, in a chat, the agent's reply alert on every
 phone, whatever your choice for those types, even in a muted project: asking
 about one task is the more particular choice. The computer keeps it with the
-task. Starting a task asks once whether to turn it on.
+task. Starting a task asks once whether to turn it on. A task with its bell
+on alerts for itself, without waiting for a chat's summary or a Run all.
 
 ### Grouping and bursts
 
@@ -138,6 +154,10 @@ for it.
   the computer is reached, the notifications that were still showing just
   before, never swiped, opened or seen, are put back silently, if they are
   still open; nothing else comes back.
+- A newer Øphio is told once for each computer that checks for it. Its
+  notice clears once that computer runs the version, and the same version
+  never notifies again; a later one does.
+- Agent-update notices follow the same clearing rules; see [Agent updates](agent-updates.md) for their 14-day waiting period, 30-day reminder limit and when the computer clears them.
 - Something new about the same task, such as another question, notifies as
   usual. New means: a new question or approval; a new lapse of an agent's
   sign-in; a new decision or failure, on a new run; a pull request handed
@@ -204,6 +224,19 @@ request held for you.
   are counted as still going ("Run all so far: …"), and what comes of them
   later alerts as usual. A run you stopped before anything came of it
   raises nothing.
+- **Work started from a chat's cards**: the card shows each task as it goes,
+  so a task finishing alerts nothing of its own unless its bell is on. Once
+  nothing started from that chat's cards is still working or waiting in Next
+  up to start by itself, one alert says how it went: "“Show upload progress”
+  finished", or "Work from “Upload limits” is done: 1 failed, 2 finished",
+  listing each task. Removing or archiving the last waiting task releases
+  any summary held for it. A summary of one task follows **Finished tasks**,
+  not **Chat replies**; a summary of several follows **Run all results**.
+  A failure or anything that needs you alerts at once, as usual; work you
+  stopped raises nothing. The chat itself gets one plain line for each task
+  as it ends, which never alerts. Its agent gets those reports with your next
+  message. They stay waiting until the agent confirms delivery, so a failed
+  launch does not lose them.
 - **The line of pull requests in Through merge**: a batch merged together
   alerts once, as the last merges: "PRs #7 and #8 merged". If the line ends
   part way, the alert says what merged. A pull request GitHub keeps refusing
@@ -239,6 +272,16 @@ In Telegram and Discord chats, a go-ahead asked again isn't posted again
 either. Messages there for each finished task, if you turned them on, still
 come for each task.
 
+## Usage-limit notes in a conversation
+
+Claude Code and Codex usage-limit notices stay separate from the agent's reply.
+The computer saves identical wording at most once per conversation per UTC
+calendar day, across replies, native agent restarts and computer restarts. All
+phones see the same saved notes; changing devices does not repeat a warning.
+Different wording appears immediately, including reaching a limit after nearing
+it or a different named limit. Other warnings are not suppressed, and the
+account's usage-limit status and reset time still update normally.
+
 ## Answering from the notification
 
 A question's notification shows the question itself, and takes your answer:
@@ -265,6 +308,10 @@ A question's notification shows the question itself, and takes your answer:
   app is closed** is off, the app's own alerts open the question instead.
 
 ## Notifications when the app is closed
+
+This section describes Android. On iPhone, notifications currently arrive only
+while Ophio is running; closed-app background delivery is not supported yet.
+Agent update notices use the same platform limits as other notifications.
 
 While the app runs, notifications come whatever you choose here. One switch,
 **Notify me when Øphio is closed**, keeps them coming once the app is closed,
@@ -379,6 +426,6 @@ The emulator suite runs the closed-app cases against a real computer:
 `background` (swipe away, open from the alert, quiet on screen, answered at
 the computer, no notice of its own, off stops the service) and
 `closed-lifecycle` (restart, update, Doze, battery use limited, airplane
-mode). Results are in `client/src-tauri/E2E.md`. The Galaxy and the tablet are
-checked by hand before release, including a day of normal use with battery use
+mode). Results are in `client/src-tauri/E2E.md`. Physical Android devices still
+need checks before release, including a day of normal use with battery use
 measured.

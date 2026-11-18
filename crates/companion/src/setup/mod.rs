@@ -7,7 +7,7 @@
 //! shows each screen and returns the answer. Tests drive both with fakes, so
 //! nothing real is installed, signed in to, started or stopped by them.
 use crate::{Result, config::Paths};
-use protocol::capability::HarnessKind;
+use protocol::{agent_updates::AgentUpdateMode, capability::HarnessKind};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path};
 
@@ -36,7 +36,7 @@ pub struct SetupArgs {
 /// What setup has done, kept in `setup.json` in the data directory so that a
 /// setup left part way carries on where it was.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(from = "StoredProgress", into = "StoredProgress")]
 pub(crate) struct Progress {
     /// None while setup has neither been finished nor skipped.
     pub finished: Option<Finished>,
@@ -45,15 +45,84 @@ pub(crate) struct Progress {
     pub alerts: Option<bool>,
     /// The agent new projects start with.
     pub agent: Option<HarnessKind>,
-    /// The answer to whether Øphio keeps the agents up to date, once asked.
-    pub updates: Option<bool>,
+    /// The chosen agent update policy, once asked.
+    pub updates: Option<AgentUpdateMode>,
     /// Whether where a checklist's files go has been offered: until it is,
     /// Extras offers it ticked.
     pub files: bool,
     /// Extras chosen and then left for later. One no longer offered is
     /// dropped, rather than the rest of the progress with it.
-    #[serde(deserialize_with = "offered")]
     pub left: Vec<Pick>,
+}
+
+/// Keep the old boolean readable on rollback, without losing the three-way
+/// choice on current versions. All current modes retain managed agent copies;
+/// false used to mean removing them, not merely declining automatic updates.
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+struct StoredProgress {
+    finished: Option<Finished>,
+    steps: BTreeMap<Step, Outcome>,
+    alerts: Option<bool>,
+    agent: Option<HarnessKind>,
+    #[serde(deserialize_with = "update_mode", serialize_with = "managed_updates")]
+    updates: Option<AgentUpdateMode>,
+    updates_mode: Option<AgentUpdateMode>,
+    files: bool,
+    #[serde(deserialize_with = "offered")]
+    left: Vec<Pick>,
+}
+
+impl From<StoredProgress> for Progress {
+    fn from(saved: StoredProgress) -> Self {
+        Self {
+            finished: saved.finished,
+            steps: saved.steps,
+            alerts: saved.alerts,
+            agent: saved.agent,
+            updates: saved.updates_mode.or(saved.updates),
+            files: saved.files,
+            left: saved.left,
+        }
+    }
+}
+
+impl From<Progress> for StoredProgress {
+    fn from(progress: Progress) -> Self {
+        Self {
+            finished: progress.finished,
+            steps: progress.steps,
+            alerts: progress.alerts,
+            agent: progress.agent,
+            updates: progress.updates,
+            updates_mode: progress.updates,
+            files: progress.files,
+            left: progress.left,
+        }
+    }
+}
+
+fn managed_updates<S: serde::Serializer>(
+    mode: &Option<AgentUpdateMode>,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error> {
+    mode.map(|_| true).serialize(serializer)
+}
+
+fn update_mode<'de, D: serde::Deserializer<'de>>(
+    d: D,
+) -> std::result::Result<Option<AgentUpdateMode>, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Saved {
+        Mode(AgentUpdateMode),
+        Enabled(bool),
+    }
+    Ok(Option::<Saved>::deserialize(d)?.map(|saved| match saved {
+        Saved::Mode(mode) => mode,
+        Saved::Enabled(true) => AgentUpdateMode::Automatic,
+        Saved::Enabled(false) => AgentUpdateMode::Never,
+    }))
 }
 
 fn offered<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Vec<Pick>, D::Error> {

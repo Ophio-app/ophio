@@ -7,6 +7,8 @@ use super::*;
 pub(super) struct Followup {
     pub run_id: RunId,
     pub seq: u64,
+    #[serde(default)]
+    pub choice: Option<queue_completion::AgentChoice>,
 }
 
 impl CompanionHub {
@@ -24,6 +26,8 @@ impl CompanionHub {
         if let Some(bundle) = bundle {
             crate::results::link_bundle(tx, task.task_id, Some(id), bundle)?;
         }
+        let run: Run = tx.read().require("run", id)?;
+        self.partial_boundary(tx, &run)?;
         let seq = tx.emit(Event::TimelineAppended {
             task_id: task.task_id,
             item: TimelineItem {
@@ -38,7 +42,21 @@ impl CompanionHub {
                 },
             },
         })?;
-        tx.put("followup", command_id, &Followup { run_id: id, seq })?;
+        crate::turned_from_chat::record_message_origin(
+            tx,
+            task.task_id,
+            seq,
+            self.is_from_person(command_id),
+        )?;
+        tx.put(
+            "followup",
+            command_id,
+            &Followup {
+                run_id: id,
+                seq,
+                choice: Some(queue_completion::AgentChoice::of(task)),
+            },
+        )?;
         let mut messages: Vec<InFlightMessage> =
             tx.read().get("message_delivery", id)?.unwrap_or_default();
         messages.push(InFlightMessage {

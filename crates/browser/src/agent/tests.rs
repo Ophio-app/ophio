@@ -1464,6 +1464,137 @@ async fn the_owner_watches_a_tab_and_takes_it_over() {
 }
 
 #[tokio::test]
+async fn a_screenshot_waits_for_a_busy_renderer() {
+    use base64::Engine;
+
+    let fixture = Fixture::start().await;
+    let browser = fixture.browser();
+    let (task, _) = fixture.register(&browser, &[]);
+    browser
+        .open(task, &fixture.url("site.test", "/red"), false)
+        .await
+        .unwrap();
+    let running = browser.shared.current().unwrap();
+    let session = {
+        let state = running.lock();
+        state.tabs[&state.current[&task]].session.clone()
+    };
+    // Enqueue renderer work before the screenshot. A screenshot needs a
+    // compositor answer, not just the browser process's acknowledgement.
+    let busy = running.pipe.call_within(
+        Some(&session),
+        "Runtime.evaluate",
+        json!({"expression":"{ const until = performance.now() + 3600; while (performance.now() < until) {} }"}),
+        Duration::from_secs(15),
+    );
+    let shot = running.pipe.call(
+        Some(&session),
+        "Page.captureScreenshot",
+        json!({"format":"png","captureBeyondViewport":false}),
+    );
+    let (busy, shot) = tokio::join!(biased; busy, shot);
+    browser.shut_down().await;
+    busy.unwrap();
+    let shot = shot.unwrap();
+    let png = base64::engine::general_purpose::STANDARD
+        .decode(shot["data"].as_str().unwrap())
+        .unwrap();
+    let image = paint::decode(&png).unwrap();
+    assert_eq!((image.width, image.height), run::VIEWPORT);
+}
+
+#[tokio::test]
+async fn a_finished_load_updates_tab_metadata_without_discovery_events() {
+    let fixture = Fixture::start().await;
+    let browser = fixture.browser();
+    let (task, _) = fixture.register(&browser, &[]);
+    browser
+        .open(task, &fixture.url("site.test", "/red"), false)
+        .await
+        .unwrap();
+    let running = browser.shared.current().unwrap();
+    let session = {
+        let state = running.lock();
+        state.tabs[&state.current[&task]].session.clone()
+    };
+    running
+        .pipe
+        .call(None, "Target.setDiscoverTargets", json!({"discover":false}))
+        .await
+        .unwrap();
+    // A page can navigate without an agent operation whose settle/observe
+    // refreshes metadata. The load event must update even background tabs.
+    running
+        .pipe
+        .call(
+            Some(&session),
+            "Page.navigate",
+            json!({"url":fixture.url("site.test", "/blue")}),
+        )
+        .await
+        .unwrap();
+    let updated = eventually(|| {
+        browser
+            .owner_tabs()
+            .1
+            .iter()
+            .any(|t| t.title == "Blue" && t.url.ends_with("/blue"))
+    })
+    .await;
+    let tabs = browser.tabs(task).await.unwrap();
+    browser.shut_down().await;
+    assert!(updated, "the completed page was not published: {tabs:?}");
+}
+
+#[tokio::test]
+async fn emptying_a_page_updates_tab_metadata_without_discovery_events() {
+    let fixture = Fixture::start().await;
+    let browser = fixture.browser();
+    let (task, _) = fixture.register(&browser, &[]);
+    browser
+        .open(task, &fixture.url("auth.site.test", "/opens-blank"), false)
+        .await
+        .unwrap();
+    let running = browser.shared.current().unwrap();
+    let target = running.lock().current[&task].clone();
+    // Target discovery need not announce the final title after navigation.
+    // Keep frame events, which establish that the old document has gone,
+    // but require the close operation's live target query to update the list.
+    running
+        .pipe
+        .call(None, "Target.setDiscoverTargets", json!({"discover":false}))
+        .await
+        .unwrap();
+    assert!(running.empty(&target, &sites(&["site.test"])).await);
+    // Empty proves that the old document is gone, not that the new one's
+    // title has finished loading. Only read the published metadata here:
+    // observing the page would refresh it and conceal a missing load handler.
+    let updated = eventually(|| {
+        browser
+            .owner_tabs()
+            .1
+            .iter()
+            .any(|t| t.url == "about:blank" && t.title == "about:blank")
+    })
+    .await;
+    let live = running
+        .pipe
+        .call(None, "Target.getTargetInfo", json!({"targetId":target}))
+        .await
+        .unwrap();
+    assert_eq!(live["targetInfo"]["url"], "about:blank");
+    let tabs = browser.tabs(task).await.unwrap();
+    browser.shut_down().await;
+    assert!(
+        updated,
+        "the emptied tab's final metadata was not published: {tabs:?}; live: {live}"
+    );
+    assert_eq!(tabs.len(), 1);
+    assert_eq!(tabs[0].url, "about:blank", "live target: {live}");
+    assert_eq!(tabs[0].title, live["targetInfo"]["title"].as_str().unwrap());
+}
+
+#[tokio::test]
 async fn a_page_at_an_address_of_its_own_closes_with_its_site() {
     let fixture = Fixture::start().await;
     let browser = fixture.browser();
@@ -1625,7 +1756,10 @@ async fn a_task_kept_from_a_site_opens_none_of_its_own_addresses() {
     let link = fixture.url("other.test", &format!("/link?{made}%23kept"));
     for name in ["Go", "New", "Pop"] {
         browser.open(kept, &link, false).await.unwrap();
-        let look = browser.observe(kept).await.unwrap();
+        let look = browser
+            .observe(kept)
+            .await
+            .unwrap_or_else(|error| panic!("observing before {name}: {error:?}"));
         let control = (look.controls.iter()).find(|c| c.name == name).unwrap();
         browser
             .click(kept, &control.reference.clone())

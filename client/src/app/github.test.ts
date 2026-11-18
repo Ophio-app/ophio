@@ -3,7 +3,7 @@ import { beforeEach, expect, it } from "vitest";
 import type { GithubItem, PrSummary } from "../protocol/types";
 import { CLOSE_LAG_MS, draftGithubTask, type ExpectedItem, fixChoiceOf, fixSent, groupItems, lastRole, linkText, linkWords, parseNumber, prWords, readOnlyLink, rememberRole, withExpected } from "./github";
 import { prefs } from "./prefs";
-import { UiStore } from "./ui";
+import { freshReview, UiStore } from "./ui";
 
 beforeEach(() => localStorage.clear());
 
@@ -122,6 +122,17 @@ it("keeps a fixer's launch flags where the sheet couldn't offer them, and adds n
   // Another agent's flags don't carry over to it.
   const codex = { harness: "codex" as const, model: null, effort: null };
   expect(fixChoiceOf({ ...codex, launchPolicy: "sandboxed" }, false, { ...opus, launch_policy: "accept_edits" })).toEqual(codex);
+});
+
+it.each(["Only the narrowed instructions.", ""])("preserves a linked proposal's personal text and Review choices, even if cleared (%j)", (text) => {
+  const ui = new UiStore("proposal-draft");
+  ui.saveDraft("proj", null, { text, agent: { harness: "codex", model: null, effort: "high" },
+    review: { ...freshReview(), github: { type: "new_pr" }, branch: { name: "fix/only-this" },
+      origin: { chat: "chat", run: "run", index: 0, reviewed: true }, ordered: { step: 1, total: 2, after: null } } });
+  const before = ui.draft("proj", null)!;
+  expect(draftGithubTask(ui, "proj", { link: { type: "issue", number: 219 } })).toEqual({ setAside: true });
+  expect(ui.get().savedDrafts["proj/new"]).toEqual([before]);
+  ui.retire();
 });
 
 it("drafts GitHub work fresh in Review, setting the person's words aside and refusing over an unanswered send", () => {

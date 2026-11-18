@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { SimHost } from "./host";
+import { SimHost, sha256 } from "./host";
+import { SEEDED_FILES, SEEDED_FILE_SHA256 } from "./checklist";
 import { ids } from "./scenario";
 
 let host: SimHost;
@@ -10,6 +11,15 @@ afterEach(() => { host.dispose(); vi.useRealTimers(); });
 const tide = () => host.checklists.lists.get(ids.pTide)!;
 const notes = () => host.checklists.lists.get(ids.pNotes)!;
 const item = (project: ReturnType<typeof tide>, id: string) => project.sections.flatMap((s) => s.items).find((entry) => entry.item_id === id)!;
+
+it("is whole from the start, its files under their real SHA-256", async () => {
+  // Nothing to wait for: a query right away sees the seeded checklist.
+  expect(host.checklists.lists.get(ids.pTide)?.theme?.logo).toMatchObject({ name: "tidewater.svg", sha256: SEEDED_FILE_SHA256.logo });
+  expect(await sha256(SEEDED_FILES.env)).toBe(SEEDED_FILE_SHA256.env);
+  expect(await sha256(SEEDED_FILES.logo)).toBe(SEEDED_FILE_SHA256.logo);
+  const file = await host.checklists.file(ids.pTide, SEEDED_FILE_SHA256.env);
+  expect(new TextDecoder().decode(file.bytes)).toBe(SEEDED_FILES.env);
+});
 
 it("exposes agent ownership and counts only the person's items in summaries", async () => {
   const result = await host.checklists.query({ kind: "checklists" });
@@ -36,7 +46,6 @@ it("refuses any tick of agent work but accepts feedback", async () => {
 });
 
 it("finishes ready agent work shortly after the last person step, but cancels when unticked", async () => {
-  await host.checklists.ready;
   for (const step_id of ["create", "save"]) await host.checklists.act({ command: "checklist_tick", project_id: ids.pTide, item_id: "stripe-key", step_id, done: true }, null);
   expect(item(tide(), "stripe-key").done_at).toBeDefined();
   expect(item(tide(), "webhook-test").done_at).toBeUndefined();

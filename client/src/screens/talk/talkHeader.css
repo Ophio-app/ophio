@@ -15,6 +15,11 @@
 .chat-head:has(> .chat-head__stop .named-stop__icon) {
   padding-block: calc(var(--safe-top) + var(--s1)) var(--s1);
 }
+/* A wrapped checking heading must size its landscape grid row to its
+   content, not paint the last line over the conversation below. */
+.chat-head--checking {
+  height: max-content;
+}
 .chat-head__heading {
   flex: 1;
   min-width: 0;
@@ -69,6 +74,83 @@
   flex: 0 1 auto;
   overflow: visible;
 }
+/* The chat's choice has the full row, rather than the gap between Back and
+   the heading's actions. At large text it wraps instead of hiding effort. */
+.chat-head__sub--model {
+  flex: 1 0 100%;
+  padding: 0 var(--s2) var(--s1);
+}
+.chat-head__model {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 1.75rem;
+  margin-inline-start: -4px;
+  padding: 0 4px;
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  font-weight: 600;
+  font-size: var(--text-xs);
+}
+.chat-head__model svg {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--ink-3);
+}
+.chat-head__model-text {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+/* A finger's worth to tap, past the line's own height. */
+.chat-head__model { position: relative; }
+.chat-head__model::after {
+  content: "";
+  position: absolute;
+  inset: -8px -4px;
+}
+.chat-head__model:active {
+  background: var(--surface-pressed);
+}
+.chat-head__model:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.chat-head__sub > .chat-head__model {
+  flex: 0 1 auto;
+  overflow: visible;
+}
+/* The chat a task came from, a quiet way back to it. The button doesn't
+   clip, so its finger-sized hit area and focus ring show; its text does. */
+.chat-head__sub > .chat-head__from {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  min-width: 0;
+  overflow: visible;
+  color: inherit;
+  border-radius: var(--r-sm);
+}
+.chat-head__from-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 2px;
+}
+button.chat-head__from::after {
+  content: "";
+  position: absolute;
+  inset: -10px -4px;
+}
+button.chat-head__from:active { background: var(--surface-pressed); }
+button.chat-head__from:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .chat-head__sub > * + *::before {
   content: "·";
   content: "·" / "";
@@ -114,12 +196,25 @@
    has the display. Offline, a question mark stands for "Last reported",
    which is still read aloud. Typing keeps one line of name. */
 @container chathead (max-width: 18rem) {
-  :root:not(.kb-open) .chat-head__title-text {
+  :is(:root:not(:has(.pane)), .pane):not(.kb-open) .chat-head__title-text {
     white-space: normal;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
+  }
+  /* Check counts must not disappear behind Stop at large text. Give the
+     task's name and progress their own full row beneath the controls. */
+  .chat-head--checking > .chat-head__heading {
+    order: 1;
+    flex: 1 0 100%;
+  }
+  .chat-head--checking > .chat-head__back {
+    margin-inline-end: auto;
+  }
+  :is(:root:not(:has(.pane)), .pane):not(.kb-open) .chat-head--checking .chat-head__title-text {
+    display: block;
+    white-space: nowrap;
   }
   .chat-head__age,
   .chat-head__where {
@@ -133,6 +228,16 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
+}
+
+/* A split pane at large text has room for a readable heading or a row of
+   controls, not both side by side. Keep every control and its touch target;
+   only the icon buttons stop growing after a comfortable finger size. */
+@container pane (max-width: 18rem) {
+  .pane-split .chat-head { --target: 48px; --target-intervention: 56px; }
+  .pane-split .chat-head > .chat-head__heading { order: 1; flex: 1 0 100%; }
+  .pane-split .chat-head > .chat-head__back { margin-inline-end: auto; }
+  .pane-split .chat-head > .chat-head__sub--model { order: 2; }
 }
 
 /* Back to the project's tasks, counting what needs the person, as a chat's
@@ -172,7 +277,7 @@
 /* A phone on its side: the pinned row sits beside the header rather than
    under it, so the conversation keeps its lines. With less room, the screen
    scrolls rather than hiding one under the other. */
-@media (max-height: 480px) and (min-width: 700px) {
+@container pane (max-height: 480px) and (min-width: 700px) {
   .talk:has(> .chat-head + .chat-pins:not(:empty)) {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(14rem, 2fr);
@@ -181,7 +286,7 @@
   .talk > .chat-head { grid-column: 1; grid-row: 1; min-width: 0; }
   .talk > .chat-pins { grid-column: 2; grid-row: 1; min-width: 0; align-content: center; }
   .talk > .screen__body { grid-column: 1 / -1; grid-row: 2; }
-  :root:is(.app-tight, .kb-open) .talk:has(> .chat-head + .chat-pins:not(:empty)) > .screen__body { min-height: 0; }
+  :is(:root:not(:has(.pane)), .pane):is(.app-tight, .kb-open) .talk:has(> .chat-head + .chat-pins:not(:empty)) > .screen__body { min-height: 0; }
   .talk > .screen__footer { grid-column: 1 / -1; grid-row: 3; }
 }
 
@@ -196,8 +301,12 @@
 .chat-pins:empty {
   display: none;
 }
-.chat-pins > * + * {
+.chat-pins > :not(:first-child) {
   border-top: 1px solid var(--line);
+  /* A rounded row would bend the divider up at both ends; this selector
+     outweighs the rows' own radius. */
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 .chat-activity {
   flex: 1 0 100%;
@@ -303,10 +412,22 @@
   white-space: nowrap;
 }
 /* Typing: the pull request waits until the keyboard closes. */
-:root.kb-open .chat-pr {
+:is(:root:not(:has(.pane)), .pane).kb-open .chat-pr {
   display: none;
 }
 /* "Tell me when it's done", on: the bell rings in the accent. */
 .task-bell.is-on {
   color: var(--accent-text);
+}
+
+/* Under the messages the ground is calmer still: one more veil of the page
+   colour over the chat's scrolling area, so the network shows at the bars
+   and edges but never behind what is being read. Painted once; nothing
+   moves with it. */
+.screen.talk > .screen__body {
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+}
+/* Light lines on a dark page carry further, so the veil is thicker there. */
+:root[data-theme="dark"] .screen.talk > .screen__body {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
 }

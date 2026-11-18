@@ -293,7 +293,7 @@
 .contribute-policy__text {
   margin: 0;
   padding: var(--s4);
-  max-height: 60dvh;
+  max-height: calc(60 * var(--pane-vh, 1dvh));
   overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;

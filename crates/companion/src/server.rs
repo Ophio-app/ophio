@@ -34,8 +34,10 @@ use std::{
     },
     time::Duration,
 };
+// Its connections and itself are made and closed so that no agent started
+// meanwhile on the Mac keeps one.
+use containment::inherit::TcpListener;
 use tokio::{
-    net::TcpListener,
     sync::{Semaphore, mpsc, watch},
     task::JoinSet,
 };
@@ -254,7 +256,7 @@ impl<K: Copy + Eq + Hash> Drop for Counted<K> {
 async fn listen(addresses: &[SocketAddr]) -> Result<Vec<TcpListener>> {
     let mut listeners = Vec::new();
     for address in addresses {
-        match TcpListener::bind(address).await {
+        match TcpListener::bind(*address).await {
             Ok(listener) => listeners.push(listener),
             Err(error)
                 if error.kind() == std::io::ErrorKind::AddrNotAvailable

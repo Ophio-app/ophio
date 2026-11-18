@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SimHost } from "./host";
-import type { TimelineBody } from "../../protocol/types";
+import type { AttentionItem, Run, Task, TimelineBody } from "../../protocol/types";
 import { ids } from "./scenario";
 import { workIds } from "./work";
 
@@ -76,5 +76,47 @@ export function delayedDecision(host: SimHost) {
   host.tasks = host.tasks.map(t => t.task_id === task.task_id ? updated : t);
   host.emit({ type: "run_upserted", run }); host.emit({ type: "task_upserted", task: updated });
   append(host, task.task_id, run.run_id, ended, { kind: "run_ended", run_id: run.run_id, state: "reconciliation_required" });
+  return task.task_id;
+}
+
+export const cutOffIds = {
+  task: "0192f7a1-0000-7000-8000-00000000fc01",
+  run: "0192f7a1-0000-7000-8000-00000000fc02",
+  attention: "0192f7a1-0000-7000-8000-00000000fc03",
+};
+
+/**
+ * A chat whose reply was cut off when the computer restarted mid-turn.
+ * `confirmed`: the computer has checked that nothing the turn started is
+ * still running, so the person's next message carries on from it.
+ */
+export function cutOffChat(host: SimHost, { confirmed = true }: { confirmed?: boolean } = {}) {
+  const now = Date.now(), began = now - 14 * 60_000, cut = began + 95_000;
+  const device = { kind: "device" as const, device_id: ids.device };
+  const run: Run = {
+    run_id: cutOffIds.run, task_id: cutOffIds.task, harness: "claude_code", requested_model: "claude-opus-5-5", actual_model: "claude-opus-5-5",
+    requested_effort: "high", actual_effort: "high", account_label: "Personal", native_session: "c7a2e90b", state: "reconciliation_required", mode: "ask",
+    admitted_at: began, dispatched_at: began + 300, acknowledged_at: began + 1_200, ended_at: null, children: [], outcome: null, holds_writer: false,
+    ...(confirmed ? { nothing_running: true } : {}),
+  };
+  const task: Task = {
+    task_id: cutOffIds.task, project_id: ids.pTide, kind: "coding", mode: "ask", conversation: true,
+    access: { read: [ids.pTide], write: [], whole_read: false, whole_write: false, internet: false, local_network: false },
+    title: "Why does the latency chart jump at midnight?", state: "reconciliation_required", revision: 3, harness: "claude_code",
+    model: "claude-opus-5-5", effort: "high", created_by: device, created_at: began, updated_at: cut, current_run: run.run_id,
+    target_id: null, mission: null, attention_count: 1, status_line: null,
+  };
+  const item: AttentionItem = {
+    attention_id: cutOffIds.attention, kind: "reconciliation_required", title: "Outcome unknown", body: null, task_id: task.task_id,
+    run_id: run.run_id, approval_id: null, created_at: cut, resolved_at: null, priority: 8,
+  };
+  host.tasks = [...host.tasks.filter(t => t.task_id !== task.task_id), task];
+  host.runs = [...host.runs.filter(r => r.run_id !== run.run_id), run];
+  host.attention = [...host.attention.filter(a => a.attention_id !== item.attention_id), item];
+  host.emit({ type: "run_upserted", run }); host.emit({ type: "task_upserted", task }); host.emit({ type: "attention_upserted", item });
+  append(host, task.task_id, run.run_id, began, { kind: "user_message", text: "Why does the latency chart jump at midnight? It drops to zero for a minute every night.", bundle: null, delivery: "native_delivered" });
+  append(host, task.task_id, run.run_id, began + 1_200, { kind: "run_started", run_id: run.run_id });
+  append(host, task.task_id, run.run_id, began + 40_000, { kind: "agent_message", text: "The chart reads from the `latency_1m` rollup. Midnight is when the rollup job rotates its table, so I’m checking whether the dashboard queries the old table for that minute.", partial: false });
+  append(host, task.task_id, run.run_id, began + 60_000, { kind: "activity", tool: "Read", key: "cut-read", status: "running", summary: "Read jobs/rollup.ts", detail: null });
   return task.task_id;
 }

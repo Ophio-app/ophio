@@ -20,6 +20,7 @@ import {
 } from "./logic";
 import {
   AttentionList,
+  listedAttention,
   ConnectionNote,
   StopTask,
   TaskPermissionNote,
@@ -51,22 +52,13 @@ export default function Agents(_: RouteProps<"agents">) {
         : [],
     shallowEqual,
   );
+  const attentionCount = useHost(s => projectId ? listedAttention(s, projectId).length : 0);
   const finished = recent.filter(t => !tasks.some(active => active.task_id === t.task_id));
   return (
     <Screen title="Live agents" className="work-screen agents-screen">
       <ConnectionNote />
       <TaskPermissionNote />
-      {projectId && (
-        <Section title="Needs you">
-          <AttentionList projectId={projectId} />
-        </Section>
-      )}
-      <Section title="Agent readiness" action={<ReadinessCheck />}>
-        {unavailable.length === 0 && <p className="work-caption">{hasCatalog ? "No agent setup issues reported." : "The computer hasn’t reported agent readiness yet."}</p>}
-        {unavailable.map(h => <CapabilityNote key={h.kind} what={h.display_name} availability={h.capabilities.start_run} />)}
-        {checkedAt != null && <p className="work-caption">Checked <Age at={checkedAt} suffix=" ago" /></p>}
-      </Section>
-      <Section title="Running and unresolved">
+      <Section title="Running and unresolved" action={attentionCount > 0 && <a className="agents-needs-link" href="#agents-needs">Needs you · {attentionCount}</a>}>
         {tasks.length ? (
           tasks.map((t) => <AgentTask key={t.task_id} task={t} />)
         ) : (
@@ -75,10 +67,21 @@ export default function Agents(_: RouteProps<"agents">) {
           </Empty>
         )}
       </Section>
-      <Section title="Recently finished">
-        {finished.length ? finished.map((t) => <AgentTask key={t.task_id} task={t} recent />)
-          : <p className="work-muted">No finished agents have been reported for this project.</p>}
-      </Section>
+      {projectId && attentionCount > 0 && (
+        <Section title={`Needs you · ${attentionCount}`} id="agents-needs" className="agents-attention">
+          <AttentionList projectId={projectId} quiet />
+        </Section>
+      )}
+      {finished.length > 0 && <Section title="Recently finished">
+        {finished.map((t) => <AgentTask key={t.task_id} task={t} recent />)}
+      </Section>}
+      {unavailable.length > 0 && <Section title="Agent readiness" action={<ReadinessCheck />}>
+        {unavailable.map(h => <CapabilityNote key={h.kind} what={h.display_name} availability={h.capabilities.start_run} />)}
+        {checkedAt != null && <p className="work-caption">Checked <Age at={checkedAt} suffix=" ago" /></p>}
+      </Section>}
+      {unavailable.length === 0 && <div className="agents-readiness-action">
+        <ReadinessCheck label={hasCatalog ? "Check agent readiness" : "Check agent setup"} />
+      </div>}
       <OutsideAgents />
     </Screen>
   );

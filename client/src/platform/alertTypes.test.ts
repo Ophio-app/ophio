@@ -7,9 +7,9 @@ type Fields = Parameters<typeof alertTypeOf>[0];
 const item = (over: Partial<Fields> & Pick<Fields, "kind">): Fields => ({ topic: undefined, alert: undefined, account_id: undefined, task_id: "task", report_id: undefined, ...over } as Fields);
 type Kind = AttentionItem["kind"];
 
-it("names all 18 types, each with a name, description, group and recommended choice", () => {
-  expect(ALERT_TYPES).toHaveLength(18);
-  expect(new Set(ALERT_TYPES.map((t) => t.type)).size).toBe(18);
+it("names all 20 types, each with a name, description, group and recommended choice", () => {
+  expect(ALERT_TYPES).toHaveLength(20);
+  expect(new Set(ALERT_TYPES.map((t) => t.type)).size).toBe(20);
   for (const t of ALERT_TYPES) {
     expect(t.name.length).toBeGreaterThan(0);
     expect(t.description.length).toBeGreaterThan(0);
@@ -18,7 +18,8 @@ it("names all 18 types, each with a name, description, group and recommended cho
   }
   expect(recommendedTiers().question).toBe("alert");
   expect(recommendedTiers().finished).toBe("off");
-  expect(recommendedTiers().reply).toBe("silent");
+  expect(recommendedTiers().reply).toBe("alert");
+  expect(recommendedTiers().agent_update).toBe("silent");
 });
 
 it("the item's own type wins over everything else about it", () => {
@@ -27,6 +28,7 @@ it("the item's own type wins over everything else about it", () => {
 });
 
 const rows: [string, Fields, boolean, AlertType | null][] = [
+  ["a new version without a task", item({ kind: "completed", task_id: null, new_version: "0.3.0" }), false, "new_version"],
   ["an agent not signed in, with no task", item({ kind: "question", account_id: "claude", task_id: null }), false, "sign_in"],
   ["an account on an item that has a task", item({ kind: "question", account_id: "claude" }), false, "question"],
   ["a question about a report", item({ kind: "question", report_id: "r" }), false, "report_question"],
@@ -119,4 +121,10 @@ it("withOwnTier sets, replaces and clears a project's choice for one type", () =
   expect(set.tiers).toEqual([{ type: "reply", tier: "alert" }]);
   expect(withOwnTier(set, "reply", "off").tiers).toEqual([{ type: "reply", tier: "off" }]);
   expect(withOwnTier(set, "reply", null).tiers).toBeUndefined();
+});
+
+it("only project-capable types permit a project's own tier", () => {
+  expect(ALERT_TYPES.find((t) => t.type === "new_version")?.project).toBe(false);
+  expect(ALERT_TYPES.find((t) => t.type === "app_update")?.project).toBe(false);
+  expect(ALERT_TYPES.find((t) => t.type === "question")?.project).toBe(true);
 });

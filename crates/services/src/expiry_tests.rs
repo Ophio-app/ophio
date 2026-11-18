@@ -599,6 +599,7 @@ async fn expiry_scans_prompt_and_queue_collections_at_most_once() {
             steps: vec![],
             general_note: None,
             speech: None,
+            files: vec![],
         }))
     };
     let project_id = f

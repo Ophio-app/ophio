@@ -66,6 +66,26 @@
   },
   "scenarios": [
     {
+      "name": "terminal-session-controls",
+      "steps": [
+        ["nav", "Control"],
+        ["click", "Terminals", { "exact": true, "role": "radio" }],
+        ["click", "Show 2 in other projects", { "exact": true }],
+        ["click", "Attach tidewater-api — zsh", { "exact": true }],
+        ["expectRole", "textbox", "Command for tidewater-api — zsh"],
+        ["inView", "button", "Detach", { "in": ".terminal-screen" }],
+        ["inView", "button", "Close terminal", { "in": ".terminal-screen" }],
+        ["click", "Detach", { "exact": true, "in": ".terminal-screen" }],
+        ["inView", "button", "Attach again", { "in": ".terminal-screen" }],
+        ["click", "Attach again", { "exact": true, "in": ".terminal-screen" }],
+        ["fill", "Command for tidewater-api — zsh", "pwd"],
+        ["inView", "button", "Detach", { "in": ".terminal-screen" }],
+        ["inView", "button", "Close terminal", { "in": ".terminal-screen" }],
+        ["click", "Close terminal", { "exact": true, "in": ".terminal-screen" }],
+        ["expectRole", "dialog", "Close ‘tidewater-api — zsh’?"]
+      ]
+    },
+    {
       "name": "chat-storage-warning",
       "init": "const read = Storage.prototype.getItem; Storage.prototype.getItem = function(key) { if (key.startsWith('ui.')) throw new Error('Storage temporarily unavailable'); return read.call(this, key); }; window.__restoreChatReads = () => { Storage.prototype.getItem = read; };",
       "steps": [["part", "chat storage layout"]]
@@ -111,6 +131,7 @@
       "name": "permissions",
       "steps": [
         ["part", "a new conversation"],
+        ["click", "What the agent may reach", { "starts": true }],
         ["click", "Change & run: Nothing", { "exact": true }],
         ["expectRole", "dialog", "What the agent may change and run"],
         ["click", "tidewater-api", { "in": "dialog", "role": "checkbox" }],
@@ -139,13 +160,14 @@
         ["click", "Start conversation", { "exact": true }],
         ["expect", "I only read files; nothing was changed.", { "timeout": 8000 }],
         ["reach", "textbox", "Reply to Claude Code", { "timeout": 8000 }],
-        ["click", "Turn into a task", { "exact": true, "timeout": 8000 }],
+        ["click", "More about this conversation", { "exact": true }],
+        ["click", "Turn into a task", { "starts": true, "in": "dialog" }],
         ["expectRole", "dialog", "Turn into a task"],
         ["expect", "It keeps this conversation’s access, and may change Home.", { "in": "dialog" }],
         ["reach", "button", "Start the task", { "in": "dialog" }],
         ["click", "Start the task", { "exact": true, "in": "dialog" }],
         ["expectRole", "button", "More about this task"],
-        ["expectRole", "button", "Change & run: Home"],
+        ["expect", "Change: Home", { "in": "main" }],
         ["expect", "Go ahead with what we discussed.", { "in": "main" }]
       ]
     },
@@ -159,7 +181,7 @@
         ["eval", "(() => { const h = window.__sim.host; const t = [...h.tasks].reverse().find((t) => t.conversation && t.title.startsWith('What changed')); h.keepWorking(t.task_id); })()"],
         ["click", "Turn into a task", { "exact": true }],
         ["expect", "Turned into a task in Work mode.", { "in": "main", "timeout": 8000 }],
-        ["expectRole", "button", "Change & run: Home"],
+        ["expect", "Change: Home", { "in": "main" }],
         ["expectNot", "What should it do?"]
       ]
     },
@@ -251,6 +273,18 @@
         ["flips", "checkbox", "One notification per project"],
         ["wait", 4000],
         ["eval", "const on = (group, name) => document.querySelector(`[role=radiogroup][aria-label='${group}'] [role=radio][aria-checked=true]`)?.textContent === name; const box = [...document.querySelectorAll('input[type=checkbox]')].find((i) => i.labels?.[0]?.textContent.trim() === 'One notification per project'); if (!on('Questions', 'Off') || !on('Merged pull requests', 'Alert') || box?.checked !== true) throw new Error('A choice went back once the phone or the computer answered')"]
+      ]
+    },
+    {
+      "name": "new-version",
+      "steps": [
+        ["eval", "(() => { const h = window.__sim.host; h.releaseCheck.view.newer = { version: '0.3.0', url: 'https://github.com/Ophio-app/ophio/releases/tag/v0.3.0' }; h.releaseCheck.view.how_to_update = 'Download it from the release page, then on the computer run ophio update with the download, such as ophio update ophio-0.3.0-x86_64-linux.tar.gz.'; h.host.capabilities = { ...h.host.capabilities, features: [...h.host.capabilities.features, 'release_check_v1'] }; h.emit({ type: 'capabilities_changed', capabilities: h.host.capabilities }); h.host.release_check = { ...h.releaseCheck.view, checking: false }; h.emit({ type: 'host_updated', host: structuredClone(h.host) }); })()"],
+        ["click", "Settings", { "exact": true, "role": "button" }],
+        ["click", "Versions", { "starts": true }],
+        ["expect", "Øphio 0.3.0 is available for studio."],
+        ["inView", "button", "What’s new"],
+        ["expect", "such as ophio update ophio-0.3.0-x86_64-linux.tar.gz."],
+        ["reach", "checkbox", "Check for new versions of Øphio"]
       ]
     },
     {
@@ -347,7 +381,7 @@
         ["click", "New", { "starts": true, "in": "main" }],
         ["click", "New task", { "starts": true, "in": "dialog" }],
         ["fill", "What should Claude Code do in tidewater-api?", "Tidy the retry helper"],
-        ["click", "Review", { "exact": true }],
+        ["click", "Review or change the settings"],
         ["inView", "button", "Add to Next up"],
         ["eval", "(() => { const s = document.querySelector('.review-foot__summary'); if (!s) throw new Error('no start summary beside Start'); const r = s.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) throw new Error('the start summary is off the screen'); if (!s.textContent.startsWith('In tidewater-api · Claude Code · Work, “Skip permissions” · ')) throw new Error('the start summary says ' + s.textContent); })()"]
       ]
@@ -479,7 +513,7 @@
         ["expect", "The new name is kept on spare", {"in": "dialog"}],
         ["fill", "Computer name", "Workshop"],
         ["click", "Save name", {"exact": true, "in": "dialog"}],
-        ["expect", "Rename Workshop"],
+        ["expectRole", "button", "Rename Workshop"],
         ["clickSel", ".route:not(.is-hidden) .bar > :first-child"],
         ["clickSel", ".route:not(.is-hidden) .bar > :first-child"],
         ["click", "Choose a computer"],

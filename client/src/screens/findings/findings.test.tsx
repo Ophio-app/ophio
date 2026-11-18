@@ -10,6 +10,7 @@ import { ids } from "../../dev/sim/scenario";
 import { Toasts } from "../../design/Toast";
 import { HostSession } from "../../host/session";
 import type { Task, TaskState } from "../../protocol/types";
+import { SurfaceActive } from "../../design/surface";
 import { RouteProvider } from "../../shell/Screen";
 import Work from "../work/Work";
 import Findings from "./Findings";
@@ -92,6 +93,26 @@ it("lists FINDINGS.md, open first, and fixes one finding at a time", async () =>
   expect(prompt.startsWith(fixOnePrompt({ number: 2, title: "Deleting a bed leaves its plantings behind" }))).toBe(true);
   expect(prompt).toContain("Keep the migration reversible.");
   expect(creates()[0]).not.toHaveProperty("github");
+});
+
+it("keeps a fix's typed direction through Defaults in Settings, and has it back on Back", async () => {
+  const route = { screen: "findings", projectId: ids.pGarden } as const;
+  // The shell hides Find & fix, without unmounting it, while Settings is in front.
+  const tree = (active: boolean) => <AppProvider app={app}><SurfaceActive.Provider value={active}><RouteProvider value={{ tab: "work", depth: 1, active, route }}><Findings route={route} /><Toasts /></RouteProvider></SurfaceActive.Provider></AppProvider>;
+  const mounted = render(tree(true)); await tick(); await tick();
+  fireEvent.click(screen.getByRole("button", { name: /^2\./ })); await tick();
+  fireEvent.click(within(screen.getByRole("dialog", { name: /^2\./ })).getByRole("button", { name: "Fix this one" })); await tick();
+  const fix = () => within(screen.getByRole("dialog", { name: /^Fix 2\./ }));
+  fireEvent.change(fix().getByLabelText("More direction"), { target: { value: "Keep the migration reversible." } });
+  fireEvent.click(fix().getByRole("button", { name: /^Fixed by/ })); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Defaults in Settings" })); await tick();
+  expect(app.ui.get().stacks.talk.at(-1)).toMatchObject({ screen: "settings", section: "launch-flags" });
+  mounted.rerender(tree(false)); await tick();
+  expect(document.querySelector("dialog[open]")).toBeNull();
+  mounted.rerender(tree(true)); await tick();
+  expect(fix().getByLabelText<HTMLTextAreaElement>("More direction").value).toBe("Keep the migration reversible.");
+  fireEvent.click(fix().getByRole("button", { name: "Start" })); await tick();
+  expect(creates()[0]!.prompt).toContain("Keep the migration reversible.");
 });
 
 it("shows a finding's code example as written, with no row or fix for the headings in it, and none hidden after it", async () => {

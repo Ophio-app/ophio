@@ -320,7 +320,7 @@
 }
 /* The output takes the height its status leaves on the first screen, below
    the body's top padding, at any text size, so its latest rows are in view
-   without scrolling; the options and session controls scroll up below it. */
+   without scrolling; the options and session details scroll up below it. */
 .terminal-view {
   --terminal-peek: calc(var(--s3) + var(--target));
   --terminal-floor: 160px;
@@ -366,7 +366,7 @@
 }
 /* Short for the text size, every row counts: the output keeps to what is
    left rather than a minimum that would push its latest rows out of view. */
-:root.app-tight .terminal-view {
+:is(:root:not(:has(.pane)), .pane).app-tight .terminal-view {
   --terminal-peek: 0px;
   --terminal-floor: 0px;
 }
@@ -381,17 +381,17 @@
   flex-direction: column;
   gap: var(--s3);
 }
-/* Close terminal ends running programs, in the bar as well as below. */
+/* Close terminal ends running programs; its pinned action uses the stop color. */
 .terminal-close:not(:disabled) {
   color: var(--stop-text);
 }
 /* Short for the text size, the keys keep to one row that scrolls sideways. */
-:root.app-tight .terminal-keys {
+:is(:root:not(:has(.pane)), .pane).app-tight .terminal-keys {
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
 }
-:root.app-tight .terminal-keys .btn {
+:is(:root:not(:has(.pane)), .pane).app-tight .terminal-keys .btn {
   flex: none;
 }
 /* On a wide screen the line being typed sits under the output it goes to. */
@@ -428,7 +428,7 @@
   border-radius: var(--r-md);
   margin-top: var(--s3);
 }
-@media (orientation: landscape) and (min-width: 700px) {
+@container pane (orientation: landscape) and (min-width: 700px) {
   .desktop-screen,
   .agent-screen {
     display: grid;
@@ -472,7 +472,7 @@
   flex-wrap: wrap;
 }
 
-@media (orientation: landscape) and (min-width: 700px) and (max-height: 500px) {
+@container pane (orientation: landscape) and (min-width: 700px) and (max-height: 500px) {
   .desktop-screen .screen__inner,
   .agent-screen .screen__inner {
     gap: var(--s1);
@@ -499,7 +499,7 @@
   .agent-screen .picture-surface {
     width: auto;
     max-width: 100%;
-    height: clamp(64px, calc(100dvh - 264px), 180px);
+    height: clamp(64px, calc(calc(100 * var(--pane-vh, 1dvh)) - 264px), 180px);
     align-self: center;
   }
 }
@@ -697,7 +697,7 @@
   min-height: var(--target);
   white-space: normal;
 }
-@media (max-width: 430px) {
+@container pane (max-width: 430px) {
   .safety-rail__toggle {
   flex-direction: column;
   max-width: 5rem;
@@ -820,32 +820,32 @@
 }
 /* On a phone on its side the mode switch shares a row with the command field,
    so the output keeps a few lines above them. */
-:root.app-sideways .terminal-composer {
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-composer {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--s1) var(--s2);
   padding-inline: max(var(--s3), var(--safe-left), (100% - var(--content-max)) / 2 + var(--s4));
 }
-:root.app-sideways .terminal-composer > * {
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-composer > * {
   flex-basis: 100%;
   order: 1;
   margin: 0;
 }
-:root.app-sideways .terminal-composer > .terminal-modebar {
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-composer > .terminal-modebar {
   flex: 1 1 auto;
   order: 0;
 }
-:root.app-sideways .terminal-composer > form {
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-composer > form {
   flex: 3 1 16rem;
   order: 0;
 }
 
 /* Detail remains one tap away when text or viewport height needs the space. */
-:root.app-tight .safety-rail:not(.safety-rail--expanded) .stop-status {
+:is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) .stop-status {
   display: none;
 }
-:root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
+:is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
   display: block;
   -webkit-line-clamp: unset;
   line-clamp: unset;
@@ -857,7 +857,7 @@
 .control-footer {
   padding-bottom: max(var(--s2), var(--safe-bottom));
 }
-@media (max-height: 480px) and (min-width: 700px) {
+@container pane (max-height: 480px) and (min-width: 700px) {
   .safety-rail:not(.safety-rail--expanded) {
     padding-block: var(--s1);
   }
@@ -866,10 +866,10 @@
   }
   /* Beside navigation the rail keeps to the bottom row: the task name takes
      two lines at most, and expanding the rail shows it in full. */
-  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button {
+  :is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button {
     font-size: calc(8px + 0.3125rem);
   }
-  :root.app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
+  :is(:root:not(:has(.pane)), .pane).app-tight .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__label {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -878,12 +878,12 @@
 }
 
 /* Large text uses the same partial rem scaling as headings in the rail. */
-:root.app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__button {
+:is(:root:not(:has(.pane)), .pane).app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__button {
   font-size: calc(8px + 0.3125rem);
   font-weight: 600;
   padding-inline: var(--s2);
 }
-:root.app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__icon {
+:is(:root:not(:has(.pane)), .pane).app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__button .btn__icon {
   display: none;
 }
 
@@ -900,22 +900,22 @@
 .desktop-typing .remote-keyboard { padding: 0; border: 0; }
 .live-picture--compact { align-items: center; }
 .live-picture--compact .picture-caption { width: 100%; }
-.live-picture--compact .picture-surface { width: auto; height: clamp(56px, 14dvh, 112px); max-width: 100%; }
+.live-picture--compact .picture-surface { width: auto; height: clamp(56px, calc(14 * var(--pane-vh, 1dvh)), 112px); max-width: 100%; }
 .remote-keyboard__keys > summary { min-height: var(--target); display: flex; align-items: center; cursor: pointer; }
-@media (orientation: landscape) and (min-width: 700px) {
+@container pane (orientation: landscape) and (min-width: 700px) {
   .desktop-typing { grid-template: minmax(0, 1fr) / minmax(0, 1fr) minmax(0, 1fr); }
   .live-picture--compact .picture-surface { width: 100%; height: auto; }
 }
 
 .safety-rail__summary { margin: 0; font-size: var(--text-xs); color: var(--ink-2); overflow-wrap: break-word; }
-:root.app-narrow .safety-rail__summary { display: none; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .safety-rail__summary { display: none; }
 /* Cramped (large text on a phone on its side), the rail keeps to the height of
    its Stop so the screen above keeps its content. The display's state is still
    read with the rail's toggle, and expanding the rail shows it. */
-:root.app-cramped .safety-rail:not(.safety-rail--expanded) .safety-rail__summary { display: none; }
+:is(:root:not(:has(.pane)), .pane).app-cramped .safety-rail:not(.safety-rail--expanded) .safety-rail__summary { display: none; }
 
 /* Hide keyboard restores navigation; Leave and every task Stop stay visible. */
-@media (max-width: 899px) {
+@container pane (max-width: 899px) {
   .app:has(.tab:not(.is-hidden) .route:not(.is-hidden) .desktop-screen--typing) > .nav { display: none; }
 }
 .live-picture--compact canvas { object-fit: contain; }
@@ -926,30 +926,30 @@
 .typing-recovery p { margin: 0; }
 
 /* Keyboard input owns the available bottom space; Leave stays in the header. */
-:root.app-tight .desktop-screen--typing { overflow: hidden; }
-:root.app-tight .desktop-screen--typing .screen__body { min-height: 0; }
+:is(:root:not(:has(.pane)), .pane).app-tight .desktop-screen--typing { overflow: hidden; }
+:is(:root:not(:has(.pane)), .pane).app-tight .desktop-screen--typing .screen__body { min-height: 0; }
 .desktop-typing__status { margin: 0 0 var(--s1); }
-:root.app-tight .desktop-typing { grid-template-rows: auto minmax(0, 1fr); gap: var(--s1); padding-block: var(--s1); }
-:root.app-tight .desktop-typing .live-picture--compact .picture-surface { height: 48px; }
+:is(:root:not(:has(.pane)), .pane).app-tight .desktop-typing { grid-template-rows: auto minmax(0, 1fr); gap: var(--s1); padding-block: var(--s1); }
+:is(:root:not(:has(.pane)), .pane).app-tight .desktop-typing .live-picture--compact .picture-surface { height: 48px; }
 
-:root.app-narrow .desktop-screen--typing .bar {
+:is(:root:not(:has(.pane)), .pane).app-narrow .desktop-screen--typing .bar {
   display: grid;
   grid-template-columns: var(--target) minmax(0, 1fr);
   gap: var(--s1);
 }
-:root.app-narrow .desktop-screen--typing .bar__actions { grid-column: 2; grid-row: 1; justify-content: flex-end; }
-:root.app-narrow .desktop-screen--typing .bar__titles { grid-column: 1 / -1; padding-bottom: var(--s1); }
+:is(:root:not(:has(.pane)), .pane).app-narrow .desktop-screen--typing .bar__actions { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .desktop-screen--typing .bar__titles { grid-column: 1 / -1; padding-bottom: var(--s1); }
 
-:root.app-narrow .desktop-screen--typing .bar > .iconbtn:first-child { grid-column: 1; grid-row: 1; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .desktop-screen--typing .bar > .iconbtn:first-child { grid-column: 1; grid-row: 1; }
 
 /* Keep a single accessory row above the IME, including on tall phones. */
-:root.kb-open .terminal-keys { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-:root.kb-open .terminal-modebar { gap: var(--s1); margin-bottom: 0; }
-:root.kb-open .terminal-screen .screen__body { min-height: 0; }
-:root.kb-open .terminal-view { --terminal-peek: 0px; --terminal-floor: 0px; }
+:is(:root:not(:has(.pane)), .pane).kb-open .terminal-keys { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+:is(:root:not(:has(.pane)), .pane).kb-open .terminal-modebar { gap: var(--s1); margin-bottom: 0; }
+:is(:root:not(:has(.pane)), .pane).kb-open .terminal-screen .screen__body { min-height: 0; }
+:is(:root:not(:has(.pane)), .pane).kb-open .terminal-view { --terminal-peek: 0px; --terminal-floor: 0px; }
 .terminal-options > summary { min-height: var(--target); align-items: center; cursor: pointer; }
-:root:not(.kb-open) .terminal-options > summary { display: none; }
-:root.kb-open .terminal-options > summary { display: flex; }
+:is(:root:not(:has(.pane)), .pane):not(.kb-open) .terminal-options > summary { display: none; }
+:is(:root:not(:has(.pane)), .pane).kb-open .terminal-options > summary { display: flex; }
 
 /* Connection state and recovery stay above scrollback and the input dock. */
 .terminal-recovery { padding: var(--s1) var(--s3); border-bottom: 1px solid var(--line); }
@@ -960,38 +960,38 @@
 
 /* A command field with focus, or a screen cramped for its text size, reserves
    the short viewport for output and typing. While typing everything else gives
-   way; otherwise the options and session controls scroll up below the output. */
-:root.app-tight .terminal-screen--compact .screen__body { padding: 0 var(--s2); }
-:root.app-tight .terminal-screen--typing .screen__body { overflow: hidden; }
-:root.app-tight .terminal-screen--compact .terminal-frame { padding: var(--s1); }
-:root.app-tight .terminal-screen--compact .screen__footer { padding-block: var(--s1); }
-:root.app-tight .terminal-screen--typing .terminal-composer { gap: 0; }
+   way; otherwise the options and session details scroll up below the output. */
+:is(:root:not(:has(.pane)), .pane).app-tight .terminal-screen--compact .screen__body { padding: 0 var(--s2); }
+:is(:root:not(:has(.pane)), .pane).app-tight .terminal-screen--typing .screen__body { overflow: hidden; }
+:is(:root:not(:has(.pane)), .pane).app-tight .terminal-screen--compact .terminal-frame { padding: var(--s1); }
+:is(:root:not(:has(.pane)), .pane).app-tight .terminal-screen--compact .screen__footer { padding-block: var(--s1); }
+:is(:root:not(:has(.pane)), .pane).app-tight .terminal-screen--typing .terminal-composer { gap: 0; }
 /* On a phone on its side the bar and the input share the top row. The title
    keeps to one line there; the output and the command field carry the full
    name for assistive technology. */
-:root.app-sideways .terminal-screen--compact {
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact {
   display: grid;
   grid-template-columns: minmax(200px, 40%) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
-:root.app-sideways .terminal-screen--compact > .bar { grid-column: 1; grid-row: 1; min-height: var(--target); }
-:root.app-sideways .terminal-screen--compact .bar__subtitle { display: none; }
-:root.app-sideways .terminal-screen--compact .bar__title {
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact > .bar { grid-column: 1; grid-row: 1; min-height: var(--target); }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .bar__subtitle { display: none; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .bar__title {
   font-size: var(--text-sm);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-:root.app-sideways .terminal-screen--compact > .screen__footer { grid-column: 2; grid-row: 1; padding: 0; }
-:root.app-sideways .terminal-screen--compact .terminal-composer { padding: var(--s1); border: 0; }
-:root.app-sideways .terminal-screen--compact .terminal-composer > .terminal-modebar { flex: 0 1 auto; flex-wrap: nowrap; margin-bottom: 0; }
-:root.app-sideways .terminal-screen--compact .terminal-modebar .segmented { flex: none; }
-:root.app-sideways .terminal-screen--compact .terminal-modebar > .terminal-keys { flex: 1 1 0; min-width: 0; }
-:root.app-sideways .terminal-screen--compact .terminal-composer > form { flex: 1 1 8rem; }
-:root.app-sideways .terminal-screen--compact > .screen__body { grid-column: 1 / -1; grid-row: 2; }
-:root.app-sideways .terminal-screen--compact .screen__inner { padding: 0; }
-:root.app-sideways .terminal-screen--compact .terminal-view { min-height: 100cqh; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact > .screen__footer { grid-column: 2; grid-row: 1; padding: 0; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .terminal-composer { padding: var(--s1); border: 0; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .terminal-composer > .terminal-modebar { flex: 0 1 auto; flex-wrap: nowrap; margin-bottom: 0; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .terminal-modebar .segmented { flex: none; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .terminal-modebar > .terminal-keys { flex: 1 1 0; min-width: 0; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .terminal-composer > form { flex: 1 1 8rem; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact > .screen__body { grid-column: 1 / -1; grid-row: 2; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .screen__inner { padding: 0; }
+:is(:root:not(:has(.pane)), .pane).app-sideways .terminal-screen--compact .terminal-view { min-height: 100cqh; }
 
 
 /* Stop as the stop symbol alone, on a rounded square at the safety target
@@ -1066,10 +1066,10 @@
 .safety-rail__line--warn {
   color: var(--warn-text);
 }
-:root.app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__caption {
+:is(:root:not(:has(.pane)), .pane).app-narrow .safety-rail:not(.safety-rail--expanded) .named-stop__caption {
   font-size: calc(8px + 0.3125rem);
 }
-:root.app-narrow .safety-rail__line {
+:is(:root:not(:has(.pane)), .pane).app-narrow .safety-rail__line {
   font-size: calc(8px + 0.3125rem);
 }
 /* The computer's sign-in, followed over Desktop control. */

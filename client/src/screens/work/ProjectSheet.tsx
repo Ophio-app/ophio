@@ -31,6 +31,10 @@ import { useWarning } from "../../app/warnings";
 import { useGithubLinkable } from "../github/GithubDoors";
 import { GithubSettingsRow } from "../github/GithubSettings";
 import { SignedOut } from "../settings/SignInAgain";
+import { AgentModelUpdate } from "../settings/AgentModelUpdate";
+import { selectAddedProject } from "./selectAddedProject";
+import { AutoStartSettingRow } from "./AutoStartSetting";
+import { ProjectChecksRow } from "./ProjectChecksRow";
 import "./work.css";
 
 function selectable(h: HarnessInfo) {
@@ -107,7 +111,9 @@ export default function ProjectSheet({
           <ListRow title="Notifications" subtitle="Mute it, or choose how each kind notifies you" chevron onClick={() => {
             onClose(); ui.push({ screen: "settings", section: "settings-notifications", projectId: project.project_id });
           }} />
+          <ProjectChecksRow key={project.project_id} projectId={project.project_id} onClose={onClose} />
           <GithubRow project={project} />
+          <AutoStartSettingRow project={project} />
           <Defaults
             key={project.project_id}
             project={project}
@@ -314,6 +320,7 @@ function Defaults({
                 availability={h.capabilities.model_selection}
               />
             )}
+            <AgentModelUpdate harness={h} leave={onClose} />
             {effortAllowed ? (
               <label className="field">
                 <span className="field__label">Effort</span>
@@ -411,7 +418,7 @@ export function ManualAddProject({
   footer?: HTMLDivElement | null;
 }) {
   const formId = useId();
-  const { profile, ui } = useApp();
+  const { profile, session, ui } = useApp();
   const send = useCommand();
   const link = useLink();
   const host = useHost((s) => s.host);
@@ -459,7 +466,7 @@ export function ManualAddProject({
         );
         setPending(false);
         if (r?.result?.kind === "project_added") {
-          ui.selectProject(r.result.project_id);
+          selectAddedProject(session, ui, r.result.project_id);
           setPath("");
           setName("");
           onClose?.();

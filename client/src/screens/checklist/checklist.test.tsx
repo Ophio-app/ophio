@@ -14,7 +14,7 @@ import type { Checklist, ChecklistItem, ChecklistSummary } from "../../protocol/
 import { RouteProvider } from "../../shell/Screen";
 import ChecklistScreen, { ChecklistBody, ChecklistEntry } from "./Checklist";
 import Todo from "./Todo";
-import { ChecklistRow, summaryWords } from "./RequestChecklist";
+import { ChecklistRow, rowWords, summaryWords } from "./RequestChecklist";
 
 let app: App;
 const tick = async () => act(async () => { await vi.advanceTimersByTimeAsync(900); });
@@ -51,7 +51,11 @@ it("sits under New with what stops work and what waits on the person, and opens 
   view(<ChecklistRow project={project(ids.pTide)} />, { screen: "work" });
   await tick(); await tick();
   const row = screen.getByRole("button", { name: /Launch tidewater-api/ });
+  // A screen reader hears everything; the line shows the count and the next step, the dot the rest.
   expect(row.textContent).toContain("4 to do · next: Give the agent a Stripe test key · 1 blocker · an agent waits on one · a question asked");
+  const line = row.querySelector(".row__subtitle")!;
+  expect(line.firstChild?.textContent).toBe("4 to do · next: Give the agent a Stripe test key");
+  expect(line.querySelector(".visually-hidden")?.textContent).toBe(" · 1 blocker · an agent waits on one · a question asked");
   expect(row.classList.contains("checklist-row--blocker")).toBe(true);
   fireEvent.click(row);
   const ui = app.ui.get();
@@ -320,7 +324,6 @@ const digests = () => vi.stubGlobal("crypto", {
 it("opens a step's picture inside Ophio and saves it from there with one download", async () => {
   digests(); vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:picture");
   const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
-  await sim().ready;
   const list = sim().lists.get(ids.pTide)!;
   const step = list.sections.flatMap((s) => s.items).find((i) => i.item_id === "webhook-secret")!.steps[0]!;
   step.file = list.theme!.logo!;
@@ -351,7 +354,6 @@ it("opens a step's text file to read", async () => {
 });
 
 it("offers only Save for a file Ophio can't show", async () => {
-  await sim().ready;
   const step = sim().lists.get(ids.pTide)!.sections.flatMap((s) => s.items).find((i) => i.item_id === "webhook-secret")!.steps[0]!;
   step.file = { ...step.file!, name: "contract.pdf", media_type: "application/pdf" };
   await openList();
@@ -504,6 +506,10 @@ it("counts blockers on the row", () => {
   const s: ChecklistSummary = { project_id: ids.pTide, title: "T", open: 3, done: 1, waiting: 0, blockers: 2, unanswered: 0, updated_at: at, revision: 1 };
   expect(summaryWords(s)).toBe("3 to do · 2 blockers");
   expect(summaryWords({ ...s, open: 0, blockers: 0 })).toBe("All 1 done");
+  // The row's line keeps the count and the next step, without one the count alone.
+  expect(rowWords(s)).toEqual({ shown: "3 to do", rest: " · 2 blockers" });
+  expect(rowWords({ ...s, next: "Sign in" })).toEqual({ shown: "3 to do · next: Sign in", rest: " · 2 blockers" });
+  expect(rowWords({ ...s, open: 0, blockers: 0 })).toEqual({ shown: "All 1 done", rest: "" });
   expect(luminance("#ffffff")).toBeCloseTo(1);
   expect(luminance("#000000")).toBe(0);
   expect(luminance("teal")).toBeNull();

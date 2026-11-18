@@ -93,9 +93,16 @@ it("goes back from a conversation to Chat's conversations, as a messaging app's 
   await tick(100);
   talk(ids.tHeaders);
   await tick();
-  // The message box says which model it talks with; the header doesn't repeat it.
-  expect(document.querySelector(".chat-head__model")).toBeNull();
-  expect(document.querySelector(".chat-head")?.textContent).not.toMatch(/GPT/);
+  // The heading's second line says which model the next message uses, and
+  // opens the picker for it; the message box doesn't repeat it.
+  const model = document.querySelector<HTMLButtonElement>(".chat-head__model")!;
+  expect(model.textContent).toMatch(/GPT/);
+  expect(screen.queryByRole("button", { name: /^Agent for your next message/, hidden: false })).toBe(model);
+  fireEvent.click(model);
+  await tick(100);
+  expect(screen.getByRole("dialog", { name: /Agent for your next message/ })).toBeTruthy();
+  fireEvent.click(within(screen.getByRole("dialog", { name: /Agent for your next message/ })).getByRole("button", { name: "Close" }));
+  await tick(100);
   fireEvent.click(screen.getByRole("button", { name: /^Conversations/ }));
   await tick(100);
   // The project's name heads them and opens the others, and it is the last step back.

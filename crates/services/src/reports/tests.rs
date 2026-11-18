@@ -211,7 +211,10 @@ impl Fixture {
         .await;
     }
     async fn close(self) {
-        self.hub.shutdown().await.unwrap();
+        let Self { dir, hub } = self;
+        hub.shutdown().await.unwrap();
+        drop(hub);
+        dir.close().unwrap();
     }
 }
 fn bundle() -> ReportBundle {
@@ -649,9 +652,19 @@ async fn withdrawal_drops_bundle_and_queues_while_unreachable() {
             })))
             .unwrap()
     );
-    for entry in std::fs::read_dir(f.dir.path()).unwrap().flatten() {
-        if entry.path().is_file() {
-            let bytes = std::fs::read(entry.path()).unwrap();
+    // Windows locks parts of live SQLite files. Stop and release the database
+    // before scanning every file, then resume the same persisted withdrawal.
+    let config = f.hub.inner.reports.config.clone();
+    let Fixture { dir, hub } = f;
+    hub.shutdown().await.unwrap();
+    drop(hub);
+    let database = dir.path().join("companion.sqlite");
+    let mut scanned_database = false;
+    for entry in std::fs::read_dir(dir.path()).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_file() {
+            let bytes = std::fs::read(&path).unwrap();
+            scanned_database |= path == database;
             assert!(
                 !bytes
                     .windows("unique-removable-report-content".len())
@@ -659,6 +672,17 @@ async fn withdrawal_drops_bundle_and_queues_while_unreachable() {
             );
         }
     }
+    assert!(
+        scanned_database,
+        "privacy scan must include the retained database"
+    );
+    let hub = CompanionHub::builder()
+        .data_dir(dir.path())
+        .reports(config)
+        .build()
+        .await
+        .unwrap();
+    let f = Fixture { dir, hub };
     until(|| {
         matches!(
             f.hub.reports_view().unwrap().intake,
@@ -781,6 +805,8 @@ async fn preview_pseudonyms_and_transcript_budget_preserve_privacy() {
                         at: Timestamp(i),
                         run_id: None,
                         item: TimelineBody::AgentMessage {
+                            message_key: None,
+                            text_offset: None,
                             text: format!("entry-{i}-{}", "x".repeat(10_000)),
                             partial: false,
                         },
@@ -935,6 +961,8 @@ async fn the_subscription_records_state_blocks_and_quiet_alerts_without_content(
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     };
     f.hub
         .write(|tx| {
@@ -1037,7 +1065,7 @@ async fn queued_reports_settings_and_the_key_survive_a_restart() {
         None
     );
     hub.shutdown().await.unwrap();
-    drop(hub);
+    crate::testing::drop_hub_and_wait(hub, std::time::Duration::from_secs(10)).await;
     let hub = CompanionHub::builder()
         .data_dir(dir.path())
         .reports(config)
@@ -1058,7 +1086,7 @@ async fn queued_reports_settings_and_the_key_survive_a_restart() {
     until(|| hub.reports_view().unwrap().reports[0].status() == ReportProgress::Received).await;
     let key = std::fs::read(dir.path().join("reporter.key")).unwrap();
     hub.shutdown().await.unwrap();
-    drop(hub);
+    crate::testing::drop_hub_and_wait(hub, std::time::Duration::from_secs(10)).await;
     let hub = CompanionHub::builder()
         .data_dir(dir.path())
         .reports(ReportsConfig {

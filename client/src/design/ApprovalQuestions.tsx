@@ -51,8 +51,9 @@ export function ApprovalQuestions({ questions, picked, onChange, disabled, title
     return (
       <fieldset key={q.id ?? q.question} className="approval__question" disabled={disabled}>
         <legend className="approval__ask">
-          {q.header && <span className="approval__ask-header">{q.header}</span>}
-          {/* A single question is already the card's title. */}
+          {/* A single question is already the card's title, and its short
+              header only repeats it; a screen reader still hears both. */}
+          {q.header && <span className={questions.length > 1 || !titled ? "approval__ask-header" : "visually-hidden"}>{q.header}</span>}
           <span className={questions.length > 1 || !titled ? "approval__ask-text" : "visually-hidden"}>{q.question}</span>
           {multi && <span className="approval__ask-hint">Choose one or more</span>}
         </legend>
@@ -89,8 +90,12 @@ export function ApprovalQuestions({ questions, picked, onChange, disabled, title
             onChange={own => set(i, { labels: multi || !own.trim() ? p.labels : [], own })}
           />
         ) : (
+          // The field says what it is for until something is typed in it; its
+          // name stays for a screen reader.
           <TextArea
             label={!q.options.length ? "Your answer" : multi ? "Add your own answer" : "Or answer in your own words"}
+            hideLabel
+            placeholder={!q.options.length ? "Type your answer" : multi ? "Add your own answer" : "Or answer in your own words"}
             value={p.own}
             onChange={own => set(i, { labels: multi || !own.trim() ? p.labels : [], own })}
             rows={1}

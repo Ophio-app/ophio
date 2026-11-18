@@ -10,11 +10,15 @@ use crate::{
     history::History,
     program,
     proxy::{Policy, Proxy},
+    relay::Relay,
+    sign_in::{Kind, Recovered, read_own},
 };
+use containment::inherit;
 use ports::{
     HarnessError,
     sandbox::{
-        Applied, Reach, RelayEndpoint, RelayTotals, Sandbox, SandboxSpec, WrapRequest, Wrapped,
+        Applied, Reach, RelayEndpoint, RelayProvider, RelayTotals, Sandbox, SandboxSpec,
+        WrapRequest, Wrapped,
     },
 };
 use protocol::capability::{Availability, HarnessKind};
@@ -63,7 +67,7 @@ const RUNTIME: &[&str] = &[
 ];
 
 /// Inside `RUNTIME`, what services keep rather than what programs run from.
-const RUNTIME_DATA: &[&str] = &["/usr/local/var", "/usr/local/etc"];
+pub(crate) const RUNTIME_DATA: &[&str] = &["/usr/local/var", "/usr/local/etc"];
 
 /// How a program runs at all. `system.sb` is the system's own list of what its
 /// libraries reach for, so it follows the system across updates.
@@ -76,12 +80,22 @@ const RUNTIME_DATA: &[&str] = &["/usr/local/var", "/usr/local/etc"];
 /// multiprocessing can't start at all. Another program's semaphore under that name
 /// can be reached if its name is known, which carries no data; Python's own are
 /// random and unlinked as soon as they are made.
-const BASE: &str = r#"(version 1)
+///
+/// Asking the system about a program (its file, folder, open files and use) is
+/// allowed by the system unless a profile denies it, even under `deny default`,
+/// so it is denied outright and given back for this run's own programs. Listing
+/// the numbers of running programs stays, which `lsof` needs even for its own;
+/// a number alone says nothing. Another program's command line can't be kept
+/// from a run of the same user this way: the system answers `kern.procargs2`,
+/// `kern.procargs` and `kern.proc.pid` without asking the profile at all.
+pub(crate) const BASE: &str = r#"(version 1)
 (deny default)
 (import "system.sb")
 (allow process-fork process-exec)
 (allow signal (target same-sandbox))
+(deny process-info*)
 (allow process-info* (target same-sandbox))
+(allow process-info-listpids)
 (allow file-read-metadata)
 (allow sysctl-read)
 (allow system-socket)
@@ -134,10 +148,7 @@ impl ports::sandbox::Sandboxes for Seatbelt {
 }
 
 fn probe() -> Availability {
-    match Command::new(SANDBOX_EXEC)
-        .args(["-p", BASE, "/usr/bin/true"])
-        .output()
-    {
+    match inherit::output(Command::new(SANDBOX_EXEC).args(["-p", BASE, "/usr/bin/true"])) {
         Ok(output) if output.status.success() => Availability::Available,
         Ok(output) => Availability::Unsupported {
             reason: format!(
@@ -191,7 +202,7 @@ fn policy(reach: &Reach) -> Policy {
 }
 
 /// A path as the profile's language writes a string.
-fn quoted(path: &Path) -> String {
+pub(crate) fn quoted(path: &Path) -> String {
     let text = path.to_string_lossy();
     let mut out = String::with_capacity(text.len() + 2);
     out.push('"');
@@ -231,6 +242,8 @@ struct Profile<'a> {
     proxy: Option<u16>,
     /// This computer's own servers too, along with the person's networks.
     loopback: bool,
+    /// Model-only runs may neither reach Unix sockets nor serve host connections.
+    model_only: bool,
 }
 
 impl Profile<'_> {
@@ -284,7 +297,9 @@ impl Profile<'_> {
             &self.own,
             "subpath",
         );
-        rule(&mut text, "allow network-outbound", &self.own, "subpath");
+        if !self.model_only {
+            rule(&mut text, "allow network-outbound", &self.own, "subpath");
+        }
         rule(&mut text, "allow file-read*", &self.visible, "subpath");
         if self.whole_read {
             let mut whole = String::from("(allow file-read*)\n");
@@ -297,16 +312,21 @@ impl Profile<'_> {
                 .unwrap_or(text.len());
             text.insert_str(at, &whole);
         }
+        if self.model_only {
+            // Override any network exception imported by system.sb too. Restore
+            // only this run's pinned TCP broker below, never Unix IPC or servers.
+            text.push_str("(deny network*)\n");
+        }
         if let Some(port) = self.proxy {
             text.push_str(&format!(
                 "(allow network-outbound (remote tcp \"localhost:{port}\"))\n"
             ));
         }
-        if self.loopback {
+        if self.loopback && !self.model_only {
             text.push_str(
                 "(allow network-outbound (remote ip \"localhost:*\"))\n(allow network-inbound (local ip \"localhost:*\"))\n(allow network-bind (local ip \"localhost:*\"))\n",
             );
-        } else {
+        } else if !self.model_only {
             // It may serve; only the computer itself can come to it.
             text.push_str(
                 "(allow network-inbound (local ip \"localhost:*\"))\n(allow network-bind (local ip \"localhost:*\"))\n",
@@ -333,6 +353,26 @@ impl Profile<'_> {
     }
 }
 
+/// Build the real agent policy for check/agent network comparisons, without
+/// creating an agent session, reading a sign-in or touching the keychain.
+#[cfg(test)]
+pub(crate) fn check_network_comparison_profile(
+    project: &Path,
+    scratch: &Path,
+    loopback: bool,
+    proxy: Option<u16>,
+) -> String {
+    Profile {
+        read: vec![project, scratch],
+        write: vec![project, scratch],
+        own: vec![scratch],
+        loopback,
+        proxy,
+        ..Profile::default()
+    }
+    .text()
+}
+
 #[derive(Debug)]
 struct Run {
     reach: Reach,
@@ -343,6 +383,8 @@ struct Run {
     /// A sign-in copied for this run, and where it goes back to if it changes.
     keychain: Option<Keychain>,
     credentials: Option<Credentials>,
+    /// Where the agent's own settings are, once its command is built.
+    own: Option<crate::own::OwnSettings>,
     wrapped: bool,
     restart: bool,
 }
@@ -367,13 +409,15 @@ struct Keychain {
     service: String,
     account: String,
     file: PathBuf,
-    given: Vec<u8>,
+    /// The sign-in the run was given, by its digest.
+    given: crate::sign_in::Digest,
 }
 
 #[derive(Debug)]
 pub(crate) struct MacSandbox {
     spec: SandboxSpec,
     proxy: Option<Proxy>,
+    relay: Option<Relay>,
     temp: tempfile::TempDir,
     native: Option<tempfile::TempDir>,
     run: Mutex<Run>,
@@ -385,9 +429,6 @@ impl MacSandbox {
             return Err(error(
                 "only Claude Code and Codex provider policies are supported",
             ));
-        }
-        if spec.relay.is_some() {
-            return Err(error("model-only runs need Linux"));
         }
         spec.cwd = canonical(&spec.cwd)?;
         spec.reach = normalize(spec.reach)?;
@@ -414,11 +455,56 @@ impl MacSandbox {
         if spec.candidates.iter().any(|path| !path.is_dir()) {
             return Err(error("candidate grants must be directories"));
         }
-        if spec.offline && (spec.reach.internet || spec.reach.local_network) {
+        if let Some(relay) = &mut spec.relay {
+            if (relay.provider == RelayProvider::Anthropic)
+                != (spec.harness == HarnessKind::ClaudeCode)
+            {
+                return Err(error("relay provider does not match the harness"));
+            }
+            if spec.reach.whole_read || spec.reach.whole_write {
+                return Err(error("relay runs require explicit folder grants"));
+            }
+            relay.key_file = canonical(&relay.key_file)?;
+            let name = relay
+                .log
+                .file_name()
+                .ok_or_else(|| error("relay log needs a file name"))?;
+            relay.log = canonical(
+                relay
+                    .log
+                    .parent()
+                    .ok_or_else(|| error("relay log needs a parent"))?,
+            )?
+            .join(name);
+            if relay.log == relay.key_file {
+                return Err(error("relay log and credential must be separate files"));
+            }
+            // Seatbelt protects paths, not arbitrary hard-link aliases. Refuse
+            // configured host secrets with other names rather than expose one.
+            for path in [&relay.key_file, &relay.log] {
+                use std::os::unix::fs::MetadataExt;
+                match std::fs::symlink_metadata(path) {
+                    Ok(metadata) if metadata.is_file() && metadata.nlink() == 1 => {}
+                    Err(e) if e.kind() == io::ErrorKind::NotFound && path == &relay.log => {}
+                    _ => {
+                        return Err(error(
+                            "relay credential and log must be single-link regular files",
+                        ));
+                    }
+                }
+            }
+        }
+        if spec.offline && (spec.relay.is_some() || spec.reach.internet || spec.reach.local_network)
+        {
             return Err(error("offline sandboxes cannot enable network access"));
         }
-        let native = spec
-            .offline
+        let relay = spec
+            .relay
+            .clone()
+            .map(|relay| Relay::start(&spec.state, relay))
+            .transpose()
+            .map_err(error)?;
+        let native = (spec.offline || relay.is_some())
             .then(|| {
                 tempfile::Builder::new()
                     .prefix("relay-native-")
@@ -426,7 +512,7 @@ impl MacSandbox {
                     .map_err(error)
             })
             .transpose()?;
-        let proxy = (!spec.offline)
+        let proxy = (!spec.offline && relay.is_none())
             .then(|| {
                 Proxy::start(
                     &spec.state,
@@ -443,7 +529,7 @@ impl MacSandbox {
             .prefix("ophio-run-")
             .tempdir_in("/private/tmp")
             .map_err(error)?;
-        let loopback = spec.reach.internet && spec.reach.local_network;
+        let loopback = relay.is_none() && spec.reach.internet && spec.reach.local_network;
         let run = Run {
             reach: spec.reach.clone(),
             loopback,
@@ -451,12 +537,14 @@ impl MacSandbox {
             session: None,
             keychain: None,
             credentials: None,
+            own: None,
             wrapped: false,
             restart: false,
         };
         Ok(Self {
             spec,
             proxy,
+            relay,
             temp,
             native,
             run: Mutex::new(run),
@@ -487,7 +575,7 @@ impl MacSandbox {
         let host_config = named_config
             .clone()
             .map_or_else(|| home.join(default), PathBuf::from);
-        if !host_config.exists() && host_config.is_absolute() {
+        if self.native.is_none() && !host_config.exists() && host_config.is_absolute() {
             use std::os::unix::fs::DirBuilderExt;
             std::fs::DirBuilder::new()
                 .recursive(true)
@@ -495,7 +583,14 @@ impl MacSandbox {
                 .create(&host_config)
                 .map_err(|e| error(format!("{}: {e}", host_config.display())))?;
         }
-        let host_config = canonical(&host_config)?;
+        if !host_config.is_absolute() {
+            return Err(error("provider configuration must be absolute"));
+        }
+        let host_config = if self.native.is_some() {
+            resolved(&host_config)
+        } else {
+            canonical(&host_config)?
+        };
 
         // Kept from the agent whether or not they exist yet: a folder made after
         // this has no other rule to hold it.
@@ -508,6 +603,28 @@ impl MacSandbox {
             env("CODEX_HOME").map_or_else(|| home.join(".codex"), PathBuf::from),
         ]);
         required.extend(mac_private_paths(&home));
+        let mut relay_private = Vec::new();
+        if let Some(relay) = &self.spec.relay {
+            relay_private.extend([
+                relay.key_file.clone(),
+                relay.log.clone(),
+                host_config.clone(),
+                home.join(".claude"),
+                home.join(".codex"),
+                home.join(".claude.json"),
+            ]);
+            relay_private.extend(self.spec.given.iter().cloned());
+            for variable in ["CLAUDE_CONFIG_DIR", "CODEX_HOME"] {
+                if let Some(path) = env(variable) {
+                    if !Path::new(&path).is_absolute() {
+                        return Err(error("provider configuration must be absolute"));
+                    }
+                    relay_private.push(PathBuf::from(path));
+                }
+            }
+            relay_private = relay_private.iter().map(|p| resolved(p)).collect();
+            required.extend(relay_private.iter().cloned());
+        }
         let required: Vec<PathBuf> = required.iter().flat_map(|p| spellings(p)).collect();
         let mut private: Vec<PathBuf> = private_paths(&home)?
             .iter()
@@ -549,9 +666,12 @@ impl MacSandbox {
         // The agent works from a folder of this conversation's, not its own:
         // only the sign-in and the history of this conversation are in it.
         let mut own: Vec<PathBuf> = vec![canonical(self.temp.path())?];
+        let mut shared_sources: Vec<PathBuf> = Vec::new();
         let config = if let Some(native) = &self.native {
             if request.resume.is_some() {
-                return Err(error("offline runs start with fresh provider state"));
+                return Err(error(
+                    "model-only and offline runs start with fresh provider state",
+                ));
             }
             canonical(native.path())?
         } else {
@@ -567,6 +687,12 @@ impl MacSandbox {
                 _ => error(format!("native history: {e}")),
             })?;
             let local = canonical(&self.spec.state.join("native"))?;
+            // Opened once, through no link; every link below is made through
+            // this handle, so nothing the agent left in it is followed.
+            let root = crate::sys::folder(&local).map_err(error)?;
+            // What this run is given, noted by digest in case Øphio stops
+            // before it ends: the next run then carries a renewed sign-in back.
+            let mut noted = Noted::Nothing;
             for (source, destination) in &history.binds {
                 if destination == &host_config {
                     continue;
@@ -574,21 +700,92 @@ impl MacSandbox {
                 let name = destination
                     .strip_prefix(&host_config)
                     .map_err(|_| error("native history outside the agent's folder"))?;
+                let real = canonical(source)?;
+                let sign_in = real.is_file() && real.starts_with(&host_config);
                 let link = local.join(name);
-                if let Some(parent) = link.parent() {
-                    crate::sys::directories(parent).map_err(error)?;
+                if sign_in
+                    && let Recovered::Kept { given, why } =
+                        crate::sign_in::recover_file(&self.spec.state, &link, &real)
+                {
+                    // A sign-in renewed in a run Øphio didn't get to finish
+                    // that can't go back yet stays as this run's own, in place
+                    // of the link, and this run's end tries again.
+                    tracing::warn!(error = %why, "{KEPT}");
+                    run.credentials = Some(Credentials {
+                        link,
+                        real,
+                        began: Some(given),
+                    });
+                    noted = Noted::Unchanged;
+                    continue;
                 }
-                linked(source, &link).map_err(error)?;
-                let source = canonical(source)?;
-                if source.is_file() && source.starts_with(&host_config) {
-                    run.credentials = Some(Credentials::new(link, source.clone()));
+                crate::setup::link_within(&root, name, source, sign_in).map_err(error)?;
+                if sign_in {
+                    let credentials = Credentials::new(link, real.clone());
+                    noted = Noted::Given(Kind::File, credentials.began);
+                    run.credentials = Some(credentials);
                 }
-                own.push(source);
+                own.push(real);
             }
+            // The sign-in file removed since, as by `codex logout`: what an
+            // unfinished run left in its place doesn't keep the agent signed in.
+            if run.credentials.is_none()
+                && crate::sign_in::recorded_kind(&self.spec.state) == Some(Kind::File)
+            {
+                let name = crate::history::credential(self.spec.harness);
+                match std::fs::symlink_metadata(host_config.join(name)) {
+                    Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                        match crate::sys::remove_at(&root, std::ffi::OsStr::new(name), false) {
+                            Err(e) if e.kind() != io::ErrorKind::NotFound => {
+                                tracing::warn!(error = %e, "couldn't remove a limited chat's sign-in after a sign-out");
+                            }
+                            _ => {}
+                        }
+                    }
+                    // Still there, or it can't be told: left as it is.
+                    _ => noted = Noted::Unchanged,
+                }
+            }
+            // The person's own instructions and skills, as links the sandbox
+            // lets the agent read through and not write through.
+            let mut history = history;
+            let forbidden = crate::setup::private(
+                &home,
+                private
+                    .iter()
+                    .cloned()
+                    .chain([self.spec.state.clone()])
+                    .chain(self.spec.given.iter().cloned()),
+            );
+            let cwd = canonical(&self.spec.cwd).unwrap_or_else(|_| self.spec.cwd.clone());
+            let withheld = crate::setup::withheld(request.disabled);
+            let bounds = crate::setup::Bounds {
+                home: &home,
+                cwd: &cwd,
+                private: &forbidden,
+                writes: reach.writes(),
+                withheld: &withheld,
+            };
+            let shared = crate::setup::select(self.spec.harness, &host_config, &bounds);
+            history.shared = crate::setup::place(&local, &self.spec.state, shared, true);
+            shared_sources.extend(history.shared.iter().map(|s| s.source.clone()));
             run.history = Some(history);
             if self.spec.harness == HarnessKind::ClaudeCode && run.credentials.is_none() {
-                run.keychain =
-                    Keychain::copy(named_config.as_deref(), &home, &local).map_err(error)?;
+                let (keychain, kept) =
+                    Keychain::copy(named_config.as_deref(), &home, &local, &self.spec.state)?;
+                run.keychain = keychain;
+                noted = kept;
+            }
+            let written = match noted {
+                Noted::Given(kind, digest) => {
+                    crate::sign_in::remember(&self.spec.state, kind, digest)
+                }
+                Noted::Nothing => crate::sign_in::forget(&self.spec.state),
+                Noted::Unchanged => Ok(()),
+            };
+            if let Err(e) = written {
+                tracing::warn!(error = %e, "couldn't note which sign-in a limited chat was given");
+                let _ = crate::sign_in::forget(&self.spec.state);
             }
             local
         };
@@ -616,9 +813,39 @@ impl MacSandbox {
         for path in request.visible {
             visible.push(canonical(path)?);
         }
+        visible.extend(shared_sources);
         // An account signed out since the run was given it leaves nothing.
-        for path in self.spec.given.iter().filter(|p| p.exists()) {
+        for path in self
+            .spec
+            .given
+            .iter()
+            .filter(|p| self.relay.is_none() && p.exists())
+        {
             visible.push(canonical(path)?);
+        }
+
+        if self.relay.is_some() {
+            // Check every restored path, including runtime/package folders: an
+            // allow following the private deny must never restore host secrets.
+            for source in self
+                .spec
+                .candidates
+                .iter()
+                .chain(&own)
+                .chain(&visible)
+                .cloned()
+                .chain(RUNTIME.iter().map(PathBuf::from))
+            {
+                let source = resolved(&source);
+                if relay_private
+                    .iter()
+                    .any(|secret| source.starts_with(secret) || secret.starts_with(&source))
+                {
+                    return Err(error(
+                        "relay grants must not overlap credentials, audit logs or provider login state",
+                    ));
+                }
+            }
         }
 
         let read: Vec<&Path> = reach
@@ -638,8 +865,13 @@ impl MacSandbox {
             missing_above: missing_above.iter().map(PathBuf::as_path).collect(),
             own: own.iter().map(PathBuf::as_path).collect(),
             visible: visible.iter().map(PathBuf::as_path).collect(),
-            proxy: self.proxy.as_ref().map(Proxy::port),
+            proxy: self
+                .proxy
+                .as_ref()
+                .map(Proxy::port)
+                .or_else(|| self.relay.as_ref().map(Relay::port)),
             loopback: run.loopback,
+            model_only: self.relay.is_some(),
         }
         .text();
 
@@ -663,12 +895,26 @@ impl MacSandbox {
         for key in ["NO_PROXY", "no_proxy"] {
             environment.push((key.into(), "localhost,127.0.0.1".into()));
         }
-        if self.spec.offline {
+        if self.spec.offline || self.relay.is_some() {
             environment.push((
                 "PATH".into(),
                 std::env::var("PATH").unwrap_or_else(|_| "/usr/bin:/bin".into()),
             ));
             environment.push(("LANG".into(), "en_US.UTF-8".into()));
+        }
+        if let Some(relay) = &self.relay {
+            let key = match self.spec.harness {
+                HarnessKind::ClaudeCode => "ANTHROPIC_API_KEY",
+                HarnessKind::Codex => "OPHIO_RELAY_DUMMY_KEY",
+                _ => unreachable!("provider checked at construction"),
+            };
+            environment.push((
+                key.into(),
+                relay
+                    .local_key()
+                    .expect("Mac relay requires local authentication")
+                    .into(),
+            ));
         }
         let temp = canonical(self.temp.path())?;
         environment.push(("TMPDIR".into(), temp.to_string_lossy().into_owned()));
@@ -696,11 +942,30 @@ impl MacSandbox {
         ));
         environment.push(("HOME".into(), home.to_string_lossy().into_owned()));
         environment.push((variable.into(), config.to_string_lossy().into_owned()));
+        // The agent's folder is this conversation's own, at its own place: its
+        // links lead to its history, also its own, or out to the person's
+        // sign-in and shared instructions, which are not.
+        let mut own_places = vec![config.clone()];
+        if self.native.is_none() {
+            own_places.push(self.spec.state.join("claude-history"));
+        }
+        run.own = Some(crate::own::OwnSettings {
+            harness: self.spec.harness,
+            folder: config.clone(),
+            files: Vec::new(),
+            places: vec![(config.clone(), config)],
+            own: crate::own::real(own_places),
+            cwd: self.spec.cwd.clone(),
+        });
         Ok(Wrapped {
             program: SANDBOX_EXEC.into(),
             args: vec!["-p".into(), profile.into()],
             env: environment,
-            clear_env: self.spec.offline,
+            clear_env: self.spec.offline || self.relay.is_some(),
+            shared_skills: run
+                .history
+                .as_ref()
+                .is_some_and(|h| h.shared.iter().any(|s| s.relative.starts_with("skills"))),
         })
     }
 }
@@ -738,19 +1003,6 @@ fn package_of(program: &Path) -> Option<PathBuf> {
     let folder = program.parent()?;
     let versioned = folder.file_name().and_then(|n| n.to_str()) == Some("versions");
     versioned.then(|| folder.to_path_buf())
-}
-
-/// Makes `link` lead to `source`, in place of anything an earlier turn left.
-fn linked(source: &Path, link: &Path) -> io::Result<()> {
-    match std::fs::symlink_metadata(link) {
-        Ok(metadata) if metadata.is_dir() && !metadata.is_symlink() => {
-            std::fs::remove_dir_all(link)?;
-        }
-        Ok(_) => std::fs::remove_file(link)?,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => {}
-        Err(e) => return Err(e),
-    }
-    std::os::unix::fs::symlink(source, link)
 }
 
 /// What Linux's folders for Øphio's data hold here, if an install has any, and
@@ -889,124 +1141,259 @@ impl Keychain {
     }
 
     /// Copies the sign-in for the run into its own folder, owner-only, where
-    /// Claude Code looks when the keychain doesn't answer. Nothing to copy, as
-    /// with no sign-in, is for the agent to say.
-    fn copy(named_config: Option<&str>, home: &Path, local: &Path) -> io::Result<Option<Self>> {
+    /// Claude Code looks when the keychain doesn't answer, and says what to
+    /// note of it. Nothing to copy, as with no sign-in, is for the agent to say.
+    fn copy(
+        named_config: Option<&str>,
+        home: &Path,
+        local: &Path,
+        state: &Path,
+    ) -> Result<(Option<Self>, Noted), HarnessError> {
         let account = std::env::var("USER")
             .ok()
             .or_else(|| home.file_name().map(|n| n.to_string_lossy().into_owned()))
             .unwrap_or_default();
         let service = Self::service(named_config);
-        let output = Command::new("/usr/bin/security")
-            .args(["find-generic-password", "-s", &service, "-w"])
-            .stdin(std::process::Stdio::null())
-            .output()?;
-        if !output.status.success() {
-            return Ok(None);
-        }
-        let mut given = output.stdout;
-        while given.last().is_some_and(u8::is_ascii_whitespace) {
-            given.pop();
-        }
-        if given.is_empty() {
-            return Ok(None);
-        }
         let file = local.join(".credentials.json");
+        let kept = |given| Self {
+            service: service.clone(),
+            account: account.clone(),
+            file: file.clone(),
+            given,
+        };
+        let held = match Self::read(&service) {
+            Entry::Holds(held) => held,
+            Entry::Missing => {
+                // Signed out: a sign-in an unfinished run renewed doesn't outlive it.
+                if crate::sign_in::recorded_kind(state) == Some(Kind::Keychain) {
+                    drop_file(&file).map_err(error)?;
+                }
+                return Ok((None, Noted::Nothing));
+            }
+            Entry::Unreadable(why) => {
+                // Whether the person signed out isn't known, so what an
+                // unfinished run left stays, as this run's sign-in, and this
+                // run's end tries again. With nothing left, there's nothing to give.
+                let Some(given) = crate::sign_in::recorded_given(state, Kind::Keychain) else {
+                    return Ok((None, Noted::Unchanged));
+                };
+                return match crate::sign_in::read_at_most(&file, KEYCHAIN_MOST) {
+                    Ok(left) if !left.is_empty() => {
+                        tracing::warn!(error = %why, "{KEPT}");
+                        Ok((Some(kept(given)), Noted::Unchanged))
+                    }
+                    Err(e) if e.kind() == io::ErrorKind::NotFound => Ok((None, Noted::Unchanged)),
+                    // Empty, oversized, a link or a second name: not a sign-in.
+                    _ => {
+                        drop_file(&file).map_err(error)?;
+                        Ok((None, Noted::Unchanged))
+                    }
+                };
+            }
+        };
+        // A sign-in renewed in a run Øphio didn't get to finish goes back
+        // before the copy is replaced, and this run is given it. One that
+        // can't go back yet stays as this run's own, and its end tries again.
+        let given = match crate::sign_in::recover(
+            state,
+            &file,
+            Kind::Keychain,
+            KEYCHAIN_MOST,
+            || crate::sign_in::Held::Is(crate::sign_in::digest(&held)),
+            |renewed| Self::put(&account, &service, renewed),
+        ) {
+            Recovered::Nothing => held,
+            Recovered::Back(renewed) => renewed,
+            Recovered::Kept { given, why } => {
+                tracing::warn!(error = %why, "{KEPT}");
+                return Ok((Some(kept(given)), Noted::Unchanged));
+            }
+        };
         // A file an earlier run left, or a link planted there, is not written through.
-        match std::fs::remove_file(&file) {
-            Ok(()) => {}
-            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
-            Err(e) => return Err(e),
-        }
+        drop_file(&file).map_err(error)?;
         let mut out = std::fs::OpenOptions::new()
             .write(true)
             .create_new(true)
             .mode(0o600)
-            .open(&file)?;
-        out.write_all(&given)?;
-        out.sync_all()?;
-        Ok(Some(Self {
-            service,
-            account,
-            file,
-            given,
-        }))
+            .open(&file)
+            .map_err(error)?;
+        out.write_all(&given).map_err(error)?;
+        out.sync_all().map_err(error)?;
+        let given = crate::sign_in::digest(&given);
+        Ok((Some(kept(given)), Noted::Given(Kind::Keychain, Some(given))))
     }
 
-    /// What the keychain holds for the service now; none if the entry is
-    /// gone or `security` couldn't say.
-    fn held(&self) -> Option<Vec<u8>> {
-        let output = Command::new("/usr/bin/security")
-            .args(["find-generic-password", "-s", &self.service, "-w"])
+    /// The keychain's entry for `service`. Only an entry that isn't there is
+    /// a sign-out; a keychain that is locked, or that `security` couldn't
+    /// otherwise read, says nothing either way.
+    fn read(service: &str) -> Entry {
+        let mut output = Command::new("/usr/bin/security");
+        output
+            .args(["find-generic-password", "-s", service, "-w"])
+            .args(test_keychain())
             .stdin(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .output()
-            .ok()
-            .filter(|o| o.status.success())?;
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null());
+        let output = inherit::spawn(&mut output).and_then(|child| child.wait_with_output());
+        let output = match output {
+            Ok(output) => output,
+            Err(e) => return Entry::Unreadable(e),
+        };
+        if !output.status.success() {
+            return match output.status.code() {
+                Some(NOT_FOUND) => Entry::Missing,
+                code => Entry::Unreadable(io::Error::other(format!(
+                    "the keychain couldn't be read (security exited {})",
+                    code.map_or_else(|| "on a signal".into(), |c| c.to_string())
+                ))),
+            };
+        }
         let mut held = output.stdout;
         while held.last().is_some_and(u8::is_ascii_whitespace) {
             held.pop();
         }
-        Some(held)
+        if held.is_empty() {
+            Entry::Missing
+        } else {
+            Entry::Holds(held)
+        }
     }
 
     /// Takes the copy away, and carries a renewed sign-in back to the keychain.
     /// `security`'s own prompt takes the value, so it never shows in a process
     /// list. A sign-in made since the run began, from the phone say, stays:
-    /// the run's older one doesn't go back over it.
+    /// the run's older one doesn't go back over it. One that can't go back
+    /// yet, or a keychain that can't be read to tell, keeps the copy, and the
+    /// next run in the conversation tries again.
     fn finish(&self) -> io::Result<()> {
         // The agent could write here, so nothing it left is followed: a link or
         // a second name for a private file would carry that file to the
         // keychain, and from there into the next run. Such a file is dropped.
-        let now = match read_own(&self.file) {
+        let now = match crate::sign_in::read_at_most(&self.file, KEYCHAIN_MOST) {
             Ok(now) => now,
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
-            Err(_) => {
-                std::fs::remove_file(&self.file)?;
-                return Ok(());
-            }
+            Err(_) => return drop_file(&self.file),
         };
-        std::fs::remove_file(&self.file)?;
-        if now == self.given || now.is_empty() {
-            return Ok(());
+        if now.is_empty() || crate::sign_in::digest(&now) == self.given {
+            return drop_file(&self.file);
         }
-        // Only over the sign-in it was given: one replaced, signed out (the
-        // entry gone) or that can't be read stays as it is.
-        if self.held().as_deref() != Some(self.given.as_slice()) {
-            return Ok(());
+        // Only over the sign-in it was given: one replaced or signed out (the
+        // entry gone) stays as it is.
+        match Self::read(&self.service) {
+            Entry::Holds(held) if crate::sign_in::digest(&held) == self.given => {
+                Self::put(&self.account, &self.service, &now)?;
+                drop_file(&self.file)
+            }
+            Entry::Holds(_) | Entry::Missing => drop_file(&self.file),
+            Entry::Unreadable(why) => Err(why),
         }
-        let hex: String = now.iter().map(|b| format!("{b:02x}")).collect();
-        let mut child = Command::new("/usr/bin/security")
-            .arg("-i")
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()?;
+    }
+
+    /// Stores `renewed` as the keychain's sign-in for `service`, through
+    /// `security`'s own prompt. That prompt cuts a line at 4,096 bytes and
+    /// runs the rest as a command of its own, which would store part of the
+    /// sign-in, so a longer line isn't sent: the sign-in is too long for it
+    /// rather than ever stored cut.
+    fn put(account: &str, service: &str, renewed: &[u8]) -> io::Result<()> {
+        let hex: String = renewed.iter().map(|b| format!("{b:02x}")).collect();
+        let mut line = format!(
+            "add-generic-password -U -a {} -s {} -X {hex}",
+            sh_word(account),
+            sh_word(service)
+        );
+        if let Some(keychain) = test_keychain() {
+            line.push(' ');
+            line.push_str(&sh_word(&keychain.to_string_lossy()));
+        }
+        line.push('\n');
+        if line.len() > LINE_MOST {
+            return Err(io::Error::other(
+                "the renewed sign-in is too long to hand to the keychain without showing it in a process list",
+            ));
+        }
+        let mut child = inherit::spawn(
+            Command::new("/usr/bin/security")
+                .arg("-i")
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null()),
+        )?;
         if let Some(mut input) = child.stdin.take() {
-            writeln!(
-                input,
-                "add-generic-password -U -a {} -s {} -X {hex}",
-                sh_word(&self.account),
-                sh_word(&self.service)
-            )?;
+            input.write_all(line.as_bytes())?;
         }
-        if child.wait()?.success() {
+        let status = child.wait()?;
+        if status.success() {
             Ok(())
         } else {
-            Err(io::Error::other(
-                "the keychain would not take the renewed sign-in",
-            ))
+            Err(io::Error::other(format!(
+                "the keychain would not take the renewed sign-in (security exited {})",
+                status
+                    .code()
+                    .map_or_else(|| "on a signal".into(), |c| c.to_string())
+            )))
         }
     }
 }
 
-/// A regular file with one name, reached through no link, and only so much of it.
-fn read_own(path: &Path) -> io::Result<Vec<u8>> {
-    const SIGN_IN_LIMIT: u64 = 1 << 20;
-    let file = crate::sys::history_file(path, false)?;
-    let mut bytes = Vec::new();
-    io::Read::read_to_end(&mut io::Read::take(file, SIGN_IN_LIMIT), &mut bytes)?;
-    Ok(bytes)
+/// What `security` exits with when the keychain has no such entry: the low
+/// byte of `errSecItemNotFound` (-25300). A locked keychain gives 36
+/// (`errSecInteractionNotAllowed`) instead, and a read-only one 195.
+const NOT_FOUND: i32 = 44;
+/// The longest line handed to `security -i`, newline included: it cuts at
+/// 4,096 bytes, and Claude Code itself keeps to this much under that. A
+/// sign-in of up to about 1,950 bytes fits.
+const LINE_MOST: usize = 4032;
+/// The most of a copy of the keychain's sign-in that is carried back, or
+/// kept for a run: Claude Code's sign-in is under 1 KB, and a few KB with
+/// the sign-ins of MCP servers kept beside it. A bigger file isn't one, and
+/// is dropped.
+const KEYCHAIN_MOST: u64 = 64 << 10;
+/// Said, with why, when a renewed sign-in stays for the run.
+const KEPT: &str = "a limited chat's renewed sign-in couldn't go back yet; \
+                    the run is given it, and its end tries again";
+
+/// A keychain entry, as `security` found it.
+enum Entry {
+    Holds(Vec<u8>),
+    Missing,
+    Unreadable(io::Error),
+}
+
+/// What the note of a run's sign-in becomes as the run starts.
+#[derive(Debug, PartialEq)]
+enum Noted {
+    /// This run was given a sign-in of this kind, with this digest.
+    Given(Kind, Option<crate::sign_in::Digest>),
+    /// A renewed sign-in is still owed, or what is owed isn't known yet.
+    Unchanged,
+    /// No sign-in: nothing to carry back.
+    Nothing,
+}
+
+#[cfg(test)]
+thread_local! {
+    /// A keychain a test made, in place of the person's own.
+    static TEST_KEYCHAIN: std::cell::RefCell<Option<PathBuf>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// The keychain the test running on this thread made, named to `security`.
+#[cfg(test)]
+fn test_keychain() -> Option<PathBuf> {
+    TEST_KEYCHAIN.with(|k| k.borrow().clone())
+}
+/// None outside tests: the person's own keychains are searched.
+#[cfg(not(test))]
+fn test_keychain() -> Option<PathBuf> {
+    None
+}
+
+/// Removes the file at `path`, if there is one; a link is removed, not followed.
+fn drop_file(path: &Path) -> io::Result<()> {
+    match std::fs::remove_file(path) {
+        Err(e) if e.kind() != io::ErrorKind::NotFound => Err(e),
+        _ => Ok(()),
+    }
 }
 
 /// A word as `security -i` reads one.
@@ -1016,17 +1403,15 @@ fn sh_word(word: &str) -> String {
 
 impl Credentials {
     fn new(link: PathBuf, real: PathBuf) -> Self {
-        let began = Self::digest(&real);
+        let began = read_own(&real)
+            .ok()
+            .map(|bytes| crate::sign_in::digest(&bytes));
         Self { link, real, began }
     }
-    fn digest(path: &Path) -> Option<[u8; 32]> {
-        use sha2::Digest;
-        read_own(path)
-            .ok()
-            .map(|bytes| sha2::Sha256::digest(bytes).into())
-    }
     /// Carries back a sign-in the agent replaced rather than wrote into,
-    /// unless the real one was signed in again since the run began.
+    /// unless the real one was signed in again, or removed, since the run
+    /// began. One that can't go back yet, or a real one that can't be read
+    /// to tell, stays, and the next run in the conversation tries again.
     fn finish(&self) -> io::Result<()> {
         let metadata = match std::fs::symlink_metadata(&self.link) {
             Ok(metadata) => metadata,
@@ -1038,8 +1423,20 @@ impl Credentials {
         }
         // Nothing the agent left is followed, as for the keychain's copy.
         let renewed = read_own(&self.link).unwrap_or_default();
-        if !renewed.is_empty() && Self::digest(&self.real) == self.began {
-            crate::sys::replace_history(&self.real, |file| file.write_all(&renewed))?;
+        if !renewed.is_empty() && self.began.is_some() {
+            match crate::sign_in::held_file(&self.real) {
+                crate::sign_in::Held::Is(now)
+                    if Some(now) == self.began && crate::sign_in::digest(&renewed) != now =>
+                {
+                    crate::sys::replace_history(&self.real, |file| file.write_all(&renewed))?;
+                }
+                crate::sign_in::Held::Unknown => {
+                    return Err(io::Error::other(
+                        "the sign-in on this computer couldn't be read",
+                    ));
+                }
+                _ => {}
+            }
         }
         std::fs::remove_file(&self.link)
     }
@@ -1052,10 +1449,17 @@ fn restart(reason: impl ToString) -> Applied {
 #[async_trait::async_trait]
 impl Sandbox for MacSandbox {
     fn relay(&self) -> Option<RelayEndpoint> {
-        None
+        self.spec
+            .relay
+            .as_ref()
+            .zip(self.relay.as_ref())
+            .map(|(spec, relay)| RelayEndpoint {
+                provider: spec.provider,
+                port: relay.port(),
+            })
     }
     fn relay_totals(&self) -> Option<RelayTotals> {
-        None
+        self.relay.as_ref().map(Relay::totals)
     }
     fn wrap(&self, request: WrapRequest<'_>) -> Result<Wrapped, HarnessError> {
         let mut run = self.run.lock().unwrap();
@@ -1066,6 +1470,14 @@ impl Sandbox for MacSandbox {
         run.wrapped = true;
         Ok(wrapped)
     }
+    fn own_settings_file(&self, path: &Path) -> bool {
+        self.run
+            .lock()
+            .unwrap()
+            .own
+            .as_ref()
+            .is_some_and(|own| own.holds(path))
+    }
     fn prepare(&self, _command: &mut Command) -> io::Result<()> {
         Ok(())
     }
@@ -1073,16 +1485,24 @@ impl Sandbox for MacSandbox {
         Ok(())
     }
     async fn update(&self, reach: Reach) -> Applied {
+        let mut run = self.run.lock().unwrap();
         if self.spec.offline
             && (reach.internet || reach.local_network || reach.whole_read || reach.whole_write)
         {
+            run.restart = true;
             return restart("Offline sandboxes cannot gain network or whole-computer access");
         }
         let reach = match normalize(reach) {
             Ok(reach) => reach,
-            Err(e) => return restart(e),
+            Err(e) => {
+                run.restart = true;
+                return restart(e);
+            }
         };
-        let mut run = self.run.lock().unwrap();
+        if self.relay.is_some() && (reach.whole_read || reach.whole_write) {
+            run.restart = true;
+            return restart("relay runs require explicit folder grants");
+        }
         if let Some(proxy) = &self.proxy {
             proxy.update(policy(&reach));
         }
@@ -1091,10 +1511,11 @@ impl Sandbox for MacSandbox {
         if run.restart {
             return restart("a previous change requires this turn to end");
         }
-        if run.loopback && !(reach.internet && reach.local_network) {
+        let loopback = self.relay.is_none() && reach.internet && reach.local_network;
+        if run.loopback != loopback {
             run.restart = true;
             return restart(
-                "a Mac can't take this computer's own servers back from a running program",
+                "a Mac must restart a running program to change access to this computer's own servers",
             );
         }
         if reach.read != run.reach.read
@@ -1120,12 +1541,23 @@ impl Sandbox for MacSandbox {
         Ok(())
     }
     async fn finished(&self) -> Result<(), HarnessError> {
+        if let Some(relay) = &self.relay {
+            relay.shutdown();
+        }
         let run = self.run.lock().unwrap();
         let sign_in = run
             .credentials
             .as_ref()
             .map_or(Ok(()), Credentials::finish)
             .and(run.keychain.as_ref().map_or(Ok(()), Keychain::finish));
+        // Settled: the next run has nothing to carry back. One that couldn't
+        // be put back keeps its note and its copy, and is tried again then.
+        if sign_in.is_ok()
+            && (run.credentials.is_some() || run.keychain.is_some())
+            && let Err(e) = crate::sign_in::forget(&self.spec.state)
+        {
+            tracing::warn!(error = %e, "couldn't clear the note of a limited chat's sign-in");
+        }
         if let Some(history) = &run.history {
             history.finished(run.session.as_deref()).map_err(|e| {
                 error(format!(
@@ -1135,11 +1567,15 @@ impl Sandbox for MacSandbox {
         }
         sign_in.map_err(|e| {
             error(format!(
-                "Øphio couldn't keep the agent's renewed sign-in on this computer ({e})."
+                "Øphio couldn't put the agent's renewed sign-in back on this computer yet ({e}). \
+                 It stays for this chat, and its next reply tries again."
             ))
         })
     }
     async fn connect(&self, addresses: &[SocketAddr]) -> Result<TcpStream, HarnessError> {
+        if self.relay.is_some() {
+            return Err(error("model-only runs cannot serve host connections"));
+        }
         // A Mac has one loopback, so the computer reaches the agent's server directly.
         if addresses.is_empty() || !addresses.iter().all(|a| a.ip().is_loopback()) {
             return Err(error("only the sandbox's own loopback can be reached"));
@@ -1151,6 +1587,10 @@ impl Sandbox for MacSandbox {
             .map_err(error)
     }
 }
+
+#[cfg(test)]
+#[path = "macos_relay_tests.rs"]
+mod relay_tests;
 
 #[cfg(test)]
 mod tests {
@@ -1228,6 +1668,7 @@ mod tests {
         )]);
         sandbox
             .wrap(WrapRequest {
+                disabled: &ports::Disabled::default(),
                 program: Path::new("/bin/sh"),
                 visible: &[],
                 env: &env,
@@ -1242,7 +1683,7 @@ mod tests {
         command.args(["/bin/sh", "-c", line]);
         command.envs(wrapped.env.iter().map(|(k, v)| (k, v)));
         command.current_dir(&setup.cwd);
-        let output = command.output().unwrap();
+        let output = inherit::output(&mut command).unwrap();
         // A profile the system can't read refuses everything, which would pass
         // every test here that expects a refusal.
         let said = String::from_utf8_lossy(&output.stderr);
@@ -1261,6 +1702,82 @@ mod tests {
                 String::from_utf8_lossy(&output.stderr)
             ),
         )
+    }
+
+    /// The person's own instructions and skills are read through links in the
+    /// conversation's settings folder and can't be changed through them; the
+    /// rest of their settings folder stays out of reach, and a run that can't
+    /// change files isn't shown a skill that says it does.
+    #[test]
+    fn own_instructions_and_skills_are_read_only_and_nothing_else_is_given() {
+        for writes in [false, true] {
+            let s = setup();
+            let config = s.home.join(".claude");
+            let tools = s.outside.parent().unwrap().join("tools");
+            let skill = "---\nname: s\ndescription: d\n---\n";
+            let writer = "---\nname: w\ndescription: d\nallowed-tools: Edit\n---\n";
+            for (path, text) in [
+                (config.join("CLAUDE.md"), "mine"),
+                (config.join("rules/style.md"), "rule"),
+                (config.join("skills/mine/SKILL.md"), skill),
+                (config.join("settings.json"), HIDDEN),
+                (config.join("agents/a.md"), HIDDEN),
+                (tools.join("linked/SKILL.md"), skill),
+                (tools.join("writer/SKILL.md"), writer),
+            ] {
+                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+                std::fs::write(path, text).unwrap();
+            }
+            for name in ["linked", "writer"] {
+                std::os::unix::fs::symlink(tools.join(name), config.join("skills").join(name))
+                    .unwrap();
+            }
+            let mut with_agent = spec(
+                &s,
+                Reach {
+                    write: if writes { vec![s.cwd.clone()] } else { vec![] },
+                    read: if writes { vec![] } else { vec![s.cwd.clone()] },
+                    ..reach()
+                },
+            );
+            with_agent.harness = HarnessKind::ClaudeCode;
+            let sandbox = MacSandbox::new(with_agent).unwrap();
+            let line = r#"set -u
+c="$CLAUDE_CONFIG_DIR"
+test "$(cat "$c/CLAUDE.md")" = mine || exit 11
+test "$(cat "$c/rules/style.md")" = rule || exit 12
+test -f "$c/skills/mine/SKILL.md" -a -f "$c/skills/linked/SKILL.md" || exit 13
+echo x >> "$c/CLAUDE.md" 2>/dev/null && exit 14
+echo x > "$c/skills/mine/new" 2>/dev/null && exit 15
+echo x >> "$c/skills/linked/SKILL.md" 2>/dev/null && exit 16
+test -e "$c/settings.json" -o -e "$c/agents" && exit 17
+cat "$HOME/.claude/settings.json" 2>/dev/null && exit 18
+cat "$HOME/.claude/agents/a.md" 2>/dev/null && exit 19
+if test -e "$c/skills/writer"; then echo writer shown; else echo writer hidden; fi"#;
+            let output = run_in(&sandbox, &s, line);
+            let said = format!(
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(
+                output.status.success(),
+                "writes={writes}: {:?} {said}",
+                output.status
+            );
+            assert!(!said.contains(HIDDEN), "{said}");
+            let expected = if writes {
+                "writer shown"
+            } else {
+                "writer hidden"
+            };
+            assert!(said.contains(expected), "writes={writes}: {said}");
+            assert_eq!(
+                std::fs::read_to_string(config.join("CLAUDE.md")).unwrap(),
+                "mine"
+            );
+            assert!(!config.join("skills/mine/new").exists());
+        }
     }
 
     #[test]
@@ -1426,13 +1943,14 @@ mod tests {
         )]);
         let wrapped = sandbox
             .wrap(WrapRequest {
+                disabled: &ports::Disabled::default(),
                 program: Path::new("/bin/sh"),
                 visible: &[],
                 env: &env,
                 resume: None,
             })
             .unwrap();
-        let mut child = Command::new(&wrapped.program)
+        let mut child = inherit::spawn(Command::new(&wrapped.program)
             .args(&wrapped.args)
             .args([
                 "/usr/bin/python3",
@@ -1442,7 +1960,7 @@ mod tests {
             .envs(wrapped.env.iter().map(|(k, v)| (k, v)))
             .current_dir(&s.cwd)
             .stdout(std::process::Stdio::piped())
-            .spawn()
+        )
             .unwrap();
         let mut line = String::new();
         std::io::BufRead::read_line(
@@ -1493,13 +2011,139 @@ mod tests {
     #[test]
     fn it_cannot_signal_or_inspect_programs_outside() {
         let s = setup();
-        let mut outsider = Command::new("/bin/sleep").arg("30").spawn().unwrap();
+        let mut outsider = inherit::spawn(Command::new("/bin/sleep").arg("30")).unwrap();
         let line = format!("kill -9 {}", outsider.id());
         let (ok, _) = held(&s, reach(), &line);
         assert!(!ok);
         assert!(outsider.try_wait().unwrap().is_none(), "still running");
         outsider.kill().unwrap();
         outsider.wait().unwrap();
+    }
+
+    /// Where another program of the person's runs from, which folder it is in
+    /// and what it has open can't be asked from inside, by `lsof` or by asking
+    /// the system directly; a run's own programs can still be asked about.
+    #[test]
+    fn what_another_program_is_doing_cannot_be_asked() {
+        let s = setup();
+        let marker = format!("made-up-marker-{}", std::process::id());
+        let folder = s.outside.join(&marker);
+        std::fs::create_dir(&folder).unwrap();
+        let mut outsider = inherit::spawn(
+            Command::new("/bin/sh")
+                .args(["-c", "/bin/sleep 60; :", &marker])
+                .current_dir(&folder),
+        )
+        .unwrap();
+        let pid = outsider.id();
+
+        let (_, lsof_other) = held(&s, reach(), &format!("/usr/sbin/lsof -p {pid}"));
+        let (ok, said) = held(&s, reach(), "/usr/sbin/lsof -a -d cwd -p $$");
+        assert!(ok && said.contains(&*s.cwd.to_string_lossy()), "{said}");
+
+        // This test's own program asks, inside, the way any program could.
+        let me = std::env::current_exe().unwrap();
+        let mut given = spec(&s, reach());
+        given.programs = vec![me.clone()];
+        let sandbox = MacSandbox::new(given).unwrap();
+        let output = run_in(
+            &sandbox,
+            &s,
+            &format!(
+                "OPHIO_ASK_ABOUT={pid} {} --exact macos::tests::ask_about_a_program --nocapture --test-threads=1",
+                sh_word(&me.to_string_lossy())
+            ),
+        );
+        outsider.kill().unwrap();
+        outsider.wait().unwrap();
+        let said = String::from_utf8_lossy(&output.stdout);
+        assert!(!lsof_other.contains(&marker), "{lsof_other}");
+        for answer in [
+            "other path refused",
+            "other name refused",
+            "other folder refused",
+            "other files refused",
+            "own path given",
+            "own name given",
+            "own folder given",
+            "own files given",
+            "own command line given",
+        ] {
+            assert!(said.contains(answer), "{answer}: {said}");
+        }
+    }
+
+    /// Run inside by the test above, as its own program: says what the system
+    /// answers about the program it is told of and about one it starts itself.
+    /// Does nothing when run as a test of its own.
+    #[test]
+    #[allow(unsafe_code)]
+    fn ask_about_a_program() {
+        let Ok(other) = std::env::var("OPHIO_ASK_ABOUT") else {
+            return;
+        };
+        let other: i32 = other.parse().unwrap();
+        let mut own = inherit::spawn(Command::new("/bin/sleep").arg("5")).unwrap();
+        let own_pid = own.id() as i32;
+        let mut buffer = vec![0_u8; 64 * 1024];
+        let size = buffer.len();
+        let mut ask = |pid: i32, what: &str| -> bool {
+            let pointer = buffer.as_mut_ptr().cast();
+            // SAFETY: each call writes at most `size` bytes into the buffer.
+            unsafe {
+                match what {
+                    // A bigger buffer is refused, whatever the program.
+                    "path" => {
+                        libc::proc_pidpath(pid, pointer, libc::PROC_PIDPATHINFO_MAXSIZE as u32) > 0
+                    }
+                    "name" => libc::proc_name(pid, pointer, size as u32) > 0,
+                    "folder" => {
+                        libc::proc_pidinfo(
+                            pid,
+                            libc::PROC_PIDVNODEPATHINFO,
+                            0,
+                            pointer,
+                            size as i32,
+                        ) > 0
+                    }
+                    "files" => {
+                        libc::proc_pidinfo(pid, libc::PROC_PIDLISTFDS, 0, pointer, size as i32) > 0
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        };
+        let say = |who: &str, what: &str, given: bool| {
+            println!("{who} {what} {}", if given { "given" } else { "refused" });
+        };
+        for what in ["path", "name", "folder", "files"] {
+            say("other", what, ask(other, what));
+            say("own", what, ask(own_pid, what));
+        }
+        let mut name = [
+            libc::CTL_KERN,
+            libc::KERN_PROCARGS2,
+            std::process::id() as i32,
+        ];
+        let mut length = buffer.len();
+        // SAFETY: `length` is the buffer's size, which the call may not exceed.
+        let read = unsafe {
+            libc::sysctl(
+                name.as_mut_ptr(),
+                3,
+                buffer.as_mut_ptr().cast(),
+                &raw mut length,
+                std::ptr::null_mut(),
+                0,
+            )
+        } == 0;
+        let mine = read
+            && buffer[..length]
+                .windows(b"ask_about_a_program".len())
+                .any(|w| w == b"ask_about_a_program");
+        say("own", "command line", mine);
+        own.kill().unwrap();
+        own.wait().unwrap();
     }
 
     #[test]
@@ -1592,6 +2236,7 @@ mod tests {
         assert!(
             sandbox
                 .wrap(WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: Path::new("/bin/sh"),
                     visible: &[],
                     env: &env,
@@ -1602,7 +2247,7 @@ mod tests {
     }
 
     #[test]
-    fn a_relay_run_is_refused_and_an_offline_one_has_no_proxy() {
+    fn an_offline_run_has_no_proxy() {
         let s = setup();
         let mut offline = spec(&s, reach());
         offline.offline = true;
@@ -1613,6 +2258,7 @@ mod tests {
         )]);
         let wrapped = sandbox
             .wrap(WrapRequest {
+                disabled: &ports::Disabled::default(),
                 program: Path::new("/bin/sh"),
                 visible: &[],
                 env: &env,
@@ -1649,21 +2295,23 @@ mod tests {
             )]);
             let wrapped = sandbox
                 .wrap(WrapRequest {
+                    disabled: &ports::Disabled::default(),
                     program: &program,
                     visible: &[],
                     env: &env,
                     resume: None,
                 })
                 .unwrap();
-            let output = Command::new(&wrapped.program)
-                .args(&wrapped.args)
-                .arg(&program)
-                .arg("--version")
-                .envs(wrapped.env.iter().map(|(k, v)| (k, v)))
-                .env("PATH", "/opt/homebrew/bin:/usr/bin:/bin")
-                .current_dir(&s.cwd)
-                .output()
-                .unwrap();
+            let output = inherit::output(
+                Command::new(&wrapped.program)
+                    .args(&wrapped.args)
+                    .arg(&program)
+                    .arg("--version")
+                    .envs(wrapped.env.iter().map(|(k, v)| (k, v)))
+                    .env("PATH", "/opt/homebrew/bin:/usr/bin:/bin")
+                    .current_dir(&s.cwd),
+            )
+            .unwrap();
             assert!(
                 output.status.success(),
                 "{name}: {}{}",
@@ -1696,6 +2344,7 @@ mod tests {
         )]);
         let wrapped = sandbox
             .wrap(WrapRequest {
+                disabled: &ports::Disabled::default(),
                 program: &program,
                 visible: &[],
                 env: &env,
@@ -1708,23 +2357,24 @@ mod tests {
             "{:?}",
             wrapped.env
         );
-        let output = Command::new(&wrapped.program)
-            .args(&wrapped.args)
-            .arg(&program)
-            .args([
-                "--print",
-                "--output-format",
-                "stream-json",
-                "--input-format",
-                "stream-json",
-                "--verbose",
-            ])
-            .envs(wrapped.env.iter().map(|(k, v)| (k, v)))
-            .env("PATH", "/opt/homebrew/bin:/usr/bin:/bin")
-            .current_dir(&s.cwd)
-            .stdin(std::process::Stdio::null())
-            .output()
-            .unwrap();
+        let output = inherit::output(
+            Command::new(&wrapped.program)
+                .args(&wrapped.args)
+                .arg(&program)
+                .args([
+                    "--print",
+                    "--output-format",
+                    "stream-json",
+                    "--input-format",
+                    "stream-json",
+                    "--verbose",
+                ])
+                .envs(wrapped.env.iter().map(|(k, v)| (k, v)))
+                .env("PATH", "/opt/homebrew/bin:/usr/bin:/bin")
+                .current_dir(&s.cwd)
+                .stdin(std::process::Stdio::null()),
+        )
+        .unwrap();
         assert!(
             output.status.success(),
             "{}{}",
@@ -1842,12 +2492,14 @@ mod tests {
         let secret = s.outside.join("secret.txt");
         let file = s.state.join(".credentials.json");
         std::os::unix::fs::symlink(&secret, &file).unwrap();
-        let service = format!("ophio-sandbox-planted-{}", std::process::id());
+        let keychain = TestKeychain::new();
+        let service = "ophio-sandbox-planted";
+        assert!(keychain.set(service, "given"));
         Keychain {
-            service: service.clone(),
-            account: "ophio-test".into(),
+            service: service.into(),
+            account: user(),
             file: file.clone(),
-            given: b"given".to_vec(),
+            given: crate::sign_in::digest(b"given"),
         }
         .finish()
         .unwrap();
@@ -1855,15 +2507,8 @@ mod tests {
             !file.is_symlink() && !file.exists(),
             "the link is taken away"
         );
-        let found = Command::new("/usr/bin/security")
-            .args(["find-generic-password", "-s", &service, "-w"])
-            .output()
-            .unwrap();
-        assert!(
-            !found.status.success(),
-            "nothing was stored: {}",
-            String::from_utf8_lossy(&found.stdout)
-        );
+        assert_eq!(keychain.holds(service), Some(b"given".to_vec()));
+        drop(keychain);
 
         // The same for a sign-in file replaced by a second name for the secret.
         let real_dir = s.home.join(".codex");
@@ -1878,6 +2523,126 @@ mod tests {
         assert_eq!(std::fs::read_to_string(&real).unwrap(), "kept");
         assert!(!link.exists());
         assert_eq!(std::fs::read_to_string(&secret).unwrap(), HIDDEN);
+    }
+
+    /// Øphio stopped mid-run after the agent renewed its sign-in: the next
+    /// run in the conversation carries it back and is given it, unless the
+    /// person signed in again meanwhile. A run that ends leaves no note.
+    #[test]
+    fn a_sign_in_renewed_in_a_run_ophio_did_not_finish_goes_back_at_the_next_start() {
+        let s = setup();
+        let config = s.home.join(".codex");
+        std::fs::create_dir(&config).unwrap();
+        let real = config.join("auth.json");
+        std::fs::write(&real, "given").unwrap();
+        let place = s.state.join("native/auth.json");
+        let note = s.state.join(crate::sign_in::RECORD);
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let first = MacSandbox::new(spec(&s, reach())).unwrap();
+        wrapped_shell(&first, &s);
+        assert_eq!(std::fs::read_link(&place).unwrap(), real);
+        assert!(note.exists());
+        // The agent replaces its sign-in, and Øphio stops before the run ends.
+        std::fs::remove_file(&place).unwrap();
+        std::fs::write(&place, "renewed").unwrap();
+        drop(first);
+
+        let second = MacSandbox::new(spec(&s, reach())).unwrap();
+        wrapped_shell(&second, &s);
+        assert_eq!(std::fs::read_to_string(&real).unwrap(), "renewed");
+        assert_eq!(std::fs::read_link(&place).unwrap(), real);
+        runtime.block_on(second.finished()).unwrap();
+        assert!(!note.exists(), "a finished run leaves no note");
+
+        // Signed in again while an unfinished run's renewal waited: theirs stays.
+        let third = MacSandbox::new(spec(&s, reach())).unwrap();
+        wrapped_shell(&third, &s);
+        std::fs::remove_file(&place).unwrap();
+        std::fs::write(&place, "renewed again").unwrap();
+        drop(third);
+        std::fs::write(&real, "signed in again").unwrap();
+        let fourth = MacSandbox::new(spec(&s, reach())).unwrap();
+        wrapped_shell(&fourth, &s);
+        assert_eq!(std::fs::read_to_string(&real).unwrap(), "signed in again");
+        assert_eq!(std::fs::read_link(&place).unwrap(), real);
+        runtime.block_on(fourth.finished()).unwrap();
+        assert!(!note.exists());
+    }
+
+    /// The person signed out (`codex logout` removes the file) while a run's
+    /// renewal waited: it doesn't keep the agent signed in.
+    #[test]
+    fn a_sign_in_file_removed_since_takes_an_unfinished_runs_renewal_with_it() {
+        let s = setup();
+        let config = s.home.join(".codex");
+        std::fs::create_dir(&config).unwrap();
+        let real = config.join("auth.json");
+        std::fs::write(&real, "given").unwrap();
+        let place = s.state.join("native/auth.json");
+        let note = s.state.join(crate::sign_in::RECORD);
+
+        let first = MacSandbox::new(spec(&s, reach())).unwrap();
+        wrapped_shell(&first, &s);
+        std::fs::remove_file(&place).unwrap();
+        std::fs::write(&place, "renewed").unwrap();
+        drop(first);
+        std::fs::remove_file(&real).unwrap();
+
+        let second = MacSandbox::new(spec(&s, reach())).unwrap();
+        wrapped_shell(&second, &s);
+        assert!(
+            std::fs::symlink_metadata(&place).is_err(),
+            "nothing is left"
+        );
+        assert!(!real.exists(), "the sign-out stays");
+        assert!(!note.exists());
+    }
+
+    /// The renewal of an unfinished run can't go back yet (here the person's
+    /// settings folder won't take a file): the next run starts with it as its
+    /// own sign-in, keeps the note, and its end puts it back.
+    #[test]
+    fn a_sign_in_file_that_cant_go_back_yet_is_the_next_runs_own() {
+        use std::os::unix::fs::PermissionsExt;
+        let s = setup();
+        let config = s.home.join(".codex");
+        std::fs::create_dir(&config).unwrap();
+        let real = config.join("auth.json");
+        std::fs::write(&real, "given").unwrap();
+        let place = s.state.join("native/auth.json");
+        let note = s.state.join(crate::sign_in::RECORD);
+        let noted = || std::fs::read(&note).unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let first = MacSandbox::new(spec(&s, reach())).unwrap();
+        wrapped_shell(&first, &s);
+        let before = noted();
+        std::fs::remove_file(&place).unwrap();
+        std::fs::write(&place, "renewed").unwrap();
+        drop(first);
+
+        let mode = |m| std::fs::set_permissions(&config, std::fs::Permissions::from_mode(m));
+        mode(0o555).unwrap();
+        let second = MacSandbox::new(spec(&s, reach())).unwrap();
+        let wrapped = wrapped_shell(&second, &s);
+        let read = run_wrapped(&wrapped, &s, "cat \"$CODEX_HOME/auth.json\"");
+        let unchanged = std::fs::read_to_string(&real).unwrap();
+        let ended = runtime.block_on(second.finished());
+        let kept = std::fs::read_to_string(&place);
+        mode(0o755).unwrap();
+        assert_eq!(String::from_utf8_lossy(&read.stdout), "renewed");
+        assert_eq!(unchanged, "given");
+        assert!(ended.is_err(), "the end tries again and says it couldn't");
+        assert_eq!(kept.unwrap(), "renewed", "kept for the next try");
+        assert_eq!(noted(), before, "the note is as it was");
+
+        let third = MacSandbox::new(spec(&s, reach())).unwrap();
+        wrapped_shell(&third, &s);
+        assert_eq!(std::fs::read_to_string(&real).unwrap(), "renewed");
+        assert_eq!(std::fs::read_link(&place).unwrap(), real);
+        runtime.block_on(third.finished()).unwrap();
+        assert!(!note.exists());
     }
 
     /// Asking something outside the sandbox to do the work is the way out that
@@ -1902,9 +2667,7 @@ mod tests {
             let sandbox = MacSandbox::new(spec(&s, reach())).unwrap();
             let output = run_in(&sandbox, &s, line);
             std::thread::sleep(std::time::Duration::from_secs(2));
-            let _ = Command::new("/bin/launchctl")
-                .args(["remove", &label])
-                .output();
+            let _ = inherit::output(Command::new("/bin/launchctl").args(["remove", &label]));
             assert!(
                 !left.exists(),
                 "{line}: {}{}",
@@ -2205,148 +2968,444 @@ mod tests {
         }
     }
 
-    #[test]
-    fn a_keychain_sign_in_is_copied_for_the_run_and_a_renewal_goes_back() {
-        let s = setup();
-        let service = format!("ophio-sandbox-test-{}", std::process::id());
-        let account = "ophio-test";
-        let added = Command::new("/usr/bin/security")
-            .args([
+    /// One test with a keychain of its own at a time: each puts the keychain
+    /// search list back as it found it.
+    static KEYCHAINS: Mutex<()> = Mutex::new(());
+
+    /// A keychain made for one test, with a random password, that [`Keychain`]
+    /// uses on the test's thread in place of the person's own. Over SSH the
+    /// login keychain takes nothing, and this one does. It is deleted
+    /// afterwards, and the search list left exactly as it was found.
+    struct TestKeychain {
+        path: PathBuf,
+        dir: tempfile::TempDir,
+        password: String,
+        searched: String,
+        _one: std::sync::MutexGuard<'static, ()>,
+    }
+
+    fn security(args: &[&str]) -> std::process::Output {
+        inherit::output(
+            Command::new("/usr/bin/security")
+                .args(args)
+                .stdin(std::process::Stdio::null()),
+        )
+        .unwrap()
+    }
+
+    /// A line for `security`'s own prompt, so a password isn't an argument.
+    fn security_line(line: &str) -> std::process::Output {
+        let mut child = inherit::spawn(
+            Command::new("/usr/bin/security")
+                .arg("-i")
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped()),
+        )
+        .unwrap();
+        writeln!(child.stdin.take().unwrap(), "{line}").unwrap();
+        child.wait_with_output().unwrap()
+    }
+
+    fn search_list() -> String {
+        String::from_utf8(security(&["list-keychains", "-d", "user"]).stdout).unwrap()
+    }
+
+    fn put_back(list: &str) {
+        let paths: Vec<&str> = list.lines().map(|l| l.trim().trim_matches('"')).collect();
+        let mut args = vec!["list-keychains", "-d", "user", "-s"];
+        args.extend(paths.iter().filter(|p| !p.is_empty()));
+        assert!(security(&args).status.success());
+    }
+
+    fn user() -> String {
+        std::env::var("USER").unwrap()
+    }
+
+    impl TestKeychain {
+        fn new() -> Self {
+            let one = KEYCHAINS.lock().unwrap_or_else(|e| e.into_inner());
+            let searched = search_list();
+            let dir = tempfile::Builder::new()
+                .prefix("kc")
+                .tempdir_in("/private/tmp")
+                .unwrap();
+            let path = dir.path().canonicalize().unwrap().join("test.keychain-db");
+            let mut random = [0u8; 24];
+            std::io::Read::read_exact(
+                &mut std::fs::File::open("/dev/urandom").unwrap(),
+                &mut random,
+            )
+            .unwrap();
+            let password: String = random.iter().map(|b| format!("{b:02x}")).collect();
+            let made = security_line(&format!(
+                "create-keychain -p {} {}",
+                sh_word(&password),
+                sh_word(&path.to_string_lossy())
+            ));
+            // Made, it was added to the search list: taken off again at once.
+            put_back(&searched);
+            assert!(
+                made.status.success() && path.exists(),
+                "a keychain couldn't be made: {}",
+                String::from_utf8_lossy(&made.stderr)
+            );
+            let keychain = Self {
+                path,
+                dir,
+                password,
+                searched,
+                _one: one,
+            };
+            keychain.unlock();
+            TEST_KEYCHAIN.with(|k| *k.borrow_mut() = Some(keychain.path.clone()));
+            keychain
+        }
+
+        /// Stores a made-up value for `service`, under the account the copy names.
+        fn set(&self, service: &str, value: &str) -> bool {
+            security(&[
                 "add-generic-password",
                 "-U",
                 "-a",
-                account,
+                &user(),
                 "-s",
-                &service,
+                service,
                 "-w",
-                "given",
+                value,
+                &self.path.to_string_lossy(),
             ])
-            .output()
-            .unwrap();
-        if !added.status.success() {
-            // No login keychain, as for a session with none unlocked.
-            eprintln!("skipped: {}", String::from_utf8_lossy(&added.stderr));
-            return;
+            .status
+            .success()
         }
+
+        fn holds(&self, service: &str) -> Option<Vec<u8>> {
+            match Keychain::read(service) {
+                Entry::Holds(held) => Some(held),
+                Entry::Missing => None,
+                Entry::Unreadable(e) => panic!("{e}"),
+            }
+        }
+
+        fn lock(&self) {
+            assert!(
+                security(&["lock-keychain", &self.path.to_string_lossy()])
+                    .status
+                    .success()
+            );
+        }
+
+        fn unlock(&self) {
+            let unlocked = security_line(&format!(
+                "unlock-keychain -p {} {}",
+                sh_word(&self.password),
+                sh_word(&self.path.to_string_lossy())
+            ));
+            assert!(unlocked.status.success());
+        }
+
+        /// Its file and folder can be read and not written.
+        fn read_only(&self, read_only: bool) {
+            use std::os::unix::fs::PermissionsExt;
+            let (file, folder) = if read_only {
+                (0o444, 0o555)
+            } else {
+                (0o644, 0o755)
+            };
+            let set = |path: &Path, mode| {
+                std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode)).unwrap()
+            };
+            set(self.dir.path(), folder);
+            set(&self.path, file);
+        }
+    }
+
+    impl Drop for TestKeychain {
+        fn drop(&mut self) {
+            TEST_KEYCHAIN.with(|k| *k.borrow_mut() = None);
+            self.read_only(false);
+            let deleted = security(&["delete-keychain", &self.path.to_string_lossy()]);
+            put_back(&self.searched);
+            let after = search_list();
+            eprintln!(
+                "test keychain deleted: {}; search list before: {}; after: {}",
+                deleted.status.success(),
+                self.searched
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" "),
+                after.split_whitespace().collect::<Vec<_>>().join(" ")
+            );
+            if !std::thread::panicking() {
+                assert!(deleted.status.success());
+                assert!(!self.path.exists());
+                assert_eq!(after, self.searched);
+            }
+        }
+    }
+
+    /// The copy of a keychain sign-in a run was given.
+    fn given(service: &str, file: &Path, value: &[u8]) -> Keychain {
+        Keychain {
+            service: service.into(),
+            account: user(),
+            file: file.to_owned(),
+            given: crate::sign_in::digest(value),
+        }
+    }
+
+    #[test]
+    fn a_keychain_sign_in_is_copied_for_the_run_and_a_renewal_goes_back() {
+        let keychain = TestKeychain::new();
+        let s = setup();
+        let service = "ophio-sandbox-test";
+        assert!(keychain.set(service, "given"));
         let file = s.state.join(".credentials.json");
         std::fs::write(&file, "renewed").unwrap();
-        let keychain = Keychain {
-            service: service.clone(),
-            account: account.into(),
-            file: file.clone(),
-            given: b"given".to_vec(),
-        };
-        keychain.finish().unwrap();
+        given(service, &file, b"given").finish().unwrap();
         assert!(!file.exists());
-        let found = Command::new("/usr/bin/security")
-            .args(["find-generic-password", "-s", &service, "-w"])
-            .output()
-            .unwrap();
-        let _ = Command::new("/usr/bin/security")
-            .args(["delete-generic-password", "-s", &service])
-            .output();
-        assert_eq!(String::from_utf8_lossy(&found.stdout).trim(), "renewed");
+        assert_eq!(keychain.holds(service), Some(b"renewed".to_vec()));
+    }
+
+    /// Øphio stopped mid-run after Claude Code renewed the copy of its keychain
+    /// sign-in: the next run puts it in the keychain and is given what was put
+    /// there, unless the keychain was signed in again meanwhile.
+    #[test]
+    fn a_keychain_renewal_left_by_an_unfinished_run_goes_back_at_the_next_start() {
+        let keychain = TestKeychain::new();
+        let s = setup();
+        let named = s.state.join("claude-config").to_string_lossy().into_owned();
+        let service = Keychain::service(Some(&named));
+        assert!(keychain.set(&service, "given"));
+        let local = s.state.join("native");
+        std::fs::create_dir(&local).unwrap();
+        let file = local.join(".credentials.json");
+        let noted = |value: &[u8]| {
+            crate::sign_in::remember(
+                &s.state,
+                Kind::Keychain,
+                Some(crate::sign_in::digest(value)),
+            )
+            .unwrap()
+        };
+        let digest = crate::sign_in::digest;
+
+        noted(b"given");
+        std::fs::write(&file, "renewed").unwrap();
+        let (run, note) = Keychain::copy(Some(&named), &s.home, &local, &s.state).unwrap();
+        assert_eq!(keychain.holds(&service), Some(b"renewed".to_vec()));
+        assert_eq!(std::fs::read(&file).unwrap(), b"renewed");
+        assert_eq!(run.unwrap().given, digest(b"renewed"));
+        assert_eq!(note, Noted::Given(Kind::Keychain, Some(digest(b"renewed"))));
+
+        // Signed in again in between: theirs stays and is what the run gets.
+        assert!(keychain.set(&service, "signed in again"));
+        noted(b"renewed");
+        std::fs::write(&file, "renewed again").unwrap();
+        let (run, _) = Keychain::copy(Some(&named), &s.home, &local, &s.state).unwrap();
+        assert_eq!(keychain.holds(&service), Some(b"signed in again".to_vec()));
+        assert_eq!(std::fs::read(&file).unwrap(), b"signed in again");
+        assert_eq!(run.unwrap().given, digest(b"signed in again"));
+    }
+
+    /// Signed out of the keychain (no entry, `security` exits 44) while a
+    /// run's renewal waited: it doesn't keep the agent signed in.
+    #[test]
+    fn a_keychain_sign_out_drops_what_an_unfinished_run_left() {
+        let _keychain = TestKeychain::new();
+        let s = setup();
+        let named = s.state.join("claude-config").to_string_lossy().into_owned();
+        let local = s.state.join("native");
+        std::fs::create_dir(&local).unwrap();
+        let file = local.join(".credentials.json");
+        crate::sign_in::remember(
+            &s.state,
+            Kind::Keychain,
+            Some(crate::sign_in::digest(b"given")),
+        )
+        .unwrap();
+        std::fs::write(&file, "renewed").unwrap();
+        let (run, note) = Keychain::copy(Some(&named), &s.home, &local, &s.state).unwrap();
+        assert!(run.is_none());
+        assert_eq!(note, Noted::Nothing);
+        assert!(!file.exists());
+    }
+
+    /// A locked keychain can't be read, which says nothing about a sign-out:
+    /// as a run starts, an unfinished run's renewal stays as its sign-in with
+    /// the note as it was; as one ends, its copy stays. Each goes back once
+    /// the keychain can be read.
+    #[test]
+    fn a_keychain_that_cant_be_read_is_not_taken_for_a_sign_out() {
+        let keychain = TestKeychain::new();
+        let s = setup();
+        let named = s.state.join("claude-config").to_string_lossy().into_owned();
+        let service = Keychain::service(Some(&named));
+        assert!(keychain.set(&service, "given"));
+        let local = s.state.join("native");
+        std::fs::create_dir(&local).unwrap();
+        let file = local.join(".credentials.json");
+        let note = s.state.join(crate::sign_in::RECORD);
+        crate::sign_in::remember(
+            &s.state,
+            Kind::Keychain,
+            Some(crate::sign_in::digest(b"given")),
+        )
+        .unwrap();
+        let before = std::fs::read(&note).unwrap();
+        std::fs::write(&file, "renewed").unwrap();
+
+        // At the start.
+        keychain.lock();
+        assert!(matches!(Keychain::read(&service), Entry::Unreadable(_)));
+        let (run, noted) = Keychain::copy(Some(&named), &s.home, &local, &s.state).unwrap();
+        let run = run.expect("the renewal is this run's sign-in");
+        assert_eq!(noted, Noted::Unchanged);
+        assert_eq!(run.given, crate::sign_in::digest(b"given"));
+        assert_eq!(std::fs::read(&file).unwrap(), b"renewed");
+        assert_eq!(std::fs::read(&note).unwrap(), before);
+
+        // At the end, renewed again and still locked.
+        std::fs::write(&file, "renewed again").unwrap();
+        assert!(run.finish().is_err());
+        assert_eq!(std::fs::read(&file).unwrap(), b"renewed again");
+        keychain.unlock();
+        assert_eq!(keychain.holds(&service), Some(b"given".to_vec()));
+        run.finish().unwrap();
+        assert_eq!(keychain.holds(&service), Some(b"renewed again".to_vec()));
+        assert!(!file.exists());
+
+        // Locked with nothing left: nothing to give, and the note stays.
+        keychain.lock();
+        let (run, noted) = Keychain::copy(Some(&named), &s.home, &local, &s.state).unwrap();
+        assert!(run.is_none());
+        assert_eq!(noted, Noted::Unchanged);
+        assert!(note.exists());
+    }
+
+    /// A keychain that won't take the renewal (here it can be read but not
+    /// written): the end of the run keeps its copy; the next run starts with
+    /// it as its own sign-in rather than refusing, and its end puts it back.
+    #[test]
+    fn a_keychain_that_wont_take_a_renewal_keeps_it_for_the_next_try() {
+        let keychain = TestKeychain::new();
+        let s = setup();
+        let named = s.state.join("claude-config").to_string_lossy().into_owned();
+        let service = Keychain::service(Some(&named));
+        assert!(keychain.set(&service, "given"));
+        let local = s.state.join("native");
+        std::fs::create_dir(&local).unwrap();
+        let file = local.join(".credentials.json");
+        crate::sign_in::remember(
+            &s.state,
+            Kind::Keychain,
+            Some(crate::sign_in::digest(b"given")),
+        )
+        .unwrap();
+        std::fs::write(&file, "renewed").unwrap();
+
+        keychain.read_only(true);
+        // The end of a run.
+        let ended = given(&service, &file, b"given").finish();
+        assert!(ended.is_err());
+        assert_eq!(std::fs::read(&file).unwrap(), b"renewed");
+        assert_eq!(keychain.holds(&service), Some(b"given".to_vec()));
+        // The next start.
+        let (run, noted) = Keychain::copy(Some(&named), &s.home, &local, &s.state).unwrap();
+        let run = run.expect("the run starts with the renewal");
+        assert_eq!(noted, Noted::Unchanged);
+        assert_eq!(std::fs::read(&file).unwrap(), b"renewed");
+        assert_eq!(keychain.holds(&service), Some(b"given".to_vec()));
+        keychain.read_only(false);
+        run.finish().unwrap();
+        assert_eq!(keychain.holds(&service), Some(b"renewed".to_vec()));
+        assert!(!file.exists());
+    }
+
+    /// `security`'s prompt cuts a line at 4,096 bytes: a sign-in too long for
+    /// it is never stored cut, and stays with the run instead. Made-up values.
+    #[test]
+    fn a_long_sign_in_is_never_stored_cut() {
+        let keychain = TestKeychain::new();
+        let s = setup();
+        let service = "ophio-sandbox-long";
+        assert!(keychain.set(service, "given"));
+        let file = s.state.join(".credentials.json");
+        for size in [3 << 10, 6 << 10] {
+            let long = vec![b'x'; size];
+            assert!(Keychain::put(&user(), service, &long).is_err(), "{size}");
+            std::fs::write(&file, &long).unwrap();
+            assert!(given(service, &file, b"given").finish().is_err(), "{size}");
+            assert_eq!(keychain.holds(service), Some(b"given".to_vec()), "{size}");
+            assert_eq!(std::fs::read(&file).unwrap().len(), size);
+        }
+        // The longest that fits goes in whole, and one byte more doesn't.
+        let overhead = format!(
+            "add-generic-password -U -a {} -s {} -X  {}\n",
+            sh_word(&user()),
+            sh_word(service),
+            sh_word(&keychain.path.to_string_lossy())
+        )
+        .len();
+        let most = (LINE_MOST - overhead) / 2;
+        let fits: Vec<u8> = (0..most).map(|i| b'a' + (i % 26) as u8).collect();
+        Keychain::put(&user(), service, &fits).unwrap();
+        assert_eq!(keychain.holds(service), Some(fits.clone()));
+        let over = [fits.as_slice(), b"z"].concat();
+        assert!(Keychain::put(&user(), service, &over).is_err());
+        assert_eq!(keychain.holds(service), Some(fits));
+        eprintln!("the longest sign-in carried back here: {most} bytes");
+        // Why: a longer line is cut, and what is past the cut runs as a
+        // command of its own (a made-up value; nothing is stored).
+        let cut = security_line(&format!(
+            "add-generic-password -U -a {} -s {} -X {} {}",
+            sh_word(&user()),
+            sh_word("ophio-sandbox-cut"),
+            "61".repeat(2100),
+            sh_word(&keychain.path.to_string_lossy())
+        ));
+        let said = String::from_utf8_lossy(&cut.stderr);
+        assert!(said.contains("unknown command"), "{said}");
     }
 
     /// Signed in again while a run went, from the phone say: the run's older
     /// sign-in, renewed or not, doesn't go back over the new one.
     #[test]
     fn a_sign_in_made_during_a_run_stays_in_the_keychain() {
+        let keychain = TestKeychain::new();
         let s = setup();
-        let service = format!("ophio-sandbox-newer-{}", std::process::id());
-        let account = "ophio-test";
-        let set = |value: &str| {
-            Command::new("/usr/bin/security")
-                .args([
-                    "add-generic-password",
-                    "-U",
-                    "-a",
-                    account,
-                    "-s",
-                    &service,
-                    "-w",
-                    value,
-                ])
-                .output()
-                .unwrap()
-        };
-        let added = set("given");
-        if !added.status.success() {
-            eprintln!("skipped: {}", String::from_utf8_lossy(&added.stderr));
-            return;
-        }
+        let service = "ophio-sandbox-newer";
+        assert!(keychain.set(service, "given"));
         let file = s.state.join(".credentials.json");
         std::fs::write(&file, "the run's renewal").unwrap();
-        let keychain = Keychain {
-            service: service.clone(),
-            account: account.into(),
-            file: file.clone(),
-            given: b"given".to_vec(),
-        };
-        assert!(set("signed in again").status.success());
-        keychain.finish().unwrap();
+        assert!(keychain.set(service, "signed in again"));
+        given(service, &file, b"given").finish().unwrap();
         assert!(!file.exists());
-        let found = Command::new("/usr/bin/security")
-            .args(["find-generic-password", "-s", &service, "-w"])
-            .output()
-            .unwrap();
-        let _ = Command::new("/usr/bin/security")
-            .args(["delete-generic-password", "-s", &service])
-            .output();
-        assert_eq!(
-            String::from_utf8_lossy(&found.stdout).trim(),
-            "signed in again"
-        );
+        assert_eq!(keychain.holds(service), Some(b"signed in again".to_vec()));
     }
 
     /// Signed out while a run went: its sign-in doesn't come back.
     #[test]
     fn a_sign_out_during_a_run_is_not_undone() {
+        let keychain = TestKeychain::new();
         let s = setup();
-        let service = format!("ophio-sandbox-gone-{}", std::process::id());
-        let added = Command::new("/usr/bin/security")
-            .args([
-                "add-generic-password",
-                "-U",
-                "-a",
-                "ophio-test",
-                "-s",
-                &service,
-                "-w",
-                "given",
-            ])
-            .output()
-            .unwrap();
-        if !added.status.success() {
-            eprintln!("skipped: {}", String::from_utf8_lossy(&added.stderr));
-            return;
-        }
+        let service = "ophio-sandbox-gone";
+        assert!(keychain.set(service, "given"));
         let file = s.state.join(".credentials.json");
         std::fs::write(&file, "the run's renewal").unwrap();
-        let keychain = Keychain {
-            service: service.clone(),
-            account: "ophio-test".into(),
-            file: file.clone(),
-            given: b"given".to_vec(),
-        };
         assert!(
-            Command::new("/usr/bin/security")
-                .args(["delete-generic-password", "-s", &service])
-                .output()
-                .unwrap()
-                .status
-                .success()
+            security(&[
+                "delete-generic-password",
+                "-s",
+                service,
+                &keychain.path.to_string_lossy()
+            ])
+            .status
+            .success()
         );
-        keychain.finish().unwrap();
+        given(service, &file, b"given").finish().unwrap();
         assert!(!file.exists());
-        let found = Command::new("/usr/bin/security")
-            .args(["find-generic-password", "-s", &service, "-w"])
-            .output()
-            .unwrap();
-        let _ = Command::new("/usr/bin/security")
-            .args(["delete-generic-password", "-s", &service])
-            .output();
-        assert!(!found.status.success(), "the sign-out stays");
+        assert_eq!(keychain.holds(service), None);
     }
 
     #[test]

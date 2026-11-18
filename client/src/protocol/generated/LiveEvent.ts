@@ -8,4 +8,8 @@ import type { TaskId } from "./TaskId";
  * Tagged with `kind`, not `type`: it is carried inside
  * `ServerFrame::Live`, whose own tag is `type`.
  */
-export type LiveEvent = { "kind": "agent_text_delta", task_id: TaskId, run_id: RunId, message_key: string, text: string, } | { "kind": "activity_status", task_id: TaskId, run_id: RunId, text: string, };
+export type LiveEvent = { "kind": "agent_text_delta", task_id: TaskId, run_id: RunId, message_key: string, text: string, 
+/**
+ * UTF-8 byte position in this message incarnation; absent on older hosts.
+ */
+text_offset?: number, } | { "kind": "activity_status", task_id: TaskId, run_id: RunId, text: string, };

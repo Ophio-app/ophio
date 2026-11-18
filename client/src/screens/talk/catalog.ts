@@ -15,7 +15,8 @@ const title = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
  * both are held to the shared model-names fixture.
  */
 export function modelName(id: string, harness?: HarnessInfo, agent?: string): string {
-  const name = harness?.models.find((m) => m.id === id)?.label ?? claudeName(id) ?? gptName(id) ?? id;
+  const label = harness?.models.find((m) => m.id === id)?.label;
+  const name = (label && label !== id ? label : undefined) ?? claudeName(id) ?? gptName(id) ?? id;
   return agent === undefined ? name : besideAgent(agent, name);
 }
 function besideAgent(agent: string, name: string): string {

@@ -380,9 +380,8 @@ async fn stop_waiting_invalidates_a_delivery_batch_already_read() {
         })
         .unwrap();
     let held = f.hub.inner.runs.lock().await;
-    let hub = f.hub.clone();
-    let delivery = hub.pass_on_followups();
-    tokio::pin!(delivery);
+    // Awaiting this owned future releases its borrow before fixture cleanup.
+    let mut delivery = Box::pin(f.hub.pass_on_followups());
     tokio::select! {
         biased;
         result = &mut delivery => panic!("delivery must be blocked: {result:?}"),
@@ -443,6 +442,8 @@ async fn cancelled_reply_cannot_be_admitted_after_a_worker_checked_it() {
     assert_eq!(stop.status, ReceiptStatus::Accepted);
     for command in [
         Command::ResumeTask {
+            observed_reply: None,
+            harness: None,
             task_id: caller,
             text: Some(reply.text.clone()),
             bundle: None,
@@ -485,9 +486,8 @@ async fn stop_cancels_a_reply_waiting_to_reach_the_running_agent() {
     let (_, helper_run) = asked(&f, caller, run_id, "Review my change").await;
     answers(&f, helper_run, "Looks right.").await;
     let held = f.hub.inner.runs.lock().await;
-    let hub = f.hub.clone();
-    let delivery = hub.pass_on_followups();
-    tokio::pin!(delivery);
+    // Awaiting this owned future releases its borrow before fixture cleanup.
+    let mut delivery = Box::pin(f.hub.pass_on_followups());
     tokio::select! {
         biased;
         result = &mut delivery => panic!("delivery must be blocked: {result:?}"),

@@ -6,7 +6,8 @@ import { Notice, availabilityText } from "../../design/Notice";
 import type { HarnessCapabilities } from "../../protocol/types";
 import { Age } from "../../design/Age";
 import { AgentPreferences } from "./AgentPreferences";
-import { AgentUpdates } from "./AgentUpdates";
+import { AgentUpdateLine, AgentUpdates, useAgentUpdateControl, type AgentUpdateControl } from "./AgentUpdates";
+import { AGENT_UPDATE_POLICY_FEATURE } from "./useAgentUpdates";
 import { SignedOut } from "./SignInAgain";
 const CAPABILITY: Record<keyof HarnessCapabilities, string> = {
   start_run: "Start tasks",
@@ -21,6 +22,17 @@ const CAPABILITY: Record<keyof HarnessCapabilities, string> = {
   cancel_queued_message: "Take back a message not yet sent",
 };
 export function AgentsAndAccounts() {
+  const policy = useHost((s) => s.capabilities?.features.includes(AGENT_UPDATE_POLICY_FEATURE) ?? false);
+  return policy ? <WithUpdates /> : <Agents control={null} />;
+}
+
+/** Each agent's update line goes in its own card, sharing one state with
+ * the update setting above them. */
+function WithUpdates() {
+  return <Agents control={useAgentUpdateControl()} />;
+}
+
+function Agents({ control }: { control: AgentUpdateControl | null }) {
   const { ui } = useApp();
   const harnesses = useHost((s) => s.harnesses);
   const accounts = () => ui.push({ screen: "accounts" });
@@ -29,7 +41,7 @@ export function AgentsAndAccounts() {
     <Section title="Agent apps" id="settings-agents">
       <div className="settings-stack">
         <AgentPreferences />
-        <AgentUpdates />
+        {control ? <AgentUpdates control={control} inCards={harnesses.filter((h) => h.integration !== "not_integrated").map((h) => h.kind)} /> : <AgentUpdates />}
         {!harnesses.length && (
           <Notice tone="unknown">
             The computer hasn’t reported its agents yet.
@@ -41,15 +53,11 @@ export function AgentsAndAccounts() {
             <article className="settings-card" key={h.kind}>
               <h3>{h.display_name}</h3>
               <p className="settings-meta">
-                {h.native_version
-                  ? `Version ${h.native_version}`
-                  : "Version unknown"}{" "}
-                ·{" "}
-                {h.integration === "managed"
-                  ? "Full control"
-                  : h.integration === "terminal_only"
-                    ? "Terminal only"
-                    : "Not supported yet"}
+                {/* One the app can't use yet says so once, in the line below. */}
+                {[
+                  h.native_version ? `Version ${h.native_version}` : "Version unknown",
+                  h.integration === "managed" ? "Full control" : h.integration === "terminal_only" ? "Terminal only" : null,
+                ].filter(Boolean).join(" · ")}
               </p>
               {h.integration !== "not_integrated" && <p>
                 {installed.ok
@@ -86,6 +94,7 @@ export function AgentsAndAccounts() {
                   {h.account.reason}
                 </Notice>
               )}
+              {control && h.integration !== "not_integrated" && <AgentUpdateLine control={control} harness={h.kind} shownVersion={h.native_version} />}
               {h.catalog && <p className="settings-meta">{"Model list checked "}<Age at={h.catalog.checked_at} suffix=" ago" /></p>}
               {h.integration !== "not_integrated" && <details>
                 <summary>Models, and what works from the phone<span className="visually-hidden"> for {h.display_name}</span></summary>

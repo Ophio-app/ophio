@@ -22,6 +22,64 @@ const MORE_NOTE: usize = 24;
 /// What Claude Code is told when the person denies without saying why.
 pub const DENIED_WITHOUT_REASON: &str = "Denied by the person";
 
+/// Display-only wording for a tool request. Never use this for request identity,
+/// matching, grants or the title stored with an approval.
+pub fn plain_tool_title(title: &str) -> String {
+    use std::sync::OnceLock;
+    static OWN: OnceLock<std::collections::HashMap<String, String>> = OnceLock::new();
+    let own = OWN.get_or_init(|| {
+        serde_json::from_str(include_str!("tool_names.json"))
+            .expect("the shared tool labels must be valid JSON")
+    });
+    // Only a request to use a tool is reworded: a task that happens to be
+    // titled "scroll" keeps its own title.
+    let Some(tool) = title.strip_prefix("Use ") else {
+        return title.into();
+    };
+    let built_in = match tool {
+        "Grep" => Some("Search files"),
+        "Glob" => Some("Find files"),
+        "WebFetch" => Some("Open a web page"),
+        _ => None,
+    };
+    if let Some(label) = built_in.or_else(|| own.get(tool).map(String::as_str)) {
+        return label.into();
+    }
+    if let Some(rest) = tool.strip_prefix("mcp__")
+        && let Some((server, name)) = rest.split_once("__")
+        && !server.is_empty()
+        && !name.is_empty()
+    {
+        if server == "computer"
+            && let Some(label) = own.get(name)
+        {
+            return label.clone();
+        }
+        // The same words the phone's card uses (`toolLabel` in
+        // `client/src/design/toolNames.ts`), so a notification and the card
+        // it opens name the request alike: the tool in words, then whose it
+        // is.
+        let words = |name: &str| {
+            name.split(['_', '-'])
+                .filter(|w| !w.is_empty())
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+        let mut said = words(name);
+        if let Some(first) = said.get_mut(..1) {
+            first.make_ascii_uppercase();
+        }
+        return if server == "computer" {
+            said
+        } else {
+            format!("{said} ({})", words(server))
+        };
+    }
+    // A name with no plain words stays as the agent gave it, so one tool is
+    // never mistaken for another.
+    title.into()
+}
+
 #[derive(Debug)]
 pub struct ToolApproval {
     pub kind: ApprovalKind,
@@ -836,12 +894,63 @@ mod tests {
                     home: Some("/home/sam".into()),
                 },
             );
+            // The simulator fixture describes Unix paths. Compare the same
+            // complete facts and risk flags on Windows, allowing only native
+            // path separators to differ.
+            let said: Vec<_> = said
+                .into_iter()
+                .map(|mut fact| {
+                    if cfg!(windows) {
+                        fact.text = fact.text.replace('\\', "/");
+                    }
+                    fact
+                })
+                .collect();
             if !said.is_empty() {
                 approval["facts"] = serde_json::json!(said);
             }
             assert_eq!(approval, case["approval"]);
         }
     }
+    #[test]
+    fn notification_words_only_change_display_not_the_stored_title() {
+        for (tool, stored, shown) in [
+            ("WebFetch", "Use WebFetch", "Open a web page"),
+            ("Grep", "Use Grep", "Search files"),
+            ("Glob", "Use Glob", "Find files"),
+            (
+                "mcp__computer__request_access",
+                "Use mcp__computer__request_access",
+                "Ask for more access",
+            ),
+        ] {
+            let facts = tool_approval(tool, &json!({}));
+            assert_eq!(facts.title, stored);
+            assert_eq!(plain_tool_title(&facts.title), shown);
+            assert_eq!(plain_tool_title(shown), shown);
+        }
+        // Another server's tool reads as the phone's card words it.
+        assert_eq!(
+            plain_tool_title("Use mcp__other_server__create-issue"),
+            "Create issue (other server)"
+        );
+        assert_eq!(
+            plain_tool_title("Use mcp__computer__not_listed_yet"),
+            "Not listed yet"
+        );
+        // Nothing else is reworded.
+        for same in [
+            "Use Bash",
+            "Run a command",
+            "Edit src/lib.rs",
+            "Use mcp__broken",
+            "scroll",
+            "Grep",
+        ] {
+            assert_eq!(plain_tool_title(same), same);
+        }
+    }
+
     #[test]
     fn direction_controls_are_shown_not_obeyed() {
         // U+202E would show the rest of the command reversed.

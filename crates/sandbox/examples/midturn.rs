@@ -62,6 +62,7 @@ mod live {
         )]);
         let program = PathBuf::from("/bin/sh");
         let wrapped = sandbox.wrap(WrapRequest {
+            disabled: &ports::Disabled::default(),
             program: &program,
             visible: &[],
             env: &env,

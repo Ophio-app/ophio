@@ -25,6 +25,7 @@ export const workIds = {
   waiting: "0192f7a1-0000-7000-8000-000000002004",
   blocked: "0192f7a1-0000-7000-8000-000000002005",
   ready: "0192f7a1-0000-7000-8000-000000002006",
+  watching: "0192f7a1-0000-7000-8000-000000002007",
   qWaiting: "0192f7a1-0000-7000-8000-000000002201",
   qBlocked: "0192f7a1-0000-7000-8000-000000002202",
   qReady: "0192f7a1-0000-7000-8000-000000002203",
@@ -92,6 +93,14 @@ export class WorkSim {
       task(workIds.waiting, "Polish empty states", "accepted", null),
       task(workIds.blocked, "Document the new empty states", "accepted", null),
       task(workIds.ready, "Review keyboard navigation", "accepted", null),
+      {
+        ...task(workIds.watching, "Watch the checkout checks", "completed", `${workIds.run}-watching`),
+        wake: {
+          at: now + 600_000,
+          reason: "Recheck the checkout CI job and inspect its logs before reporting back.",
+          person_reason: "I'm waiting for the checkout checks to finish.",
+        },
+      },
     ];
     const result: Run = {
       ...baseRun,
@@ -208,9 +217,23 @@ export class WorkSim {
       state: "reconciliation_required",
       outcome: null,
     };
+    const watching: Run = {
+      ...result,
+      run_id: `${workIds.run}-watching`,
+      task_id: workIds.watching,
+      children: [],
+      outcome: {
+        summary: "The checkout change is ready for its checks. I'll check back when they finish.",
+        changed_files: [],
+        checks: [],
+        still_active: [],
+        unknowns: [],
+        usage: null,
+      },
+    };
     resultFixture(tasks, result);
     host.tasks = [...host.tasks, ...tasks];
-    host.runs = [...host.runs, result, failed, unknown];
+    host.runs = [...host.runs, result, failed, unknown, watching];
     const qi = (
       id: string,
       taskId: string,

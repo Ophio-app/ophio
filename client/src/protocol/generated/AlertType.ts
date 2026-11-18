@@ -5,8 +5,8 @@
  * has its own Android notification category and its own choice of
  * [`Tier`] on each phone, and each project may choose its own.
  *
- * The rule for what alerts by default: only what waits on the person and
- * won't move until they act. What is worth a look shows silently, and
+ * By default, what waits on the person alerts, as do replies in a chat
+ * they aren't viewing. Other things worth a look show silently, and
  * routine progress waits in the app.
  */
-export type AlertType = "question" | "approval" | "sign_in" | "decision" | "failed" | "pr_needs_you" | "report_question" | "go_ahead" | "reply" | "pr_ready" | "batch" | "issue_call" | "reports" | "app_update" | "finished" | "merged" | "issues" | "slow";
+export type AlertType = "question" | "approval" | "sign_in" | "decision" | "failed" | "pr_needs_you" | "report_question" | "go_ahead" | "reply" | "pr_ready" | "batch" | "issue_call" | "reports" | "app_update" | "new_version" | "agent_update" | "finished" | "merged" | "issues" | "slow";

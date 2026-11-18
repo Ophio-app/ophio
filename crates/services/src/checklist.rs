@@ -924,6 +924,7 @@ fn wait_for(reason: String, now: Timestamp) -> TaskWake {
     TaskWake {
         at: Timestamp(now.0.saturating_add(WAITS_FOR)),
         reason,
+        person_reason: None,
         answer: true,
     }
 }
@@ -2000,22 +2001,23 @@ async fn finish(
     wait: Duration,
     name: &str,
 ) -> Result<String, ProtocolError> {
-    let output = match tokio::time::timeout(wait, command.output()).await {
-        Err(_) => {
-            return Err(error(
-                ErrorCode::TemporarilyUnavailable,
-                format!("{name} took too long"),
-            ));
-        }
-        Ok(Err(e)) if e.kind() == std::io::ErrorKind::NotFound => {
-            return Err(error(
-                ErrorCode::Unsupported,
-                format!("{name} isn't installed on this computer"),
-            ));
-        }
-        Ok(Err(e)) => return Err(internal(e)),
-        Ok(Ok(output)) => output,
-    };
+    let output =
+        match tokio::time::timeout(wait, containment::inherit::tokio_output(&mut command)).await {
+            Err(_) => {
+                return Err(error(
+                    ErrorCode::TemporarilyUnavailable,
+                    format!("{name} took too long"),
+                ));
+            }
+            Ok(Err(e)) if e.kind() == std::io::ErrorKind::NotFound => {
+                return Err(error(
+                    ErrorCode::Unsupported,
+                    format!("{name} isn't installed on this computer"),
+                ));
+            }
+            Ok(Err(e)) => return Err(internal(e)),
+            Ok(Ok(output)) => output,
+        };
     if !output.status.success() {
         let said = String::from_utf8_lossy(&output.stderr);
         let said: String = (said.lines())

@@ -86,6 +86,7 @@ mod tests {
         move |p| set.contains(p)
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn path_comes_first() {
         let path = OsString::from("/home/sam/bin:/usr/bin");
@@ -96,6 +97,35 @@ mod tests {
             there(&["/home/sam/bin/tailscale", "/usr/bin/tailscale"]),
         );
         assert_eq!(found, Some(PathBuf::from("/home/sam/bin/tailscale")));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_path_comes_before_program_files_and_skips_relative_entries() {
+        let path = OsStr::new(r";relative;C:\Users\sam\bin;C:\Windows\System32");
+        assert_eq!(
+            find(
+                "windows",
+                Some(path),
+                None,
+                there(&[
+                    r"relative\tailscale.exe",
+                    r"tailscale.exe",
+                    r"C:\Users\sam\bin\tailscale.exe",
+                    r"C:\Program Files\Tailscale\tailscale.exe",
+                ])
+            ),
+            Some(PathBuf::from(r"C:\Users\sam\bin\tailscale.exe"))
+        );
+        assert_eq!(
+            find(
+                "windows",
+                Some(OsStr::new(";relative;")),
+                None,
+                there(&[r"relative\tailscale.exe", r"tailscale.exe"])
+            ),
+            None
+        );
     }
 
     /// A Mac's launchd agent has only the system folders on `PATH`; the app

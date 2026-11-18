@@ -49,6 +49,9 @@ export function OutsideAgents() {
   }, [active, link.state, granted, session, profile.name, retry, reviewing]);
   const processes = view?.sessions.filter(s => s.process_id !== null) ?? [];
   const records = view?.sessions.filter(s => s.process_id === null) ?? [];
+  // A successful empty observation needs no section. Keep errors, missing
+  // access and offline state visible rather than presenting them as empty.
+  if (granted && link.state === "online" && view && !view.sessions.length && !error && !view.error) return null;
   return <Section title="Outside the app">
     <div className="agent-outside">
       <p className="work-muted">Agent processes observed on {profile.name}. Opening this list gives the app no control over them.</p>

@@ -30,13 +30,16 @@ import { ManualAddProject } from "../work/ProjectSheet";
 import { ConnectionNote } from "../work/shared";
 import { Composer } from "./Composer";
 import { CONVERSATIONS_FEATURE, NEW_CONVERSATION, startConversation, startWith } from "./conversation";
-import { accessHeld, askAccess, defaultAccess, describeAccess, unheldWords } from "./access";
+import { accessHeld, askAccess, describeAccess, newChatAccess, unheldWords } from "./access";
+import { WORK_CARDS_FEATURE } from "./workCards";
 import { send } from "./send";
 import { LAUNCHERS_FEATURE, type LaunchStart } from "../../app/launchers";
 import { StartFromSheet } from "../launch/StartFrom";
 import { announce } from "../../design/Announcer";
-import { TalkConversations } from "./Conversations";
+import { TalkConversations, type ConversationListPosition } from "./Conversations";
+import { useTalkAll } from "../../app/talkScope";
 import { canStart, resolveAgent } from "./intent";
+import { kindOf, usualAgent } from "../../app/launchMemory";
 import { TalkHeader, TalkPins } from "./TalkHeader";
 import { latestRun } from "../work/logic";
 import { runOutcome } from "../work/outcome";
@@ -46,9 +49,12 @@ import { Transcript } from "./Transcript";
 import { PathText } from "../../design/PathText";
 import { AlertsOffer } from "../../shell/AlertsOffer";
 import { useViewingTask } from "../../app/viewing";
+import { useScreenSeen } from "../../platform/handled";
 
 export default function Talk(_: RouteProps<"talk">) {
   const caughtUp = useHost((s) => s.caughtUp);
+  const across = useTalkAll();
+  const positions = useRef(new Map<string, ConversationListPosition>());
   const chosen = useUi((s) => s.projectId);
   const project = useHost((s) => talkProject(s, chosen));
   const list = useUi((s) => s.taskList);
@@ -62,7 +68,7 @@ export default function Talk(_: RouteProps<"talk">) {
     // Still catching up, the header names the screen, so it always has its heading.
     return <Screen header={caughtUp ? undefined : <ContextHeader heading />}>{caughtUp ? <NoProjects /> : <div className="talk-loading" aria-busy="true" aria-label="Loading projects"><span /><span /><span /></div>}</Screen>;
   }
-  if (list || (selected === undefined && !replying && !conversing)) return <TalkConversations key={project.project_id} project={project} />;
+  if (list || (selected === undefined && (!replying || across) && !conversing)) return <TalkConversations key={across ? "all" : project.project_id} project={project} positions={positions.current} />;
   return <TalkProject key={project.project_id} project={project} />;
 }
 
@@ -80,8 +86,15 @@ function TalkProject({ project }: { project: Project }) {
   const run = useHost((s) => task ? latestRun(task, s.runs) ?? null : null);
   const conversing = useUi((s) => s.conversing) && !task;
   const chosenAgent = useUi((s) => s.drafts[draftKey(pid, conversing ? NEW_CONVERSATION : null)]?.agent ?? null);
+  // A new task starts with the person's usual agent for its kind of work.
+  const newKind = useUi((s) => {
+    const d = s.drafts[draftKey(pid, null)];
+    return kindOf(d?.mode ?? "work", { issue: d?.review?.github?.type === "issue" });
+  });
+  const { profile } = useApp();
   useStore(prefs, p => p);
-  const agent = task ? null : resolveAgent(project, harnesses, chosenAgent);
+  const usual = task || conversing || chosenAgent ? null : usualAgent(profile.profileId, project, newKind, harnesses)?.agent ?? null;
+  const agent = task ? null : resolveAgent(project, harnesses, chosenAgent ?? usual);
   const harness = harnesses.find((h) => h.kind === (task ? task.harness : agent?.harness)) ?? null;
 
   const { ref, away, jump, sent } = useStickToBottom(task?.task_id ?? null);
@@ -103,7 +116,7 @@ function TalkProject({ project }: { project: Project }) {
     <Screen
       className="talk"
       bodyRef={ref}
-      header={<TalkHeader project={project} task={task ?? undefined} run={run ?? undefined} />}
+      header={<TalkHeader project={project} task={task ?? undefined} run={run ?? undefined} agent={agent} />}
       top={<TalkPins task={task ?? undefined} project={project} />}
       footer={
         <div className="talk-foot">
@@ -173,19 +186,21 @@ function useArrival(taskId: string | null): boolean {
  */
 function useRepliesRead(task: Task | null) {
   const { active } = useRoute();
+  const { platform } = useApp();
+  const seen = useScreenSeen(platform);
   useViewingTask(task?.task_id);
   const online = useLink().state === "online";
   const send = useCommand();
   const unread = useHost((s) => task ? (task.conversation ? replyAttention(s) : reviewAttention(s)).filter((a) => a.task_id === task.task_id).map((a) => a.attention_id) : [], shallowEqual);
   const sent = useRef(new Set<string>());
   useEffect(() => {
-    if (!active || !online) return;
+    if (!active || !seen || !online) return;
     for (const id of unread) {
       if (sent.current.has(id)) continue;
       sent.current.add(id);
       void send({ command: "acknowledge_attention", attention_id: id }, { label: "Mark reply read", toastErrors: false });
     }
-  }, [active, online, unread, send]);
+  }, [active, seen, online, unread, send]);
 }
 
 /**
@@ -199,8 +214,9 @@ function NewConversation({ project, agent, hasAgent, missing }: { project: Proje
   const held = useHost((s) => accessHeld(s.capabilities));
   const why = useHost((s) => unheldWords(s.capabilities));
   const chosen = useUi((s) => s.drafts[draftKey(pid, NEW_CONVERSATION)]?.access);
-  const access = held ? chosen ?? defaultAccess(pid) : askAccess(pid);
-  const lede = useHost((s) => describeAccess(access, project, s.projects));
+  const projects = useHost((s) => s.projects);
+  const access = held ? newChatAccess(project, pid, chosen, projects) : askAccess(pid);
+  const lede = useHost((s) => describeAccess(access, project, s.projects, !!s.capabilities?.features.includes(WORK_CARDS_FEATURE)));
   const launchers = useHost((s) => !!s.capabilities?.features.includes(LAUNCHERS_FEATURE));
   const canWork = useHost((s) => s.grants?.tasks ?? false);
   const harnesses = useHost((s) => s.harnesses);
@@ -287,7 +303,7 @@ function NewTask({ project, hasAgent, missing }: { project: Project; hasAgent: b
           </p>
         </div>
         <p className="talk-new__lede">
-          Say what you want done. Before anything starts you’ll see the agent, the folder and what it may do without asking.
+          Say what you want done. Before you send it you’ll see how it will start, and can change the agent, the folder and what it may do without asking.
         </p>
       </div>
       {!hasAgent && <NoAgent />}

@@ -18,7 +18,7 @@ import { Notice } from "../design/Notice";
 import { Sheet } from "../design/Sheet";
 import { deviceKind } from "../design/formFactor";
 import { clockTime, useNow } from "../design/time";
-import type { AccountReadiness, Availability, InputScope, ReadinessCheck as Check, UsageLimit } from "../protocol/types";
+import type { AccountReadiness, Availability, HostCapabilities, InputScope, ReadinessCheck as Check, UsageLimit } from "../protocol/types";
 import { freshness } from "./freshness";
 import { useStore } from "../state/store";
 import type { Route } from "../app/ui";
@@ -80,6 +80,17 @@ export function connectionCheck(check: Check, live: boolean, addresses: string[]
     detail: addresses.length === 1
       ? `This device reached the computer at ${addresses[0]}. Other devices and addresses haven’t been checked.`
       : "This device reached the computer using one of its paired addresses. Other devices and addresses haven’t been checked." };
+}
+
+/** Mac companions retain the legacy Linux OS value for older phones. */
+export function startupGuidance(os: HostCapabilities["os"], features: readonly string[] = []): string {
+  if (os === "windows") {
+    return "On the computer, register startup for your Windows account. It runs after you sign in to the desktop; Startup Apps can disable it.";
+  }
+  if (features.includes("macos_startup_v1")) {
+    return "On the Mac, install the login agent from your desktop session. It starts now and each time you sign in to your Mac account.";
+  }
+  return `On the computer, install the user service from your desktop session. If the desktop does not manage graphical-session.target, use its autostart to run ${PRODUCT_NAME} for desktop access.`;
 }
 
 const SCOPE: Record<InputScope, string> = {
@@ -224,9 +235,7 @@ function ConnectionDetails({ onClose, onOpenRoute }: { onClose: () => void; onOp
       )}
 
       {caps && <Section title="Start at sign-in">
-        <p className="fine">{caps.os === "windows"
-          ? "On the computer, register startup for your Windows account. It runs after you sign in to the desktop; Startup Apps can disable it."
-          : `On the computer, install the user service from your desktop session. If the desktop does not manage graphical-session.target, use its autostart to run ${PRODUCT_NAME} for desktop access.`}</p>
+        <p className="fine">{startupGuidance(caps.os, caps.features)}</p>
         <code className="cmd">{PROGRAM_NAME} service install</code>
         <p className="fine">Run this on the computer. Opening this screen changes nothing.</p>
       </Section>}

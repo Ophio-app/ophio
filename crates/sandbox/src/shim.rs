@@ -42,6 +42,10 @@ pub fn main() -> io::Result<i32> {
     let program = args
         .next()
         .ok_or_else(|| io::Error::other("missing program"))?;
+    // What Ophio checked outside must be what was mounted, before the agent sees any of it.
+    if let Some(expected) = std::env::var_os(crate::setup::VARIABLE) {
+        crate::setup::verify(&expected.to_string_lossy())?;
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -57,6 +61,7 @@ pub fn main() -> io::Result<i32> {
             };
             let status = tokio::process::Command::new(program)
                 .args(args)
+                .env_remove(crate::setup::VARIABLE)
                 .spawn()?
                 .wait()
                 .await?;

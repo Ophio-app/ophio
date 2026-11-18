@@ -22,6 +22,7 @@
     "allow-link-sent",
     "allow-link-close",
     "allow-device-events",
+    "allow-window-layout",
     "allow-share-text",
     "allow-shared-read",
     "allow-shared-ack",

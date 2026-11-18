@@ -3,6 +3,8 @@ import type { Approval, AttentionItem, Run, TargetControlView, Task } from "../.
 import { helpersFinishing, isTaskRunning, stillFinishing, openAttention, pendingApprovals, type HostState } from "../../state/projection";
 import { handBackReason, handBackTarget } from "../../state/handBack";
 import { controlStatus } from "../control/controlStatus";
+import { CHAT_CARRY_ON_FEATURE, cutOff } from "../talk/intent";
+import { checkingLabel } from "../../app/checksFeature";
 
 export function runEnded(run: Run | undefined): boolean {
   return !!run && (run.ended_at !== null || ["completed", "failed", "interrupted", "reconciliation_required"].includes(run.state));
@@ -14,6 +16,8 @@ export function taskActivity(state: HostState, task: Task | undefined) {
   return activity?.runId === task.current_run ? activity : undefined;
 }
 export function taskStatus(task: Task, run: Run | undefined, view?: TargetControlView): string | null {
+  const checking = checkingLabel(task);
+  if (checking) return checking;
   if (run && helpersFinishing(run)) return "Helpers are still finishing";
   if (run && stillFinishing(run)) return "Waiting for what it started to end";
   if (runEnded(run) || !["accepted", "dispatching", "working", "awaiting_decision"].includes(task.state)) return null;
@@ -43,6 +47,8 @@ function attentionReason(state: HostState, task: Task, pendingApproval: () => Ap
   const approval = pendingApproval();
   if (approval) return `${approval.kind === "question" ? "Question waiting" : "Approval needed"} · ${approval.title}`;
   const item = openItem();
+  if (item && item.kind === "reconciliation_required" && state.capabilities?.features.includes(CHAT_CARRY_ON_FEATURE) && cutOff(task, state.runs[task.current_run ?? ""] ?? null))
+    return "Cut off · Reply to carry on";
   if (item) return item.body || (item.kind === "reconciliation_required" ? "Outcome unknown · Review what happened" : "Waiting for your reply");
   return task.state === "awaiting_decision" ? task.status_line || "Waiting for your reply" : null;
 }

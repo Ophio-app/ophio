@@ -1,22 +1,30 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// What a conversation's agent may reach, under its header: what it may read
-// on the left, the internet in the middle, what it may change and run on the
-// right. The computer holds the agent to it (`conversation_access`); this
-// only shows and changes it, at any time, mid-turn too. Before the first
-// message it is the draft's and goes with the conversation; after, each
-// change goes to the computer at once. The control turns into a spinner
-// until the computer says the change is in force, which can take a while
-// mid-turn: some changes stop the agent's turn and continue it.
+// What a conversation's agent may reach, under its header, as one quiet line
+// ("Read: Home · Change: Nothing" over "Internet on") that opens to its three
+// controls: what it may read on the left, the internet in the middle, what it
+// may change and run on the right. The computer holds the agent to it
+// (`conversation_access`); this only shows and changes it, at any time,
+// mid-turn too. Before the first message it is the draft's and goes with the
+// conversation; after, each change goes to the computer at once. The control
+// turns into a spinner until the computer says the change is in force, which
+// can take a while mid-turn: some changes stop the agent's turn and continue it.
+//
+// Anything past reading its own project is one marker on the line, never
+// behind the opener. What the person lets a chat reach is remembered for the
+// project's next chat (`set_chat_access_default`), on the computer, from
+// their own changes here only; the line's panel says when new chats start
+// wider than read-only and sets that back in one tap. Neither shows as in
+// force before the computer confirms it.
 //
 // Whole computer leads either list and warns before it is chosen. What the
-// agent was last kept from shows under the bar, tinted so it isn't missed,
+// agent was last kept from shows under the line, tinted so it isn't missed,
 // with Allow. A host on the person's own network (their LAN or tailnet) needs
 // more than the internet, so its Allow turns that on too; the internet
 // control shows it, and turning the internet off turns both off. A
-// conversation turned into a task keeps its access, so the task keeps the bar.
+// conversation turned into a task keeps its access, so the task keeps the line.
 
-import { Ban, ChevronDown, Eye, FolderGit2, FolderPlus, Globe, GlobeOff, House, LoaderCircle, Monitor, Network, Pencil, type LucideIcon } from "lucide-react";
+import { Ban, ChevronDown, Eye, ShieldAlert, FolderGit2, FolderPlus, Globe, GlobeOff, House, LoaderCircle, Monitor, Network, Pencil, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { describeError, shallowEqual, useApp, useCommand, useHost, useLink, useUi } from "../../app/context";
 import { draftKey } from "../../app/ui";
@@ -28,17 +36,19 @@ import { Sheet } from "../../design/Sheet";
 import { toast } from "../../design/Toast";
 import { commandResult } from "../../host/commandResult";
 import type { ConversationAccess, Project, Task } from "../../protocol/types";
+import type { HostSession } from "../../host/session";
 import { matchingProjects } from "../../shell/ProjectSheet";
 import { useMay } from "../../shell/NotAllowed";
 import { isTaskRunning } from "../../state/projection";
-import { accessHeld, defaultAccess, normalizedAccess, reachesOwnNetwork } from "./access";
+import { accessHeld, newChatAccess, normalizedAccess, reachesOwnNetwork, widerThanRead } from "./access";
+import { WORK_CARDS_FEATURE } from "./workCards";
 import { NEW_CONVERSATION } from "./conversation";
 import { accessBarShown, useMayDoRequest } from "./MayDoLine";
 import "./accessBar.css";
 
 type Side = "read" | "write";
 /** What can be waiting on the computer: either side, the internet, or Allow. */
-type Control = Side | "internet" | "allow";
+type Control = Side | "internet" | "allow" | "default";
 
 /** A change the computer takes longer than this over shows its spinner, so a
  * quick one doesn't flicker. */
@@ -51,26 +61,46 @@ const CALLED_MS = 1_600;
 
 const widened = (a: ConversationAccess, side: Side): ConversationAccess => (side === "write" ? { ...a, whole_write: true } : { ...a, whole_read: true });
 
-/** The bar, for a conversation, or a task carried on from one, on a
- * computer that holds it to what is chosen. */
-export function AccessBar({ project, task }: { project: Project; task: Task | undefined }) {
+/** Remembers what the person let a chat in this project reach, for its next
+ * chat, on a computer that keeps it. Quiet: the chat's own access is already
+ * in force, and failing only leaves the next chat where it was. */
+export async function rememberChatAccess(session: HostSession, projectId: string, access: ConversationAccess | null): Promise<boolean> {
+  const s = session.state.get();
+  if (!s.capabilities?.features?.includes(WORK_CARDS_FEATURE)) return false;
+  try {
+    const receipt = await session.command({ command: "set_chat_access_default", project_id: projectId, access }, { label: access ? "Remember for new chats" : "Start new chats read-only", expectedRevision: null });
+    await commandResult(session, receipt, { waitMs: APPLY_WAIT_MS });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The line, for a conversation, or a task carried on from one, on a
+ * computer that holds it to what is chosen; or, with `newTask`, for an Ask
+ * task drafted with what it may reach, such as a suggestion's, in Review,
+ * where it reads and changes nothing. */
+export function AccessBar({ project, task, newTask = false }: { project: Project; task: Task | undefined; newTask?: boolean }) {
   const { ui, session, profile } = useApp();
   const execute = useCommand();
   const [waiting, track] = useWaiting();
   const pid = project.project_id;
   const held = useHost((s) => accessHeld(s.capabilities));
+  const remembers = useHost((s) => !!s.capabilities?.features?.includes(WORK_CARDS_FEATURE));
   const conversing = useUi((s) => s.conversing);
-  const drafted = useUi((s) => s.drafts[draftKey(pid, NEW_CONVERSATION)]?.access);
+  const draftId = newTask ? null : NEW_CONVERSATION;
+  const drafted = useUi((s) => s.drafts[draftKey(pid, draftId)]?.access);
   const names = useHost((s) => Object.fromEntries(Object.values(s.projects).map((p) => [p.project_id, p.name])), shallowEqual);
   const may = useMay("tasks");
   const online = useLink().state === "online";
   const [side, setSide] = useState<Side | null>(null);
   const [wide, setWide] = useState<Side | null>(null);
-  // Asked for from the line saying what it may do: the bar takes focus and is
-  // outlined for a moment, so the eye finds it.
+  const [open, setOpen] = useState(false);
+  // Asked for from the line saying what it may do: the controls open, take
+  // focus and are outlined for a moment, so the eye finds them.
   const root = useRef<HTMLDivElement>(null);
   const [called, setCalled] = useState(false);
-  useMayDoRequest(task?.task_id, !!task && accessBarShown(task, held), () => setCalled(true));
+  useMayDoRequest(task?.task_id, !!task && accessBarShown(task, held), () => { setOpen(true); setCalled(true); });
   useEffect(() => {
     if (!called) return;
     const el = root.current;
@@ -80,18 +110,24 @@ export function AccessBar({ project, task }: { project: Project; task: Task | un
     const done = setTimeout(() => setCalled(false), CALLED_MS);
     return () => clearTimeout(done);
   }, [called]);
-  const shown = task ? !!task.conversation || !!task.access : conversing;
+  const shown = newTask ? !!drafted : task ? !!task.conversation || !!task.access : conversing;
   if (!held || !shown || task?.state === "archived") return null;
-  const access = task?.access ?? drafted ?? defaultAccess(pid);
+  const access = task?.access ?? (newTask ? drafted! : newChatAccess(project, pid, drafted, names));
   // A change to a conversation needs the computer; a draft's stays here.
   const locked = !may || (!!task && !online);
+  // Its own chats' choices are remembered for the next chat; a task carried
+  // on from one is no longer a chat.
+  const ownChat = !newTask && (!task || !!task.conversation);
+  const startsWide = remembers && !!project.chat_access && widerThanRead(project.chat_access, pid);
 
   /** Keeps the change, and resolves once it is in force: at once for a
    * draft, when the computer says so for a conversation. */
   const change = async (next: ConversationAccess, label: string, control: Control): Promise<boolean> => {
     const access = normalizedAccess(next);
     if (!task) {
-      ui.saveDraft(pid, NEW_CONVERSATION, { access });
+      // The draft's own choice; it is remembered for the next chat once this
+      // one starts with it.
+      ui.saveDraft(pid, draftId, { access });
       return true;
     }
     return track(control, async () => {
@@ -99,40 +135,82 @@ export function AccessBar({ project, task }: { project: Project; task: Task | un
       if (!receipt) return false;
       try {
         await commandResult(session, receipt, { waitMs: APPLY_WAIT_MS });
-        return true;
       } catch (e) {
         toast(describeError(e, profile.name), { tone: "stop" });
         return false;
       }
+      if (ownChat) void rememberChatAccess(session, pid, access);
+      return true;
     });
   };
   const internet = async (on: boolean) => {
     if (await change({ ...access, internet: on, local_network: false }, on ? "Turn the internet on" : "Turn the internet off", "internet")) toast(on ? "Internet on" : "Internet off", { tone: "good" });
   };
+  /** New chats here start read-only again; a draft does too. */
+  const setBack = () => track("default", async () => {
+    if (!(await rememberChatAccess(session, pid, null))) {
+      toast("Couldn’t reach the computer. New chats still start as before.", { tone: "stop" });
+      return false;
+    }
+    if (!task) ui.saveDraft(pid, NEW_CONVERSATION, { access: undefined });
+    toast("New chats here start read-only", { tone: "good" });
+    return true;
+  });
   const netBusy = waiting.has("internet");
   const local = reachesOwnNetwork(access);
+  const busy = waiting.size > 0 && !waiting.has("default");
+  const wider = widerThanRead(access, pid);
+  const read = summary("read", access, project, names);
+  const write = summary("write", access, project, names);
+  const net = local ? "Internet and your own network" : access.internet ? "Internet on" : "Internet off";
 
   return (
-    <div ref={root} className={called ? "access is-called" : "access"} role="group" aria-label="What the agent may reach" tabIndex={-1}>
-      <div className="access__bar">
-        <AccessButton side="read" summary={summary("read", access, project, names)} busy={waiting.has("read")} disabled={locked} onOpen={() => setSide("read")} />
-        <IconButton
-          className={["access__net", access.internet && "is-on", local && "is-local", netBusy && "is-busy"].filter(Boolean).join(" ")}
-          icon={netBusy ? LoaderCircle : local ? Network : access.internet ? Globe : GlobeOff}
-          label={local ? "Internet and your own network" : "Internet"}
-          pressed={access.internet}
-          aria-busy={netBusy || undefined}
-          disabled={locked || netBusy}
-          onClick={() => void internet(!access.internet)}
-        />
-        <AccessButton side="write" summary={summary("write", access, project, names)} busy={waiting.has("write")} disabled={locked} onOpen={() => setSide("write")} />
+    <div ref={root} className={["access", called && "is-called", open && "is-open"].filter(Boolean).join(" ")} role="group" aria-label="What the agent may reach" tabIndex={-1}>
+      <button
+        type="button"
+        className="access__line"
+        aria-expanded={open}
+        aria-controls={`access-${pid}`}
+        aria-label={`What the agent may reach. Read: ${read}. Change: ${write}. ${net}.${wider ? " More than read-only." : ""}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="access__line-text">
+          <span className="access__line-main">Read: {read} · Change: {write}</span>
+          <span className="access__line-sub">
+            {busy ? <><LoaderCircle className="access__line-spin" aria-hidden />Changing…</> : net}
+            {wider && <span className="access__wider"><ShieldAlert aria-hidden strokeWidth={2.2} />More than read-only</span>}
+          </span>
+        </span>
+        <ChevronDown className="access__line-chevron" aria-hidden strokeWidth={2.1} />
+      </button>
+      <div id={`access-${pid}`} className="access__panel" hidden={!open}>
+        <div className="access__bar">
+          <AccessButton side="read" summary={read} busy={waiting.has("read")} disabled={locked} onOpen={() => setSide("read")} />
+          <IconButton
+            className={["access__net", access.internet && "is-on", local && "is-local", netBusy && "is-busy"].filter(Boolean).join(" ")}
+            icon={netBusy ? LoaderCircle : local ? Network : access.internet ? Globe : GlobeOff}
+            label={local ? "Internet and your own network" : "Internet"}
+            pressed={access.internet}
+            aria-busy={netBusy || undefined}
+            disabled={locked || netBusy}
+            onClick={() => void internet(!access.internet)}
+          />
+          {/* An Ask task only reads. */}
+          {!newTask && <AccessButton side="write" summary={write} busy={waiting.has("write")} disabled={locked} onOpen={() => setSide("write")} />}
+        </div>
+        {startsWide && ownChat && (
+          <div className="access__default">
+            <p className="access__default-text">New chats in {project.name} start with what you last let a chat here reach.</p>
+            <Button size="sm" pending={waiting.has("default")} disabled={!may || !online} onClick={() => void setBack()}>Set back to read-only</Button>
+          </div>
+        )}
       </div>
       {task?.access_blocked && <Blocked key={task.access_blocked.at} task={task} access={access} busy={waiting.has("allow")} disabled={locked} onAllow={(next, label) => change(next, label, "allow")} onWhole={setWide} />}
       <AccessSheet
         side={side}
         onClose={() => setSide(null)}
         project={project}
-        what={task && !task.conversation ? "task" : "conversation"}
+        what={newTask || (task && !task.conversation) ? "task" : "conversation"}
         access={access}
         note={task && <Running task={task} />}
         onApply={(next, s) => void change(next, s === "write" ? "Change what the agent may change" : "Change what the agent may read", s)}
@@ -252,17 +330,21 @@ function AccessSheet({ side, onClose, project, what, access, note, onApply }: {
   onApply: (next: ConversationAccess, side: Side) => void;
 }) {
   const [staged, setStaged] = useState(access);
+  const [opened, setOpened] = useState(access);
   const [query, setQuery] = useState("");
   const [wide, setWide] = useState<Side | null>(null);
   const projects = useHost((s) => Object.values(s.projects), shallowEqual);
   useEffect(() => {
-    if (side) { setStaged(access); setQuery(""); }
+    if (side) { setStaged(access); setOpened(access); setQuery(""); }
     // Only on opening: what the computer says meanwhile doesn't undo a choice.
   }, [side]);
   const read = side !== "write";
   const places = matchingProjects([...projects].sort((a, b) => Number(!!b.home) - Number(!!a.home) || a.name.localeCompare(b.name)), query);
   const whole = read ? staged.whole_read || staged.whole_write : staged.whole_write;
   const changed = JSON.stringify(normalizedAccess(staged)) !== JSON.stringify(normalizedAccess(access));
+  // Unapplied ticks outlast another screen in front, unless what the agent
+  // may reach changed meanwhile: Done would then put back what was there.
+  const current = JSON.stringify(normalizedAccess(opened)) === JSON.stringify(normalizedAccess(access));
   const key = read ? "read" : "write";
 
   const toggleWhole = (on: boolean) => {
@@ -275,6 +357,7 @@ function AccessSheet({ side, onClose, project, what, access, note, onApply }: {
     <>
       <Sheet
         open={side !== null}
+        keepWhenHidden={current}
         onClose={onClose}
         size="tall"
         className="access-sheet"

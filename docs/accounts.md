@@ -106,6 +106,19 @@ say "signed in" for a login it can't renew. A run that started before the
 latest sign-in in Accounts, and so had the older one, raises nothing when it
 is refused, whether or not a notice was open.
 
+Ophio's background Claude checks run one at a time for the computer's user,
+including account status, model choices and automatic update verification.
+After getting an answer, Ophio closes the check's input and waits for Claude
+Code to finish, so renewing and saving a sign-in can complete. A check that
+stays stuck gets two minutes to finish before Ophio forces it to stop and
+writes a warning to the service log. Cancelling the request does not cancel
+that cleanup. Runs you start yourself keep their normal controls.
+
+The service log also records when Claude's reported state changes between
+signed in and signed out. It contains no account name, email or credential.
+A failed status check is not treated as a sign-out, and a status answer alone
+does not clear a notice raised by a run that refused the login.
+
 For an API key, tap **Set key** (or **Replace key**) and paste it, or let the
 phone's password manager fill the one field. The key crosses the paired,
 encrypted link once and is never sent back. A key must be at least 8

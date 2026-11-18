@@ -18,6 +18,7 @@ fn main() {
             "link_sent",
             "link_close",
             "device_events",
+            "window_layout",
             "share_text",
             "shared_read",
             "shared_ack",

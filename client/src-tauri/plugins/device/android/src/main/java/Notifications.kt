@@ -136,11 +136,30 @@ internal class Notifications(
         alertType: String? = null,
         want: String? = null,
         handles: List<String>? = null,
+        source: String? = null,
+        realert: Boolean = false,
     ): Posted {
+        require(source == null || source.length <= 256)
         require(id.length <= 256 && title.length <= 256 && body.length <= 2048)
         require((group?.length ?: 0) <= 256 && (groupTitle?.length ?: 0) <= 256)
         require(asking == null || asking.text.length <= 2048 && asking.reply.length <= 4096)
         require(asking == null || asking.choices.size <= 8 && asking.choices.all { it.length <= 64 })
+        // Only a native member transaction may reuse the individuals its
+        // summary represents. Legacy summary/no-members callers get no credit.
+        val replacements = if (source != null && source != id && FOLDED in id) {
+            val profile = source.substringBefore('/', "")
+            val prefix = "$profile/"
+            require(profile.isNotEmpty() && id.startsWith("${prefix}project:"))
+            require(UUID.fromString(source.removePrefix(prefix)).toString() == source.removePrefix(prefix))
+            val project = id.removePrefix("${prefix}project:")
+            require(UUID.fromString(project).toString() == project)
+            require(handles != null && handles.size <= 256 && source in handles)
+            require(handles.all {
+                it.length <= 256 && it.startsWith(prefix) &&
+                    UUID.fromString(it.removePrefix(prefix)).toString() == it.removePrefix(prefix)
+            })
+            handles.toSet()
+        } else emptySet()
         // Its type's category, as this phone chose for the type, unless a
         // project or the task chose otherwise: quieter shows quieter there,
         // louder shows in the category of what the person follows.
@@ -152,8 +171,9 @@ internal class Notifications(
                 .setContentTitle(title)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .setAutoCancel(true)
-                // The app and the watcher can each raise the same alert.
-                .setOnlyAlertOnce(true)
+                // Alert an urgent new member in place. Never delete the old
+                // summary before a replacement that might fail to post.
+                .setOnlyAlertOnce(!realert || quiet)
                 .apply { if (group != null) setGroup(group) }
         // No sound, vibration or pop-up: a note in a group that alerts only
         // for its summary, which this one is not, makes none, as AndroidX's
@@ -162,16 +182,20 @@ internal class Notifications(
             note.setGroup(group ?: "$id:silent")
                 .setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
         }
-        // A swipe is the person's word that they've seen it: it never
-        // comes back for the same thing.
-        if ('/' in id) note.setDeleteIntent(dismisser(id, handles ?: listOf(id)))
         // Posting and clearing take turns, from the app and the watcher
         // alike, so a clear is never overtaken by the post it answers.
         synchronized(posting) {
             if (since != null && clearing.refuses(id, since)) return Posted.CLEARED
+            if (source != null && since != null && clearing.refuses(source, since)) return Posted.CLEARED
             val shown = showing().keys
             val replacing = id in shown
-            if (id != MORE && id !in shown && shown.count { it != MORE } >= MAX_SHOWN) return Posted.FULL
+            // Reserve the represented individuals' places under the same
+            // posting lock. Keep them visible until notify actually succeeds.
+            val occupied = shown.count { it != MORE && it !in replacements }
+            if (id != MORE && !replacing && occupied >= MAX_SHOWN) return Posted.FULL
+            // A swipe handles only the membership this accepted candidate
+            // represents, not a later or refused candidate's members.
+            if ('/' in id) note.setDeleteIntent(dismisser(id, handles ?: listOf(id)))
             // Read in turn with redact(): app lock turned on before this
             // hides the text here, and after it, there.
             val locked = locked()
@@ -187,14 +211,15 @@ internal class Notifications(
             if (asking != null && !locked) answers(note, id, asking)
             // Only an alert shown gets a route, kept while it shows.
             note.setContentIntent(opener(id, route, shown))
-            posting.post(id, group, SystemClock.elapsedRealtime())
             val built = note.build()
+            manager.notify(id, ALERT, built)
+            posting.post(id, group, SystemClock.elapsedRealtime())
             notes.keys.retainAll(shown)
             notes[id] = built
-            manager.notify(id, ALERT, built)
+            for (member in replacements.filter { it in shown }) cancel(member)
             if (group != null) summarize(group, groupTitle, grouped(group), channel)
             val loud = (manager.getNotificationChannel(channel)?.importance ?: 0) >= NotificationManager.IMPORTANCE_DEFAULT
-            return if (!quiet && loud && !replacing) Posted.SOUNDED else Posted.SHOWN
+            return if (!quiet && loud && (!replacing || realert)) Posted.SOUNDED else Posted.SHOWN
         }
     }
 
@@ -271,11 +296,14 @@ internal class Notifications(
 
     /** What a swipe of alert `id` tells: [AlertDismissed] takes it. */
     private fun dismisser(id: String, handles: List<String>): PendingIntent {
+        val captured = handles.joinToString("\n")
+        val membership = UUID.nameUUIDFromBytes(captured.toByteArray()).toString()
         val intent = Intent(context, AlertDismissed::class.java)
-            .setData(Uri.fromParts("ophio-alert", id, null))
+            // A refused/failed update must not overwrite the old note's
+            // captured swipe membership through FLAG_UPDATE_CURRENT.
+            .setData(Uri.fromParts("ophio-alert", id, membership))
             .putExtra(TAG, id)
-            // What it stood for as posted; a later post replaces this.
-            .putExtra(HANDLES, handles.joinToString("\n"))
+            .putExtra(HANDLES, captured)
         return PendingIntent.getBroadcast(
             context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

@@ -53,6 +53,7 @@ it("says a computer that can't limit chats only lets them read", async () => {
 
 it("says nothing more when the access can be chosen", async () => {
   await newConversation({ state: "available" });
+  fireEvent.click(document.querySelector(".access__line")!);
   expect(screen.getByRole("button", { name: /^Change & run/ })).toBeTruthy();
   expect(why()).toBeUndefined();
 });

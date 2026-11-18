@@ -169,14 +169,14 @@
 │  │                 ├───────────────────────────────────────╴                                                         │
 │  ◉ Reach ──────────┤                                                                                                 │
 │  ┊                 │  Your phone reaches this computer through Tailscale, a private network between                  │
-│  ○ Agents          │  your own devices that works wherever you are, or through the Wi‑Fi you share at                │
+│  ○ Agents          │  your own devices that works wherever you are, or through the Wi-Fi you share at                │
 │  ┊                 │  home.                                                                                          │
 │  ○ Phone           │                                                                                                 │
 │  ┊                 │  ✓ Tailscale  Connected as desk.tail.ts.net                                                     │
 │  ○ Extras          │                                                                                                 │
 │  ┊                 │  Your phone needs Tailscale too, signed in to the same account.                                 │
 │  ○ Check           │                                                                                                 │
-│                    │  · Wi‑Fi  This computer is 192.168.1.20 here; phones on this network can't reach                │
+│                    │  · Wi-Fi  This computer is 192.168.1.20 here; phones on this network can't reach                │
 │                    │           it unless you allow it                                                                │
 │                    │                                                                                                 │
 │                    │                                                                                                 │
@@ -197,7 +197,7 @@
 │                    │                                                                                                 │
 │                    │                                                                                                 │
 │                    │  ╾─◆ [n] Use Tailscale · recommended                                                            │
-│                    │      [w] This Wi‑Fi only                                                                        │
+│                    │      [w] This Wi-Fi only                                                                        │
 │                    │          Your phone reaches this computer only at home, on this network.                        │
 │                    │      [l] Leave this for later                                                                   │
 │                    │      [x] Skip the rest of setup                                                                 │

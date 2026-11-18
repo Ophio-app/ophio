@@ -86,6 +86,7 @@ impl CompanionHub {
             telegram: self.channel_availability(protocol::auth::ChannelKind::Telegram),
             discord: self.channel_availability(protocol::auth::ChannelKind::Discord),
             features: vec![
+                protocol::checks::CHECKS_FEATURE.into(),
                 "reports_v1".into(),
                 // The owner can rename the computer for every phone paired
                 // to it (Command::RenameComputer, HostInfo::renamed).
@@ -132,6 +133,9 @@ impl CompanionHub {
                 "checklist_agent_items_v1".into(),
                 // A message waiting in Next up for a task can carry markup.
                 "queue_markup_v1".into(),
+                // Messages can carry files of any kind, which the agent reads
+                // from a read-only folder of the conversation's own.
+                "chat_files_v1".into(),
                 // Work started for the person, such as by an agent, starts
                 // with the launch flags their phone set as defaults.
                 "launch_defaults_v1".into(),
@@ -141,7 +145,13 @@ impl CompanionHub {
                 // Talk holds conversations: Ask tasks that change model
                 // between turns and can be carried into Work as a task.
                 "conversations_v1".into(),
+                "chat_agent_switch_v1".into(),
                 "conversation_access_v1".into(),
+                // A chat whose reply was cut off, once its agent and what it
+                // started have stopped (Run::nothing_running), carries on when the
+                // person writes (ResumeTask), without Mark failed first.
+                "chat_carry_on_v1".into(),
+                "chat_reply_recovery_v1".into(),
                 // A Plan or Ask task, or a chat, carries on in Work in one
                 // tap (SwitchToWork), and each pending approval says which
                 // ways forward it has (Approval::actions).
@@ -162,6 +172,10 @@ impl CompanionHub {
                 // Skills, agents and agent files can be disabled in Ophio,
                 // which keeps them from every agent it runs.
                 protocol::disabled::FEATURE.into(),
+                protocol::work_cards::FEATURE.into(),
+                protocol::work_cards::HEARS_BACK.into(),
+                protocol::work_cards::SETS.into(),
+                protocol::work_cards::REVIEWED.into(),
                 // A task can be made a review: it is given the project's
                 // REVIEW.md from the trusted base, and says which it read.
                 "review_rules_v1".into(),
@@ -174,6 +188,9 @@ impl CompanionHub {
                 "github_when_green_v1".into(),
             ]
             .into_iter()
+            // Keep HostOs compatible with older phones, which only know Linux
+            // and Windows. New phones use this additive hint for Mac guidance.
+            .chain(cfg!(target_os = "macos").then(|| "macos_startup_v1".into()))
             .chain(self.inner.accounts.is_some().then(|| "accounts_v1".into()))
             .chain(
                 self.inner
@@ -192,6 +209,18 @@ impl CompanionHub {
                     .agent_updater
                     .is_some()
                     .then(|| "agent_updates_v1".into()),
+            )
+            .chain(
+                self.inner
+                    .agent_updater
+                    .is_some()
+                    .then(|| protocol::agent_updates::FEATURE.into()),
+            )
+            .chain(
+                self.inner
+                    .release_check
+                    .is_some()
+                    .then(|| protocol::releases::RELEASE_CHECK_FEATURE.into()),
             )
             .chain(self.inner.github.is_some().then(|| "github_v1".into()))
             // The owner chooses which problem reports the fixer takes.
@@ -733,6 +762,28 @@ mod tests {
         std::fs::remove_dir_all(path).unwrap();
     }
     #[tokio::test]
+    async fn mac_startup_hint_preserves_legacy_host_os() {
+        let data = tempfile::tempdir().unwrap();
+        let hub = CompanionHub::builder()
+            .data_dir(data.path())
+            .clock(Arc::new(crate::testing::FakeClock::default()))
+            .build()
+            .await
+            .unwrap();
+        let capabilities = hub.host_capabilities().await;
+        let wire = serde_json::to_value(&capabilities).unwrap();
+        assert_eq!(wire["os"], if cfg!(windows) { "windows" } else { "linux" });
+        assert_eq!(
+            capabilities
+                .features
+                .iter()
+                .any(|f| f == "macos_startup_v1"),
+            cfg!(target_os = "macos")
+        );
+        hub.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn speech_replace_preserves_sessions_and_publishes_capabilities() {
         let (hub, path) = hub().await;
         let mut subscription = hub
@@ -802,7 +853,7 @@ mod tests {
             matches!(events.live.recv().await.unwrap(), Outbound::Event(e) if matches!(e.event, Event::CapabilitiesChanged { .. }))
         );
         hub.shutdown().await.unwrap();
-        drop(hub);
+        crate::testing::drop_hub_and_wait(hub, std::time::Duration::from_secs(10)).await;
         let reopened = CompanionHub::builder()
             .data_dir(&path)
             .build()

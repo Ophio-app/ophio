@@ -250,6 +250,8 @@ async fn a_run_refused_at_the_start_checks_the_sign_in_again() {
     f.says(signed_in());
     let create = || {
         CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             github: None,
             agent_chosen: None,
             mode: None,

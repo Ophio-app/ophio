@@ -235,7 +235,8 @@ function FixSheet({ project, finding, checking, skips, onClose }: {
   const disabled = !online || !!blocker || !!sending;
   const now = startOrQueue(waits);
   return (
-    <Sheet open onClose={onClose} title={finding ? `Fix ${finding.number}. ${finding.title}` : "Fix all"} subtitle={project.name}
+    // Its direction and agent outlast "Defaults in Settings" and a tapped notification.
+    <Sheet open keepWhenHidden onClose={onClose} title={finding ? `Fix ${finding.number}. ${finding.title}` : "Fix all"} subtitle={project.name}
       footer={<>
         <Button variant="secondary" disabled={disabled} pending={sending === QUEUEING}
           onClick={() => void send(nextUp(), QUEUEING, `${what} is in Next up`)}>Add to Next up</Button>

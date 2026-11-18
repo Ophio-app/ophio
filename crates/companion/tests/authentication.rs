@@ -38,7 +38,9 @@ async fn pinned_tls_authentication_and_attributed_command() {
 async fn an_address_that_appears_while_running_is_served() {
     // As when Tailscale comes up after Øphio has started.
     let fixture = Fixture::new().await;
-    let listener = tokio::net::TcpListener::bind("127.0.0.2:0").await.unwrap();
+    let listener = containment::inherit::TcpListener::bind("127.0.0.2:0".parse().unwrap())
+        .await
+        .unwrap();
     let address = listener.local_addr().unwrap();
     fixture.later.send(listener).unwrap();
     let tcp = tokio::net::TcpStream::connect(address).await.unwrap();
@@ -51,6 +53,43 @@ async fn an_address_that_appears_while_running_is_served() {
         matches!(client.receive::<ServerFrame>().await, ServerFrame::Receipt(receipt) if receipt.command_id == command_id)
     );
     drop(client);
+    fixture.stop().await;
+}
+
+/// The phone server accepts a connection only while no process is being
+/// started, so an agent started meanwhile cannot keep the person's connection.
+#[cfg(target_os = "macos")]
+#[tokio::test]
+async fn the_phone_server_accepts_only_between_starts() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    };
+    let fixture = Fixture::new().await;
+    let ended = Arc::new(AtomicBool::new(false));
+    let (inside, is_inside) = mpsc::channel();
+    let starting = {
+        let ended = ended.clone();
+        std::thread::spawn(move || {
+            containment::inherit::start(|| {
+                inside.send(()).unwrap();
+                std::thread::sleep(Duration::from_millis(300));
+                ended.store(true, Ordering::SeqCst);
+            })
+        })
+    };
+    is_inside.recv().unwrap();
+    // The kernel queues the connection whatever the server does; only the
+    // finished handshake shows that it accepted.
+    let tls = fixture.tls(&fixture.deps.identity.fingerprint()).await;
+    let accepted_after = ended.load(Ordering::SeqCst);
+    starting.join().unwrap();
+    drop(tls.unwrap());
+    assert!(
+        accepted_after,
+        "the phone server accepted a connection during a start"
+    );
     fixture.stop().await;
 }
 
@@ -220,11 +259,7 @@ async fn pairing_refuses_weak_keys_and_incompatible_majors_before_waiting() {
 
 #[tokio::test]
 async fn a_pairing_request_waits_past_the_sign_in_deadline_until_the_owner_confirms() {
-    let fixture = Fixture::with_limits(companion::server::Limits {
-        authentication: Duration::from_millis(300),
-        ..Default::default()
-    })
-    .await;
+    let fixture = Fixture::new().await;
     let owner = services::Caller::local_owner();
     let ticket = fixture.hub.open_pairing(&owner).await.unwrap();
     let request = pair_request(ticket.secret, 5);
@@ -239,7 +274,13 @@ async fn a_pairing_request_waits_past_the_sign_in_deadline_until_the_owner_confi
             &request.device_public_key
         )
     );
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    // Complete TLS and admit the request before moving time. A tiny real
+    // authentication deadline would also measure how busy the test machine is.
+    // Pause only here: auto-advancing time during real network I/O can expire
+    // the handshake before its response arrives.
+    tokio::time::pause();
+    tokio::time::advance(fixture.deps.limits.authentication + Duration::from_secs(1)).await;
+    tokio::time::resume();
     // A second device is told another one is waiting; the owner sees one.
     let (status, result) = fixture
         .pair(&pair_request(request.pairing_secret.clone(), 6))

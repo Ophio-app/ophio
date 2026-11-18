@@ -5,7 +5,9 @@ flags**. Review shows the selected policy before starting. These are bounded
 native permission choices, not a free-form command line. Once a task has
 started, Chat keeps its flags off the page: tap the task's agent chip, beside
 how a message is sent, to see them. A task keeps its flags; start a new task to
-use different ones.
+use different ones. The Chat picker can select an agent, model and effort for
+the next message without changing those flags or the usual defaults; see
+[Choosing an agent for the next Chat message](chat-agent-switching.md).
 
 **Skip permissions is on by default for new coding Work tasks**, independently
 for Claude Code and Codex. In **Settings → Launch flags**, turn either default
@@ -21,7 +23,9 @@ sandbox. Use it only for trusted work.
 | Accept edits | `--permission-mode acceptEdits` | Not offered |
 | Sandbox, no prompts | Not offered | `--sandbox workspace-write --ask-for-approval never` |
 
-Manual mode still respects actions Claude Code's own settings already allow.
+Manual mode still respects actions Claude Code's own settings already allow,
+except in a limited chat, which uses none of your agent settings: only your
+instructions and skills, read-only (see [Agent files](agent-files.md#in-a-limited-chat)).
 Sandbox, no prompts refuses actions needing approval rather than waiting for a
 person. The workspace-write Codex policies keep network access off in the
 command sandbox; they are not whole-process network confinement.
@@ -31,6 +35,26 @@ shown flags to process-local `approval_policy`/`sandbox_mode`, thread
 `approvalPolicy`/`sandbox`, and every turn's `approvalPolicy`/`sandboxPolicy`.
 Codex must acknowledge the selected thread policy before the prompt is sent.
 No global Claude or Codex configuration is edited.
+
+## Nonessential agent traffic in limited chats
+
+For sandboxed runs only, Ophio asks the agent program not to make unnecessary
+background requests. Claude Code receives
+`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`, its documented switch for telemetry,
+error reporting, update checks and other nonessential background traffic. Codex
+receives process-local `analytics.enabled=false` and
+`check_for_update_on_startup=false` overrides. The private Codex settings folder
+does not import the user's telemetry exporters. Ophio manages agent updates
+separately.
+
+These switches prevent requests at their source rather than hiding blocked-host
+warnings or allowing telemetry hosts. They do not change network grants, the
+sandbox, or reporting of other blocked requests. They are not a promise that
+an agent version makes no other background requests. Runs outside the sandbox
+and global agent settings are unchanged.
+
+References: [Claude Code environment variables](https://code.claude.com/docs/en/env-vars)
+and [Codex configuration reference](https://developers.openai.com/codex/config-reference).
 
 ## Scope and persistence
 

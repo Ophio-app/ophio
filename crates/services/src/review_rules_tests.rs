@@ -379,6 +379,9 @@ async fn what_could_leave_protected_paths_out_is_kept_as_unknown() {
     assert_eq!((rules.unknown, rules.retry), (None, false));
 }
 
+// Windows forbids ':' in these filenames; keep the literal Git pathspec
+// coverage where the files can exist, with a portable literal-glob case below.
+#[cfg(not(windows))]
 #[tokio::test]
 async fn a_changed_folder_named_like_pathspec_magic_is_read_as_spelled() {
     let repo = Repo::new();
@@ -403,6 +406,32 @@ async fn a_changed_folder_named_like_pathspec_magic_is_read_as_spelled() {
         rules.protected,
         [("the x file".to_owned(), ":!x/a.txt".to_owned())]
     );
+}
+
+#[tokio::test]
+async fn a_changed_folder_with_literal_glob_characters_is_read_as_spelled() {
+    let repo = Repo::new();
+    repo.commit(&[
+        ("REVIEW.md", "Root."),
+        ("!x/REVIEW.md", "## Protected paths\n- a.txt — the x file\n"),
+        ("[top]/REVIEW.md", "Literal bracket folder."),
+        ("t/REVIEW.md", "Wrong glob-expanded folder."),
+    ]);
+    let rules = repo
+        .load(None, &["!x/a.txt", "[top]/b.rs", "src/lib.rs"])
+        .await;
+    assert_eq!(rules.used.missing, None);
+    assert_eq!(rules.unknown, None);
+    assert_eq!(
+        rules.used.files,
+        ["REVIEW.md", "!x/REVIEW.md", "[top]/REVIEW.md"]
+    );
+    assert_eq!(
+        rules.protected,
+        [("the x file".to_owned(), "!x/a.txt".to_owned())]
+    );
+    assert!(rules.text.contains("Literal bracket folder."));
+    assert!(!rules.text.contains("Wrong glob-expanded folder."));
 }
 
 #[tokio::test]

@@ -13,7 +13,7 @@ import { useKeepAwake } from "../../platform/awake";
 import { announce } from "../../design/Announcer";
 import { toast } from "../../design/Toast";
 import { useNow } from "../../design/time";
-import { refreshFromSnapshot } from "../../state/projection";
+import { monitorControlTarget, reconcileControl, shareRenewal, showControlTarget, visibleControlViews } from "./controlViews";
 import type {
   CommandReceipt,
   InputAction,
@@ -21,13 +21,13 @@ import type {
 } from "../../protocol/types";
 import { useLeaving } from "./leaving";
 import { useLocalText } from "./local";
+import { usePane } from "../../shell/pane";
 import { useRoute } from "../../shell/Screen";
 import {
   frameFresh,
   FRAME_STALE_MS,
   InputSender,
   renewalDelay,
-  scheduleRenewal,
 } from "./lease";
 import { desktopBlocker, inputBlocker } from "./readiness";
 import type { Picture } from "./useMedia";
@@ -162,6 +162,7 @@ export function pauseSupervised(session: HostSession, targetId: string): void {
 /** This route is the one on screen, and the app is in the foreground. */
 export function useOnScreen(): boolean {
   const { active } = useRoute();
+  const pane = usePane();
   const [foreground, setForeground] = useState(
     () => document.visibilityState !== "hidden",
   );
@@ -170,15 +171,16 @@ export function useOnScreen(): boolean {
     document.addEventListener("visibilitychange", changed);
     return () => document.removeEventListener("visibilitychange", changed);
   }, []);
-  return active && foreground;
+  return active && foreground && (pane?.visible ?? true);
 }
 
 export function useVisible(): boolean {
   const visible = useOnScreen();
+  const pane = usePane();
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || (pane && !pane.active)) return;
     const frame = requestAnimationFrame(() => {
-      const heading = document.querySelector<HTMLElement>(
+      const heading = (pane?.root ?? document).querySelector<HTMLElement>(
         ".tab:not(.is-hidden) .route:not(.is-hidden) :is(.bar__title, .screen__title, .ctx__title)",
       );
       // Focus already on this screen was put there on purpose: the shell
@@ -191,7 +193,7 @@ export function useVisible(): boolean {
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [visible]);
+  }, [visible, pane?.root]);
   return visible;
 }
 
@@ -262,10 +264,14 @@ export function useControl(
     !inputReason && !!grants?.control_input && !!grants.view;
   const lifecycle = useRef(new Map<string, number>());
 
-  const leave = useCallback(() => {
+  const leave = useCallback((preserveOtherViews = false) => {
     intentRef.current = false;
     setIntent(false);
-    if (targetId) armed(session, targetId).delete(self);
+    if (targetId) {
+      const views = armed(session, targetId);
+      views.delete(self);
+      if (preserveOtherViews && views.size > 0) return;
+    }
     const current = targetId
       ? session.state.get().control[targetId]?.lease
       : null;
@@ -283,12 +289,9 @@ export function useControl(
     let disposed = false;
     setReconciled(false);
     if (!visible || !online || !targetId) return;
-    void session.query({ kind: "snapshot" }).then(
-      (snapshot) => {
+    void reconcileControl(session).then(
+      () => {
         if (disposed) return;
-        session.state.set((state) =>
-          refreshFromSnapshot(state, snapshot, Date.now()),
-        );
         setReconciled(true);
         setError(null);
       },
@@ -305,17 +308,20 @@ export function useControl(
     if (!targetId || !visible) return;
     const generation = (lifecycle.current.get(targetId) ?? 0) + 1;
     lifecycle.current.set(targetId, generation);
-    const close = () => {
-      leave();
-      pauseSupervised(session, targetId);
+    const stopViewing = showControlTarget(session, targetId);
+    const close = (force = false) => {
+      leave(!force);
+      if (force || !visibleControlViews(session, targetId)) pauseSupervised(session, targetId);
     };
+    const pagehide = () => close(true);
     const hidden = () => {
-      if (document.visibilityState === "hidden") close();
+      if (document.visibilityState === "hidden") close(true);
     };
-    window.addEventListener("pagehide", close);
+    window.addEventListener("pagehide", pagehide);
     document.addEventListener("visibilitychange", hidden);
     return () => {
-      window.removeEventListener("pagehide", close);
+      stopViewing();
+      window.removeEventListener("pagehide", pagehide);
       document.removeEventListener("visibilitychange", hidden);
       queueMicrotask(() => {
         if (lifecycle.current.get(targetId) === generation) close();
@@ -351,7 +357,9 @@ export function useControl(
         inputSender(session).release(lease, target?.geometry.revision ?? 0);
       return;
     }
-    return scheduleRenewal(
+    return shareRenewal(
+      session,
+      `${lease.lease_id}/${lease.generation}`,
       lease.renewal_window_ms,
       () => {
         const current = targetId
@@ -408,17 +416,13 @@ export function useControl(
   useEffect(() => {
     if (!targetId || !visible) return;
     const started = Date.now();
-    const timer = setInterval(() => {
+    return monitorControlTarget(session, targetId, () => {
       if (Date.now() - started < FRAME_STALE_MS && picture.current.at === null)
-        return;
-      if (
-        !picture.current.connected ||
+        return false;
+      return !picture.current.connected ||
         !frameFresh(picture.current.at, Date.now()) ||
-        picture.current.revision !== target?.geometry.revision
-      )
-        pauseSupervised(session, targetId);
-    }, 500);
-    return () => clearInterval(timer);
+        picture.current.revision !== target?.geometry.revision;
+    }, () => pauseSupervised(session, targetId));
   }, [session, targetId, target?.geometry.revision, visible, picture]);
 
   useEffect(() => {
@@ -462,9 +466,7 @@ export function useControl(
           // Refresh immediately rather than waiting for the next display event.
           // The media stream supplies the new frame; neither input nor a drag
           // is replayed when its geometry matches again.
-          void session.query({ kind: "snapshot" }).then(snapshot => {
-            session.state.set(state => refreshFromSnapshot(state, snapshot, Date.now()));
-          }).catch((e: unknown) => {
+          void reconcileControl(session).catch((e: unknown) => {
             const state = session.state.get();
             const current = state.targets.find(t => t.target_id === targetId);
             if (geometryPauseNow.current !== pause || !intentRef.current ||

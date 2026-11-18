@@ -45,23 +45,37 @@ async function startConversation() {
   await tick(4000);
 }
 
-it("says a chat is a chat and what its access lets it do, never Ask, and opens the access bar", async () => {
+it("says what a chat may reach once, on the access line, not again in its heading", async () => {
   await setup();
   await startConversation();
-  expect(line()?.textContent).toBe("Chat, can read tidewater-api and use the internet");
-  expect(line()?.getAttribute("aria-label")).toBe("Chat, can read tidewater-api and use the internet. Change what it may reach");
-  expect(document.querySelector(".chat-head")?.textContent).not.toMatch(/\bAsk\b/);
-  fireEvent.click(line()!);
+  // The heading's second line names the model, never Ask or the access.
+  expect(line()).toBeNull();
+  expect(document.querySelector(".chat-head")?.textContent).not.toMatch(/\bAsk\b|can read/);
+  expect(document.querySelector(".chat-head__model")).toBeTruthy();
+  const access = document.querySelector(".access__line")!;
+  expect(access.textContent).toContain("Read: tidewater-api · Change: Nothing");
+  expect(access.textContent).toContain("Internet on");
+  fireEvent.click(access);
+  await tick(50);
+  const bar = screen.getByRole("group", { name: "What the agent may reach" });
+  // Turning the internet off is said once the computer has it in force.
+  fireEvent.click(within(bar).getByRole("button", { name: "Internet" }));
+  await tick(1500);
+  expect(access.textContent).not.toContain("Internet on");
+});
+
+it("opens the access controls when something asks for them, and points them out", async () => {
+  await setup();
+  await startConversation();
+  const task = window.__sim!.host.tasks.find((t) => t.conversation)!;
+  act(() => openMayDo(app.ui, task));
   await tick(50);
   const bar = screen.getByRole("group", { name: "What the agent may reach" });
   expect(bar.classList.contains("is-called")).toBe(true);
+  expect(document.querySelector(".access__line")?.getAttribute("aria-expanded")).toBe("true");
   expect(document.activeElement?.getAttribute("aria-label")).toMatch(/^Read: /);
   await tick(2000);
   expect(bar.classList.contains("is-called")).toBe(false);
-  // Turning the internet off is said at once.
-  fireEvent.click(within(bar).getByRole("button", { name: "Internet" }));
-  await tick(1500);
-  expect(line()?.textContent).toBe("Chat, can read tidewater-api");
 });
 
 it("says a Work task's mode and opens a sheet with it", async () => {

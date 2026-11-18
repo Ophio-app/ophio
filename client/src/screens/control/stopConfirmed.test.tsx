@@ -35,7 +35,8 @@ it("a Stop from the rail is confirmed on screen after the rail moves on to the n
   // The run has ended and the rail offers the other task's Stop in its place.
   expect(app.session.state.get().tasks[ids.tDash]?.state).toBe("interrupted");
   expect(screen.getByRole("button", { name: /^Stop · Fix the flaky retry test/ })).toBeTruthy();
-  expect(shown()).toBe("Stop requested for “Check the staging dashboard renders the new latency chart”");
+  // “Stop requested” was true only until then; the toast now says it stopped.
+  expect(shown()).toBe("Stopped “Check the staging dashboard renders the new latency chart”");
 });
 
 it("Force stop is confirmed on screen", async () => {

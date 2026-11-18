@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -79,7 +80,7 @@ internal object Channels {
      * time, and that the categories from before each type had its own are
      * gone, with the notifications posted to them.
      */
-    fun ensure(context: Context) {
+    @Synchronized fun ensure(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         // The person's choices in the old categories, read before they go:
         // a type that used to show in one takes a quieter choice over.
@@ -105,6 +106,7 @@ internal object Channels {
                 create(context, t, imported.optString(t.id).takeIf { it.isNotEmpty() } ?: t.tier)
             }
         }
+        upgradeReplyDefault(context, imported.has("reply"))
         for (gone in listOf("attention", "connection", "background", "needs-you", "finished", "updates")) {
             manager.deleteNotificationChannel(gone)
         }
@@ -120,6 +122,30 @@ internal object Channels {
                 group = OPHIO
             }
         )
+    }
+
+    /** Only the old, untouched Reply default changes; never another type.
+     * Android 10 and earlier cannot tell us whether sound was user-set.
+     * Old app taps choosing Silent while already Silent were not recorded:
+     * that indistinguishable case adopts the new reply default once. */
+    private fun upgradeReplyDefault(context: Context, imported: Boolean) {
+        val prefs = prefs(context)
+        if (prefs.getBoolean("reply-audible-default-v1", false)) return
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val channel = manager.getNotificationChannel(id(context, "reply"))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && channel != null &&
+            ReplyDefaultUpgrade.allowed(
+                sdk = Build.VERSION.SDK_INT,
+                generation = prefs.getInt("reply", 1),
+                tier = tierOf(channel.importance),
+                explicit = prefs.contains("choice-reply") || imported,
+                userImportance = channel.hasUserSetImportance(),
+                userSound = channel.hasUserSetSound(),
+            )
+        ) {
+            set(context, "reply", "alert")
+        }
+        prefs.edit().putBoolean("reply-audible-default-v1", true).commit()
     }
 
     private fun create(context: Context, t: Type, tier: String) {
@@ -156,8 +182,10 @@ internal object Channels {
      * it before, when that category was replaced (its notifications go with
      * it), or the same id when it was changed in place.
      */
-    fun set(context: Context, type: String, tier: String): String? {
+    @Synchronized fun set(context: Context, type: String, tier: String): String? {
         val t = type(type) ?: return null
+        // Remember even a no-op choice, so future default changes respect it.
+        prefs(context).edit().putString("choice-$type", tier).commit()
         val manager = context.getSystemService(NotificationManager::class.java)
         val before = id(context, type)
         val channel = manager.getNotificationChannel(before)

@@ -32,8 +32,9 @@ use std::{
         Once,
         atomic::{AtomicBool, Ordering},
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
+use tokio::time::Instant;
 
 /// How long a new step takes to come in.
 const ENTERING: Duration = Duration::from_millis(240);

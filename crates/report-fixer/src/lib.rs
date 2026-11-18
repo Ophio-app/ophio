@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Durable, code-gated report fixes. Agents have no host credentials or merge authority.
 pub mod config;
+mod contained;
 pub mod execution;
 mod machine;
 pub mod repository;

@@ -1,0 +1,13 @@
+# Choosing an agent for the next Chat message
+
+In Chat, the agent, model and effort picker chooses who answers the **next message**. A choice here does not change the project's defaults, the person's usual agent or settings for structured Tasks. Tasks keep their agent. Chat switching is available only when the computer advertises `chat_agent_switch_v1`; on an older computer, update it rather than assuming a different agent will receive the message.
+
+A message queued while the current agent is working keeps the agent, model and effort chosen when **that message was sent**. Changing the picker afterward does not change the queued message. A message for another agent cannot use **Steer now** to interrupt the current agent; it waits for the next turn. The conversation remains one Chat, but each run records which agent and model actually handled it. Reply labels appear only after more than one agent has replied, so a single-agent chat stays uncluttered.
+
+## What the next agent knows
+
+When the agent changes, Ophio supplies recent conversation context: only the person's messages and completed agent replies, at most 2,000 characters from each message and 12,000 characters overall. This is an informational transcript, not an agent's native memory. It does not carry pending requests, tool state, approvals, permission grants or answers between agents. The receiving agent starts or resumes under its own normal access policy, sandbox and authorization checks. Switching cannot widen what the conversation or device may do.
+
+If you switch back, Ophio looks through the newest 1,000 timeline entries for that agent's earlier native session. It resumes the session when safe and includes the recent conversation it missed. If that session is unavailable, outside that search or unsafe to resume, it starts a fresh session with recent context instead. Earlier native memory is not promised in that case. A handover is saved with the run before the next agent is launched, so a failed launch can retry the exact context after a restart. If delivery is uncertain, Ophio starts fresh with confirmed conversation rather than appending the handover twice to uncertain native history.
+
+The context limits are about what can be passed to a different agent, not a promise that the full conversation is copied into every native session. Ophio's own answers, helper replies and reminders are marked when recorded and omitted from handovers, even if they wait in Next up or the computer restarts. Older messages without that origin record retain their existing interpretation. Files, instructions and access still follow the destination's normal rules; the transcript itself is never a permission or an approval.

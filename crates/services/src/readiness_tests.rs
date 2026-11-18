@@ -52,6 +52,8 @@ async fn ask_and_plan_admission_do_not_require_an_installed_permission_bridge() 
             hub.submit(
                 &owner,
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: None,
                     agent_chosen: None,
                     mode: Some(mode),
@@ -83,6 +85,8 @@ async fn ask_and_plan_admission_do_not_require_an_installed_permission_bridge() 
         .submit(
             &owner,
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: Some(TaskMode::Work),

@@ -106,7 +106,7 @@
 │  ◉ Reach ──────────┤                                                         │
 │  ┊                 │  Your phone reaches this computer through Tailscale, a  │
 │  ○ Agents          │  private network between your own devices that works    │
-│  ┊                 │  wherever you are, or through the Wi‑Fi you share at    │
+│  ┊                 │  wherever you are, or through the Wi-Fi you share at    │
 │  ○ Phone           │  home.                                                  │
 │  ┊                 │                                                         │
 │  ○ Extras          │  ✓ Tailscale  Connected as desk.tail.ts.net             │
@@ -114,11 +114,11 @@
 │  ○ Check           │  Your phone needs Tailscale too, signed in to the same  │
 │                    │  account.                                               │
 │                    │                                                         │
-│                    │  · Wi‑Fi  This computer is 192.168.1.20 here; phones    │
+│                    │  · Wi-Fi  This computer is 192.168.1.20 here; phones    │
 │                    │           on this network can't reach it unless you     │
 │                    │                                                         │
 │                    │  ╾─◆ [n] Use Tailscale · recommended                    │
-│                    │      [w] This Wi‑Fi only                                │
+│                    │      [w] This Wi-Fi only                                │
 │                    │      [l] Leave this for later                           │
 │                    │      [x] Skip the rest of setup                         │
 │                    │                                                         │

@@ -76,6 +76,15 @@ export function summaryWords(c: ChecklistSummary): string {
   return parts.join(" · ");
 }
 
+/** The row's one line: how many are left and the next step. Blockers,
+ * waiting agents and questions show as the icon's dot and in full in the
+ * checklist; a screen reader still hears them on the row. */
+export function rowWords(c: ChecklistSummary): { shown: string; rest: string } {
+  const all = summaryWords(c);
+  const shown = c.open === 0 ? all : [`${c.open} to do`, c.next && `next: ${c.next}`].filter(Boolean).join(" · ");
+  return { shown, rest: all.slice(shown.length) };
+}
+
 /**
  * The checklist's row under New. Absent while the computer doesn't keep
  * checklists or this phone may not see tasks; until the computer has said
@@ -96,12 +105,13 @@ export function ChecklistRow({ project }: { project: Project }) {
   // The brand's colour tints the icon only where it reads in both themes.
   const l = luminance(summary.accent);
   const accent = l !== null && l > 0.07 && l < 0.4 ? summary.accent : undefined;
+  const words = rowWords(summary);
   return (
     <ListRow
       className={`checklist-row${summary.waiting || summary.blockers ? " checklist-row--waiting" : ""}${summary.blockers ? " checklist-row--blocker" : ""}`}
       leading={<span className="row__icon checklist-row__icon" aria-hidden style={accent ? { color: accent } : undefined}><ListChecks strokeWidth={2} /></span>}
       title={summary.title}
-      subtitle={summaryWords(summary)}
+      subtitle={<>{words.shown}{words.rest && <span className="visually-hidden">{words.rest}</span>}</>}
       chevron
       onClick={() => ui.openChecklist(project.project_id)}
     />

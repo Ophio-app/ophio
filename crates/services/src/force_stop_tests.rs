@@ -132,6 +132,8 @@ async fn fixture_in(
             .submit(
                 &owner,
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     project_id,
                     kind: TaskKind::Coding,
                     mode: None,
@@ -230,6 +232,9 @@ async fn force_stop_fixture(harness: capability::HarnessKind) {
         .submit(
             &owner,
             CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id,
                 text: "held until stop".into(),
                 bundle: None,
@@ -406,6 +411,8 @@ async fn hub_shutdown_fixture(harness: capability::HarnessKind, root: tempfile::
     let (_root, hub, _, _) = fixture_in(harness, root, "wait").await;
     let parent = std::fs::read_to_string(dir.join("fixture.pid")).unwrap();
     let child = std::fs::read_to_string(dir.join("child.pid")).unwrap();
+    // child.pid is published immediately before Claude emits its first turn
+    // event, so shutting down here can race the event consumer and actor.
     let started = std::time::Instant::now();
     let mut shutdown = tokio::spawn(async move { hub.shutdown().await });
     // Shutdown is itself bounded, so this limit only catches a hang.
@@ -484,6 +491,9 @@ async fn held_message_after_stop_fixture(harness: capability::HarnessKind) {
         .submit(
             &owner,
             CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id,
                 text: "held until stop".into(),
                 bundle: None,
@@ -595,6 +605,9 @@ async fn held_message_after_force_stop_fixture(
         .submit(
             &owner,
             CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id,
                 text: "held until force stop".into(),
                 bundle: None,

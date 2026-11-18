@@ -9,6 +9,9 @@ use protocol::{
 pub fn command(g: &Grants, c: &Command) -> bool {
     use Command::*;
     match c {
+        ChecksSave { .. } | ChecksApplyDraft { .. } | ChecksDiscardDraft { .. }
+        | ChecksRunNow { .. } | ChecksStopJob { .. } => g.library_write,
+        ChecksAsk { .. } => g.library_write && g.tasks,
         AddProject { .. }
         | ReviewContribution { .. }
         | CancelContribution { .. }
@@ -30,6 +33,11 @@ pub fn command(g: &Grants, c: &Command) -> bool {
         | SetChannelProject { .. }
         | RunReadinessCheck
         | SetAgentUpdates { .. }
+        | SetAgentUpdateMode { .. }
+        | CheckAgentUpdates { .. }
+        | UpdateAgent { .. }
+        // Whether the computer asks GitHub each day is the owner's choice.
+        | SetReleaseCheck { .. }
         | SetAgentPreferences { .. }
         | SetLaunchDefaults { .. }
         | SetFileDelivery { .. } => g.admin,
@@ -61,6 +69,7 @@ pub fn command(g: &Grants, c: &Command) -> bool {
         | SetTaskNotify { .. }
         // Tasks already run with the whole computer; a conversation is held to less.
         | SetConversationAccess { .. }
+        | SetChatAccessDefault { .. }
         | ReconcileTask { .. }
         | CheckHelpers { .. }
         | AcknowledgeAttention { .. }
@@ -79,6 +88,9 @@ pub fn command(g: &Grants, c: &Command) -> bool {
         // Starting the server runs its command on the computer, as a terminal does.
         CheckPreview { start: true, .. } => g.tasks && g.terminal,
         ResolveApproval { .. } => g.approvals,
+        // Standing permission to start work without asking, so only a phone
+        // that may both start tasks and answer approvals can give it.
+        SetAutoStart { .. } => g.tasks && g.approvals,
         // Taking a request along allows it, as Allow does.
         SwitchToWork { approval_id, .. } => g.tasks && (approval_id.is_none() || g.approvals),
         RequestHumanLease { .. }
@@ -196,7 +208,14 @@ pub fn command(g: &Grants, c: &Command) -> bool {
                 protocol::github::GithubAction::MergePr { .. }
                 | protocol::github::GithubAction::MergeTogether { .. },
         } => g.tasks && g.approvals,
-        Github { .. } => g.admin,
+        // Name the remaining actions so a new action requires a decision here,
+        // rather than silently inheriting administrator access.
+        Github {
+            action:
+                protocol::github::GithubAction::SetSettings { .. }
+                | protocol::github::GithubAction::AnswerWarning { .. }
+                | protocol::github::GithubAction::ProtectBranch { .. },
+        } => g.admin,
     }
 }
 
@@ -213,6 +232,10 @@ fn merges_by_itself(github: Option<&protocol::github::GithubLink>) -> bool {
 
 pub fn query(g: &Grants, q: &Query) -> bool {
     match q {
+        Query::ChecksList { .. }
+        | Query::ChecksHistory { .. }
+        | Query::TaskChecks { .. }
+        | Query::CheckJob { .. } => g.tasks,
         Query::ContributionDelivery { .. }
         | Query::ContributionCapabilities
         | Query::ContributionOperation { .. }
@@ -229,7 +252,10 @@ pub fn query(g: &Grants, q: &Query) -> bool {
         | Query::Checklist { .. } => g.tasks,
         // Where files go is the owner's to set, and theirs to use.
         Query::FileDelivery => g.tasks || g.admin,
-        Query::AgentUpdates | Query::AgentPreferences | Query::NotificationSettings => g.view,
+        Query::AgentUpdates
+        | Query::AgentPreferences
+        | Query::NotificationSettings
+        | Query::ReleaseCheck => g.view,
         Query::Reports | Query::Report { .. } | Query::ReportPreview { .. } => g.view,
         Query::InboxReportCode { .. } | Query::ReportTaskProject => g.admin,
         Query::ObservedSessions => g.tasks,
@@ -536,6 +562,8 @@ mod tests {
     fn starting_a_task_that_merges_by_itself_is_a_sign_off() {
         use protocol::github::{GithubLink, WhenGreen};
         let start = |when_green| Command::CreateTask {
+            origin: None,
+            from_chat: None,
             github: Some(Box::new(GithubLink::Issue {
                 number: 7,
                 review_with: None,
@@ -708,6 +736,8 @@ mod tests {
             Command::DeleteOneOff { project_id: p },
             Command::PromoteOneOff { project_id: p },
             Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: None,
@@ -732,6 +762,9 @@ mod tests {
                 review: None,
             },
             Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id: t,
                 text: "x".into(),
                 bundle: None,
@@ -747,6 +780,8 @@ mod tests {
                 text: None,
             },
             Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 mode: None,
                 bundle: None,
                 task_id: t,
@@ -770,6 +805,14 @@ mod tests {
             Command::SetConversationAccess {
                 task_id: t,
                 access: Default::default(),
+            },
+            Command::SetChatAccessDefault {
+                project_id: p,
+                access: None,
+            },
+            Command::SetAutoStart {
+                project_id: p,
+                auto_start: None,
             },
             Command::CheckHelpers { run_id: run },
             Command::ReconcileTask {
@@ -991,6 +1034,14 @@ mod tests {
                 desktop: true,
             },
             Command::SetAgentUpdates { enabled: true },
+            Command::SetAgentUpdateMode {
+                mode: protocol::agent_updates::AgentUpdateMode::Notify,
+            },
+            Command::CheckAgentUpdates {},
+            Command::UpdateAgent {
+                harness: protocol::capability::HarnessKind::ClaudeCode,
+            },
+            Command::SetReleaseCheck { enabled: false },
             Command::SetAgentPreferences { questions: false },
             Command::SetLaunchDefaults {
                 defaults: Vec::new(),
@@ -1090,6 +1141,36 @@ mod tests {
         commands.push(Command::Github {
             action: protocol::github::GithubAction::ProtectBranch { project_id: p },
         });
+        let check = protocol::CheckId::new();
+        commands.push(Command::ChecksSave {
+            project_id: p,
+            base_version: 1,
+            edit: protocol::checks::CheckEdit::SetEnabled {
+                check_id: check,
+                enabled: false,
+            },
+        });
+        commands.push(Command::ChecksAsk {
+            project_id: p,
+            check_id: None,
+            request: String::new(),
+        });
+        commands.push(Command::ChecksApplyDraft {
+            draft_id: protocol::CheckDraftId::new(),
+            base_version: 1,
+            keep_items: vec![0],
+        });
+        commands.push(Command::ChecksDiscardDraft {
+            draft_id: protocol::CheckDraftId::new(),
+        });
+        commands.push(Command::ChecksRunNow {
+            project_id: p,
+            check_ids: vec![check],
+        });
+        commands.push(Command::ChecksStopJob {
+            job_id: protocol::CheckJobId::new(),
+            confirmed_stopped: false,
+        });
         // Keep the list tied to the wire schema so a new variant cannot silently
         // escape this table-driven permission test.
         let schema = serde_json::to_value(schemars::schema_for!(Command)).unwrap();
@@ -1117,9 +1198,18 @@ mod tests {
         for c in commands {
             assert!(!command(&Grants::default(), &c), "{c:?}");
             assert!(command(&Grants::owner(), &c), "{c:?}");
+            // Checks are the person's Library: every effectful checks
+            // request needs the Library-write grant, whatever else is granted.
             if matches!(
                 c,
-                Command::PrepareContribution { .. } | Command::SetContributionRoot { .. }
+                Command::PrepareContribution { .. }
+                    | Command::SetContributionRoot { .. }
+                    | Command::ChecksSave { .. }
+                    | Command::ChecksAsk { .. }
+                    | Command::ChecksApplyDraft { .. }
+                    | Command::ChecksDiscardDraft { .. }
+                    | Command::ChecksRunNow { .. }
+                    | Command::ChecksStopJob { .. }
             ) {
                 assert!(!command(
                     &Grants {
@@ -1170,6 +1260,7 @@ mod tests {
             },
             Query::Harnesses,
             Query::AgentUpdates,
+            Query::ReleaseCheck,
             Query::AgentPreferences,
             Query::NotificationSettings,
             Query::Checklists,
@@ -1286,6 +1377,12 @@ mod tests {
             Query::ReportPreview {
                 salt: "00".into(),
                 extras: Vec::new(),
+            },
+            Query::ChecksList { project_id: None },
+            Query::ChecksHistory { project_id: p },
+            Query::TaskChecks { task_id: t },
+            Query::CheckJob {
+                job_id: protocol::CheckJobId::new(),
             },
         ]);
         let schema = serde_json::to_value(schemars::schema_for!(Query)).unwrap();

@@ -158,6 +158,7 @@ it("asks once, then walks only the Android steps still needed", async () => {
   render(<AlertsSetup />, { wrapper });
   await advance();
   expect(screen.getByText("Notify me when Øphio is closed?")).toBeTruthy();
+  expect(screen.getByText(/Questions, approvals and chat replies you aren’t viewing make a sound by default/)).toBeTruthy();
   expect((screen.getByRole("radio", { name: "Turn on" }) as HTMLInputElement).checked).toBe(true);
 
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -227,6 +228,7 @@ it("starts on the answer setup carried, and forgets it once saved", async () => 
 it("shows the watcher's state in Settings and opens Android's own controls", async () => {
   render(<Notifications />, { wrapper });
   await advance();
+  fireEvent.click(screen.getByText("Background delivery and phone settings"));
   const toggle = screen.getByRole("checkbox", { name: "Notify me when Øphio is closed" }) as HTMLInputElement;
   expect(toggle.checked).toBe(true);
   // Each computer's own connection, in a few words.

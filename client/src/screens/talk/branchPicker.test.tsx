@@ -14,6 +14,8 @@ import { TaskAgentSheet } from "./TaskAgent";
 let app: App;
 const astra = { harness: "codex" as const, model: "gpt-6-astra", effort: "high" };
 const tick = async () => act(async () => { await vi.advanceTimersByTimeAsync(900); });
+/** Opens Review's folded sections, as a person taps them open. */
+const unfold = () => document.querySelectorAll<HTMLButtonElement>('.fold__head[aria-expanded="false"]').forEach((b) => fireEvent.click(b));
 beforeEach(async () => {
   localStorage.clear(); vi.useFakeTimers();
   HTMLDialogElement.prototype.showModal = function () { this.open = true; };
@@ -42,7 +44,7 @@ const created = () => Object.values(app.session.commands.get()).find(c => c.body
 
 it("names no branch by default", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Check the parser", agent: astra, mode: "work" });
-  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick();
+  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick(); unfold();
   expect(screen.getByRole("button", { name: "Branch: All branches" })).toBeTruthy();
   expect(screen.getByText("fix/retry-flake is checked out · 3 uncommitted changes.")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
@@ -54,7 +56,7 @@ it("names no branch by default", async () => {
 
 it("lists the computer's branches and tells the agent the one chosen", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Add rate limits", agent: astra, mode: "work" });
-  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick();
+  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Branch: All branches" })); await tick();
   const sheet = screen.getByRole("radiogroup", { name: "Branch" });
   expect(within(sheet).getByRole("radio", { name: /All branches/ }).getAttribute("aria-checked")).toBe("true");
@@ -81,7 +83,7 @@ it("starts a Next up item on its source task's branch, which can be cleared", as
   host.tasks = host.tasks.map(t => t.task_id === source.task_id ? source : t);
   host.emit({ type: "task_upserted", task: source });
   app.ui.saveDraft(source.project_id, source.task_id, { text: "Then tidy the headers" });
-  view({ screen: "review", projectId: source.project_id, taskId: source.task_id, intent: "next_up" }); await tick();
+  view({ screen: "review", projectId: source.project_id, taskId: source.task_id, intent: "next_up" }); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Branch: feature/webhook-retries" })); await tick();
   expect(screen.getByRole("radio", { name: "feature/webhook-retries" }).getAttribute("aria-checked")).toBe("true");
   fireEvent.click(screen.getByRole("radio", { name: /All branches/ }));
@@ -101,7 +103,7 @@ it("shows a task's branch where its agent and flags are", () => {
 
 it("names a new branch for the agent to make and work on", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Add rate limits", agent: astra, mode: "work" });
-  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick();
+  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Branch: All branches" })); await tick();
   fireEvent.click(screen.getByRole("button", { name: /^New branch/ }));
   const field = screen.getByLabelText<HTMLInputElement>("Branch name");
@@ -129,7 +131,7 @@ it("names a new branch for the agent to make and work on", async () => {
 
 it("says why a new branch's name won't do before it can be used", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Add rate limits", agent: astra, mode: "work" });
-  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick();
+  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Branch: All branches" })); await tick();
   fireEvent.click(screen.getByRole("button", { name: /^New branch/ }));
   const field = screen.getByLabelText("Branch name");
@@ -158,7 +160,7 @@ it("says why a new branch's name won't do before it can be used", async () => {
 
 it("offers a search that matches no branch as a new one", async () => {
   app.ui.saveDraft(ids.pTide, null, { text: "Try a spike", agent: astra, mode: "work" });
-  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick();
+  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Branch: All branches" })); await tick();
   const find = screen.getByLabelText("Find a branch");
   // An exact match is offered as itself, not again as new.
@@ -178,7 +180,7 @@ it("won't name a branch to a companion that can't pass it on", async () => {
   const caps = app.session.state.get().capabilities!;
   app.session.state.set(s => ({ ...s, capabilities: { ...caps, features: caps.features.filter(f => f !== "task_branch_v1") } }));
   app.ui.saveDraft(ids.pTide, null, { text: "Check the parser", agent: astra, mode: "work" });
-  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick();
+  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick(); unfold();
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Branch: All branches" }).disabled).toBe(true);
   expect(screen.getByText(/Update Øphio on this computer to choose a branch/)).toBeTruthy();
   const body = createTaskCommand({ projectId: ids.pTide, prompt: "Inspect parser", title: null, agent: astra, mode: "work", placement: { mode: "start_now" }, mission: null, bundle: null, branch: { name: "main" } });

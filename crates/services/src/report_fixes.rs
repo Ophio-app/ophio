@@ -388,9 +388,12 @@ impl Approvals for OwnerApprovals {
                 }
                 let task_id = TaskId::new();
                 let task = Task {
+                    checking: None,
                     task_id,
                     project_id: self.project_id,
                     kind: TaskKind::Coding,
+                    origin: None,
+                    from_chat: None,
                     mode: TaskMode::Work,
                     title: title.clone(),
                     state: TaskState::Completed,
@@ -473,6 +476,8 @@ impl Approvals for OwnerApprovals {
                     account_id: None,
                     alert: None,
                     alert_handled_at: None,
+                    agent_update: None,
+                    new_version: None,
                 };
                 tx.put(
                     PENDING,

@@ -125,6 +125,47 @@ async fn eof(stream: &mut DuplexStream) {
         0
     );
 }
+// Match the client, not whichever local discovery probe connected first.
+async fn accept_preview(listener: &TcpListener, stream: &mut DuplexStream) -> TcpStream {
+    let identity = format!("preview-{}", uuid::Uuid::now_v7());
+    stream.write_all(identity.as_bytes()).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            let (mut server, _) = listener.accept().await.unwrap();
+            let mut prefix = [0; 4];
+            match server.read_exact(&mut prefix).await {
+                Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => {
+                    continue;
+                }
+                result => {
+                    result.unwrap();
+                }
+            }
+            if &prefix == b"GET " {
+                let mut request = prefix.to_vec();
+                while !request.ends_with(b"\r\n\r\n") {
+                    assert!(request.len() < 4096, "oversized discovery request");
+                    request.push(server.read_u8().await.unwrap());
+                }
+                let request = std::str::from_utf8(&request).unwrap();
+                assert_eq!(request.lines().next(), Some("GET / HTTP/1.1"));
+                assert!(
+                    request
+                        .lines()
+                        .any(|line| line.eq_ignore_ascii_case("Accept: text/html"))
+                );
+                continue;
+            }
+            let mut received = vec![0; identity.len()];
+            received[..4].copy_from_slice(&prefix);
+            server.read_exact(&mut received[4..]).await.unwrap();
+            assert_eq!(received, identity.as_bytes());
+            break server;
+        }
+    })
+    .await
+    .expect("the actual preview connection must reach its server")
+}
 #[tokio::test]
 async fn only_checked_registered_loopback_is_accepted() {
     let f = Fixture::new().await;
@@ -174,7 +215,7 @@ async fn http_and_websocket_upgrade_are_bidirectional() {
             .preview(format!("http://{}", listener.local_addr().unwrap()), true)
             .await;
         let mut stream = f.hub.open_preview(&f.caller, id).await.unwrap();
-        let (mut server, _) = listener.accept().await.unwrap();
+        let mut server = accept_preview(&listener, &mut stream).await;
         let request = if upgrade {
             b"GET /live HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n".as_slice()
         } else {
@@ -220,7 +261,7 @@ async fn closes_on_unregister_revoke_disconnect_and_idle() {
             .preview(format!("http://{}", listener.local_addr().unwrap()), true)
             .await;
         let mut stream = f.hub.open_preview(&f.caller, id).await.unwrap();
-        let (mut server, _) = listener.accept().await.unwrap();
+        let mut server = accept_preview(&listener, &mut stream).await;
         match reason {
             "unregister" => {
                 f.hub
@@ -278,7 +319,7 @@ async fn connection_limit_is_bounded() {
     let mut servers = Vec::new();
     for _ in 0..MAX_STREAMS_PER_PRINCIPAL {
         streams.push(f.hub.open_preview(&f.caller, id).await.unwrap());
-        servers.push(listener.accept().await.unwrap().0);
+        servers.push(accept_preview(&listener, streams.last_mut().unwrap()).await);
     }
     assert_eq!(
         f.hub.open_preview(&f.caller, id).await.unwrap_err().code,
@@ -319,15 +360,40 @@ async fn localhost_tries_ipv4_then_ipv6_and_reports_the_answer() {
         ]
     );
     let id = f.preview(url, true).await;
+    // A local discovery client can reach this listener before our own forward.
+    // Inject its request and an abandoned connection so both races are covered.
+    let mut discovery = TcpStream::connect(listener.local_addr().unwrap())
+        .await
+        .unwrap();
+    discovery
+        .write_all(b"GET / HTTP/1.1\r\nAccept: text/html\r\n\r\n")
+        .await
+        .unwrap();
+    discovery.shutdown().await.unwrap();
+    drop(discovery);
+    drop(
+        TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap(),
+    );
     let mut connection = f.hub.open_preview_connection(&f.caller, id).await.unwrap();
     assert_eq!(connection.connected_address, Some(format!("[::1]:{port}")));
-    let (mut server, _) = listener.accept().await.unwrap();
+    let mut server = accept_preview(&listener, &mut connection.stream).await;
     server.write_all(b"ipv6").await.unwrap();
     let mut received = [0; 4];
-    connection.stream.read_exact(&mut received).await.unwrap();
+    tokio::time::timeout(
+        Duration::from_secs(2),
+        connection.stream.read_exact(&mut received),
+    )
+    .await
+    .unwrap()
+    .unwrap();
     assert_eq!(&received, b"ipv6");
     f.clock.advance(Duration::from_secs(301));
-    connection.closed.changed().await.unwrap();
+    tokio::time::timeout(Duration::from_secs(2), connection.closed.changed())
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(
         *connection.closed.borrow(),
         Some(PreviewCloseReason::IdleTimeout)

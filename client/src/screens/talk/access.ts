@@ -13,6 +13,30 @@ export function defaultAccess(projectId: string): ConversationAccess {
   return { read: [projectId], write: [], whole_read: false, whole_write: false, internet: true, local_network: false };
 }
 
+/**
+ * What a new conversation in a project starts with: the person's choice for
+ * this one, else what they last let a chat there reach, as the computer keeps
+ * it (`chat_access`, set only by the person and confirmed there), else read
+ * only. A project never widened starts read-only. Projects since removed
+ * are left out.
+ */
+export function newChatAccess(project: Pick<Project, "project_id" | "chat_access"> | undefined, projectId: string, drafted: ConversationAccess | null | undefined, known: Record<string, unknown>): ConversationAccess {
+  const kept = drafted ?? project?.chat_access;
+  return kept ? onlyKnown(kept, projectId, known) : defaultAccess(projectId);
+}
+
+/** `access` without the projects this computer no longer lists, which it
+ * would refuse to set a chat up with. Its own project always stays. */
+export function onlyKnown(access: ConversationAccess, projectId: string, known: Record<string, unknown>): ConversationAccess {
+  const ok = (id: string) => id === projectId || !!known[id];
+  return { ...access, read: access.read.filter(ok), write: access.write.filter(ok) };
+}
+
+/** Whether a chat starting with this reaches past reading its own project. */
+export function widerThanRead(a: ConversationAccess, projectId: string): boolean {
+  return a.whole_read || a.whole_write || a.write.length > 0 || !!a.local_network || a.read.some((r) => r !== projectId);
+}
+
 /** What a conversation reaches on a computer that can't hold it to a choice. */
 export function askAccess(projectId: string): ConversationAccess {
   return { ...defaultAccess(projectId), internet: false };
@@ -48,9 +72,10 @@ const list = (names: string[]): string => new Intl.ListFormat("en", { type: "con
 /**
  * What `access` lets the agent of a conversation in `here` do, in a
  * sentence or three. The conversation's own project may always be read.
- * Projects this computer no longer lists are left out.
+ * Projects this computer no longer lists are left out. `cards`: the computer
+ * has its agent suggest work as cards in the chat.
  */
-export function describeAccess(access: ConversationAccess, here: Project, projects: Record<string, Project | undefined>): string {
+export function describeAccess(access: ConversationAccess, here: Project, projects: Record<string, Project | undefined>, cards = false): string {
   const names = (ids: string[]) => [...new Set(ids.map((id) => (id === here.project_id ? here : projects[id])).filter((p): p is Project => !!p).map(placeName))];
   const write = access.whole_write ? [] : names(access.write);
   const read = names([here.project_id, ...access.read]).filter((n) => !write.includes(n));
@@ -63,7 +88,10 @@ export function describeAccess(access: ConversationAccess, here: Project, projec
     : reachesOwnNetwork(access) ? "It can look things up on the internet and reach your own network, such as your tailnet."
     : "It can look things up on the internet.";
   const changes = access.whole_write || write.length > 0;
-  return `${reach} ${internet}${changes ? "" : " Turn it into a task when you want something done."}`;
+  // Where the agent suggests work as cards, the chat says so; before, the
+  // person turned the chat into a task themselves.
+  const then = changes ? "" : cards ? " When something needs doing, it suggests a task you can start with one tap." : " Turn it into a task when you want something done.";
+  return `${reach} ${internet}${then}`;
 }
 
 /**
@@ -91,4 +119,14 @@ export function normalizedAccess(a: ConversationAccess): ConversationAccess {
   const read = [...new Set([...a.read, ...a.write])].sort();
   const write = [...new Set(a.write)].sort();
   return { ...a, read, write, whole_read: a.whole_read || a.whole_write, local_network: a.internet && !!a.local_network };
+}
+
+/** Whether `have` reaches all that `need` does. */
+export function covers(have: ConversationAccess, need: ConversationAccess): boolean {
+  const h = normalizedAccess(have);
+  const n = normalizedAccess(need);
+  const reads = (id: string) => h.whole_read || h.read.includes(id);
+  return n.read.every(reads) && n.write.every((id) => h.whole_write || h.write.includes(id))
+    && (!n.whole_read || h.whole_read) && (!n.whole_write || h.whole_write)
+    && (!n.internet || h.internet) && (!n.local_network || reachesOwnNetwork(h));
 }

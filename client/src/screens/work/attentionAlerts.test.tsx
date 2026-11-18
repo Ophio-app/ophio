@@ -13,6 +13,7 @@ import Receipt from "./Receipt";
 import NeedsYou from "./NeedsYou";
 import { forgetHandled } from "../../platform/handled";
 import { appLock } from "../../platform/lock";
+import { notificationFor, openNotification } from "../../platform/notifications";
 
 let app: App;
 const advance = async (ms = 600) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
@@ -41,6 +42,17 @@ function Front() {
   </RouteProvider><BottomNav /></>;
 }
 function open(route: Route) { app.ui.push(route); render(<AppProvider app={app}><Front /></AppProvider>); }
+
+it("an agent update attention item opens agent settings without starting a task", async () => {
+  act(() => app.session.state.set((s) => {
+    const item = s.attention[ids.atReady];
+    if (!item) throw new Error("Missing fixture alert");
+    return { ...s, attention: { ...s.attention, [item.attention_id]: { ...item, task_id: null, run_id: null, agent_update: { harness: "codex", kind: "behind", version: "2.1", models: [] } } } };
+  }));
+  open({ screen: "attention", attentionId: ids.atReady }); await advance();
+  expect(app.ui.route()).toEqual({ screen: "settings", section: "settings-agents" });
+  expect(Object.keys(app.session.commands.get())).toHaveLength(0);
+});
 
 it("a report fix keeps its review open and offers the person's Merge and Close actions", async () => {
   act(() => app.session.state.set((s) => {
@@ -230,7 +242,7 @@ it("hides a stale fix offer if the computer returns no patch", async () => {
 
 it("completion goes directly to its receipt on Tasks, with no task effects or intermediate back step", async () => {
   open({ screen: "attention", attentionId: ids.atReady }); await advance();
-  expect(app.ui.route()).toEqual({ screen: "receipt", taskId: ids.tHeaders, runId: ids.rHeaders });
+  expect(app.ui.route()).toEqual({ screen: "receipt", taskId: ids.tHeaders, runId: ids.rHeaders, taskEntry: true });
   expect(screen.getByText("Task receipt")).toBeTruthy();
   expect(screen.queryByText("Task update")).toBeNull();
   expect(screen.getByRole("button", { name: /^Tasks/ }).getAttribute("aria-current")).toBe("page");
@@ -271,6 +283,49 @@ it("an alert the phone already holds shows at once while the computer catches up
   expect(screen.getByText("Checking this item’s current state with the computer…")).toBeTruthy();
   expect(screen.getByText("Checking this request is still current…")).toBeTruthy();
   expect(screen.queryByText(/Connect to the computer/)).toBeNull();
+});
+
+it("a new reply notification opens its conversation and Back returns to the previous tab", async () => {
+  const item = app.session.state.get().attention[ids.atReady]!;
+  const task = app.session.state.get().tasks[item.task_id!]!;
+  act(() => app.session.state.set((s) => ({ ...s, tasks: { ...s.tasks, [task.task_id]: { ...task, conversation: true } } })));
+  const note = notificationFor(item, app.session.state.get(), app.profile, "minimal", { type: "reply", tier: "alert" });
+  expect(note?.title).toBe("New reply");
+  expect(note?.route).toEqual({ kind: "attention", profileId: app.profile.profileId, attentionId: item.attention_id });
+  app.ui.selectTab("library");
+  expect(openNotification(note!.route as Parameters<typeof openNotification>[0], app.profile.profileId, app.ui)).toBe(true);
+  render(<AppProvider app={app}><Front /></AppProvider>); await advance();
+  expect(app.ui.get().tab).toBe("talk");
+  expect(app.ui.get().taskByProject[task.project_id]).toBe(task.task_id);
+  app.ui.back();
+  expect(app.ui.get().tab).toBe("library");
+});
+
+it("a handled conversation item opens Chat, and Back from a cold start reaches conversations", async () => {
+  const item = app.session.state.get().attention[ids.atReady]!;
+  const task = app.session.state.get().tasks[item.task_id!]!;
+  act(() => app.session.state.set((s) => ({ ...s, tasks: { ...s.tasks, [task.task_id]: { ...task, conversation: true } }, attention: { ...s.attention, [item.attention_id]: { ...item, resolved_at: Date.now() } } })));
+  open({ screen: "attention", attentionId: item.attention_id }); await advance();
+  expect(app.ui.get().tab).toBe("talk");
+  expect(app.ui.get().taskByProject[task.project_id]).toBe(task.task_id);
+  app.ui.back();
+  expect(app.ui.get().taskList).toBe(true);
+});
+
+it("a structured task notification still opens its receipt", async () => {
+  const item = app.session.state.get().attention[ids.atReady]!;
+  app.ui.push({ screen: "attention", attentionId: item.attention_id }, "work");
+  render(<AppProvider app={app}><Front /></AppProvider>); await advance();
+  expect(app.ui.route()).toMatchObject({ screen: "receipt", taskId: item.task_id });
+});
+
+it("a conversation decision notification still reaches its answer card", async () => {
+  const item = app.session.state.get().attention[ids.atApproval]!;
+  const task = app.session.state.get().tasks[item.task_id!]!;
+  act(() => app.session.state.set((s) => ({ ...s, tasks: { ...s.tasks, [task.task_id]: { ...task, conversation: true } } })));
+  open({ screen: "attention", attentionId: item.attention_id }); await advance();
+  expect(app.ui.route()).toEqual({ screen: "attention", attentionId: item.attention_id });
+  expect(screen.getByRole("button", { name: "Allow" })).toBeTruthy();
 });
 
 it("a resolved completion, absent approval or different run cannot redirect to a newer result", () => {

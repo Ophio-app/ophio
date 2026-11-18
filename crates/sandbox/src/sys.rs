@@ -13,7 +13,7 @@ use std::{
     io,
     os::{
         fd::{AsRawFd, FromRawFd, OwnedFd},
-        unix::ffi::OsStrExt,
+        unix::ffi::{OsStrExt, OsStringExt},
     },
     path::{Component, Path},
 };
@@ -69,6 +69,27 @@ fn directory(path: &Path, create: bool) -> io::Result<OwnedFd> {
 }
 pub fn directories(path: &Path) -> io::Result<()> {
     directory(path, true).map(drop)
+}
+/// Holds the folder at `path` open, reached through no link.
+pub fn folder(path: &Path) -> io::Result<File> {
+    directory(path, false).map(File::from)
+}
+/// Opens the plain file `name` in the folder held by `parent`, without
+/// following a link or waiting on a pipe.
+pub fn child(parent: &File, name: &str) -> io::Result<File> {
+    let name = CString::new(name).map_err(io::Error::other)?;
+    // SAFETY: live directory descriptor, nul-terminated name and valid flags.
+    let file = File::from(owned(unsafe {
+        libc::openat(
+            parent.as_raw_fd(),
+            name.as_ptr(),
+            libc::O_RDONLY | libc::O_NOFOLLOW | libc::O_NONBLOCK | libc::O_CLOEXEC,
+        )
+    })?);
+    if !file.metadata()?.is_file() {
+        return Err(io::Error::other("not a plain file"));
+    }
+    Ok(file)
 }
 /// Listens on `name` in `directory`. A socket address holds at most 107 bytes
 /// of path, which state under a long home folder exceeds; such a name is bound
@@ -261,4 +282,140 @@ fn sweep(parent: &OwnedFd, dir: &Path, prefix: &[u8]) {
             unsafe { libc::unlinkat(parent.as_raw_fd(), name.as_ptr(), 0) };
         }
     }
+}
+
+/// What is at a name in a folder, without following a link.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Kind {
+    Link,
+    Folder,
+    /// A plain file, with its length.
+    File(u64),
+    Other,
+}
+/// A single plain name: not empty, `.` or `..`, and without a slash, so an
+/// operation through a folder's handle stays in that folder.
+fn entry(name: &std::ffi::OsStr) -> io::Result<CString> {
+    let bytes = name.as_bytes();
+    if bytes.is_empty() || bytes == b"." || bytes == b".." || bytes.contains(&b'/') {
+        return Err(io::Error::other("not a single plain name"));
+    }
+    CString::new(bytes).map_err(io::Error::other)
+}
+fn done(result: i32) -> io::Result<()> {
+    if result < 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
+}
+/// What `name` in the folder held by `parent` is, if anything.
+pub fn kind_at(parent: &File, name: &std::ffi::OsStr) -> io::Result<Option<Kind>> {
+    let name = entry(name)?;
+    // SAFETY: zeroed stat is a valid out-buffer for fstatat.
+    let mut stat: libc::stat = unsafe { std::mem::zeroed() };
+    // SAFETY: live directory fd, nul-terminated name and a valid buffer.
+    let result = unsafe {
+        libc::fstatat(
+            parent.as_raw_fd(),
+            name.as_ptr(),
+            &mut stat,
+            libc::AT_SYMLINK_NOFOLLOW,
+        )
+    };
+    if let Err(e) = done(result) {
+        return match e.kind() {
+            io::ErrorKind::NotFound => Ok(None),
+            _ => Err(e),
+        };
+    }
+    let format = stat.st_mode & libc::S_IFMT;
+    Ok(Some(if format == libc::S_IFLNK {
+        Kind::Link
+    } else if format == libc::S_IFDIR {
+        Kind::Folder
+    } else if format == libc::S_IFREG {
+        Kind::File(u64::try_from(stat.st_size).unwrap_or(u64::MAX))
+    } else {
+        Kind::Other
+    }))
+}
+/// Removes `name` from the folder held by `parent`: with `folder`, only an
+/// empty folder. Never anything inside it.
+pub fn remove_at(parent: &File, name: &std::ffi::OsStr, folder: bool) -> io::Result<()> {
+    let name = entry(name)?;
+    let flags = if folder { libc::AT_REMOVEDIR } else { 0 };
+    // SAFETY: live directory fd and nul-terminated name.
+    done(unsafe { libc::unlinkat(parent.as_raw_fd(), name.as_ptr(), flags) })
+}
+/// Opens the folder `name` in the folder held by `parent`, refusing a link;
+/// with `create`, makes it first if it isn't there.
+pub fn folder_at(parent: &File, name: &std::ffi::OsStr, create: bool) -> io::Result<File> {
+    let name = entry(name)?;
+    if create {
+        // SAFETY: live directory fd and nul-terminated name.
+        let made = done(unsafe { libc::mkdirat(parent.as_raw_fd(), name.as_ptr(), 0o700) });
+        if let Err(e) = made
+            && e.kind() != io::ErrorKind::AlreadyExists
+        {
+            return Err(e);
+        }
+    }
+    // SAFETY: live directory fd, nul-terminated name and valid flags.
+    owned(unsafe {
+        libc::openat(
+            parent.as_raw_fd(),
+            name.as_ptr(),
+            libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC | libc::O_RDONLY,
+        )
+    })
+    .map(File::from)
+}
+/// Makes a new empty file `name` in the folder held by `parent`.
+pub fn new_file_at(parent: &File, name: &std::ffi::OsStr) -> io::Result<()> {
+    let name = entry(name)?;
+    // SAFETY: live directory fd, nul-terminated name, valid flags and mode.
+    owned(unsafe {
+        libc::openat(
+            parent.as_raw_fd(),
+            name.as_ptr(),
+            libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+            0o600,
+        )
+    })
+    .map(drop)
+}
+/// Makes `name` in the folder held by `parent` a link to `target`.
+pub fn link_at(parent: &File, name: &std::ffi::OsStr, target: &Path) -> io::Result<()> {
+    let name = entry(name)?;
+    let target = CString::new(target.as_os_str().as_bytes()).map_err(io::Error::other)?;
+    // SAFETY: nul-terminated target and name, live directory fd.
+    done(unsafe { libc::symlinkat(target.as_ptr(), parent.as_raw_fd(), name.as_ptr()) })
+}
+/// Where the link `name` in the folder held by `parent` leads.
+pub fn read_link_at(parent: &File, name: &std::ffi::OsStr) -> io::Result<std::path::PathBuf> {
+    let name = entry(name)?;
+    let mut buffer = vec![0u8; 4096];
+    // SAFETY: live directory fd, nul-terminated name, buffer of the given size.
+    let length = unsafe {
+        libc::readlinkat(
+            parent.as_raw_fd(),
+            name.as_ptr(),
+            buffer.as_mut_ptr().cast(),
+            buffer.len(),
+        )
+    };
+    let length = usize::try_from(length).map_err(|_| io::Error::last_os_error())?;
+    if length >= buffer.len() {
+        return Err(io::Error::other("link too long"));
+    }
+    buffer.truncate(length);
+    Ok(std::ffi::OsString::from_vec(buffer).into())
+}
+/// Renames `from` to `to`, both in the folder held by `parent`.
+pub fn rename_at(parent: &File, from: &std::ffi::OsStr, to: &std::ffi::OsStr) -> io::Result<()> {
+    let (from, to) = (entry(from)?, entry(to)?);
+    let fd = parent.as_raw_fd();
+    // SAFETY: live directory fd and nul-terminated names.
+    done(unsafe { libc::renameat(fd, from.as_ptr(), fd, to.as_ptr()) })
 }

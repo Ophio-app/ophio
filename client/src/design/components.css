@@ -416,7 +416,7 @@
 /* ---- Sheets --------------------------------------------------------------- */
 
 .sheet {
-  --sheet-max: 92dvh;
+  --sheet-max: calc(92 * var(--pane-vh, 1dvh));
   position: fixed;
   inset: auto 0 0 0;
   margin: 0 auto;
@@ -453,10 +453,10 @@
   height: var(--sheet-max);
 }
 .sheet--full {
-  --sheet-max: 100dvh;
+  --sheet-max: calc(100 * var(--pane-vh, 1dvh));
 }
 .sheet--full .sheet__panel {
-  height: 100dvh;
+  height: calc(100 * var(--pane-vh, 1dvh));
   border-radius: 0;
   padding-top: var(--safe-top);
 }
@@ -532,7 +532,7 @@
    visible height is cramped (a keyboard, a phone on its side at large text);
    then it waits at the end. Whatever is scrolled to lands above the pinned
    footer, whose height Sheet keeps in --sheet-footer. */
-:root.app-tight .sheet__main {
+:is(:root:not(:has(.pane)), .pane).app-tight .sheet__main {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -541,20 +541,20 @@
   overscroll-behavior: contain;
   scroll-padding-bottom: var(--sheet-footer, 0px);
 }
-:root.app-tight .sheet__main > :is(.sheet__body, .sheet__footer) {
+:is(:root:not(:has(.pane)), .pane).app-tight .sheet__main > :is(.sheet__body, .sheet__footer) {
   flex: none;
   max-height: none;
   overflow: visible;
 }
-:root.app-tight .sheet__main > .sheet__footer {
+:is(:root:not(:has(.pane)), .pane).app-tight .sheet__main > .sheet__footer {
   margin-top: auto;
   position: sticky;
   bottom: 0;
 }
-:root.app-cramped .sheet__main > .sheet__footer--stop {
+:is(:root:not(:has(.pane)), .pane).app-cramped .sheet__main > .sheet__footer--stop {
   position: static;
 }
-:root.app-cramped .sheet__main:has(> .sheet__footer--stop) {
+:is(:root:not(:has(.pane)), .pane).app-cramped .sheet__main:has(> .sheet__footer--stop) {
   scroll-padding-bottom: 0;
 }
 /* Urgent controls stay reachable while the sheet makes the app inert. */
@@ -575,7 +575,7 @@
 .sheet__panel:has(> .sheet__urgent .safety-rail--expanded) { height: var(--sheet-max); }
 .sheet__panel:has(> .sheet__urgent .safety-rail--expanded) > .sheet__main { flex: none; }
 .sheet__panel:has(> .sheet__urgent .safety-rail--expanded) > .sheet__main > .sheet__body { display: none; }
-@media (min-width: 720px) {
+@container pane (min-width: 720px) {
   .sheet:not(.sheet--full) {
     inset: 0;
     margin: auto;
@@ -594,7 +594,7 @@
 }
 /* Hangs from the top, over the header it was opened from. */
 .sheet.sheet--drop {
-  --sheet-max: 85dvh;
+  --sheet-max: calc(85 * var(--pane-vh, 1dvh));
   inset: 0 0 auto 0;
   margin: 0 auto;
   height: auto;
@@ -618,7 +618,7 @@
 .sheet--drop[open] .sheet__panel {
   animation-name: drop-in;
 }
-@media (min-width: 720px) {
+@container pane (min-width: 720px) {
   .sheet.sheet--drop .sheet__panel {
     border-radius: 0 0 var(--r-xl) var(--r-xl);
   }
@@ -1242,6 +1242,10 @@
 .approval__actions > .btn {
   flex: 1 1 8rem;
 }
+/* A quiet way out (Decline on a question, Back) takes only its words' room. */
+.approval__actions > .btn--quiet {
+  flex: 0 1 auto;
+}
 /* What a button set's main choice does, or why it waits, under the buttons. */
 .approval__actions > .approval__way-note {
   flex: 1 1 100%;
@@ -1251,17 +1255,17 @@
 }
 /* In a sheet on a short screen the decision stays pinned above the sheet's
    footer while the request scrolls, side by side where the words fit. */
-:root.app-tight .sheet__body .approval > .approval__actions {
+:is(:root:not(:has(.pane)), .pane).app-tight .sheet__body .approval > .approval__actions {
   position: sticky;
   bottom: var(--sheet-footer, 0px);
   z-index: 1;
   padding-block: var(--s2);
   background: var(--surface-raised);
 }
-:root.app-cramped .sheet__main:has(> .sheet__footer--stop) .approval > .approval__actions {
+:is(:root:not(:has(.pane)), .pane).app-cramped .sheet__main:has(> .sheet__footer--stop) .approval > .approval__actions {
   bottom: 0;
 }
-:root.app-tight .sheet__body .approval__actions > .btn {
+:is(:root:not(:has(.pane)), .pane).app-tight .sheet__body .approval__actions > .btn {
   flex-basis: auto;
 }
 .approval__compose {
@@ -1299,6 +1303,19 @@
   margin-top: 0.2em;
   color: var(--warn-text);
 }
+/* A long account at a glance: three lines, the rest under Show details. The
+   inline padding keeps a marked fact's halo from being clipped at the edges. */
+.approval__glance-text--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  min-width: 0;
+  overflow-wrap: break-word;
+  padding-inline: 0.2em;
+  margin-inline: -0.2em;
+}
 /* What deletes, pushes, reaches outside the project or can't be checked:
    the warning colours, with words that say so for a screen reader. */
 .approval__fact--risky {
@@ -1318,8 +1335,32 @@
   mask-image: linear-gradient(to bottom, #000 70%, transparent);
 }
 .approval__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--s3);
+}
+/* The line's own words are small; a request opened in it reads at the card's size. */
+.approval__meta > span,
+.approval__meta > .approval__more > .approval__more-toggle {
   font-size: var(--text-sm);
+}
+.approval__meta > span {
   color: var(--ink-3);
+}
+/* Saying no with a reason: there for whoever wants it, never a step. */
+.approval__why {
+  min-height: var(--target);
+  font-size: var(--text-sm);
+}
+/* Opened, the request takes the card's width; its toggle keeps its place at
+   the start of the line and the reason link moves below what opened. */
+.approval__meta > .approval__more {
+  min-width: 0;
+}
+.approval__meta > .approval__more[open] {
+  flex-basis: 100%;
 }
 .approval__more-toggle {
   display: flex;
@@ -1591,7 +1632,15 @@
 }
 .md ul,
 .md ol {
-  padding-left: 1.3em;
+  padding-inline-start: 1.3em;
+}
+.md ol {
+  /* Decimal digits plus the marker's period and space; short lists keep a
+     modest gutter, while 100 and 1000 stay inside a narrow clipped reply. */
+  padding-inline-start: max(1.3em, calc(var(--md-marker-width, 1ch) + 0.75em));
+}
+.md ol > li::marker {
+  font-variant-numeric: tabular-nums;
 }
 .md li + li {
   margin-top: 0.25em;
@@ -1760,4 +1809,59 @@
 }
 .remedy .btn {
   justify-self: start;
+}
+
+/* Global dialogs have no pane container when mounted outside the app root. */
+@media (min-width: 720px) {
+  .sheet:not(.pane-sheet):not(.sheet--full) { inset: 0; margin: auto; height: fit-content; }
+  .sheet:not(.pane-sheet):not(.sheet--full) .sheet__panel { border-radius: var(--r-xl); }
+  .sheet:not(.pane-sheet):not(.sheet--full) .sheet__grabber { visibility: hidden; }
+  .sheet:not(.pane-sheet):not(.sheet--full) .sheet__urgent > .safety-rail { padding-inline: var(--s5); }
+  .sheet.sheet--drop:not(.pane-sheet) .sheet__panel { border-radius: 0 0 var(--r-xl) var(--r-xl); }
+}
+
+:root.app-tight .sheet:not(.pane-sheet) .sheet__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-bottom: var(--sheet-footer, 0px);
+}
+
+:root.app-tight .sheet:not(.pane-sheet) .sheet__main > :is(.sheet__body, .sheet__footer) {
+  flex: none;
+  max-height: none;
+  overflow: visible;
+}
+
+:root.app-tight .sheet:not(.pane-sheet) .sheet__main > .sheet__footer {
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+}
+
+:root.app-cramped .sheet:not(.pane-sheet) .sheet__main > .sheet__footer--stop {
+  position: static;
+}
+
+:root.app-cramped .sheet:not(.pane-sheet) .sheet__main:has(> .sheet__footer--stop) {
+  scroll-padding-bottom: 0;
+}
+
+:root.app-tight .sheet:not(.pane-sheet) .sheet__body .approval > .approval__actions {
+  position: sticky;
+  bottom: var(--sheet-footer, 0px);
+  z-index: 1;
+  padding-block: var(--s2);
+  background: var(--surface-raised);
+}
+
+:root.app-cramped .sheet:not(.pane-sheet) .sheet__main:has(> .sheet__footer--stop) .approval > .approval__actions {
+  bottom: 0;
+}
+
+:root.app-tight .sheet:not(.pane-sheet) .sheet__body .approval__actions > .btn {
+  flex-basis: auto;
 }

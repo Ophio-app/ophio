@@ -139,6 +139,7 @@ async fn start(
             computer_use: false,
             browser: false,
             github: false,
+            checks: false,
             checklist_answers: false,
             read_only: false,
         },
@@ -175,8 +176,11 @@ async fn start(
         computer_use: false,
         browser: false,
         github: false,
+        checks: false,
         checklist_answers: false,
         read_only: false,
+        chat: false,
+        check_names: vec![],
     });
     let spec = RunSpec {
         run_id: broker.binding.run_id,
@@ -200,6 +204,7 @@ async fn start(
         env: Default::default(),
         github: None,
         scratch: None,
+        attached: None,
         questions: true,
         sandbox: None,
         web: false,

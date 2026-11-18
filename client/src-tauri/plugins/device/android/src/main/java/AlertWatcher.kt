@@ -174,6 +174,8 @@ object AlertWatcher {
                 alertType = note.optString("alertType").takeIf { it.isNotEmpty() },
                 want = note.optString("want").takeIf { it.isNotEmpty() },
                 handles = note.optJSONArray("handles")?.let { a -> List(a.length()) { a.getString(it) } },
+                source = note.optString("source").takeIf { it.isNotEmpty() },
+                realert = note.optBoolean("realert", false),
             )
             return when (posted) {
                 Notifications.Posted.SHOWN -> 0

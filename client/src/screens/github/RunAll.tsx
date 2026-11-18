@@ -307,7 +307,8 @@ function RunDefaults({ project, view, then, onClose, onSaved }: {
   };
 
   return (
-    <Sheet open onClose={onClose} title="Run all defaults" subtitle={project.name}
+    // Unsaved choices outlast "Defaults in Settings" and a tapped notification.
+    <Sheet open keepWhenHidden onClose={onClose} title="Run all defaults" subtitle={project.name}
       footer={<Button variant="primary" disabled={!online || !admin || !fixer || !!blocker || !!busy} pending={!!busy} onClick={() => void save()}>
         {then ? "Save and run all" : "Save"}
       </Button>}>

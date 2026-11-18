@@ -1403,6 +1403,8 @@ impl CompanionHub {
             }
         };
         let command = Command::CreateTask {
+            origin: None,
+            from_chat: None,
             project_id: review.project_id,
             kind: TaskKind::Coding,
             mode: Some(mode),
@@ -1663,6 +1665,8 @@ impl CompanionHub {
                 account_id: None,
                 alert: None,
                 alert_handled_at: None,
+                agent_update: None,
+                new_version: None,
             };
             tx.put("attention", item.attention_id, &item)?;
             tx.emit(Event::AttentionUpserted { item })?;

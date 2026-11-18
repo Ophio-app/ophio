@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Watching and controlling this Mac's screen. Which input may go where, in what
-//! order, and how it is released are the same as on Windows and shared with it;
+//! order, and how it is released are shared with Windows in `platform-desktop`;
 //! only what talks to the system is here. Construct only after desktop sharing
 //! has been explicitly enabled by the owner.
 //!
 //! Positions and sizes are in the system's points, which it takes for input
 //! whatever a screen's scale, and frames are captured at that size.
 mod capture;
+mod clipboard;
 pub mod input;
 pub(crate) mod native;
 
-use platform_windows::desktop::{
-    Capture, Driver, WindowsDesktop, geometry::Monitor, input::Injector,
-};
+use platform_desktop::{Capture, Driver, ManagedDesktop, geometry::Monitor, input::Injector};
 use ports::{
     Clock,
     desktop::{DesktopCapabilities, PlatformError},
@@ -27,8 +26,8 @@ pub use native::{ask_for_permissions, permissions};
 
 /// Opens this Mac's desktop. It works without permissions, and says what is
 /// missing, so the person can be told where to give them.
-pub fn open(clock: Arc<dyn Clock>) -> WindowsDesktop {
-    WindowsDesktop::with_driver(Arc::new(MacDriver)).with_clock(clock)
+pub fn open(clock: Arc<dyn Clock>) -> ManagedDesktop {
+    ManagedDesktop::with_driver(Arc::new(MacDriver)).with_clock(clock)
 }
 
 #[derive(Debug)]

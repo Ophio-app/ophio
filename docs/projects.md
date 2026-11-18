@@ -55,6 +55,15 @@ appear in Chat when the sheet closes. It clears after the computer confirms the
 addition. Adding requires a connection to the computer and this device's
 **Manage** permission.
 
+## Live agents
+
+Open **Live agents** from Tasks to see running and unresolved work first.
+When the project needs a decision, the **Needs you** count beside that list
+jumps to its requests. Finished work, setup problems and agents outside Ophio
+appear below only when there is something to show. Failed or unavailable
+observations remain visible, and **Check agent readiness** remains available
+when no setup problems are reported. Stop stays available in the safety bar.
+
 ## Access and failures
 
 Browsing and adding require the device's **Manage** permission. Browsing lists

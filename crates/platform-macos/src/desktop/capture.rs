@@ -23,7 +23,7 @@ use objc2_screen_capture_kit::{
     SCContentFilter, SCShareableContent, SCStream, SCStreamConfiguration, SCStreamOutput,
     SCStreamOutputType,
 };
-use platform_windows::desktop::{Capture, geometry::Monitor};
+use platform_desktop::{Capture, geometry::Monitor};
 use ports::desktop::{CapturedFrame, PixelFormat, PlatformError};
 use protocol::control::TargetGeometry;
 use std::{

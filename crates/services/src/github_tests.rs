@@ -367,6 +367,8 @@ impl Repo {
             .submit(
                 &Caller::local_owner(),
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: Some(Box::new(link)),
                     agent_chosen: None,
                     mode: None,

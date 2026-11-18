@@ -15,6 +15,7 @@ async fn pending_bridge_approval_expires_on_restart_with_its_flag_intact() {
     let pending = tokio::spawn(async move {
         hub.handle(
             &BridgeBinding {
+                checks: false,
                 run_id: run,
                 target_id: None,
                 computer_use: false,
@@ -62,7 +63,7 @@ async fn pending_bridge_approval_expires_on_restart_with_its_flag_intact() {
         .read(|r| r.require("approval", approval.approval_id))
         .unwrap();
     assert_eq!(before.state, ApprovalState::Pending);
-    drop(f.hub);
+    crate::testing::drop_hub_and_wait(f.hub, WAIT).await;
     let hub = CompanionHub::builder()
         .data_dir(&f.path)
         .harness(f.harness.clone())
@@ -91,8 +92,8 @@ async fn pending_bridge_approval_expires_on_restart_with_its_flag_intact() {
     f.close().await;
 }
 
-// Both real bridge entry points, a failed delivery and retry without a wait,
-// unbound expiry, and a native approval sharing the run. No hand-written
+// Both real bridge entry points, an answer whose wait has closed, unbound
+// keeping one open across a restart, and a native approval sharing the run. No hand-written
 // bridge flag or artificial wait entry.
 #[tokio::test]
 async fn bridge_flag_routes_both_requests_and_does_not_capture_native_approvals() {
@@ -105,6 +106,7 @@ async fn bridge_flag_routes_both_requests_and_does_not_capture_native_approvals(
         .await;
     let run = run_started(&f, task).await;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: None,
         computer_use: false,
@@ -155,22 +157,23 @@ async fn bridge_flag_routes_both_requests_and_does_not_capture_native_approvals(
         assert!(f.hub.inner.waits.lock().await.contains_key(&id));
         pending.abort();
         let _ = pending.await;
-        // First the closed receiver, then the persistent flag with no wait.
-        for _ in 0..2 {
-            assert_eq!(
-                f.hub
-                    .resolve_approval(&owner, id, &ApprovalDecision::Allow)
-                    .await
-                    .unwrap_err()
-                    .code,
-                ErrorCode::NativeFailure
-            );
-            let stored: Approval = f.hub.read(|r| r.require("approval", id)).unwrap();
-            assert_eq!(stored.state, ApprovalState::Pending);
-            assert!(stored.delivery.unwrap().error.is_some());
-            assert_eq!(f.harness.controls.resolutions.load(Ordering::SeqCst), 0);
-        }
     }
+    // Answered after its agent stopped waiting (its receiver closed), the
+    // first stays open as it would have, and the answer becomes the task's
+    // next message: never a native resolution.
+    let first = bridge_ids[0];
+    f.hub
+        .resolve_approval(&owner, first, &ApprovalDecision::Allow)
+        .await
+        .unwrap();
+    let stored: Approval = f.hub.read(|r| r.require("approval", first)).unwrap();
+    assert_eq!(stored.state, ApprovalState::Allowed);
+    assert!(
+        !f.hub
+            .read(|r| crate::carry_on::carried_on(r, first))
+            .unwrap()
+    );
+    assert_eq!(f.harness.controls.resolutions.load(Ordering::SeqCst), 0);
     f.harness
         .emit(
             run,
@@ -213,18 +216,23 @@ async fn bridge_flag_routes_both_requests_and_does_not_capture_native_approvals(
         None
     );
     f.hub.unbound(&binding).await;
-    for id in &bridge_ids {
-        let a: Approval = f.hub.read(|r| r.require("approval", id)).unwrap();
-        assert_eq!(a.state, ApprovalState::Expired);
-        assert!(
-            f.hub
-                .read(|r| r.list::<AttentionItem>("attention"))
-                .unwrap()
-                .iter()
-                .filter(|a| a.approval_id == Some(*id))
-                .all(|a| a.resolved_at.is_some())
-        );
-    }
+    // Its agent stopped waiting: the second stays open for a later answer,
+    // still shown as needing the person.
+    let second = bridge_ids[1];
+    let a: Approval = f.hub.read(|r| r.require("approval", second)).unwrap();
+    assert_eq!(a.state, ApprovalState::Pending);
+    assert!(
+        f.hub
+            .read(|r| crate::carry_on::carried_on(r, second))
+            .unwrap()
+    );
+    assert!(
+        f.hub
+            .read(|r| r.list::<AttentionItem>("attention"))
+            .unwrap()
+            .iter()
+            .any(|a| a.approval_id == Some(second) && a.resolved_at.is_none())
+    );
     let a: Approval = f
         .hub
         .read(|r| r.require("approval", native.approval_id))
@@ -237,7 +245,7 @@ async fn bridge_flag_routes_both_requests_and_does_not_capture_native_approvals(
     assert_eq!(f.harness.controls.resolutions.load(Ordering::SeqCst), 1);
 
     f.hub.shutdown().await.unwrap();
-    drop(f.hub);
+    crate::testing::drop_hub_and_wait(f.hub, WAIT).await;
     let hub = CompanionHub::builder()
         .data_dir(&f.path)
         .harness(f.harness.clone())
@@ -245,19 +253,36 @@ async fn bridge_flag_routes_both_requests_and_does_not_capture_native_approvals(
         .await
         .unwrap();
     assert!(hub.inner.waits.lock().await.is_empty());
-    for id in bridge_ids {
-        assert_eq!(
-            hub.read(|r| r.get::<bool>("bridge_approval", id)).unwrap(),
-            Some(true)
-        );
-        assert_eq!(
-            hub.resolve_approval(&owner, id, &ApprovalDecision::Allow)
-                .await
-                .unwrap_err()
-                .code,
-            ErrorCode::AlreadyResolved
-        );
-    }
+    assert_eq!(
+        hub.read(|r| r.get::<bool>("bridge_approval", second))
+            .unwrap(),
+        Some(true)
+    );
+    // Still open after the restart, and answered from the phone as any
+    // card is: the answer is the task's next message, not handed to any
+    // agent's wait.
+    let a: Approval = hub.read(|r| r.require("approval", second)).unwrap();
+    let mut answer = CommandEnvelope::new(Command::ResolveApproval {
+        approval_id: second,
+        decision: ApprovalDecision::Answer {
+            text: "Yes, go ahead".into(),
+            answers: Vec::new(),
+        },
+    });
+    answer.expected_revision = Some(a.revision.into());
+    let receipt = hub.submit(&owner, answer).await;
+    assert_eq!(receipt.status, ReceiptStatus::Accepted, "{receipt:?}");
+    tokio::time::timeout(Duration::from_secs(15), async {
+        loop {
+            let a: Approval = hub.read(|r| r.require("approval", second)).unwrap();
+            if a.state == ApprovalState::Allowed {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("the answer was recorded");
     assert_eq!(f.harness.controls.resolutions.load(Ordering::SeqCst), 1);
     let f = Fixture { hub, ..f };
     f.close().await;
@@ -277,7 +302,7 @@ async fn backup_restore_can_preserve_identity_and_catch_up_after_losing_receipts
     let project = f.project().await;
     let host_id = f.hub.host_id();
     f.hub.shutdown().await.unwrap();
-    drop(f.hub);
+    crate::testing::drop_hub_and_wait(f.hub, WAIT).await;
     let database = f.path.join("companion.sqlite");
     let backup = f.path.join("before-command.sqlite");
     std::fs::copy(&database, &backup).unwrap();
@@ -302,7 +327,7 @@ async fn backup_restore_can_preserve_identity_and_catch_up_after_losing_receipts
     let phone_head = f.hub.journal_head();
     let epoch = f.hub.boot_epoch();
     f.hub.shutdown().await.unwrap();
-    drop(f.hub);
+    crate::testing::drop_hub_and_wait(f.hub, WAIT).await;
 
     // A normal reopen retains the command, including its status and dedupe.
     let hub = CompanionHub::builder()
@@ -336,7 +361,7 @@ async fn backup_restore_can_preserve_identity_and_catch_up_after_losing_receipts
     );
     assert_eq!(f.harness.starts.load(Ordering::SeqCst), 1);
     hub.shutdown().await.unwrap();
-    drop(hub);
+    crate::testing::drop_hub_and_wait(hub, WAIT).await;
 
     std::fs::copy(&backup, &database).unwrap();
     let hub = CompanionHub::builder()

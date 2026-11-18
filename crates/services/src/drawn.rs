@@ -176,6 +176,7 @@ mod tests {
             steps: vec![],
             general_note: None,
             speech: None,
+            files: vec![],
         }
     }
 

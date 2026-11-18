@@ -1,7 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { act, renderHook } from "@testing-library/react";
 import { expect, it } from "vitest";
-import { useCrampedLayout, useSidewaysLayout, useTightLayout } from "./keyboard";
+import { classifyLayout, useCrampedLayout, useSidewaysLayout, useTightLayout } from "./keyboard";
+
+it("uses surface width rather than device width for narrow and sideways thresholds", () => {
+  expect(classifyLayout(690, 830, 830, 16)).toEqual({ tight: false, narrow: false, cramped: false, sideways: false });
+  expect(classifyLayout(345, 830, 830, 16)).toEqual({ tight: false, narrow: true, cramped: false, sideways: false });
+  expect(classifyLayout(345, 830, 830, 32)).toEqual({ tight: true, narrow: true, cramped: false, sideways: false });
+  expect(classifyLayout(700, 400, 400, 16)).toEqual({ tight: true, narrow: false, cramped: false, sideways: true });
+});
+
+it("keeps keyboard height loss separate from the surface's normal height", () => {
+  expect(classifyLayout(345, 250, 830, 16)).toEqual({ tight: false, narrow: true, cramped: true, sideways: false });
+});
 
 it("calls the screen cramped from its visible height, keyboard included, without making it tight", () => {
   const root = document.documentElement;

@@ -169,6 +169,19 @@ fn native_error(e: impl std::fmt::Display) -> TerminalError {
     TerminalError::Io(io::Error::other("native terminal operation failed"))
 }
 
+/// Make the pseudo-terminal. On the Mac its two ends are made first and
+/// marked close-on-exec afterwards, so they are made only while no process is
+/// being started: one started in between would keep the person's terminal,
+/// and could read what it shows and type into its shell.
+fn open_pair(size: PtySize) -> Result<portable_pty::PtyPair, TerminalError> {
+    let open = || native_pty_system().openpty(size);
+    #[cfg(unix)]
+    let pair = containment::inherit::private(open);
+    #[cfg(windows)]
+    let pair = open();
+    pair.map_err(native_error)
+}
+
 async fn blocking<T: Send + 'static>(
     f: impl FnOnce() -> Result<T, TerminalError> + Send + 'static,
 ) -> Result<T, TerminalError> {
@@ -306,14 +319,12 @@ impl TerminalHost for PtyHost {
             {
                 sessions.remove(id);
             }
-            let pair = native_pty_system()
-                .openpty(PtySize {
-                    rows: spec.rows,
-                    cols: spec.cols,
-                    pixel_width: 0,
-                    pixel_height: 0,
-                })
-                .map_err(native_error)?;
+            let pair = open_pair(PtySize {
+                rows: spec.rows,
+                cols: spec.cols,
+                pixel_width: 0,
+                pixel_height: 0,
+            })?;
             #[cfg(unix)]
             let mut reader = input::Reader::new(pair.master.as_ref())?;
             #[cfg(windows)]
@@ -335,9 +346,16 @@ impl TerminalHost for PtyHost {
                     command.env(key, value);
                 }
                 command.env("TERM", "xterm-256color");
-                pair.slave
-                    .spawn_command(command)
-                    .map_err(|_| TerminalError::Spawn("program could not be started".into()))?
+                let spawn = || pair.slave.spawn_command(command);
+                // The standard library makes the pipe that reports a failed
+                // start inside it, and on the Mac marks it close-on-exec only
+                // afterwards: an agent started meanwhile would keep it, and
+                // this start would wait for that agent to end.
+                #[cfg(unix)]
+                let spawned = containment::inherit::start(spawn);
+                #[cfg(windows)]
+                let spawned = spawn();
+                spawned.map_err(|_| TerminalError::Spawn("program could not be started".into()))?
             };
             drop(pair.slave);
             let tree = match process::ProcessTree::new(child.as_ref()) {
@@ -690,6 +708,43 @@ impl TerminalHost for PtyHost {
             Ok(())
         })
         .await
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod mac {
+    use std::{
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+            mpsc,
+        },
+        thread,
+        time::Duration,
+    };
+
+    /// A start under way could keep a terminal made meanwhile; one is made
+    /// only once the start has ended.
+    #[test]
+    fn a_terminal_is_made_only_between_starts() {
+        let ended = Arc::new(AtomicBool::new(false));
+        let (inside, is_inside) = mpsc::channel();
+        let starting = {
+            let ended = ended.clone();
+            thread::spawn(move || {
+                containment::inherit::start(|| {
+                    inside.send(()).unwrap();
+                    thread::sleep(Duration::from_millis(300));
+                    ended.store(true, Ordering::SeqCst);
+                })
+            })
+        };
+        is_inside.recv().unwrap();
+        let pair = super::open_pair(portable_pty::PtySize::default()).unwrap();
+        let made_after = ended.load(Ordering::SeqCst);
+        starting.join().unwrap();
+        drop(pair);
+        assert!(made_after, "a terminal was made during a start");
     }
 }
 

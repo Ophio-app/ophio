@@ -940,7 +940,11 @@ async fn desktop_voice_works_when_no_app_exposes_its_controls() {
     assert_eq!(
         injected[2],
         InputAction::KeyChord {
-            keys: vec!["alt".into(), "ArrowLeft".into()]
+            keys: if cfg!(target_os = "macos") {
+                vec!["super".into(), "[".into()]
+            } else {
+                vec!["alt".into(), "ArrowLeft".into()]
+            }
         }
     );
 

@@ -353,7 +353,7 @@ fn instructions(
                 " For this task the person chose that its pull request merges once it is green."
             }
             Some(WhenGreen::Leave) => {
-                " For this task the person chose to merge its pull request themselves."
+                " For this task the person merges its pull request themselves."
             }
             _ => "",
         }
@@ -405,7 +405,7 @@ fn instructions(
             "This stacks on pull request #{number}: fetch `{base}` first and start from `origin/{base}`. Your pull request targets `{base}`; when #{number} merges, GitHub moves it onto `{default}`. Don't merge it before then."
         )),
         GithubLink::Pr { number } => rule(format!(
-            "Take over pull request #{number}: check out its branch, merge `{base}` into it, fix what fails and keep it green. If you can't push to its branch, as with a fork, push your work to a new branch `{}<short-name>` and open a pull request with github_pr: Øphio credits the original and comments on it. Never rewrite another person's description; say what you changed with github_comment.",
+            "Take over pull request #{number}: check out its branch, merge `{base}` into it, fix what fails and keep it green. If you can't push to its branch, as with a fork, push your work to a new branch `{}<short-name>` and open a pull request with github_pr, passing that name in branch: Øphio remembers the replacement, credits the original and comments on it. Never rewrite another person's description; say what you changed with github_comment.",
             settings.branch_prefix
         )),
         _ => {}
@@ -456,7 +456,14 @@ impl CompanionHub {
         }
         let p = self.posting(task).await?;
         match call {
-            GithubCall::Pr { title, body } => self.post_pr(run_id, task, &p, &title, &body).await,
+            GithubCall::Pr {
+                title,
+                body,
+                branch,
+            } => {
+                self.post_pr(run_id, task, &p, &title, &body, branch.as_deref())
+                    .await
+            }
             GithubCall::Comment {
                 body,
                 thread,
@@ -655,7 +662,12 @@ impl CompanionHub {
     }
 
     /// Records `pr` as the task's pull request.
-    fn record_task_pr(&self, task_id: TaskId, pr: PrSummary) -> Result<(), ProtocolError> {
+    fn record_task_pr(
+        &self,
+        task_id: TaskId,
+        pr: PrSummary,
+        branch: Option<&str>,
+    ) -> Result<(), ProtocolError> {
         let now = self.inner.clock.now();
         self.write(|tx| {
             let mut task: Task = tx.read().require("task", task_id)?;
@@ -700,6 +712,14 @@ impl CompanionHub {
                 }
             };
             github.pr = Some(pr);
+            // A refused or failed post must never change the saved branch.
+            // Keep an accepted replacement with its PR in one transaction.
+            if let Some(branch) = branch {
+                task.branch = Some(protocol::model::TaskBranch {
+                    name: branch.to_owned(),
+                    new: false,
+                });
+            }
             task.revision += 1;
             task.updated_at = now;
             tx.put("task", task_id, &task)?;
@@ -713,30 +733,56 @@ impl CompanionHub {
         })
     }
 
-    /// The pushed branch `task`'s pull request is from: the one checked
-    /// out in the project folder, or the task's own when the folder is on
-    /// another task's, as when its agent worked in a folder of its own.
+    /// The task's recorded branch is authoritative unless the agent
+    /// explicitly names a replacement. Only tasks without either infer it
+    /// from the project checkout, excluding another live task's branch.
     /// With it, the commit GitHub has at its tip.
-    async fn pr_head(&self, task: &Task, p: &Posting) -> Result<(String, String), ProtocolError> {
-        let project: Project = self.read(|r| r.require("project", task.project_id))?;
-        let current =
-            crate::git::output(Path::new(&project.host_path), &["branch", "--show-current"])
+    async fn pr_head(
+        &self,
+        task: &Task,
+        p: &Posting,
+        branch: Option<&str>,
+    ) -> Result<(String, String), ProtocolError> {
+        let head = match (branch, &task.branch) {
+            (Some(branch), _) => {
+                if !crate::git::branch_name_ok(branch) {
+                    return Err(error(
+                        ErrorCode::InvalidRequest,
+                        "Give a valid Git branch name.",
+                    ));
+                }
+                if self.read(|r| others_branch(r, task, branch))? {
+                    return Err(error(
+                        ErrorCode::InvalidRequest,
+                        format!(
+                            "`{branch}` belongs to another task. Push a branch of this task's own."
+                        ),
+                    ));
+                }
+                branch.to_owned()
+            }
+            (None, Some(branch)) => branch.name.clone(),
+            (None, None) => {
+                let project: Project = self.read(|r| r.require("project", task.project_id))?;
+                let current = crate::git::output(
+                    Path::new(&project.host_path),
+                    &["branch", "--show-current"],
+                )
                 .await
                 .map(|b| b.trim().to_owned())
                 .filter(|b| !b.is_empty());
-        let own = task.branch.as_ref().map(|b| b.name.clone());
-        let current = match current {
-            Some(c) if own.as_ref() != Some(&c) && self.read(|r| others_branch(r, task, &c))? => {
-                None
+                let current = match current {
+                    Some(c) if self.read(|r| others_branch(r, task, &c))? => None,
+                    current => current,
+                };
+                current.ok_or_else(|| {
+                    error(
+                        ErrorCode::InvalidRequest,
+                        "Check out this task's branch first.",
+                    )
+                })?
             }
-            current => current,
         };
-        let head = (current.or(own)).ok_or_else(|| {
-            error(
-                ErrorCode::InvalidRequest,
-                "Check out this task's branch first.",
-            )
-        })?;
         if head == p.repo.default_branch {
             return Err(error(
                 ErrorCode::InvalidRequest,
@@ -807,6 +853,7 @@ impl CompanionHub {
         p: &Posting,
         title: &str,
         body: &str,
+        branch: Option<&str>,
     ) -> Result<String, ProtocolError> {
         if p.github.link.read_only() {
             return Err(error(
@@ -816,7 +863,7 @@ impl CompanionHub {
         }
         let title = checked_title(&self.redacted(run_id, title)?)?;
         let body = self.redacted(run_id, &without_disclosure(body))?;
-        let (head, sha) = self.pr_head(task, p).await?;
+        let (head, sha) = self.pr_head(task, p, branch).await?;
         // The task's own pull request, or one already open from the branch.
         let mut existing = match p.open_pr() {
             Some(number) => self.open_pr_numbered(p, number).await,
@@ -911,7 +958,7 @@ impl CompanionHub {
                 )
             })?;
             let url = summary.url.clone();
-            self.record_task_pr(task.task_id, summary)?;
+            self.record_task_pr(task.task_id, summary, branch)?;
             return Ok(format!("Updated pull request #{number}: {url}"));
         }
         if let Some(pr) = self.settled_from(p, &head, &sha).await? {
@@ -980,7 +1027,7 @@ impl CompanionHub {
             )
         })?;
         let (number, url, draft) = (summary.number, summary.url.clone(), summary.draft);
-        self.record_task_pr(task.task_id, summary)?;
+        self.record_task_pr(task.task_id, summary, branch)?;
         self.label(p, number, &[AGENT_LABEL]).await;
         if let Some(o) = original {
             let comment = format!(

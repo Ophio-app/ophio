@@ -1276,6 +1276,8 @@ impl CompanionHub {
         let mut failed = None;
         for &number in issues.iter().filter(|n| !queued.contains(n)) {
             let mut envelope = CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 project_id: finder.project_id,
                 kind: protocol::model::TaskKind::Coding,
                 mode: None,

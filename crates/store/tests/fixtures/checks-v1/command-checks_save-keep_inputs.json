@@ -1,0 +1,31 @@
+{
+  "envelope": {
+    "command_id": "00000000-0000-0000-0000-000000000104",
+    "issued_at": 1700000000000,
+    "expected_revision": null,
+    "expires_at": null,
+    "body": {
+      "command": "checks_save",
+      "project_id": "00000000-0000-4000-8000-000000000001",
+      "base_version": 2,
+      "edit": {
+        "kind": "keep_inputs",
+        "check_id": "00000000-0000-4000-8000-000000000002"
+      }
+    }
+  },
+  "principal": {
+    "kind": "local_owner"
+  },
+  "receipt": {
+    "command_id": "00000000-0000-0000-0000-000000000104",
+    "status": "accepted",
+    "seq": null,
+    "result": null,
+    "error": null
+  },
+  "stage": "host_accepted",
+  "pending": true,
+  "result": null,
+  "error": null
+}

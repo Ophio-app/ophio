@@ -15,8 +15,8 @@
 .report-bundle dt { color: var(--ink-2); font-size: var(--text-sm); }
 .report-bundle dd { margin: 0; }
 .report-bundle code { white-space: pre-wrap; font: inherit; }
-.report-markup { display: flex; flex-direction: column; min-height: 55dvh; }
-.report-markup .an-canvas { position: relative; inset: auto; flex: none; height: 50dvh; min-height: 250px; }
+.report-markup { display: flex; flex-direction: column; min-height: calc(55 * var(--pane-vh, 1dvh)); }
+.report-markup .an-canvas { position: relative; inset: auto; flex: none; height: calc(50 * var(--pane-vh, 1dvh)); min-height: 250px; }
 .report-tools { display: flex; flex-wrap: wrap; gap: 4px; }
 /* The screenshot offer wears a toast, where toasts appear above the tabs. */
 .report-chip { position: fixed; bottom: calc(var(--safe-bottom, 0px) + 90px); left: 0; right: 0; z-index: 70; display: flex; justify-content: center; padding-inline: var(--s3); pointer-events: none; }

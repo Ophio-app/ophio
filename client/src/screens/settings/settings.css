@@ -230,6 +230,11 @@ fieldset.settings-stack > legend {
 .settings-page--one .section__head:not(:has(> :not(.section__title))) {
   display: none;
 }
+/* Read-only headings on Connections are labels, not 48-pixel touch targets. */
+.settings-screen:has(#settings-phones) .section__head:not(:has(> :not(.section__title))) {
+  min-height: 0;
+  padding-block: var(--s1);
+}
 .settings-topic {
   display: grid;
   gap: var(--s1);
@@ -237,4 +242,8 @@ fieldset.settings-stack > legend {
 .settings-topic + .settings-topic {
   padding-top: var(--s2);
   border-top: 1px solid var(--line);
+}
+/* Versions: protocol numbers and the compatibility note, folded away. */
+.settings-support > :not(summary) + * {
+  margin-top: var(--s3);
 }

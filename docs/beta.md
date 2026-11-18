@@ -1,10 +1,9 @@
 # Trying the Android-and-Linux beta
 
-This guide covers the 0.2.0 Android-and-Linux beta. The official files are
-attached to the [v0.2.0
-release](https://github.com/ophio-app/ophio/releases/tag/v0.2.0): the Linux
-archive `ophio-0.2.0-x86_64-linux.tar.gz`, the source
-`ophio-0.2.0-source.tar.gz`, the Android app `ophio-0.2.0-arm64.apk`, and
+This guide covers the 0.3.0 Android-and-Linux beta. The official files are
+attached to the [v0.3.0 release](https://github.com/ophio-app/ophio/releases/tag/v0.3.0): the Linux
+archive `ophio-0.3.0-x86_64-linux.tar.gz`, the source
+`ophio-0.3.0-source.tar.gz`, the Android app `ophio-0.3.0-arm64.apk`, and
 `SHA256SUMS`, which lists the SHA-256 digest of each. Check what you downloaded against it, for
 example with `sha256sum -c SHA256SUMS` in the folder that holds the files (it
 reports the files you did not download as missing; `--ignore-missing` skips
@@ -13,9 +12,19 @@ digest is in [packaging/android/SIGNING.md](../packaging/android/SIGNING.md).
 Use only these files, not a build from some other source. Physical-device and
 real-agent checks remain separate from the virtual-device lab results.
 
+For these final files, an Ubuntu 24.04.5 virtual machine and Android 15 emulator
+passed installation, pairing, release-key phone update, computer upgrade and
+rollback, and core Chat/Task use with one end on 0.2.0. The agents were synthetic
+programs, not real provider conversations. Foldable checks were partial; the
+tablet run stopped after emulator crashes. Physical phones, audible alerts,
+locked-screen notification taps and complete settings, dismissal/reconnection
+and focus/selection checks were not qualified. See the
+[release-file results](qualification/linux.md#030-release-file-checks).
+
 The beta is for Android phones and the Linux desktop combinations listed
-in [SUPPORT.md](../SUPPORT.md). Windows is experimental and has no download;
-macOS and iPhone are not supported beta targets. Start with a spare project containing no private
+in [SUPPORT.md](../SUPPORT.md). Windows has an experimental download;
+the Mac has an experimental download that is not part of the beta, and macOS and
+iPhone are not supported beta targets. Start with a spare project containing no private
 material. A beta can have defects, and stopping an agent does not undo the
 files it has already changed.
 
@@ -39,14 +48,14 @@ Do not disable system security globally to make a check pass.
 
 ## 1. Install and check the computer
 
-Download the Linux archive from the release and unpack it. The 0.2.0 archive
-is `ophio-0.2.0-x86_64-linux.tar.gz`; use the name of the file you
+Download the Linux archive from the release and unpack it. The 0.3.0 archive
+is `ophio-0.3.0-x86_64-linux.tar.gz`; use the name of the file you
 downloaded. It unpacks to a folder of the same name without `.tar.gz`. From
 the folder you downloaded it to, run as your ordinary user:
 
 ```sh
-tar -xzf ophio-0.2.0-x86_64-linux.tar.gz
-cd ophio-0.2.0-x86_64-linux
+tar -xzf ophio-0.3.0-x86_64-linux.tar.gz
+cd ophio-0.3.0-x86_64-linux
 sh install.sh
 ```
 
@@ -140,20 +149,22 @@ desktop control is qualified on your machine.
 ## 4. Check updates and recovery
 
 When a newer Linux archive is available on the releases page, give that
-archive to the installed `ophio update` command. From 0.1.0 or 0.1.1, that is
-`ophio update ophio-0.2.0-x86_64-linux.tar.gz`. It normally waits for active
+archive to the installed `ophio update` command. From 0.2.0, that is
+`ophio update ophio-0.3.0-x86_64-linux.tar.gz`. It normally waits for active
 work to finish; `ophio update` without arguments shows its progress. Do not
 use a forced update while important work is running.
 
-0.2.0 has a new phone app, and the Linux archive carries it. Once the computer
-runs 0.2.0, a paired phone with the 0.1.0 app is offered it: a notification
+0.3.0 has a new phone app, and the Linux archive carries it. Once the computer
+runs 0.3.0, a paired phone with the 0.2.0 app is offered it: a notification
 says the update is ready, and **Settings → Versions → Update now** installs it
 over the phone's connection to the computer. Installing
-`ophio-0.2.0-arm64.apk` from the release by hand does the same. Either way
+`ophio-0.3.0-arm64.apk` from the release by hand does the same. Either way
 Android keeps your pairing and settings, because the new app is signed with
-the same release key. This is the app's first update of itself, so Android
-asks you to allow Øphio to install apps and may ask you to confirm;
-[Upgrading](upgrading.md#the-phones-first-update-from-010) walks through it.
+the same release key. Android may ask you to allow Øphio to install apps if
+you have not already allowed it, and may ask you to confirm. If the first
+try just after allowing installs fails, tap **Try again**;
+[Upgrading](upgrading.md#updating-to-030) walks through it, including what
+works while the phone and the computer run different versions.
 
 **Expected:** the computer starts again, the phone reconnects, the paired
 identity and granted permissions remain correct, and both versions match the
@@ -163,7 +174,8 @@ reason to bypass verification or uninstall immediately.
 The computer keeps one previous program version. `ophio update --rollback`
 can restore it, but a database migration can also require restoring the
 pre-migration backup and losing later records. Rollback does not undo work an
-agent made in your projects. Read [upgrading and recovery](upgrading.md)
+agent made in your projects. Read [upgrading and recovery](upgrading.md),
+and [going back to 0.2.0](upgrading.md#going-back-to-020) in particular,
 before attempting it, and record recovery as untested if you did not actually
 exercise it.
 

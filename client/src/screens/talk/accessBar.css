@@ -1,12 +1,108 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* What a conversation's agent may reach: read on the left, under the
-   project; the internet in the middle; change and run on the right, under
-   Live and the cog. Each is drawn as a control, outlined with a chevron or
-   in a ring, so it reads as something to tap. */
+/* What a conversation's agent may reach: one quiet line that opens to its
+   controls, read on the left, the internet in the middle, change and run on
+   the right. Each control is drawn as one, outlined with a chevron or in a
+   ring, so it reads as something to tap. */
 .access {
   flex: 1 0 100%;
   min-width: 0;
 }
+.access__line {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: var(--target);
+  padding: var(--s1) var(--s1) var(--s1) 0;
+  text-align: left;
+  color: var(--ink-2);
+  border-radius: var(--r-md);
+}
+.access__line:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.access__line:active {
+  background: var(--surface-pressed);
+}
+.access__line-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.access__line-main,
+.access__line-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.access__line-main {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+.access__line-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--s2);
+  font-size: var(--text-xs);
+  /* The marker goes under the network words when they don't fit beside it. */
+  white-space: normal;
+}
+.access__line-spin {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-right: 4px;
+  animation: spin 0.9s linear infinite;
+}
+/* Past reading its own project: one marker, tinted like a warning, so it
+   is seen without opening anything. */
+.access__wider {
+  display: inline-flex;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  align-items: center;
+  gap: 3px;
+  padding: 0 var(--s1);
+  border-radius: var(--r-sm, 6px);
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  font-weight: 650;
+}
+.access__wider svg {
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+}
+.access__line-chevron {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--ink-3);
+  transition: transform var(--dur-1) var(--ease);
+}
+.access.is-open .access__line-chevron {
+  transform: rotate(180deg);
+}
+.access__default {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-block: var(--s1) var(--s2);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+.access__default-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.access__default .btn {
+  flex: none;
+}
+
 .access__bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -184,6 +280,12 @@
   .access__pick:focus-visible {
     outline: 2px solid Highlight;
   }
+  .access__wider {
+    border: 1px solid CanvasText;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .access__line-chevron { transition: none; }
 }
 
 /* Asked for from the line saying what the agent may do: each control is

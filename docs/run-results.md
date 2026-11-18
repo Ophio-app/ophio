@@ -15,6 +15,33 @@ None of the three comes from what the agent says about its work. Its report
 (`outcome.report`) decides what Ophio offers next, such as Carry on or the new
 work it found, never whether the work is verified.
 
+## Changed files
+
+The receipt lists each file the agent's own editing tools report writing,
+created, changed, deleted or renamed. It never lists a change that left
+nothing of the person's changed, and never hides one that did.
+
+In a limited chat the agent works with its conversation's own copy of its
+settings folder. On Linux that copy is shown in place of the real
+`~/.claude` or `~/.codex`; on a Mac it sits in Ophio's own data. A note the
+agent keeps there, such as Claude Code's memory, changes nothing of the
+person's, so the receipt leaves it out. The sandbox decides this, because
+only it knows what is mounted where. Everything else stays listed:
+
+- the person's own files the copy shows them: their instructions, rules and
+  skills, and their sign-in file;
+- what goes back to the real folder when the run ends: the conversation's
+  transcript, and Codex's sessions;
+- anything that is a link or shares its contents with a file elsewhere, or
+  that no longer exists when the receipt is made;
+- a Codex rename, which may have moved a file out of the copy;
+- anything at all when the sandbox can't say, as in a chat that isn't
+  limited, where a write under `~/.claude` really is the person's.
+
+The timeline still shows each of the agent's tool calls as it made them, and
+a note it left out of the receipt still counts as a change when Ophio decides
+whether the run was checked after its last change.
+
 ## Checks
 
 A check is a shell command the agent ran that runs a project's tests, build,

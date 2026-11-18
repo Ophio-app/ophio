@@ -375,10 +375,8 @@ async fn home_is_always_there_and_keeps_its_files() {
     let [found] = &homes(&f)[..] else {
         panic!("{:?}", homes(&f))
     };
-    assert_eq!(
-        (found.name.as_str(), Path::new(&found.host_path)),
-        ("Home", home.as_path())
-    );
+    assert_eq!(found.name, "Home");
+    crate::testing::assert_path_eq(&found.host_path, &home, true);
     let owner = Caller::local_owner();
     let remove = Command::RemoveProject {
         project_id: found.project_id,
@@ -405,7 +403,7 @@ async fn home_is_always_there_and_keeps_its_files() {
         panic!("{:?}", homes(&f))
     };
     assert_eq!(after.project_id, found.project_id);
-    assert_eq!(Path::new(&after.host_path), moved);
+    crate::testing::assert_path_eq(&after.host_path, &moved, true);
     f.close().await;
     std::fs::remove_dir_all(outer).unwrap();
 }

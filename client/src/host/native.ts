@@ -23,6 +23,7 @@
 // Binary frames from the host arrive on the channel as ArrayBuffer.
 
 import { nativeLifecycle, type LifecycleEvent } from "../platform/nativeLifecycle";
+import { parseWindowLayout, unavailableWindowLayout, type WindowLayout } from "../platform/windowLayout";
 import { Channel, invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type {
   AlertType,
@@ -517,6 +518,7 @@ type DeviceEvent =
   | ({ type: "appUpdate" } & AppUpdateResult)
   | { type: "notificationOpen"; notification: NotificationOpen }
   | { type: "background" | "foreground" }
+  | { type: "windowLayoutChanged"; layout: unknown }
   | LifecycleEvent;
 
 function nativeIntegrations() {
@@ -532,6 +534,9 @@ function nativeIntegrations() {
   const pending: SharedDescriptor[] = [];
   const notifications: NotificationOpen[] = [];
   const foregroundListeners = new Set<() => void>();
+  const layoutListeners = new Set<(layout: WindowLayout) => void>();
+  let latestLayout: WindowLayout | undefined;
+  let layoutRevision = 0;
   const updateListeners = new Set<(result: AppUpdateResult) => void>();
   const seen = new Set<string>();
   let draining = false;
@@ -606,6 +611,12 @@ function nativeIntegrations() {
   };
   const events = new Channel<DeviceEvent>();
   events.onmessage = (event) => {
+    if (event.type === "windowLayoutChanged") {
+      layoutRevision++;
+      latestLayout = parseWindowLayout(event.layout) ?? unavailableWindowLayout();
+      for (const listener of layoutListeners) listener(latestLayout);
+      return;
+    }
     if (event.type === "foreground") {
       for (const listener of foregroundListeners) listener();
       return;
@@ -648,6 +659,7 @@ function nativeIntegrations() {
   // App Store updates the iPhone app, and iOS has no service to keep alerts
   // coming while the app is closed.
   const androidOnly = {
+    nativeNotificationFolding: true,
     appUpdate: {
       check: (offers, options) => invoke("app_update_check", { offers, openSettings: options?.openSettings ?? false }),
       async install(profileId: string, app: Blob, sha256: string) {
@@ -691,6 +703,21 @@ function nativeIntegrations() {
   return {
     ...lifecycle.capabilities,
     ...(onIPhone() ? {} : androidOnly),
+    async windowLayout(): Promise<WindowLayout> {
+      const expected = layoutRevision;
+      const value = parseWindowLayout(await invoke<unknown>("window_layout")) ?? unavailableWindowLayout();
+      // An event received while the command ran describes the newer window.
+      if (layoutRevision === expected) latestLayout = value;
+      return latestLayout ?? value;
+    },
+    onWindowLayout(listener: (layout: WindowLayout) => void) {
+      layoutListeners.add(listener);
+      const expected = layoutRevision;
+      queueMicrotask(() => {
+        if (layoutListeners.has(listener) && latestLayout && expected === layoutRevision) listener(latestLayout);
+      });
+      return () => { layoutListeners.delete(listener); };
+    },
     report,
     downloadLimit: ANDROID_SAVE_LIMIT,
     async saveToPhone(blob: Blob, name: string): Promise<{ savedAs: string }> {

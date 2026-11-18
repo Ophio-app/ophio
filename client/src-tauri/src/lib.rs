@@ -72,6 +72,7 @@ pub fn run() {
             ipc::link_sent,
             ipc::link_close,
             ipc::device_events,
+            ipc::window_layout,
             ipc::share_text,
             ipc::shared_read,
             ipc::shared_ack,

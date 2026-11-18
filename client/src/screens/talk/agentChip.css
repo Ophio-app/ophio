@@ -1,0 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* The shared task chip may wrap, but it must never lose model or effort. */
+.composer__chip.work-card__chip { white-space: normal; min-width: 0; }
+.composer__chip.work-card__chip .chip__label { min-width: 0; }
+.work-card__chip-text { min-width: 0; overflow-wrap: anywhere; }

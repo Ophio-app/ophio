@@ -881,6 +881,8 @@ mod signals {
         locked.store(true, Ordering::SeqCst);
         assert_eq!(observer.observe().await, DesktopLockState::Locked);
         server.abort();
+        // Aborting only schedules cancellation; wait until the listener is dropped.
+        assert!(server.await.unwrap_err().is_cancelled());
         assert_eq!(observer.observe().await, DesktopLockState::Unknown);
     }
 }

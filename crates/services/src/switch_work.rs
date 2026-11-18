@@ -24,6 +24,10 @@ use protocol::{
 };
 use std::time::Duration;
 
+#[cfg(test)]
+#[path = "switch_work_agent_tests.rs"]
+mod agent_tests;
+
 /// What each admitted `SwitchToWork` (or an Allow that switches) does once
 /// it is admitted, by command.
 pub(crate) const SWITCH: &str = "switch_to_work";
@@ -40,13 +44,23 @@ pub(crate) struct Switch {
     /// It was a conversation.
     pub conversation: bool,
     pub by: Principal,
+    /// Execution can happen after the person's admission scope has ended.
+    #[serde(default)]
+    pub ophio_written: bool,
 }
 
-/// The request a switch allowed, by task: asked again by a later turn of the
-/// task, the same request is allowed without another card, once.
+/// The requests a switch (or a late Allow) allowed: asked again by a later
+/// turn of the task (or, after a late Allow, by any turn), the same request
+/// is allowed without another card, once. Each is kept under its task and
+/// the request that was allowed (`{task}/{approval}`), so one never
+/// replaces another; records from before kept one per task, under the task
+/// alone, and are still read and used.
 pub(crate) const PREAPPROVED: &str = "switch_preapproved";
 /// How long that lasts after the switch.
 const PREAPPROVED_MS: i64 = 30 * 60 * 1000;
+/// The requests a pass allowed, by approval: an Allow that came from a pass
+/// never makes another one.
+pub(crate) const FROM_PASS: &str = "approval_from_pass";
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Preapproved {
@@ -56,6 +70,122 @@ pub(crate) struct Preapproved {
     pub asked_in: RunId,
     pub by: Principal,
     pub until: Timestamp,
+    /// Allowed after its agent went on without it: the turn that asked may
+    /// ask again too, as the answer tells it to. Older records lack it.
+    #[serde(default)]
+    pub any_turn: bool,
+}
+
+/// An old agent's permission must not be spent by another agent merely
+/// because the conversation still has the same task id and request wording.
+fn same_agent(r: &store::Read<'_>, asked_in: RunId, answering_in: RunId) -> store::Result<bool> {
+    let asked: Option<Run> = r.get("run", asked_in)?;
+    let answering: Option<Run> = r.get("run", answering_in)?;
+    Ok(
+        matches!((asked, answering), (Some(asked), Some(answering)) if asked.harness == answering.harness),
+    )
+}
+
+/// `task_id`'s passes, with the ids they are kept under.
+pub(crate) fn passes(
+    r: &store::Read<'_>,
+    task_id: TaskId,
+) -> store::Result<Vec<(String, Preapproved)>> {
+    let task = task_id.to_string();
+    let under = format!("{task}/");
+    Ok((r.entries::<Preapproved>(PREAPPROVED)?.into_iter())
+        .filter(|(id, _)| *id == task || id.starts_with(&under))
+        .collect())
+}
+
+/// Lets the same request as `a`, asked again in its task, be allowed once
+/// without another card, as allowed by `by`. `any_turn`: the turn that
+/// asked `a` may be the one to ask again. Allowed again, the same request
+/// still goes through once; another request's pass is left as it was.
+pub(crate) fn preapprove(
+    tx: &mut store::Write<'_>,
+    a: &protocol::model::Approval,
+    by: Principal,
+    any_turn: bool,
+    now: Timestamp,
+) -> store::Result<()> {
+    let request = key_of(a);
+    for (id, pass) in tx.read().entries::<Preapproved>(PREAPPROVED)? {
+        if now > pass.until {
+            tx.delete(PREAPPROVED, id)?;
+        }
+    }
+    for (id, pass) in passes(&tx.read(), a.task_id)? {
+        if pass.request == request && same_agent(&tx.read(), pass.asked_in, a.run_id)? {
+            tx.delete(PREAPPROVED, id)?;
+        }
+    }
+    tx.put(
+        PREAPPROVED,
+        format!("{}/{}", a.task_id, a.approval_id),
+        &Preapproved {
+            request,
+            asked_in: a.run_id,
+            by,
+            until: Timestamp(now.0.saturating_add(PREAPPROVED_MS)),
+            any_turn,
+        },
+    )
+}
+
+/// Whether a late Allow of `a` lets the same request through once more: only
+/// for what an agent asked to do (run a command, change a file, use the
+/// network or a tool), never an access request, a question, Ophio's own
+/// gate or its own question about starting an app, and never for an Allow
+/// that a pass gave.
+pub(crate) fn passes_on(r: &store::Read<'_>, a: &Approval) -> store::Result<bool> {
+    // An agent's request through the bridge carries what it asked; Ophio's
+    // own questions there carry nothing. Native requests are all an agent's.
+    let agent_asked = a.raw_request.is_some()
+        || !r
+            .get::<bool>("bridge_approval", a.approval_id)?
+            .unwrap_or(false);
+    Ok(matches!(
+        a.kind,
+        ApprovalKind::Command
+            | ApprovalKind::FileEdit
+            | ApprovalKind::Network
+            | ApprovalKind::Tool
+            | ApprovalKind::Other
+    ) && a.access_request.is_none()
+        && agent_asked
+        && !crate::approval_rule::gate(r, a)?
+        && r.get::<bool>(FROM_PASS, a.approval_id)?.is_none())
+}
+
+/// The person declined `a`: their last word on that request in its task is
+/// no, so a pass an earlier Allow left for it goes.
+pub(crate) fn declined(tx: &mut store::Write<'_>, a: &Approval) -> store::Result<()> {
+    let request = key_of(a);
+    for (id, pass) in passes(&tx.read(), a.task_id)? {
+        if pass.request == request && same_agent(&tx.read(), pass.asked_in, a.run_id)? {
+            tx.delete(PREAPPROVED, id)?;
+        }
+    }
+    Ok(())
+}
+
+/// Withdraws every pass of `task_id`, as the person stops it or archives
+/// it: nothing they allowed before goes through after without a card.
+pub(crate) fn let_go(tx: &mut store::Write<'_>, task_id: TaskId) -> store::Result<()> {
+    for (id, _) in passes(&tx.read(), task_id)? {
+        tx.delete(PREAPPROVED, id)?;
+    }
+    Ok(())
+}
+
+fn key_of(a: &Approval) -> String {
+    request_key(
+        &a.kind,
+        a.raw_request.as_deref(),
+        &a.title,
+        a.detail.as_deref(),
+    )
 }
 
 /// What makes two requests the same request: their kind, exact words and
@@ -91,37 +221,43 @@ pub(crate) fn request_key(
     format!("{kind:?}\n{title}\n{raw}\n{}", detail.unwrap_or_default())
 }
 
-/// Whether the request `a` of a later turn of its task is the one a switch
-/// allowed; if so, it is used up, and who allowed it is returned.
+/// Whether the request `a` of its task is one a switch or a late Allow
+/// allowed; if so, that pass is used up (and only that one), `a` is marked
+/// as allowed by a pass, and who allowed it is returned.
 pub(crate) fn take_preapproved(
     tx: &mut store::Write<'_>,
     a: &protocol::model::Approval,
     now: Timestamp,
 ) -> store::Result<Option<Principal>> {
-    let Some(allowed) = tx.read().get::<Preapproved>(PREAPPROVED, a.task_id)? else {
+    let key = key_of(a);
+    let mut found = None;
+    for (id, pass) in passes(&tx.read(), a.task_id)? {
+        if now > pass.until {
+            tx.delete(PREAPPROVED, id)?;
+        } else if found.is_none()
+            && pass.request == key
+            && same_agent(&tx.read(), pass.asked_in, a.run_id)?
+            && (a.run_id != pass.asked_in || pass.any_turn)
+        {
+            found = Some((id, pass.by));
+        }
+    }
+    let Some((id, by)) = found else {
         return Ok(None);
     };
-    if now > allowed.until {
-        tx.delete(PREAPPROVED, a.task_id)?;
-        return Ok(None);
-    }
-    let key = request_key(
-        &a.kind,
-        a.raw_request.as_deref(),
-        &a.title,
-        a.detail.as_deref(),
-    );
     // Never an access request, and never Ophio's own gate, which asks again
-    // each turn by design.
-    if a.run_id == allowed.asked_in
-        || a.access_request.is_some()
+    // each turn by design; and only where Allow is the person's to give.
+    if a.access_request.is_some()
         || crate::approval_rule::gate(&tx.read(), a)?
-        || key != allowed.request
+        || (crate::approval_rule::Asked::of(&tx.read(), a)?)
+            .refusal(&ApprovalDecision::Allow, false)
+            .is_some()
     {
         return Ok(None);
     }
-    tx.delete(PREAPPROVED, a.task_id)?;
-    Ok(Some(allowed.by))
+    tx.delete(PREAPPROVED, id)?;
+    tx.put(FROM_PASS, a.approval_id, &true)?;
+    Ok(Some(by))
 }
 
 /// Settles `id` as allowed by `by`, as a delivered Allow would, without
@@ -251,17 +387,28 @@ impl CompanionHub {
         }
         if let Some(id) = approval {
             let a: Approval = tx.read().require("approval", id)?;
-            if a.task_id != task_id || running.as_ref().is_none_or(|run| run.run_id != a.run_id) {
+            // A request its agent stopped waiting for stays open: switching
+            // for it carries on from whichever turn is now the task's, or
+            // none, by the same rules. Anything else is the running turn's.
+            let later = crate::carry_on::carried_on(&tx.read(), id)?;
+            let asked: Run = tx.read().require("run", a.run_id)?;
+            if asked.harness != task.harness {
+                return Err(error(
+                    ErrorCode::Expired,
+                    "That request came from a different agent. Ask the current agent again.",
+                )
+                .into());
+            }
+            if a.task_id != task_id
+                || (!later && running.as_ref().is_none_or(|run| run.run_id != a.run_id))
+            {
                 return Err(error(
                     ErrorCode::InvalidRequest,
                     "That request isn't this task's turn's",
                 )
                 .into());
             }
-            if a.state != ApprovalState::Pending
-                || a.expires_at.is_some_and(|t| t <= now)
-                || crate::carry_on::carried_on(&tx.read(), id)?
-            {
+            if a.state != ApprovalState::Pending || a.expires_at.is_some_and(|t| t <= now) {
                 return Err(error(
                     ErrorCode::AlreadyResolved,
                     "That request is no longer waiting",
@@ -286,23 +433,12 @@ impl CompanionHub {
             // Asked again in Work, the same request is allowed at once: the
             // person allowed it by switching.
             if a.access_request.is_none() && !crate::approval_rule::gate(&tx.read(), &a)? {
-                tx.put(
-                    PREAPPROVED,
-                    task_id,
-                    &Preapproved {
-                        request: request_key(
-                            &a.kind,
-                            a.raw_request.as_deref(),
-                            &a.title,
-                            a.detail.as_deref(),
-                        ),
-                        asked_in: a.run_id,
-                        by: caller.principal,
-                        until: Timestamp(now.0.saturating_add(PREAPPROVED_MS)),
-                    },
-                )?;
+                preapprove(tx, &a, caller.principal, false, now)?;
             }
         }
+        // What else it went on without and offered to switch for has no
+        // way forward once it has: it goes, and is asked again in Work.
+        crate::carry_on::let_go_switched(tx, task_id, approval, now)?;
         let conversation = task.conversation;
         task.mode = TaskMode::Work;
         if task.conversation {
@@ -328,6 +464,7 @@ impl CompanionHub {
                 text,
                 conversation,
                 by: caller.principal,
+                ophio_written: !self.is_from_person(command),
             },
         )?;
         task.revision += 1;
@@ -490,6 +627,7 @@ impl CompanionHub {
                 tx.emit(Event::TaskUpserted { task })?;
                 if let Some(text) = &switch.text {
                     let seq = user_message(tx, task_id, None, text, now)?;
+                    crate::turned_from_chat::record_message_origin(tx, task_id, seq, !switch.ophio_written)?;
                     self.track_start_message(tx, task_id, None, seq)?;
                 }
                 note(
@@ -522,6 +660,7 @@ impl CompanionHub {
             )?;
             if let Some(text) = &switch.text {
                 let seq = user_message(tx, task_id, Some(run_id), text, now)?;
+                crate::turned_from_chat::record_message_origin(tx, task_id, seq, !switch.ophio_written)?;
                 self.track_start_message(tx, task_id, Some(run_id), seq)?;
             }
             Ok(Some(run_id))

@@ -109,6 +109,7 @@ done
             desktop_factory: None,
             speech_factory: Arc::new(companion::frontdoors::LocalSpeech),
             accounts: false,
+            release_check: false,
         };
         let runtime = Runtime::build(app_paths.clone(), config, &identity, options).await?;
         let hub = &runtime.hub;
@@ -139,6 +140,8 @@ done
             ..Default::default()
         };
         let receipt=hub.submit(&owner,CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
         github:None,agent_chosen:None,project_id:projects[0],kind:TaskKind::Coding,mode:Some(TaskMode::Ask),title:Some("Sandbox live proof".into()),
         prompt:format!("Run bash {} as one long-running shell command. This authorized sandbox test uses only synthetic data. Let all scripted attempts finish, polling the same command. Report its complete output verbatim. Do not edit it, work around the sandbox, or stop early. Expected failures are the test. Use no other tools. Finish normally after it completes.",script_path.display()),
         bundle:None,harness:HarnessKind::Codex,model:Some("gpt-6.1-sol".into()),effort:None,launch_policy:None,branch:None,mission:None,target_id:None,

@@ -57,10 +57,13 @@ pub(crate) fn read_only(path: impl AsRef<Path>) -> tokio::process::Command {
 pub(crate) async fn output(path: &Path, args: &[&str]) -> Option<String> {
     let mut command = read_only(path);
     command.args(args);
-    let output = tokio::time::timeout(std::time::Duration::from_secs(2), command.output())
-        .await
-        .ok()?
-        .ok()?;
+    let output = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        containment::inherit::tokio_output(&mut command),
+    )
+    .await
+    .ok()?
+    .ok()?;
     if !output.status.success() || output.stdout.len() > 1024 * 1024 {
         return None;
     }

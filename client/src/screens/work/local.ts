@@ -45,6 +45,7 @@ export function useLocalText(key: string, initial = "") {
       setValue(next);
       setSaved(stored);
       for (const changed of textListeners) changed(key, next, stored);
+      return stored;
     },
     saved,
   ] as const;

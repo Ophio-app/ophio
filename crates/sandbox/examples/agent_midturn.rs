@@ -147,6 +147,7 @@ done
             env: Default::default(),
             github: None,
             scratch: Some(paths[4].clone()),
+            attached: None,
             questions: false,
             sandbox: Some(sandbox.clone()),
             web: false,

@@ -50,7 +50,8 @@ function schedule(item: ToastItem) {
   timers.set(item.id, setTimeout(() => dismiss(item.id), item.action ? 7000 : item.tone === "stop" ? 6000 : 3500));
 }
 
-export function toast(text: string, opts: { code?: string; tone?: ToastItem["tone"]; action?: ToastItem["action"]; expire?: ToastItem["expire"] } = {}): void {
+/** Shows a toast; what it returns takes it down early, once it is no longer true. */
+export function toast(text: string, opts: { code?: string; tone?: ToastItem["tone"]; action?: ToastItem["action"]; expire?: ToastItem["expire"] } = {}): () => void {
   recordNotice(opts.code ?? "toast", opts.tone === "stop" ? "error" : "info", text);
   const item: ToastItem = { id: ++seq, text, tone: opts.tone ?? "info", action: opts.action ?? (opts.tone === "stop" ? { label: "Report", run: () => openReport({ type: "error" }, { error: { code: opts.code ?? "app_error", message: text } }) } : undefined), expire: opts.expire };
   for (const old of items.slice(0, -1)) dismiss(old.id);
@@ -58,6 +59,7 @@ export function toast(text: string, opts: { code?: string; tone?: ToastItem["ton
   emit();
   announce(text, item.tone === "stop" ? "assertive" : "polite");
   schedule(item);
+  return () => dismiss(item.id);
 }
 
 export function Toasts() {

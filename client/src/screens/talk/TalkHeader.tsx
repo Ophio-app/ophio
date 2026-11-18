@@ -11,13 +11,15 @@
 // Stop ends the row; every other running task's is one row and one tap away
 // (D-054).
 
-import { ArrowLeft, ChevronRight, CircleHelp, Eye, Hourglass, KeyboardOff, LockKeyhole, MessageSquareReply, MoreHorizontal, Pause, Square } from "lucide-react";
+import { SplitControl } from "../../app/SplitControl";
+import { ArrowLeft, Bot, ChevronDown, ChevronRight, CircleHelp, Eye, Hourglass, KeyboardOff, LockKeyhole, MessageSquareReply, MoreHorizontal, Pause, Square } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useApp, useCommand, useHost, useLink, useUi } from "../../app/context";
 import { Age } from "../../design/Age";
 import { Button, IconButton } from "../../design/Button";
 import { useNow } from "../../design/time";
 import type { Project, Run, Task } from "../../protocol/types";
+import type { AgentChoice } from "../../app/ui";
 import { isTaskRunning, openAttention } from "../../state/projection";
 import { useStore } from "../../state/store";
 import { tabLabel } from "../../app/ui";
@@ -32,10 +34,19 @@ import { inputState, useRail } from "../control/SafetyStrip";
 import { holdsDisplay, taskDisplayId, taskDisplayLabel } from "../control/taskDisplay";
 import { PrChip } from "../github/PrSheet";
 import { RenameSheet } from "../work/RenameTask";
+import { wakeSaid } from "../work/outcome";
 import { taskAttentionReason } from "../work/taskActivity";
 import { AccessBar } from "./AccessBar";
 import { ReportPin } from "../work/ReportTask";
-import { conversationBadge } from "./conversation";
+import { CHAT_AGENT_SWITCH_FEATURE, conversationBadge, nextChoice } from "./conversation";
+import { askChat, newAsk } from "./chatRequests";
+import { FromChatLink } from "./FromChatLink";
+import { fromChatId } from "./fromChat";
+import { shortAgentLabel } from "./AgentChip";
+import { agentLabel } from "./intent";
+import { accessBarShown } from "./MayDoLine";
+import { accessHeld } from "./access";
+import { draftKey } from "../../app/ui";
 import { MayDoLine, MayDoSheet } from "./MayDoLine";
 import { MediaSheet, useMediaPermitted } from "./RecentMedia";
 import { TaskMoreSheet, taskHeadingFocus, taskRowBadge } from "./TaskBar";
@@ -43,7 +54,11 @@ import "./talkHeader.css";
 
 type HeaderSheet = "more" | "media" | "status" | "rename";
 
-export function TalkHeader({ project, task, run }: { project: Project; task: Task | undefined; run: Run | undefined }) {
+export function TalkHeader({ project, task, run, agent }: {
+  project: Project; task: Task | undefined; run: Run | undefined;
+  /** Before a task or chat starts: the agent, model and effort it would start with. */
+  agent?: AgentChoice | null;
+}) {
   const { ui, profile, profiles } = useApp();
   // With more than one computer paired, a chat names the one it is on.
   const computer = profiles.length > 1 ? profile.name : null;
@@ -81,9 +96,10 @@ export function TalkHeader({ project, task, run }: { project: Project; task: Tas
     : from?.task ? `Back to ${fromTask ? `“${fromTask}”` : "where you were"}`
     : conversation ? "Conversations" : "Tasks";
   const media = useMediaPermitted();
+  const held = useHost((s) => accessHeld(s.capabilities));
 
   return (
-    <header className="ctx chat-head">
+    <header className={`ctx chat-head${task?.state === "working" && task.checking ? " chat-head--checking" : ""}`}>
       {/* Without a task the tabs are up, and Work's tab carries the count; a
           conversation's back says the count is Work's, not its conversations'. */}
       <button type="button" className="chat-head__back" onClick={() => ui.leaveTask(!conversation)}
@@ -106,24 +122,75 @@ export function TalkHeader({ project, task, run }: { project: Project; task: Tas
             {task ? !running && online && <Age className="chat-head__age" at={task.updated_at} suffix=" ago" /> : <span>in {project.name}</span>}
             {computer && <span className="chat-head__computer">on <bdi>{computer}</bdi></span>}
           </span>
-          {/* A line of its own, so a chat says it is a chat in full even
-              beside a state, a display and Stop. */}
-          {task && <span className="chat-head__sub chat-head__sub--may"><MayDoLine task={task} className="chat-head__may" /></span>}
+          {/* The chat a task came from leads its own line, which never
+              clips it: what the task may do gives way to it. */}
+          {task && (!task.conversation && fromChatId(task) || !(held && accessBarShown(task, held))) && <span className="chat-head__sub chat-head__sub--may">
+            {!task.conversation && <FromChatLink task={task} className="chat-head__from" short />}
+            {!(held && accessBarShown(task, held)) && <MayDoLine task={task} className="chat-head__may" />}
+          </span>}
         </div>
       </Heading>
       <div className="chat-head__end">
+        <SplitControl focused />
         {kb && <IconButton icon={KeyboardOff} label="Hide keyboard" onClick={hideKeyboard} />}
         <StatusButton compact quiet onOpen={() => setSheet("status")} />
         {task && <TaskBell task={task} />}
         {task && <IconButton icon={MoreHorizontal} label={`More about this ${conversation ? "conversation" : "task"}`} onClick={() => setSheet("more")} />}
       </div>
       {task && <StopTask task={task} iconOnly className="chat-head__stop" />}
-      {task && <TaskMoreSheet open={sheet === "more"} onClose={close} task={task} onMedia={media ? () => setSheet("media") : undefined} onRename={() => setSheet("rename")} />}
+      {/* Model and effort get the full row: the title's buttons must not
+          squeeze the next message's choice into an ellipsis. */}
+      {task?.conversation && <ChatModel task={task} run={run} running={running} />}
+      {!task && agent && <NewModel project={project} agent={agent} conversing={conversing} />}
+      {task && <TaskMoreSheet open={sheet === "more"} onClose={close} task={task} onMedia={media ? () => setSheet("media") : undefined} onRename={() => setSheet("rename")}
+        onIntoTask={task.conversation && !running ? () => { close(); askChat(ui, task.task_id, "into_task"); } : undefined} />}
       {task && sheet === "rename" && <RenameSheet task={task} onClose={close} />}
       {task && <MayDoSheet task={task} />}
       {task && <MediaSheet open={sheet === "media"} onClose={close} taskId={task.task_id} projectId={task.project_id} />}
       <StatusSheet open={sheet === "status"} onClose={close} />
     </header>
+  );
+}
+
+/** The agent, model and effort a chat's next message uses, as a small chip
+ * that opens the message box's own picker. */
+function ChatModel({ task, run, running }: { task: Task; run?: Run; running: boolean }) {
+  const { ui } = useApp();
+  const harnesses = useHost((s) => s.harnesses);
+  const switchAgent = useHost(s => !!s.capabilities?.features.includes(CHAT_AGENT_SWITCH_FEATURE));
+  const pick = useUi((s) => s.drafts[draftKey(task.project_id, task.task_id)]?.agent);
+  const next = nextChoice(task, pick, switchAgent);
+  const actual = run ? { harness: run.harness, model: run.actual_model ?? run.requested_model, effort: run.actual_effort ?? run.requested_effort } : { harness: task.harness, model: task.model, effort: task.effort };
+  // Compare choices, not the resolved defaults reported by the agent: an
+  // unchanged “Agent’s default” is not a pending model change.
+  const requested = run ? { harness: run.harness, model: run.requested_model, effort: run.requested_effort } : task;
+  const changed = next.harness !== requested.harness || next.model !== requested.model || next.effort !== requested.effort;
+  return <>
+    {/* The running reply is named apart only when the next message changes
+        agent or model; otherwise the chip below already says it. */}
+    {running && changed && <span className="chat-head__sub chat-head__sub--model">Replying · {agentLabel(harnesses, actual)}</span>}
+    <ModelChip label={agentLabel(harnesses, next)} prefix={switchAgent && changed ? "Next · " : undefined} said={switchAgent ? "Agent for your next message:" : "Model for your next message:"} onClick={() => askChat(ui, task.task_id, "model")} />
+  </>;
+}
+
+/** The same chip on a new task or chat, before it starts: what it will start
+ * with, opening the message box's picker, which remembers the person's own
+ * pick for that kind of work. */
+function NewModel({ project, agent, conversing }: { project: Project; agent: AgentChoice; conversing: boolean }) {
+  const { ui } = useApp();
+  const harnesses = useHost((s) => s.harnesses);
+  return <ModelChip label={agentLabel(harnesses, agent)} said={conversing ? "Agent for this conversation:" : "Agent for this task:"} onClick={() => askChat(ui, newAsk(project.project_id), "model")} />;
+}
+
+function ModelChip({ label, said, onClick, prefix }: { label: string; said: string; onClick: () => void; prefix?: string }) {
+  return (
+    <span className="chat-head__sub chat-head__sub--model">
+      <button type="button" className="chat-head__model" aria-haspopup="dialog" aria-label={`${said} ${label}`} onClick={onClick}>
+        <Bot aria-hidden strokeWidth={2.1} />
+        <span className="chat-head__model-text" aria-hidden>{prefix}{shortAgentLabel(label)}</span>
+        <ChevronDown aria-hidden strokeWidth={2.1} />
+      </button>
+    </span>
   );
 }
 
@@ -149,6 +216,9 @@ export function TalkPins({ task, project }: { task: Task | undefined; project?: 
  * other agent's answer it waits for. The project is free meanwhile; Stop
  * watching drops the wake, and the task rests as it ended.
  */
+/** A sentence fit between the pin's dots: no full stop of its own. */
+const withoutStop = (text: string) => text.trim().replace(/[.。]+$/, "");
+
 function WatchPin({ task }: { task: Task }) {
   const execute = useCommand();
   const allowed = useMay("tasks");
@@ -160,7 +230,7 @@ function WatchPin({ task }: { task: Task }) {
   if (wake.answer) return (
     <div className="chat-watch" role="group" aria-label="Waiting">
       <Hourglass className="chat-watch__icon" aria-hidden />
-      <span className="chat-watch__text">Waiting for {wake.reason} · wakes it when it comes</span>
+      <span className="chat-watch__text">{wake.person_reason?.trim() ? withoutStop(wake.person_reason) : <>Waiting for {wake.reason}</>} · wakes it when it comes</span>
       <Button variant="quiet" size="sm" className="chat-watch__stop" disabled={!allowed || !online}
         onClick={() => void execute({ command: "stop_task", task_id: task.task_id }, { label: "Stop waiting", success: "Stopped waiting. The answer stays in its own task." })}>
         Stop waiting
@@ -168,10 +238,12 @@ function WatchPin({ task }: { task: Task }) {
     </div>
   );
   const when = wake.at > now ? <>wakes it <Age at={wake.at} /></> : "wakes it when the project is free";
+  // The agent's plain sentence for the person, never its own reminder.
+  const said = wakeSaid(wake);
   return (
     <div className="chat-watch" role="group" aria-label="Watching">
       <Eye className="chat-watch__icon" aria-hidden />
-      <span className="chat-watch__text">Watching · {wake.reason} · {when}</span>
+      <span className="chat-watch__text">Watching · {said ? <>{withoutStop(said)} · </> : null}{when}</span>
       <Button variant="quiet" size="sm" className="chat-watch__stop" disabled={!allowed || !online}
         onClick={() => void execute({ command: "stop_task", task_id: task.task_id }, { label: "Stop watching", success: "Stopped watching" })}>
         Stop watching

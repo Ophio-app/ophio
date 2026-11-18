@@ -7,24 +7,7 @@ const SHELL = ["bash", "shell", "shell_command", "exec_command", "commandexecuti
 const EDIT = ["edit", "multiedit", "edit_file", "write", "write_file", "notebookedit", "filechange"];
 const toolName = (tool: string) => tool.replace(/^functions\./, "").toLowerCase();
 
-/** Codex's own names for its kinds of step, in the plain words the computer
- *  gives their summaries. */
-const PLAIN: Record<string, string> = {
-  ExitPlanMode: "Plan",
-  commandExecution: "Command",
-  fileChange: "File change",
-  webSearch: "Web search",
-  imageView: "Image view",
-  imageGeneration: "Image generation",
-  functionCallOutput: "Tool result",
-  collabAgentToolCall: "Helper agents",
-};
-
-/** A step's tool as the person reads it: Codex's kinds of step in plain
- *  words, any other tool by the name it was given. */
-export function toolLabel(tool: string): string {
-  return PLAIN[tool] ?? tool;
-}
+export { OPHIO_TOOLS, toolLabel } from "../../design/toolNames";
 
 /** Whether a step ran a command or changed files, by the tool names the
  *  harnesses report; other tools only read or talk. */

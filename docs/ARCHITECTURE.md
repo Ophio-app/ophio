@@ -74,6 +74,97 @@ original receipt and leaves exactly one conversation message.
 Chat revocation excludes undispatched messages from native-delivery uncertainty;
 their send workers fail authorization and leave the saved messages recoverable.
 
+A chat whose reply was cut off (its run's result is unknown, for example because
+Øphio restarted mid-turn) carries on when the person writes again, but only when
+the computer knows that the agent and everything it started inside the run's
+container have stopped. It records
+that as `nothing_running` on the run, in two cases. When the agent's exit was
+reported and the adapter keeps every process the run started together
+(`Containment::Complete`: a Linux cgroup or a Windows job object), that exit
+already says they have all ended. After a restart, the run's own Linux cgroup,
+recorded when the run started, must be empty or gone from a cgroup hierarchy
+that is still there, or the computer must have rebooted since (a new boot id).
+For a chat, that proof also settles recorded local helpers as stopped, with an
+observed end time, and resolves their attention items. In-process helpers end
+with the agent; separate-process helpers are settled only when the recorded
+adapter containment is complete. Starting a new session or moving a local shell
+command into the background does not escape a Linux cgroup. Unknown helper
+lifetimes (including the helpers Codex currently reports) are never inferred
+ended. A run with unconfirmed cleanup at startup, a helper still active or of
+unknown state, or only an unconfirmed process group to go on keeps the review,
+and so does every Task. Without a restart, an adapter's confirmed exit settles
+local helpers by the same rule only with complete containment and no outcome
+entries still active or unknown. The reply is an ordinary
+`resume_task` with the person's new words and no mode change. As soon as the
+cut-off chat can carry on, its outcome-decision attention items are resolved and
+its receipt no longer asks the person to mark it failed or completed. A single
+informational reply notification says “Reply cut off. Write to carry on.” It
+uses the existing `Completed` attention kind with a headline and the Chat's
+`Reply` notification settings; this never changes the run's unknown result.
+It opens Chat, stays out of Home's decisions, and is acknowledged when the Chat
+is seen. A per-run `cut_off_told` record commits with the confirmation and item,
+so a restart cannot raise it again, even after acknowledgement. Already
+carried-on runs are not notified. No success or human verdict is invented.
+In the same write as the person's next message,
+the cut-off run is settled as `interrupted` with `carried_on` (who and when; its
+result stays unknown and is never recorded as completed), and it lets go of the
+project's writer. Its old receipt says it was cut off and carried on in the next
+reply; changed files, steps and reports remain available. The
+interrupted prompt is never sent again. The phone offers this only on a computer
+that advertises `chat_carry_on_v1`; otherwise, and whenever the computer can't
+confirm the run's container is empty, Mark failed and Mark completed stay the
+way on. Stored phone commands whose own outcome is unknown are not touched.
+An empty container is the evidence accepted here, the same evidence an
+ordinary next turn follows: work the agent handed to something outside it,
+such as a systemd unit started with `systemd-run --user`, may still be running
+(see the containment section below), and the review this replaces could not see
+it either. So the phone says only that the agent and what it started have
+stopped, and the carry-on turn tells the agent that its last reply was cut off
+and that anything it started outside the session may still be running.
+
+Streamed reply text is not a replayable live event. Masked deltas reach the
+phone immediately and stay in separate per-message buffers within each run.
+A background worker checkpoints every message's unsaved text together about once
+a second; 8 KiB of unsaved text across the run also triggers a checkpoint. These
+writes append only new text and update small per-message saved-byte markers,
+rather than rewriting the whole reply. Disk work for periodic and size-triggered
+checkpoints runs off the async executor. Failed transactions leave the memory
+buffer intact; committed byte markers make retries safe even if publication fails.
+A hard crash can lose roughly the last second of the reply, or more if the disk
+cannot save it. Graceful shutdown saves the remaining tail.
+
+An admitted person message or a conversation handoff saves every pending tail
+and turns pending words into `AgentMessage { partial: true }`
+timeline items in the same transaction. Helper activity, usage, warnings and
+status events do not split an ongoing reply. Activity events do not identify
+whether they came from the main agent, so they are not message boundaries.
+Different message keys can stream concurrently and never end each other. A final
+native message saves only its own tail and normally replaces its own pending text
+with one whole message; if a genuine interruption already recorded a prefix, only
+the remaining words are added. Each key has independent saved-byte tracking, so
+finishing one leaves the other keys intact. A key without a final message stays
+pending until interruption or run end. A checkpoint failure for one run does
+not prevent the other runs from saving that tick.
+Run settlement saves and drains the tail; startup drains the saved checkpoints.
+Both clear pending text atomically, including when recovery still needs review.
+A saved cut-off reply can therefore appear after helper steps that arrived while
+it was being written. Long partial messages are split into frame-sized items
+without dropping text.
+
+Timeline sequence numbers remain the identity for replay and paging, so a second
+restart does not append the words again. The phone replaces the matching live
+copy with the journaled partial and uses the existing quiet Cut off divider;
+partial text does not claim that a step succeeded. Secret masking and existing
+native-event size limits still apply before persistence or live publication.
+
+Ordinary continuation resumes the native Claude Code or Codex session, rather
+than injecting the transcript again. When Ophio itself captures chat context for
+a separate task, it includes partial replies labelled as partial, within that
+snapshot's existing size and history limits. This preserves what Ophio received;
+it does not recover text already lost by an older version or text an agent never
+sent, nor does it guarantee how much an abruptly killed native agent saved in
+its own session.
+
 Helper answers waiting for delivery are separate from admitted messages. Stop
 removes those queued answers and outstanding consultations in its admission
 transaction; each helper's original answer stays in that helper's task. A delivery
@@ -101,7 +192,9 @@ services   admission, dispatch, control arbitration, library, transfers,
    ↑
 harness-claude, harness-codex        implement HarnessAdapter
 containment                          one process container per agent run
-platform-linux, platform-windows     implement DesktopBackend
+platform-linux, platform-windows,    implement DesktopBackend
+  platform-macos
+platform-desktop                     desktop session shared by Windows and Mac
 terminal                             implements TerminalHost
 media                                tile-delta encoder and flow control
 channels                             Telegram and Discord
@@ -331,6 +424,25 @@ documented in `crates/protocol/src/media.rs`.
   and older phones continue matching exact question text only when it identifies
   one question. Answers arriving after the carry-on timeout include the original
   question order, IDs and headers, preserving their associations in the follow-up.
+  Requests made through Ophio's bridge (`request_access` and the other Ophio
+  tools) that carry on also stay open when the agent stops waiting early: when
+  its bridge connection closes or its turn ends without a person's Stop, the
+  request is marked carried on instead of expired, and a later answer is the
+  task's next message. An answer admitted as the agent stops waiting, which
+  no longer reaches the wait, takes the same path. Access requests carry no
+  deadline of their own, so an Allow is checked against the access as it is
+  when admitted: if it would turn on more than the card listed, or lift every
+  limit without the card's warning, it is refused and the card withdrawn.
+  A later Allow on a command, file change, network or tool request the agent
+  made (never an access request, a question, Ophio's own gate or its own
+  question about starting an app) leaves a one-use pass for 30 minutes,
+  stored per task and request, so the agent's identical retry in that task
+  is allowed without a second card. The pass is used up once, never renews
+  from the Allow it gave, and is cancelled by a Deny of the same request in
+  that task, by the person's Stop and by archiving. A private (secret)
+  question never carries on: its answer may only reach the live native
+  question, so the ten-minute timer, the turn's end and a closed bridge
+  connection expire it instead.
   The shared web form and Rust adapter work for Android and iPhone;
   no platform-specific command changes are needed.
 
@@ -355,7 +467,49 @@ companion doesn't own), a run keeps only its process group and the Stop receipt
 says what may still be running. On Windows the agent joins a job that allows no
 breakaway before any of its code runs. Work the agent hands to another part of
 the system to start, such as a systemd unit, a scheduled task or a service, is
-outside the container on both.
+outside the container on both, so a run whose container is empty may still
+have left such work running; a cut-off chat that carries on says so to the
+agent.
+
+A limited chat also runs in a sandbox (`crates/sandbox`: bubblewrap on Linux,
+the Mac's own sandbox on a Mac; Windows has none), with its own copy of the
+agent's settings folder in the conversation's `state/native`. Only the
+provider credential file is shared to write. The person's instructions and
+skills come from a short allowlist (`crates/sandbox/src/setup.rs`) and are
+shared read-only. Each one is resolved through at most one link, refused if it
+reaches anything private or broad, checked without reading its contents and
+held open while the run lasts. On Linux the sandbox's start-up step checks
+each mount is still the same file or folder before the agent starts. A run
+that can't change files skips skills whose front matter says they do, and
+none is shared that the run is told to leave out (Disable in Øphio), since the
+agent finds what is shared at the copy's path. See
+[agent-files.md](agent-files.md#in-a-limited-chat).
+
+Files attached to a chat message (`crates/services/src/attached.rs`) arrive as
+uploaded artifacts named in the message's annotation bundle. Only the device
+that uploaded a file may send it, administrators included, and nothing an agent
+showed counts as uploaded. Admission replaces each file's name and media type
+with the cleaned ones, so the stored command, the prompt and every device's
+timeline carry the computer's name. Before the run starts the computer puts a
+copy of each in `<data>/attached/<task_id>/`: a folder made 0700, outside every
+project, with each file created new at 0400, never through a link, under a name
+the computer derives from the display name (one component, no instruction file
+names, numbered on collision), and made read-only again under that name once
+the temporary name is removed (on Windows the mark belongs to the file). Each
+copy made is recorded as it is made, so sending again after a failure reuses
+it; a file of the message that can't be placed refuses the message, while an
+earlier one that can't be put back is listed to the agent as unavailable. The
+folder is made at every run start and reaches the run through
+`RunSpec.attached`: Claude Code gets it with `--add-dir`, and in the Linux
+sandbox it is one more read-only path, so a limited chat sees only its own
+conversation's folder. A run that couldn't get its folder is marked, and files
+sent to it while it runs are refused. The prompt names each file as quoted
+data. Limits are in `protocol::annotation` (500 files and 1 GB per
+conversation; records are found by their `{task_id}:` key prefix); an hourly
+sweep removes a conversation's copies and records a week after it is archived,
+and the originals unless another conversation's file, a message picture, an
+agent's shown item or a waiting request still uses them. See
+[chat-files.md](chat-files.md).
 
 Continuation admission preserves the last native session and its original mode
 in the durable run intent. If a launch fails before reporting a native session,
@@ -363,6 +517,20 @@ the next retry inherits that intent, including a pending Plan-to-Work transition
 An acknowledged session supersedes the intent; sessions never cross harnesses.
 Attempts that fail before session start keep their native session and
 acknowledgement fields empty.
+
+Chat agent switching is separately gated by `chat_agent_switch_v1`. The
+agent, model and effort belong to the next message, not the project's defaults
+or structured Tasks; a queued message retains its choices. Cross-agent
+messages wait for a new turn rather than steering the active agent. Before
+launch, the host persists the handover boundary with the run, so recovery
+cannot accidentally send the turn to the prior agent. A destination can receive
+only bounded recent user messages and completed replies (2,000 characters per
+message, 12,000 overall). This transcript is information, not transferred
+native memory or authority. On switch-back, resume that agent's prior native
+session with missed recent context only when safe; otherwise start fresh with
+recent context. Destination launch still performs its normal policy, sandbox
+and authorization checks; approvals, grants, pending requests and answers do
+not cross agents. See [Choosing an agent for the next Chat message](chat-agent-switching.md).
 
 ## Platform backends
 
@@ -440,6 +608,16 @@ exit flush pending progress and clear its timer. A sudden process death can lose
 the latest unflushed counters; uploads resume from the computer's
 confirmed offset and downloads from the partial bytes retained on the device.
 This behavior is shared by Android and iPhone without native plugin changes.
+
+Files chosen for a chat message (`client/src/screens/talk/chatFiles.ts`) keep
+their bytes in the annotation source store and their names, sizes and upload
+state on the draft, so a draft with files survives a restart. Send uploads the
+files that have no artifact yet, records each artifact on the draft as it
+arrives, and sends the command only when all have; a retry resumes a recorded
+transfer or starts a new one if the computer closed it. The picker is a plain
+`<input type="file" multiple>`, shared by Android and iPhone. The phone offers
+Files only when the computer advertises `chat_files_v1` and the device holds
+the transfers grant.
 
 ## Versioning
 

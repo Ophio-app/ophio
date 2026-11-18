@@ -7,7 +7,7 @@ use super::{
         self, APP_DOWNLOAD_URL, Answer, Answered, Ask, Asked, Block, Choice, Ending, Host, Mark,
         Network, Ran, Run, Screen, Service, Survey, Tailscale, TaskView, Tick, Ui,
     },
-    host::{self as real, expand_home, grant_changes, telling},
+    host::{self as real, expand_home_from, grant_changes, telling},
     plain::{Input, Lines, Plain},
 };
 use crate::{
@@ -19,7 +19,7 @@ use ports::COMMAND;
 use protocol::{
     ErrorCode, ProtocolError, ProtocolVersion,
     accounts::SignInStage,
-    agent_updates::AgentUpdatesView,
+    agent_updates::{AgentUpdateMode, AgentUpdatesView},
     auth::{DeviceRecord, Grants, PairingOffer},
     capability::{
         AccountReadiness, Availability, HarnessCapabilities, HarnessInfo, HarnessKind,
@@ -262,14 +262,21 @@ impl Host for Fake {
         self.look("agent_updates")?;
         Ok(self.updates.clone())
     }
-    async fn set_agent_updates(&mut self, enabled: bool, revision: u64) -> Result<()> {
-        self.act(format!("set_agent_updates {enabled} {revision}"))?;
+    async fn set_agent_update_mode(&mut self, mode: AgentUpdateMode, revision: u64) -> Result<()> {
+        self.act(format!("set_agent_update_mode {mode:?} {revision}"))?;
         if let Some(code) = self.updates_refused.take() {
+            if code == ErrorCode::StaleRevision {
+                let view = self.updates.as_mut().expect("asked only when it can");
+                view.revision += 1;
+                view.mode = AgentUpdateMode::Never;
+                view.enabled = false;
+            }
             return Err(Error::Protocol(ProtocolError::new(code, "refused")));
         }
         let view = self.updates.as_mut().expect("asked only when it can");
         assert_eq!(view.revision, revision);
-        view.enabled = enabled;
+        view.enabled = mode == AgentUpdateMode::Automatic;
+        view.mode = mode;
         view.revision += 1;
         Ok(())
     }
@@ -1036,7 +1043,7 @@ async fn wifi_counts_as_allowed_when_listening_everywhere_on_its_family() {
         let reach = &ui.screens[1];
         let offered = reach.choices().iter().any(|choice| choice.id == "wifi");
         assert_eq!(offered, !allowed, "{listen} {allow_lan}");
-        assert_eq!(words(reach).contains("Use this Wi‑Fi"), allowed);
+        assert_eq!(words(reach).contains("Use this Wi-Fi"), allowed);
     }
 }
 
@@ -1191,7 +1198,12 @@ async fn an_installer_that_succeeds_without_installing_is_not_believed() {
     let (_, ui) = go(&mut host, at(Step::Agent), answers).await;
     assert!(!ui.saw("Claude Code: Installed"));
     assert!(ui.saw("The installer finished, but Øphio can't find it"));
-    assert!(ui.saw("~/.local/bin"));
+    if cfg!(windows) {
+        assert!(ui.saw("on its PATH and in the folders its installers use"));
+        assert!(!ui.saw("~/.local/bin"));
+    } else {
+        assert!(ui.saw("~/.local/bin"));
+    }
     assert!(ui.saw("log out of this computer and back in"));
     assert!(ui.saw("It said: Setting up…"));
 }
@@ -1225,7 +1237,12 @@ async fn an_installer_s_failure_is_explained_on_the_setup_screen() {
     assert!(ui.saw("Claude Code: The installer stopped before it finished"));
     assert!(ui.saw("Check that this computer is connected to the internet"));
     assert!(ui.saw("It said: curl: (6) Could not resolve host: claude.ai"));
-    assert!(ui.saw("curl -fsSL https://claude.ai/install.sh | bash"));
+    if cfg!(windows) {
+        assert!(ui.saw("irm https://claude.ai/install.ps1 | iex"));
+        assert!(!ui.saw("curl -fsSL https://claude.ai/install.sh | bash"));
+    } else {
+        assert!(ui.saw("curl -fsSL https://claude.ai/install.sh | bash"));
+    }
 }
 
 /// Codex installed with npm runs tasks; a chat kept to a project, in a
@@ -1328,17 +1345,17 @@ fn a_check_s_remedy_is_a_sentence_of_its_own() {
     assert_eq!(
         joined(
             "You can’t reach agents from Telegram",
-            "ophio channels enable telegram"
+            &format!("{COMMAND} channels enable telegram")
         ),
-        "You can’t reach agents from Telegram. Run ophio channels enable telegram."
+        format!("You can’t reach agents from Telegram. Run {COMMAND} channels enable telegram.")
     );
     assert_eq!(
         joined("It stopped.", "Check the network, then restart it."),
         "It stopped. Check the network, then restart it."
     );
     assert_eq!(
-        joined("", "ophio desktop enable"),
-        "Run ophio desktop enable."
+        joined("", &format!("{COMMAND} desktop enable")),
+        format!("Run {COMMAND} desktop enable.")
     );
     // Only Øphio's own commands are said as ones to run.
     assert_eq!(
@@ -1463,9 +1480,10 @@ async fn an_agent_no_longer_ready_is_not_kept_as_the_default() {
     assert!(!ui.saw("Choose which new projects start with"));
 }
 
-fn updates(enabled: bool) -> AgentUpdatesView {
+fn updates(mode: AgentUpdateMode) -> AgentUpdatesView {
     AgentUpdatesView {
-        enabled,
+        enabled: mode == AgentUpdateMode::Automatic,
+        mode,
         revision: 3,
         supported: true,
         ..AgentUpdatesView::default()
@@ -1473,9 +1491,9 @@ fn updates(enabled: bool) -> AgentUpdatesView {
 }
 
 #[tokio::test]
-async fn keeping_the_agents_up_to_date_is_asked_once_and_recommended() {
+async fn agent_update_default_is_notify_and_back_does_not_choose() {
     let mut host = Fake {
-        updates: Some(updates(false)),
+        updates: Some(updates(AgentUpdateMode::default())),
         ..Fake::default()
     };
     let answers = vec![
@@ -1483,95 +1501,239 @@ async fn keeping_the_agents_up_to_date_is_asked_once_and_recommended() {
         c("next"),
         c("back"),
         c("next"),
-        c("on"),
+        c("notify"),
         Answer::Quit,
     ];
     let (_, ui) = go(&mut host, at(Step::Agent), answers).await;
-    assert!(ui.saw("Updates: Tasks use the versions installed on this computer"));
-    let asked = ui.screen("Keep Claude Code and Codex up to date?");
-    let on = asked
+    assert!(ui.saw("Updates: Øphio tells you about updates without installing them"));
+    let asked = ui.screen("How should Øphio handle agent updates?");
+    let notify = asked
         .choices()
         .iter()
-        .find(|choice| choice.id == "on")
+        .find(|choice| choice.id == "notify")
         .unwrap();
-    assert!(on.recommended);
-    assert_eq!(host.calls, ["set_agent_updates true 3"]);
-    assert_eq!(host.progress().updates, Some(true));
+    assert!(notify.recommended);
+    assert_eq!(notify.label, "Tell me when there’s an update");
+    assert_eq!(host.calls, ["set_agent_update_mode Notify 3"]);
+    assert_eq!(host.updates.as_ref().unwrap().mode, AgentUpdateMode::Notify);
+    assert_eq!(host.progress().updates, Some(AgentUpdateMode::Notify));
     assert_eq!(
         host.progress().steps.get(&Step::Agent),
         Some(&Outcome::Done)
     );
 
-    // Asked and answered: going through the step again doesn't ask.
+    // Asked and answered: going through the step again doesn't ask, even
+    // when the chosen mode is not Automatic.
     let mut again = Fake {
-        updates: Some(updates(false)),
+        updates: Some(updates(AgentUpdateMode::Notify)),
         ..Fake::default()
     };
     let Start::Resume(mut progress) = at(Step::Agent) else {
         unreachable!()
     };
-    progress.updates = Some(false);
+    progress.updates = Some(AgentUpdateMode::Notify);
     let (_, ui) = go(
         &mut again,
         Start::Resume(progress),
         vec![c("start"), c("next"), Answer::Quit],
     )
     .await;
-    assert!(!ui.saw("Keep Claude Code and Codex up to date?"));
+    assert!(!ui.saw("How should Øphio handle agent updates?"));
     assert!(again.calls.is_empty());
 }
 
 #[tokio::test]
-async fn keeping_the_agents_up_to_date_is_turned_off_and_on_in_the_step() {
+async fn every_agent_update_choice_sends_and_saves_its_mode() {
+    for (id, mode) in [
+        ("automatic", AgentUpdateMode::Automatic),
+        ("notify", AgentUpdateMode::Notify),
+        ("never", AgentUpdateMode::Never),
+    ] {
+        let mut host = Fake {
+            // Even Automatic is not a choice made in this setup run.
+            updates: Some(updates(AgentUpdateMode::Automatic)),
+            ..Fake::default()
+        };
+        let (_, ui) = go(
+            &mut host,
+            at(Step::Agent),
+            vec![c("start"), c("next"), c(id), Answer::Quit],
+        )
+        .await;
+        let asked = ui.screen("How should Øphio handle agent updates?");
+        for (id, label, detail) in [
+            (
+                "automatic",
+                "Update automatically",
+                "Keep the agents up to date for me.",
+            ),
+            (
+                "notify",
+                "Tell me when there’s an update",
+                "Tell me about updates without installing them.",
+            ),
+            (
+                "never",
+                "Don’t check",
+                "Don’t check or update automatically.",
+            ),
+        ] {
+            let choice = asked
+                .choices()
+                .iter()
+                .find(|choice| choice.id == id)
+                .unwrap();
+            assert_eq!(choice.label, label);
+            assert_eq!(choice.detail.as_deref(), Some(detail));
+            assert_eq!(choice.recommended, id == "notify");
+        }
+        assert_eq!(host.calls, [format!("set_agent_update_mode {mode:?} 3")]);
+        assert_eq!(host.updates.as_ref().unwrap().mode, mode);
+        assert_eq!(host.progress().updates, Some(mode));
+    }
+}
+
+#[tokio::test]
+async fn agent_update_menu_reopens_choices_and_refreshes_stale_revision() {
     let mut host = Fake {
-        updates: Some(updates(true)),
+        updates: Some(updates(AgentUpdateMode::Automatic)),
         updates_refused: Some(ErrorCode::StaleRevision),
         ..Fake::default()
     };
     let answers = vec![
         c("start"),
         c("updates"),
-        c("next"),
+        c("never"),
+        c("next"), // Acknowledge the stale-revision warning.
         c("updates"),
+        c("never"),
         c("updates"),
+        c("automatic"),
+        c("updates"),
+        c("back"),
         c("next"),
         Answer::Quit,
     ];
     let (_, ui) = go(&mut host, at(Step::Agent), answers).await;
     assert!(ui.saw("Updates: Øphio keeps its own copies up to date"));
-    assert!(ui.saw("Use the versions installed on this computer instead"));
+    assert!(ui.saw("Choose agent updates"));
     assert!(ui.saw("Updates: It was changed in the app just now, so it was left as it is."));
-    assert!(ui.saw("Keep Claude Code and Codex up to date"));
+    assert!(ui.saw("Updates: Øphio doesn't check or update automatically"));
     assert_eq!(
         host.calls,
         [
-            "set_agent_updates false 3",
-            "set_agent_updates false 3",
-            "set_agent_updates true 4",
+            "set_agent_update_mode Never 3",
+            "set_agent_update_mode Never 4",
+            "set_agent_update_mode Automatic 5",
         ]
     );
-    assert_eq!(host.progress().updates, Some(true));
-    // Turned on in the step: nothing more to ask.
-    assert!(!ui.saw("Keep Claude Code and Codex up to date?"));
+    assert_eq!(host.progress().updates, Some(AgentUpdateMode::Automatic));
+    assert_eq!(host.updates.as_ref().unwrap().revision, 6);
+    // The last Back keeps the chosen policy; Next does not ask again.
+    assert_eq!(
+        host.progress().steps.get(&Step::Agent),
+        Some(&Outcome::Done)
+    );
 }
 
 #[tokio::test]
-async fn updates_are_not_offered_where_they_cant_be_kept() {
-    for (view, agents) in [
-        (
-            Some(AgentUpdatesView {
+async fn stale_agent_update_choice_is_not_saved_as_chosen() {
+    let mut host = Fake {
+        updates: Some(updates(AgentUpdateMode::Notify)),
+        updates_refused: Some(ErrorCode::StaleRevision),
+        ..Fake::default()
+    };
+    let (_, ui) = go(
+        &mut host,
+        at(Step::Agent),
+        vec![
+            c("start"),
+            c("next"),
+            c("automatic"),
+            c("next"),
+            Answer::Quit,
+        ],
+    )
+    .await;
+    assert!(ui.saw("It was changed in the app just now, so it was left as it is."));
+    assert_eq!(host.progress().updates, None);
+    assert_eq!(host.updates.as_ref().unwrap().mode, AgentUpdateMode::Never);
+    assert_eq!(host.calls, ["set_agent_update_mode Automatic 3"]);
+    assert!(!host.progress().steps.contains_key(&Step::Agent));
+}
+
+#[tokio::test]
+async fn unsupported_automatic_updates_offer_notify_and_never_instead() {
+    for (id, mode) in [
+        ("notify", AgentUpdateMode::Notify),
+        ("never", AgentUpdateMode::Never),
+    ] {
+        let mut host = Fake {
+            updates: Some(AgentUpdatesView {
                 supported: false,
-                ..updates(false)
+                ..updates(AgentUpdateMode::Notify)
             }),
-            vec![agent(HarnessKind::ClaudeCode, Some(signed_in()))],
-        ),
+            ..Fake::default()
+        };
+        let (_, ui) = go(
+            &mut host,
+            at(Step::Agent),
+            vec![c("start"), c("next"), c(id), Answer::Quit],
+        )
+        .await;
+        let asked = ui.screen("How should Øphio handle agent updates?");
+        assert!(
+            !asked
+                .choices()
+                .iter()
+                .any(|choice| choice.id == "automatic")
+        );
+        assert!(
+            asked
+                .choices()
+                .iter()
+                .any(|choice| choice.id == "notify" && choice.recommended)
+        );
+        assert!(!ui.saw("copies take up"));
+        assert_eq!(host.calls, [format!("set_agent_update_mode {mode:?} 3")]);
+        assert_eq!(host.progress().updates, Some(mode));
+    }
+}
+
+#[tokio::test]
+async fn unsupported_agent_update_choice_shows_the_existing_warning() {
+    let mut host = Fake {
+        updates: Some(updates(AgentUpdateMode::Notify)),
+        updates_refused: Some(ErrorCode::Unsupported),
+        ..Fake::default()
+    };
+    let (_, ui) = go(
+        &mut host,
+        at(Step::Agent),
+        vec![
+            c("start"),
+            c("next"),
+            c("automatic"),
+            c("next"),
+            Answer::Quit,
+        ],
+    )
+    .await;
+    assert!(ui.saw("Updates: refused"));
+    assert_eq!(host.progress().updates, None);
+    assert_eq!(host.updates.as_ref().unwrap().mode, AgentUpdateMode::Notify);
+}
+
+#[tokio::test]
+async fn updates_are_not_offered_without_a_view_or_installed_agent() {
+    for (view, agents) in [
         (
             None,
             vec![agent(HarnessKind::ClaudeCode, Some(signed_in()))],
         ),
         // Nothing installed to keep up to date.
         (
-            Some(updates(false)),
+            Some(updates(AgentUpdateMode::Notify)),
             vec![agent(HarnessKind::ClaudeCode, None)],
         ),
     ] {
@@ -1587,8 +1749,151 @@ async fn updates_are_not_offered_where_they_cant_be_kept() {
         )
         .await;
         assert!(!ui.saw("Updates:"));
-        assert!(!ui.saw("Keep Claude Code and Codex up to date"));
+        assert!(!ui.saw("Choose agent updates"));
+        assert!(!ui.saw("How should Øphio handle agent updates?"));
         assert!(host.calls.is_empty());
+    }
+}
+
+#[test]
+fn setup_update_progress_reads_legacy_booleans_and_round_trips_modes() {
+    for (saved, expected) in [
+        (serde_json::json!(true), Some(AgentUpdateMode::Automatic)),
+        (serde_json::json!(false), Some(AgentUpdateMode::Never)),
+        (
+            serde_json::json!("automatic"),
+            Some(AgentUpdateMode::Automatic),
+        ),
+        (serde_json::json!("notify"), Some(AgentUpdateMode::Notify)),
+        (serde_json::json!("never"), Some(AgentUpdateMode::Never)),
+        (serde_json::Value::Null, None),
+    ] {
+        let progress: Progress = serde_json::from_value(serde_json::json!({
+            "updates": saved, "agent": "codex", "files": true
+        }))
+        .unwrap();
+        assert_eq!(progress.updates, expected);
+        assert_eq!(progress.agent, Some(HarnessKind::Codex));
+        assert!(progress.files);
+        let wire = serde_json::to_value(&progress).unwrap();
+        assert_eq!(
+            wire["updates"],
+            serde_json::to_value(expected.map(|_| true)).unwrap()
+        );
+        assert_eq!(
+            wire["updates_mode"],
+            serde_json::to_value(expected).unwrap()
+        );
+        assert_eq!(serde_json::from_value::<Progress>(wire).unwrap(), progress);
+    }
+    assert_eq!(
+        serde_json::from_str::<Progress>("{}").unwrap().updates,
+        None
+    );
+}
+
+// Faithful storage parser from 755d609d:crates/companion/src/setup/mod.rs.
+// In particular, updates was Option<bool>, and unknown fields were ignored.
+#[derive(Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+struct OldSetupProgress {
+    finished: Option<Finished>,
+    steps: std::collections::BTreeMap<Step, Outcome>,
+    alerts: Option<bool>,
+    agent: Option<HarnessKind>,
+    updates: Option<bool>,
+    files: bool,
+    #[serde(deserialize_with = "super::offered")]
+    left: Vec<Pick>,
+}
+
+#[test]
+fn setup_update_progress_saved_bytes_survive_rollback_and_reupgrade() {
+    for finished in [Some(Finished::Done), Some(Finished::Skipped), None] {
+        for updates in [
+            Some(AgentUpdateMode::Automatic),
+            Some(AgentUpdateMode::Notify),
+            Some(AgentUpdateMode::Never),
+            None,
+        ] {
+            let root = tempfile::tempdir().unwrap();
+            let current = paths(root.path(), "ophio");
+            let progress = Progress {
+                finished,
+                steps: [
+                    (Step::Background, Outcome::Done),
+                    (Step::Reach, Outcome::Later),
+                ]
+                .into_iter()
+                .collect(),
+                alerts: Some(false),
+                agent: Some(HarnessKind::Codex),
+                updates,
+                files: true,
+                left: vec![Pick::Voice, Pick::Github],
+            };
+            super::save(&current, &progress).unwrap();
+            let bytes = std::fs::read(current.data.join(super::PROGRESS)).unwrap();
+            let old: OldSetupProgress = serde_json::from_slice(&bytes)
+                .unwrap_or_else(|error| panic!("{finished:?}, {updates:?}: {error}"));
+            assert_eq!(
+                old,
+                OldSetupProgress {
+                    finished,
+                    steps: progress.steps.clone(),
+                    alerts: progress.alerts,
+                    agent: progress.agent,
+                    // All current choices retain managed copies; false used to remove them.
+                    updates: updates.map(|_| true),
+                    files: progress.files,
+                    left: progress.left.clone(),
+                }
+            );
+            assert_eq!(old.finished.is_none(), finished.is_none());
+            // An old reader that leaves the file alone preserves the precise choice.
+            assert_eq!(
+                serde_json::from_slice::<Progress>(&bytes).unwrap(),
+                progress
+            );
+            // An old writer drops the new field. Only its boolean survives, so the
+            // precise choice is lost, but completion and all other progress remain.
+            let old_bytes = serde_json::to_vec_pretty(&old).unwrap();
+            let upgraded: Progress = serde_json::from_slice(&old_bytes).unwrap();
+            assert_eq!(
+                upgraded,
+                Progress {
+                    updates: updates.map(|_| AgentUpdateMode::Automatic),
+                    ..progress.clone()
+                }
+            );
+            let start = super::start(&current, &[]);
+            assert_eq!(start.pending(), finished.is_none());
+            assert_eq!(
+                start,
+                if finished.is_none() {
+                    Start::Resume(progress)
+                } else {
+                    Start::Rerun(progress)
+                }
+            );
+        }
+    }
+}
+
+#[test]
+fn setup_update_progress_explicit_choice_takes_precedence_over_legacy_bool() {
+    for mode in [
+        AgentUpdateMode::Automatic,
+        AgentUpdateMode::Notify,
+        AgentUpdateMode::Never,
+    ] {
+        for legacy in [true, false] {
+            let progress: Progress = serde_json::from_value(serde_json::json!({
+                "updates": legacy, "updates_mode": mode,
+            }))
+            .unwrap();
+            assert_eq!(progress.updates, Some(mode));
+        }
     }
 }
 
@@ -2237,11 +2542,20 @@ fn grant_changes_take_away_before_they_give() {
 
 #[test]
 fn a_folder_under_home_is_expanded() {
-    let home = directories::BaseDirs::new().unwrap().home_dir().to_owned();
-    assert_eq!(expand_home("~/code"), home.join("code"));
-    assert_eq!(expand_home("~"), home);
-    assert_eq!(expand_home("/srv/code"), PathBuf::from("/srv/code"));
-    assert_eq!(expand_home("~other/code"), PathBuf::from("~other/code"));
+    // This transformation must not depend on a signed-in desktop profile or
+    // Windows known folders being available to the native fixture account.
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path();
+    for folder in ["~/code", "~\\code"] {
+        assert_eq!(expand_home_from(folder, Some(home)), home.join("code"));
+    }
+    assert_eq!(expand_home_from("~", Some(home)), home);
+    for folder in ["/srv/code", "~other/code"] {
+        assert_eq!(expand_home_from(folder, Some(home)), PathBuf::from(folder));
+    }
+    for folder in ["~/code", "~\\code", "~", "/srv/code", "~other/code"] {
+        assert_eq!(expand_home_from(folder, None), PathBuf::from(folder));
+    }
 }
 
 #[tokio::test]
@@ -2989,7 +3303,7 @@ fn reach() -> Screen {
             },
             Block::Fact {
                 mark: Mark::Warn,
-                label: "Wi‑Fi".into(),
+                label: "Wi-Fi".into(),
                 detail: "Not allowed".into(),
             },
             Block::Fact {
@@ -3022,7 +3336,7 @@ async fn plain_prints_a_screen_and_enter_picks_the_recommended() {
         "Step 2 of 6: How your phone reaches this computer\n",
         "Your phone reaches this computer.\n",
         "OK: Tailscale: Connected\n",
-        "Attention: Wi‑Fi: Not allowed\n",
+        "Attention: Wi-Fi: Not allowed\n",
         "Problem: Firewall\n",
         "    ophio pair\n",
         "Get it at: https://tailscale.com/download\n",
@@ -3603,6 +3917,8 @@ fn timeline(bodies: Vec<TimelineBody>) -> Vec<TimelineItem> {
 
 fn said(text: &str) -> TimelineBody {
     TimelineBody::AgentMessage {
+        message_key: None,
+        text_offset: None,
         text: text.into(),
         partial: false,
     }

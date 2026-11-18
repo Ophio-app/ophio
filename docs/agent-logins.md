@@ -145,8 +145,12 @@ Its runs have these tools, on Claude Code and Codex alike:
 There is no tool that returns a password, and none that runs a script in the
 page or reads a field's value. A task browses in its own tabs, which close
 when its run ends. Tasks can observe and use their tabs while other tasks
-browse, without switching tabs first. Downloads land in the project's
-`downloads` folder.
+browse, without switching tabs first. Tab addresses and titles refresh when a
+page finishes loading, even if the tab is in the background. Clearing a page
+stops the old document before its replacement's title necessarily arrives.
+On a busy computer, a screenshot can wait up to 15 seconds for the browser to
+paint and encode it; other browser commands keep their shorter deadlines.
+Downloads land in the project's `downloads` folder.
 They appear under their final names only after the whole file has been copied,
 without overwriting an existing file. If delivery fails, `browser_observe`
 reports the error and the path of the complete file kept in Ophio's private

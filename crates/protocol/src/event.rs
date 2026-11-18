@@ -220,6 +220,11 @@ pub enum LiveEvent {
         run_id: RunId,
         message_key: String,
         text: String,
+        /// UTF-8 byte position in this message incarnation; absent on older hosts.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
+        text_offset: Option<u64>,
     },
     /// Short-lived activity status ("Running tests…").
     ActivityStatus {

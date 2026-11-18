@@ -97,6 +97,44 @@ it("keeps command focus and the command draft ready for consecutive Send line ac
   expect(document.activeElement).toBe(field);
 });
 
+it("keeps the only session controls in the pinned bar on a tall phone, even while typing", async () => {
+  const size = { innerWidth: window.innerWidth, innerHeight: window.innerHeight };
+  Object.defineProperties(window, { innerWidth: { value: 430, configurable: true }, innerHeight: { value: 932, configurable: true } });
+  try {
+    const { container } = mount(window.__sim!.host.terminals[0]!.terminal_id);
+    act(() => { window.dispatchEvent(new Event("resize")); });
+    await advance(500);
+    const bar = container.querySelector<HTMLElement>(".bar")!;
+    const checkControls = () => {
+      expect(within(bar).getByRole("button", { name: "Detach" })).toBeTruthy();
+      expect(within(bar).getByRole("button", { name: "Close terminal" })).toBeTruthy();
+      expect(screen.getAllByRole("button", { name: "Detach" })).toHaveLength(1);
+      expect(screen.getAllByRole("button", { name: "Close terminal" })).toHaveLength(1);
+    };
+    checkControls();
+    act(() => { screen.getByRole("textbox", { name: /Command for/ }).focus(); });
+    Object.defineProperty(window, "innerHeight", { value: 600, configurable: true });
+    act(() => { window.dispatchEvent(new Event("resize")); });
+    await advance(100);
+    expect(document.documentElement.classList.contains("kb-open")).toBe(true);
+    checkControls();
+    fireEvent.click(within(bar).getByRole("button", { name: "Detach" }));
+    await advance(100);
+    expect(within(bar).getByRole("button", { name: "Attach again" })).toBeTruthy();
+    fireEvent.click(within(bar).getByRole("button", { name: "Attach again" }));
+    await advance(500);
+    checkControls();
+    HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+    HTMLDialogElement.prototype.close = function () { this.open = false; };
+    fireEvent.click(within(bar).getByRole("button", { name: "Close terminal" }));
+    expect(screen.getByRole("dialog", { name: /Close ‘/ })).toBeTruthy();
+  } finally {
+    act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
+    Object.defineProperties(window, { innerWidth: { value: size.innerWidth, configurable: true }, innerHeight: { value: size.innerHeight, configurable: true } });
+    act(() => { window.dispatchEvent(new Event("resize")); });
+  }
+});
+
 it("gives a terminal cramped for its text size the compact layout before anything is typed", async () => {
   const size = { innerWidth: window.innerWidth, innerHeight: window.innerHeight };
   Object.defineProperties(window, { innerWidth: { value: 844, configurable: true }, innerHeight: { value: 250, configurable: true } });

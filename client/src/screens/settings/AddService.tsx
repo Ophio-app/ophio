@@ -51,7 +51,8 @@ export function AddService({ open, online, onClose, onAdd }: {
     try { if (await onAdd(service)) close(); } finally { setPending(false); }
   };
   return (
-    <Sheet open={open} onClose={close} title="Add a service" size="tall"
+    // Holds addresses, commands and variable names, never a key, so it outlasts another screen in front.
+    <Sheet open={open} keepWhenHidden onClose={close} title="Add a service" size="tall"
       footer={<>
         <Button variant="quiet" onClick={close}>Cancel</Button>
         <Button variant="primary" disabled={!online || !service} pending={pending} onClick={() => void add()}>Add</Button>

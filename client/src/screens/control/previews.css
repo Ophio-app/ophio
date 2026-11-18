@@ -16,7 +16,7 @@
 }
 .preview-frame {
   width: 100%;
-  min-height: 55dvh;
+  min-height: calc(55 * var(--pane-vh, 1dvh));
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface);
@@ -44,7 +44,7 @@
 }
 /* The agent's questions sit under the page, open to answer as it is tried. */
 .preview-questions {
-  max-height: 40dvh;
+  max-height: calc(40 * var(--pane-vh, 1dvh));
   overflow-y: auto;
   overscroll-behavior: contain;
   display: grid;

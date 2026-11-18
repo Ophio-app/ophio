@@ -9,6 +9,7 @@ import { ids } from "../../dev/sim/scenario";
 import { Toasts } from "../../design/Toast";
 import { HostSession } from "../../host/session";
 import type { Command, GithubAction, GithubItem, LaunchChoice, Task } from "../../protocol/types";
+import { SurfaceActive } from "../../design/surface";
 import { RouteProvider } from "../../shell/Screen";
 import Github from "./Github";
 
@@ -268,4 +269,24 @@ it("Stop asks first unless its warning is off, and an old computer says to updat
   await hub();
   expect(screen.getByText(/Update Øphio on this computer to run every issue/)).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Run all" })).toBeNull();
+});
+
+it("keeps unsaved Run all choices through Defaults in Settings, and has them back on Back", async () => {
+  await clearQueue();
+  const route = { screen: "github", projectId: ids.pTide, view: "issues" } as const;
+  // The shell hides the issue list, without unmounting it, while Settings is in front.
+  const tree = (active: boolean) => <AppProvider app={app}><SurfaceActive.Provider value={active}><RouteProvider value={{ tab: "talk", depth: 1, active, route }}><Github route={route} /><Toasts /></RouteProvider></SurfaceActive.Provider></AppProvider>;
+  const mounted = render(tree(true)); await tick(); await tick();
+  fireEvent.click(card().getByRole("button", { name: "Run all" })); await tick();
+  const review = () => dialog("Run all defaults").getByRole<HTMLInputElement>("checkbox", { name: "Have another agent review each fix" });
+  expect(review().checked).toBe(true);
+  fireEvent.click(review()); await tick();
+  fireEvent.click(dialog("Run all defaults").getByRole("button", { name: /Fixed by/ })); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Defaults in Settings" })); await tick();
+  expect(app.ui.get().stacks.talk.at(-1)).toMatchObject({ screen: "settings", section: "launch-flags" });
+  mounted.rerender(tree(false)); await tick();
+  expect(document.querySelector("dialog[open]")).toBeNull();
+  mounted.rerender(tree(true)); await tick();
+  expect(review().checked).toBe(false);
+  expect(actions()).toEqual([]);
 });

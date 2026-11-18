@@ -40,6 +40,8 @@ impl<T: ports::TerminalHost> App<T> {
             .submit(
                 &Caller::local_owner(),
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: Some(Box::new(GithubLink::Find {
                         scope: FindScope::Project,
                         focus: Some(FindFocus::NoviceUser),
@@ -172,8 +174,16 @@ async fn the_app_is_started_for_a_review_once_the_person_allows_how() {
     ] {
         assert!(brief.contains(said), "{said}: {brief}");
     }
-    let folder = std::fs::canonicalize(f.project_dir()).unwrap();
-    assert!(brief.contains(&*folder.to_string_lossy()), "{brief}");
+    let project: Project = f
+        .hub
+        .read(|r| r.require("project", a.r.project_id))
+        .unwrap();
+    crate::testing::assert_path_eq(
+        &project.host_path,
+        std::fs::canonicalize(f.project_dir()).unwrap(),
+        true,
+    );
+    assert!(brief.contains(&project.host_path), "{brief}");
     assert!(
         (notes(f, review).await.iter())
             .any(|n| n.starts_with("Working out how to start Test first")),
@@ -220,9 +230,16 @@ async fn the_app_is_started_for_a_review_once_the_person_allows_how() {
         panic!()
     };
     assert_eq!(t.title, "App: Test");
+    #[cfg(not(windows))]
     assert_eq!(
         std::fs::canonicalize(&t.cwd).unwrap(),
         std::fs::canonicalize(f.project_dir()).unwrap()
+    );
+    #[cfg(windows)]
+    crate::testing::assert_path_eq(
+        &t.cwd,
+        std::fs::canonicalize(f.project_dir()).unwrap(),
+        true,
     );
     assert_eq!(a.terminal.input(t.terminal_id), b"npm ci && npm run dev\r");
     let told = a.r.spec(started).github.unwrap();
@@ -248,6 +265,35 @@ async fn the_app_is_started_for_a_review_once_the_person_allows_how() {
     .into_iter()
     .any(|i| i.approval_id == Some(approval.approval_id) && i.resolved_at.is_none());
     assert!(!open, "the question leaves the phone once answered");
+    a.close().await;
+}
+
+/// Ophio's own question about how to start the app isn't an agent's
+/// request: allowed after its wait ended, it leaves no pass for one.
+#[tokio::test]
+async fn a_late_allow_on_the_start_question_leaves_no_pass() {
+    let a = app().await;
+    let f = &a.r.f;
+    let review = a.review("Try the app as a novice user.").await;
+    set_up(&a.r, review, &format!("It's a Vite app.\n\n{VITE}")).await;
+    let mut asked = Vec::new();
+    until("the person is asked", || {
+        asked = a.asked(review);
+        !asked.is_empty()
+    })
+    .await;
+    let [approval] = &asked[..] else { panic!() };
+    // Kept open as one whose wait ended unanswered is.
+    let now = f.hub.inner.clock.now();
+    let kept = (f.hub)
+        .write(|tx| crate::carry_on::keep(tx, approval, now))
+        .unwrap();
+    assert!(kept);
+    a.decide(approval, ApprovalDecision::Allow).await;
+    let passes = (f.hub)
+        .read(|r| crate::switch_work::passes(r, review))
+        .unwrap();
+    assert!(passes.is_empty(), "{passes:?}");
     a.close().await;
 }
 

@@ -29,6 +29,7 @@ import { attentionGroups } from "./attention";
 import { taskMatches } from "./logic";
 import { AttentionList, EarlierTasks, listedAttention, SeenRow, TaskRow } from "./shared";
 import { StageRow } from "./StageRow";
+import { SetupChecksOffer } from "./SetupChecksOffer";
 import { SignInNeedsYou } from "../settings/SignInAgain";
 
 export interface WorkView {
@@ -166,6 +167,7 @@ function Finished({ v }: { v: WorkView }) {
                 <TaskRow task={t} />
                 <IconButton icon={Archive} label={`Archive ${t.title}`} disabled={!archive.can}
                   onClick={() => archive.ask([t])} />
+                <SetupChecksOffer task={t} />
               </SeenRow>
             ))}
           </ul>

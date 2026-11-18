@@ -86,6 +86,8 @@ impl FakeHub {
             stage: None,
             one_off: false,
             home: false,
+            chat_access: None,
+            auto_start: None,
         };
         Self {
             snapshot_queries: AtomicU64::new(0),
@@ -101,6 +103,7 @@ impl FakeHub {
                     boot_epoch: BootEpoch::new(),
                     started_at: clock.now(),
                     capabilities: caps(),
+                    release_check: None,
                 },
                 projects: vec![project],
                 tasks: vec![],
@@ -288,6 +291,7 @@ impl Hub for FakeHub {
             } => {
                 let id = TaskId::new();
                 snapshot.tasks.push(Task {
+                    checking: None,
                     github: None,
                     mode: protocol::model::TaskMode::Work,
                     task_id: id,
@@ -317,6 +321,8 @@ impl Hub for FakeHub {
                     start: None,
                     browser: false,
                     conversation: false,
+                    origin: None,
+                    from_chat: None,
                     review: None,
                     notify_done: false,
                 });
@@ -625,8 +631,36 @@ impl Mock {
             .unwrap_or_default()
     }
 }
+// Local port discovery can send plain HTTP or close without a handshake.
+// Reject those connections without consuming either gateway session. Once
+// upgraded, every protocol message below is still checked strictly.
+async fn accept_gateway(
+    listener: &tokio::net::TcpListener,
+) -> tokio_tungstenite::WebSocketStream<tokio::net::TcpStream> {
+    loop {
+        let (stream, _) = listener.accept().await.unwrap();
+        if let Ok(socket) = tokio_tungstenite::accept_async(stream).await {
+            return socket;
+        }
+    }
+}
+
 async fn mock_handler(State(mock): State<Mock>, request: Request) -> impl IntoResponse {
     let path = request.uri().path().to_owned();
+    // The local service-discovery probe is not a platform API call. Reject
+    // only its exact method, target and Accept header before recording it.
+    if request.method() == axum::http::Method::GET
+        && request
+            .uri()
+            .path_and_query()
+            .is_some_and(|target| target.as_str() == "/")
+        && request
+            .headers()
+            .get("accept")
+            .is_some_and(|value| value == "text/html")
+    {
+        return (axum::http::StatusCode::NOT_FOUND, axum::Json(Value::Null));
+    }
     let body = to_bytes(request.into_body(), 1024 * 1024).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
     mock.inner.requests.lock().unwrap().push((
@@ -842,4 +876,40 @@ async fn until(mut condition: impl FnMut() -> bool) {
     })
     .await
     .unwrap();
+}
+
+#[tokio::test]
+async fn discovery_probe_does_not_hide_platform_requests() {
+    let server = Server::new().await;
+    let client = reqwest::Client::new();
+    let probe = client
+        .get(format!("{}/", server.base))
+        .header("accept", "text/html")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(probe.status(), reqwest::StatusCode::NOT_FOUND);
+    assert!(server.mock.requests().is_empty());
+    for (method, path, accept) in [
+        (reqwest::Method::GET, "/test", "text/html"),
+        (reqwest::Method::GET, "/", "application/json"),
+        (reqwest::Method::POST, "/", "text/html"),
+    ] {
+        let reply = client
+            .request(method, format!("{}{path}", server.base))
+            .header("accept", accept)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(reply.status(), reqwest::StatusCode::OK);
+    }
+    let requests = server.mock.requests();
+    assert_eq!(requests.len(), 3);
+    assert_eq!(
+        requests
+            .iter()
+            .map(|(path, _, _)| path.as_str())
+            .collect::<Vec<_>>(),
+        vec!["/test", "/", "/"]
+    );
 }

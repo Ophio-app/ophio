@@ -282,6 +282,24 @@ impl Running {
                 }
             }
             "Page.frameNavigated" => self.navigated(parent, &params["frame"]),
+            "Page.frameStoppedLoading" => {
+                let target = {
+                    let state = self.lock();
+                    parent
+                        .and_then(|s| state.sessions.get(s))
+                        .filter(|s| s.kind == Kind::Page)
+                        .filter(|s| params["frameId"] == s.target)
+                        .map(|s| s.target.clone())
+                };
+                if let Some(target) = target {
+                    // Committing a navigation can publish an empty title.
+                    // Discovery need not announce its final value, and a
+                    // background tab may never get an observe/settle call.
+                    // Query after the browser reports that loading stopped.
+                    let running = self.clone();
+                    tokio::spawn(async move { running.refresh(&target).await });
+                }
+            }
             "Page.frameDetached" if params["reason"] == "remove" => {
                 if let Some(frame) = params["frameId"].as_str() {
                     self.lock().frames.remove(frame);

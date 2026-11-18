@@ -18,6 +18,7 @@ private val shownOrSounded = setOf(Notifications.Posted.SHOWN, Notifications.Pos
 
 internal object AlertChecks {
     fun run(context: Context) {
+        ReplyDefaultUpgradeChecks.run()
         clears()
         shown()
         routes(context)

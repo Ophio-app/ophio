@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import shutil
@@ -32,6 +34,32 @@ from release_common import (
 
 # Archive members that run; everything else is read-only documentation or data.
 EXECUTABLES = {"ophio", "computer-mcp", "ophio-sandbox-shim", "install.sh"}
+
+
+def write_tarball(path: Path, name: str, files: dict, epoch: int, check) -> None:
+    """A gzip tarball of `files` under the folder `name`, with stable order,
+    times and permissions. `check` sees each member's exact bytes first."""
+    with (
+        path.open("wb") as raw,
+        gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=epoch) as compressed,
+        tarfile.open(fileobj=compressed, mode="w") as archive,
+    ):
+        for filename, source in sorted(files.items()):
+            if isinstance(source, bytes):
+                # Archive the exact companion and APK snapshots that passed verification.
+                data = source
+            else:
+                if source.is_symlink() or not source.is_file():
+                    raise ReleaseError(f"Unsafe/missing package input: {filename}")
+                data = source.read_bytes()
+            check(filename, data)
+            entry = tarfile.TarInfo(f"{name}/{filename}")
+            entry.size, entry.mtime, entry.mode = (
+                len(data),
+                epoch,
+                0o755 if filename in EXECUTABLES else 0o644,
+            )
+            archive.addfile(entry, io.BytesIO(data))
 
 
 def linux() -> None:
@@ -77,34 +105,14 @@ def linux() -> None:
     ) as directory:
         scratch = Path(directory)
         archive_path = scratch / (name + ".tar.gz")
-        with (
-            archive_path.open("wb") as raw,
-            gzip.GzipFile(
-                filename="", mode="wb", fileobj=raw, mtime=epoch
-            ) as compressed,
-            tarfile.open(fileobj=compressed, mode="w") as archive,
-        ):
-            for filename, path in sorted(files.items()):
-                if isinstance(path, bytes):
-                    # Archive the exact companion and APK snapshots that passed verification.
-                    data = path
-                else:
-                    if path.is_symlink() or not path.is_file():
-                        raise ReleaseError(f"Unsafe/missing package input: {filename}")
-                    data = path.read_bytes()
-                if filename in {"ophio", "computer-mcp", "ophio-sandbox-shim"} and (
-                    data[:6] != b"\x7fELF\x02\x01" or data[18:20] != b"\x3e\x00"
-                ):
+
+        def check(filename: str, data: bytes) -> None:
+            if filename in {"ophio", "computer-mcp", "ophio-sandbox-shim"}:
+                if data[:6] != b"\x7fELF\x02\x01" or data[18:20] != b"\x3e\x00":
                     raise ReleaseError(f"Expected Linux x86_64 ELF binary: {filename}")
-                if filename in {"ophio", "computer-mcp", "ophio-sandbox-shim"}:
-                    print(f"{filename}: highest required GLIBC_{check_glibc(release / filename)}")
-                entry = tarfile.TarInfo(f"{name}/{filename}")
-                entry.size, entry.mtime, entry.mode = (
-                    len(data),
-                    epoch,
-                    0o755 if filename in EXECUTABLES else 0o644,
-                )
-                archive.addfile(entry, io.BytesIO(data))
+                print(f"{filename}: highest required GLIBC_{check_glibc(release / filename)}")
+
+        write_tarball(archive_path, name, files, epoch, check)
         extracted = scratch / "extracted"
         with tarfile.open(archive_path) as archive:
             archive.extractall(extracted, filter="data")
@@ -140,6 +148,94 @@ def linux() -> None:
         destination = output / archive_path.name
         shutil.copyfile(archive_path, destination.with_suffix(".tmp"))
         os.replace(destination.with_suffix(".tmp"), destination)
+    print(manifest(), end="")
+
+
+# Mach-O 64-bit, little-endian, for ARM64.
+MACHO_ARM64 = b"\xcf\xfa\xed\xfe\x0c\x00\x00\x01"
+LC_CODE_SIGNATURE = 0x1D
+
+
+def require_macho(filename: str, data: bytes) -> None:
+    """An Apple silicon program that carries a code signature: macOS refuses to
+    run any unsigned ARM64 program."""
+    if len(data) < 32 or data[:8] != MACHO_ARM64:
+        raise ReleaseError(f"Expected an Apple silicon (arm64) Mach-O program: {filename}")
+    count = int.from_bytes(data[16:20], "little")
+    at = 32
+    for _ in range(count):
+        command, size = int.from_bytes(data[at : at + 4], "little"), int.from_bytes(data[at + 4 : at + 8], "little")
+        if command == LC_CODE_SIGNATURE:
+            return
+        if size < 8:
+            break
+        at += size
+    raise ReleaseError(f"{filename} is not signed; run scripts/sign_macos.py sign on a Mac")
+
+
+def macos() -> None:
+    """The Mac archive, from programs `sign_macos.py sign` signed (and perhaps
+    notarized). This runs on any system, so a phone app that only Linux tools
+    can verify may be added after the Mac build."""
+    _, slug, version = identity()
+    target = Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target"))
+    epoch = int(os.environ["SOURCE_DATE_EPOCH"])
+    name = f"{slug}-{version}-aarch64-macos"
+    signed = target / "packaging/macos"
+    licences = target / "packaging/licenses/macos"
+    require_licences(licences, "macos")
+    record = json.loads((signed / "signing.json").read_text(encoding="utf-8"))
+    programs = {}
+    for program in ("ophio", "computer-mcp"):
+        path = signed / "bin" / program
+        if path.is_symlink() or not path.is_file():
+            raise ReleaseError(f"Unsafe/missing package input: {program}")
+        data = path.read_bytes()
+        if hashlib.sha256(data).hexdigest() != record["programs"][program]["sha256"]:
+            raise ReleaseError(f"{program} differs from the signing record; sign it again")
+        require_macho(program, data)
+        programs[program] = data
+    require_executable_trust(programs["ophio"], ROOT)
+    if os.environ.get("OPHIO_PUBLIC_RELEASE") == "1" and record.get("signature") not in {"ad-hoc", "developer-id"}:
+        raise ReleaseError("Unknown Mac signature kind")
+    files = {
+        **programs,
+        "LICENSE": ROOT / "LICENSE",
+        "INSTALL.md": ROOT / "packaging/macos/INSTALL.md",
+        "install.sh": ROOT / "packaging/macos/install.sh",
+    }
+    app = phone_app_bytes(ROOT)
+    if app is not None:
+        files["ophio.apk"] = app
+    for filename in ("NOTICE", "THIRD-PARTY-NOTICES.txt", "sbom.cdx.json", "license-report.json"):
+        files[filename] = licences / filename
+    output = ROOT / "dist/macos"
+    output.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=target / "packaging", prefix="macos-archive-") as directory:
+        scratch = Path(directory)
+        archive_path = scratch / (name + ".tar.gz")
+        write_tarball(archive_path, name, files, epoch, lambda *_: None)
+        with tarfile.open(archive_path) as archive:
+            extracted = scratch / "extracted"
+            archive.extractall(extracted, filter="data")
+        for program, data in programs.items():
+            if (extracted / name / program).read_bytes() != data:
+                raise ReleaseError(f"Archived {program} differs from the signed program")
+        if sys.platform == "darwin" and os.uname().machine == "arm64":
+            result = subprocess.run(
+                [str(extracted / name / "ophio"), "--version"],
+                cwd=extracted, check=True, capture_output=True, text=True, encoding="utf-8", timeout=30,
+            )
+            if version not in result.stdout.split():
+                raise ReleaseError("Packaged binary version differs from workspace")
+            print(f"Extracted ophio --version: {result.stdout.splitlines()[0]}")
+        else:
+            print("Not on an Apple silicon Mac: the archived programs were not started")
+        destination = output / archive_path.name
+        shutil.copyfile(archive_path, destination.with_suffix(".tmp"))
+        os.replace(destination.with_suffix(".tmp"), destination)
+    print(f"Signature: {record['signature']}"
+          + (f", notarized ({record['notarization']['id']})" if record.get("notarization") else ", not notarized"))
     print(manifest(), end="")
 
 
@@ -185,13 +281,15 @@ def main() -> None:
         atomic_write(ROOT / "NOTICE", notice().encode())
     elif command == "linux":
         linux()
+    elif command == "macos":
+        macos()
     elif command == "stage-android":
         stage_android()
     elif command == "manifest":
         print(manifest(), end="")
     else:
         raise ReleaseError(
-            "usage: package-artifacts.py identity|notice|linux|stage-android|manifest"
+            "usage: package-artifacts.py identity|notice|linux|macos|stage-android|manifest"
         )
 
 

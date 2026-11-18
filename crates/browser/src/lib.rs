@@ -289,6 +289,7 @@ impl Driver for Browser {
         snapshot: &Snapshot,
         authority: std::sync::Arc<dyn voice_control::Authority>,
     ) -> Result<(), Error> {
+        let started = tokio::time::Instant::now();
         let _serial = self.serial.lock().await;
         let current = self.read_snapshot().await?;
         if !current.still_matches(snapshot, action) {
@@ -350,7 +351,20 @@ impl Driver for Browser {
                 if !url.starts_with("https://") && !url.starts_with("http://") {
                     return Err(Error::StaleTarget);
                 }
-                let result = call("Page.navigate", json!({"url":url})).await?;
+                // The browser answers once the site does, which can take
+                // longer than an ordinary call may wait. Voice control gives
+                // opening an address `LAUNCH_LIMIT` from the start of the
+                // action, so this waits for what is left of it.
+                authority.check()?;
+                let result = self
+                    .pipe
+                    .call_within(
+                        Some(&page.session),
+                        "Page.navigate",
+                        json!({"url":url}),
+                        voice_control::LAUNCH_LIMIT.saturating_sub(started.elapsed()),
+                    )
+                    .await?;
                 if result.get("errorText").is_some() {
                     return Err(Error::Unavailable(
                         "The browser could not open that address".into(),

@@ -185,7 +185,10 @@ impl Github for GithubApi {
                 ]);
             }
         }
-        let status = tokio::time::timeout(std::time::Duration::from_secs(120), command.status())
+        // It starts as other starts do, so on the Mac it keeps no pipe of
+        // another start under way, which would wait for this transfer to end.
+        let status = containment::inherit::tokio_status(&mut command);
+        let status = tokio::time::timeout(std::time::Duration::from_secs(120), status)
             .await
             .map_err(|_| GithubError::Failed("Report object transfer timed out".into()))?
             .map_err(|_| GithubError::Failed("Report object transfer failed".into()))?;

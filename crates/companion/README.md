@@ -377,6 +377,36 @@ companion's tests have also run natively on Windows 11 in a virtual machine,
 along with the packaged archive and an Android emulator;
 `crates/platform-windows/README.md` lists what ran there and what has not.
 
+Agent updates keep the selected and previous copies untouched until a new
+package has been downloaded, checked, unpacked, started successfully and
+selected by an atomic pointer replacement. Failed attempts do not prune old
+packages, including the first attempt after restarting. A completed unsuccessful
+or wrong-version response to `--version` warrants a same-version repair;
+timeouts and launch errors are inconclusive. Neither result deselects the old
+copy. Repairs go into a fresh directory inside that version, so they cannot
+overwrite a selected or retained executable. The pointer remains readable by
+older companions. Cleanup starts only after selection and retention succeed,
+and uses the known versions rather than rereading their executables. If the
+previous-version record cannot be committed after switching, the new copy is
+used and all old packages are retained, with the error recorded locally.
+
+Agent-copy download, extraction and installation failures record the operation,
+local path and underlying error in the computer's log. The phone still shows
+its short explanation. Windows directory opens and creation also record the
+Win32 operation and preserve its operating-system error number.
+
+The ignored native Windows tests `published_codex_windows_archive_extracts`
+and `published_codex_windows_archive_installs` use the real npm Codex 0.167.2
+Windows x64 archive. Download `https://registry.npmjs.org/@openai/codex/-/codex-0.167.2-win32-x64.tgz`
+into a separate empty directory, then set `OPHIO_TEST_CODEX_ARCHIVE` to its
+absolute path. Run the companion test executable on Windows with
+`published_codex_windows_archive --ignored --nocapture`. The installation test
+checks the published SHA-512 digest, serves the archive through an isolated
+loopback registry, installs into a temporary directory, and runs `--version`.
+It never replaces the computer's installed agents or starts an agent session.
+These tests diagnose real-package compatibility; a passing run does not
+explain a failure on a different computer.
+
 `tests/composition.rs` uses the real factory, persisted TLS identity, device
 pairing and authenticated WebSockets with authored Claude/Codex executables.
 It exercises both Claude approval decisions, native stop, PTY echo, live roots,

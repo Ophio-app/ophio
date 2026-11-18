@@ -414,7 +414,13 @@ async fn a_held_end_dropped_for_too_many_messages_lets_none_of_its_rest_out() {
         };
         let kept = serde_json::to_string(&items).unwrap();
         assert!(!kept.contains(&TOKEN[..CUT_SHOWN]), "{kept}");
-        if kept.contains(&format!("first {MASK} end")) {
+        // Other keys may stream concurrently; none should split this message.
+        if items.iter().any(|item| {
+            matches!(&item.item,
+            TimelineBody::AgentMessage { text, partial: false, .. } if text == &format!("first {MASK} end"))
+        }) {
+            assert!(!items.iter().any(|item| matches!(&item.item,
+                TimelineBody::AgentMessage { partial: true, .. })));
             break;
         }
         tokio::task::yield_now().await;
@@ -622,6 +628,7 @@ async fn a_tool_asking_approval_shows_no_value_but_gets_its_own_input_back() {
         };
         tokio::spawn(async move {
             let binding = BridgeBinding {
+                checks: false,
                 run_id: run,
                 target_id: None,
                 computer_use: false,

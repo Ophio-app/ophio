@@ -10,8 +10,9 @@ import { SIGN_IN_ON_PHONE_FEATURE } from "../app/signInFeature";
 import { reportPlatformError } from "./errors";
 import { backgroundAlerts } from "./alerts";
 import { alertsFor, bundlesFor, itemTopic, notificationSettings } from "./notificationSettings";
-import { ALERT_TYPES_FEATURE, alertTypeOf, tierFor, typeInfo } from "./alertTypes";
+import { ALERT_TYPES, ALERT_TYPES_FEATURE, alertTypeOf, tierFor, typeInfo } from "./alertTypes";
 import { deviceTiers } from "./deviceTiers";
+import { PRODUCT_NAME } from "../brand";
 
 export type NotificationDetail = "minimal" | "task_title";
 const KEY = "notification-detail";
@@ -76,7 +77,9 @@ export interface NeedsYouRoute {
 export interface ReportRoute { kind: "report"; profileId: string; reportId: string }
 /** An agent that isn't signed in on the computer: leads to signing it in again. */
 export interface SignInRoute { kind: "sign_in"; profileId: string; accountId: string }
-export type OpenRoute = AttentionRoute | AppUpdateRoute | NeedsYouRoute | ReportRoute | SignInRoute;
+export interface NewVersionRoute { kind: "new_version"; profileId: string }
+export interface AgentUpdateRoute { kind: "agent_updates"; profileId: string }
+export type OpenRoute = AttentionRoute | AppUpdateRoute | NewVersionRoute | AgentUpdateRoute | NeedsYouRoute | ReportRoute | SignInRoute;
 const named = (v: unknown): v is string => typeof v === "string" && !!v && v.length <= 256;
 /** Where a notification leads: an attention item, a project's Needs you,
  * Versions for an update, a problem report or an agent's sign-in. */
@@ -85,6 +88,8 @@ export function parseOpenRoute(value: unknown): OpenRoute | null {
     const r = value as Record<string, unknown>;
     if (r.kind === "report" && named(r.profileId) && named(r.reportId)) return { kind: "report", profileId: r.profileId, reportId: r.reportId };
     if (r.kind === "sign_in" && named(r.profileId) && named(r.accountId)) return { kind: "sign_in", profileId: r.profileId, accountId: r.accountId };
+    if (r.kind === "new_version" && named(r.profileId)) return { kind: "new_version", profileId: r.profileId };
+    if (r.kind === "agent_updates" && named(r.profileId)) return { kind: "agent_updates", profileId: r.profileId };
     if (r.kind === "app_update" && named(r.profileId))
       return { kind: "app_update", profileId: r.profileId };
     if (r.kind === "needs_you" && named(r.profileId) && named(r.projectId))
@@ -94,14 +99,18 @@ export function parseOpenRoute(value: unknown): OpenRoute | null {
 }
 /** The tag of the note that counts a project's alerts, as the background watcher's. */
 export const foldedTag = (profileId: string, projectId: string) => `${profileId}/project:${projectId}`;
-/** The note that counts a project's alerts, each saying whether it needs the person. */
+interface FoldMember { id: string; needsYou: boolean; choice: Choice }
+/** The note counts its members and routes as their loudest type, like Rust Fold::note. */
 export function foldedNotification(
   computer: { profileId: string; name: string },
   project: { project_id: string; name: string },
-  members: Iterable<boolean>,
+  members: Iterable<FoldMember>,
 ): LocalNotification {
   const all = [...members];
-  const needsYou = all.filter(Boolean).length;
+  const priority = (member: FoldMember) => (member.choice.tier === "alert" ? ALERT_TYPES.length : 0)
+    - ALERT_TYPES.findIndex(t => t.type === member.choice.type);
+  const lead = all.reduce<FoldMember | undefined>((a, b) => !a || priority(b) > priority(a) ? b : a, undefined)?.choice;
+  const needsYou = all.filter(m => m.needsYou).length;
   const other = all.length - needsYou;
   const parts = [...(needsYou ? [`${needsYou} need you`] : []), ...(other ? [`${other} to look at`] : [])];
   return {
@@ -109,6 +118,8 @@ export function foldedNotification(
     title: `${project.name} has ${all.length} notification${all.length === 1 ? "" : "s"}`.slice(0, 256),
     body: [computer.name, ...(parts.length ? [parts.join(", ")] : [])].join(" · ").slice(0, 2048),
     category: needsYou ? "needs_you" : "finished",
+    handles: all.map(m => m.id),
+    ...(lead ? { alertType: lead.type, want: lead.tier, ...(lead.tier === "silent" ? { silent: true } : {}) } : {}),
     route: { kind: "needs_you", profileId: computer.profileId, projectId: project.project_id } satisfies NeedsYouRoute,
   };
 }
@@ -141,7 +152,7 @@ function alertKind(kind: AttentionItem["kind"], harness: HarnessKind): { categor
 }
 /** Types whose item's own title is the computer's headline for it, such as
  * "PR #12 merged", shown in place of the kind's heading as the watcher does. */
-const HEADLINED = new Set<AlertType>(["merged", "pr_ready", "pr_needs_you", "issues", "issue_call", "batch"]);
+const HEADLINED = new Set<AlertType>(["merged", "pr_ready", "pr_needs_you", "issues", "issue_call", "batch", "reply"]);
 
 export function notificationFor(
   item: AttentionItem,
@@ -151,7 +162,17 @@ export function notificationFor(
   choice?: Choice,
 ): LocalNotification | null {
   const typed = choice ? { alertType: choice.type, want: choice.tier, ...(choice.tier === "silent" ? { silent: true } : {}) } : {};
+  if (item.agent_update && !item.task_id) {
+    if (item.resolved_at !== null || !state.capabilities?.features.includes("agent_update_policy_v1")) return null;
+    const name = AGENTS[item.agent_update.harness] ?? "An agent";
+    const title = item.agent_update.kind === "behind" ? `${name} has an update`
+      : item.agent_update.kind === "update_for_models" ? `${name} has new model options in an update`
+      : `${name} has new model options`;
+    return { id: `${computer.profileId}/${item.attention_id}`, title, body: `${computer.name} · Tap to review agent updates.`, category: "finished", route: { kind: "agent_updates", profileId: computer.profileId } satisfies AgentUpdateRoute, ...typed };
+  }
   if (item.report_id && item.resolved_at === null && state.capabilities?.features.includes("reports_v1")) return { id: `${computer.profileId}/${item.attention_id}`, title: "Your problem report", body: "There’s an update on your report.", category: item.kind === "question" ? "needs_you" : "finished", route: { kind: "report", profileId: computer.profileId, reportId: item.report_id } satisfies ReportRoute, ...typed };
+  if (item.new_version && !item.task_id) return state.capabilities?.features.includes("release_check_v1") && item.resolved_at === null
+    ? { id: `${computer.profileId}/${item.attention_id}`, title: `${PRODUCT_NAME} ${item.new_version} is available`, body: `${computer.name} · Tap to see what’s new and how to update.`, category: "finished", route: { kind: "new_version", profileId: computer.profileId } satisfies NewVersionRoute, ...typed } : null;
   if (item.account_id && !item.task_id) {
     const note = state.capabilities?.features.includes(SIGN_IN_ON_PHONE_FEATURE) ? signInNotification(item, computer) : null;
     return note && { ...note, ...typed };
@@ -189,6 +210,8 @@ export interface Choice { type: AlertType; tier: Exclude<Tier, "off"> }
  */
 export function choose(item: AttentionItem, state: HostState, settings: NotificationSettings, device: { tier(type: AlertType): Tier }): Choice | null {
   const task = item.task_id ? state.tasks[item.task_id] : undefined;
+  if (item.agent_update && !state.capabilities?.features.includes("agent_update_policy_v1")) return null;
+  if (item.new_version && !item.task_id && !state.capabilities?.features.includes("release_check_v1")) return null;
   const type = alertTypeOf(item, !!task?.conversation);
   if (!type) return null;
   const typed = state.capabilities?.features.includes(ALERT_TYPES_FEATURE) ?? false;
@@ -255,8 +278,13 @@ export function watchAttention(
   // Alerts this app raised and are still open, by project, each saying
   // whether it needs the person; and the projects among them that show as
   // one note that counts them.
-  const raised = new Map<string, Map<string, boolean>>();
+  const raised = new Map<string, Map<string, FoldMember>>();
   const folded = new Set<string>();
+  // Projects whose note was put away for having nothing left, so it isn't
+  // cancelled again on every pass; one with something open again is taken out.
+  const putAway = new Set<string>();
+  // Declared before show: posting can finish after a handling update.
+  const cleared = new Set<string>();
   const show = (notification: LocalNotification, name: string, cancel: string[] = []) => {
     void (async () => {
       try {
@@ -265,6 +293,9 @@ export function watchAttention(
         // Where the watcher keeps a record, it records this as raised,
         // and refuses once Android's shade has no room.
         await platform.notify?.(notification);
+        const id = notification.id.slice(session.profileId.length + 1);
+        if (cleared.has(id) || (id.startsWith("project:") && !folded.has(id.slice("project:".length))))
+          await platform.cancelNotifications?.([notification.id]);
       } catch {
         const permission = await access.refresh();
         access.missed(session.profileId, name, permission === "promptable" || permission === "blocked");
@@ -275,7 +306,6 @@ export function watchAttention(
   // Kept by id for good: a resolved item is never reopened under its id;
   // one raised again comes as a new item.
   const seen = new Set<string>();
-  const cleared = new Set<string>();
   // Told to the watcher as shown on the screen.
   const reported = new Set<string>();
   // Every item of a record already walked has been seen; most updates, such
@@ -308,9 +338,36 @@ export function watchAttention(
     };
     const here = { profileId: session.profileId, name: computer };
     const open = visible ? opened.get(session.profileId) : undefined;
+    // A folded note must follow the remaining members' current choices,
+    // including a mute or Off change made after the original notification.
+    for (const [projectId, members] of raised) for (const [id, member] of members) {
+      const item = state.attention[id];
+      const choice = item && !item.quiet && item.resolved_at === null && !item.alert_handled_at
+        && !state.resolvedAttention[id] ? choose(item, state, settings.current(), tiers) : null;
+      if (!choice) { clear(id); continue; }
+      if (choice.type !== member.choice.type || choice.tier !== member.choice.tier) {
+        members.set(id, { ...member, choice });
+        recount.add(projectId);
+        const project = state.projects[projectId];
+        if (platform.nativeNotificationFolding && item && project) {
+          const notification = notificationFor(item, state, here, lock.get().enabled ? "minimal" : notificationDetail.get(), choice);
+          // Refresh the native member's routing without treating a setting
+          // change as news or sending a page-local summary over native members.
+          if (notification) show({ ...notification, silent: true, ...(bundlesFor(settings.current(), projectId)
+            ? { fold: { projectId, project: project.name, computer } } : {}) }, project.name);
+        }
+      }
+    }
     for (const id of Object.keys(state.resolvedAttention)) answer(id);
     for (const item of Object.values(state.attention)) {
       if (item.resolved_at !== null) { answer(item.attention_id); continue; }
+      if (item.alert_handled_at) {
+        // Cancel even after a restart or while posting is still in flight.
+        // clear also removes folded-note members and prevents re-raising.
+        seen.add(item.attention_id);
+        clear(item.attention_id);
+        continue;
+      }
       if (item.task_id && open?.has(item.task_id)) {
         // Open on the screen: seen, so it leaves the shade and is never raised.
         seen.add(item.attention_id);
@@ -323,7 +380,16 @@ export function watchAttention(
       }
       // On screen the app shows it, and tells the watcher, which would
       // otherwise raise it once the app leaves the screen.
-      if (visible && !reported.has(item.attention_id)) {
+      // A new version's notice is on no list, so being on screen isn't
+      // seeing it: only Settings › Versions counts. While the app shows
+      // this computer, the watcher leaves alerts to the app, so the app
+      // raises this one itself.
+      const newVersion = !!item.new_version && !item.task_id;
+      // A reply is only seen in its exact conversation (handled above),
+      // not merely because this computer's Home or another chat is open.
+      const reply = alertTypeOf(item, !!(item.task_id && state.tasks[item.task_id]?.conversation)) === "reply";
+      const appShows = visible && !newVersion && !reply;
+      if (appShows && !reported.has(item.attention_id)) {
         reported.add(item.attention_id);
         shown.push(item.attention_id);
       }
@@ -331,9 +397,10 @@ export function watchAttention(
       seen.add(item.attention_id);
       // Part of something that alerts once, as a whole, or already handled
       // on one of the person's devices: seen, never raised.
-      if (visible || initial || item.quiet || item.alert_handled_at) continue;
-      // The watcher raises it, even if Android freezes this page first.
-      if (watcher?.covers(session.profileId)) continue;
+      if (appShows || initial || item.quiet || item.alert_handled_at) continue;
+      // While on screen, the watcher leaves this computer to the app,
+      // including replies outside the conversation currently open.
+      if (watcher?.covers(session.profileId) && !(visible && (newVersion || reply))) continue;
       const choice = choose(item, state, settings.current(), tiers);
       if (!choice) continue;
       if (!item.task_id) {
@@ -348,11 +415,18 @@ export function watchAttention(
       if (!notification) continue;
       // The banner already sits under this computer, so it names only the work.
       const name = notification.body.startsWith(`${computer} · `) ? notification.body.slice(computer.length + 3) : notification.body;
-      const members = raised.get(project.project_id) ?? new Map<string, boolean>();
+      const members = raised.get(project.project_id) ?? new Map<string, FoldMember>();
       raised.set(project.project_id, members);
       const others = [...members.keys()];
       const needsYou = notification.category === "needs_you";
-      members.set(item.attention_id, needsYou);
+      members.set(item.attention_id, { id: notification.id, needsYou, choice });
+      // Android's ledger owns both producers' membership. Never send it a
+      // page-local summary: the watcher may have added members while hidden.
+      if (platform.nativeNotificationFolding) {
+        show({ ...notification, ...(bundlesFor(settings.current(), project.project_id)
+          ? { fold: { projectId: project.project_id, project: project.name, computer } } : {}) }, name);
+        continue;
+      }
       if (!others.length || !bundlesFor(settings.current(), project.project_id)) { show(notification, name); continue; }
       // A second alert in a project whose alerts fold: one note counts them,
       // in place of their own, and alerts again only for what needs the person.
@@ -360,7 +434,7 @@ export function watchAttention(
       const was = folded.has(project.project_id);
       folded.add(project.project_id);
       recount.delete(project.project_id);
-      show(note, project.name, was ? (needsYou ? [note.id] : []) : others.map((id) => `${session.profileId}/${id}`));
+      show({ ...note, silent: note.silent || (was && !needsYou) }, project.name, was ? (needsYou ? [note.id] : []) : others.map((id) => `${session.profileId}/${id}`));
     }
     // A note that counts a project's alerts counts again as they're answered,
     // and goes once none is left.
@@ -369,8 +443,25 @@ export function watchAttention(
       const project = state.projects[projectId];
       if (!members?.size) raised.delete(projectId);
       if (!folded.has(projectId)) continue;
-      if (members?.size && project) { void Promise.resolve(platform.notify?.(foldedNotification(here, project, members.values()))).catch(() => {}); continue; }
+      // Counting again isn't news: on iPhone a note posted again under its
+      // id would otherwise sound and show its banner again.
+      if (members?.size && project) { show({ ...foldedNotification(here, project, members.values()), silent: true }, project.name); continue; }
       folded.delete(projectId);
+      answered.push(foldedTag(session.profileId, projectId));
+    }
+    // A project's note posted before a restart is known to no list here:
+    // once nothing in the project is open and unhandled, its note goes
+    // whoever posted it. The background watcher tags its notes the same way.
+    const pending = new Set<string>();
+    for (const item of Object.values(state.attention)) {
+      if (item.resolved_at !== null || item.alert_handled_at || item.quiet || item.kind === "connection_issue") continue;
+      const projectId = item.task_id ? state.tasks[item.task_id]?.project_id : undefined;
+      if (projectId) pending.add(projectId);
+    }
+    for (const projectId of Object.keys(state.projects)) {
+      if (pending.has(projectId)) { putAway.delete(projectId); continue; }
+      if (putAway.has(projectId) || folded.has(projectId)) continue;
+      putAway.add(projectId);
       answered.push(foldedTag(session.profileId, projectId));
     }
     for (let i = 0; i < answered.length; i += 256)
@@ -380,6 +471,8 @@ export function watchAttention(
   };
   changed();
   const off = session.state.subscribe(() => changed());
+  const offChoices = settings.subscribe(() => changed(true));
+  const offDeviceChoices = tiers.subscribe(() => changed(true));
   const onOpened = () => changed(true);
   openedChanged.add(onOpened);
   let locked = lock.get().locked;
@@ -397,7 +490,7 @@ export function watchAttention(
     changed(true);
   });
   return () => {
-    off(); offLock(); offViewed(); openedChanged.delete(onOpened); document.removeEventListener("visibilitychange", onVisibility); offAccess(); offSettings(); offTiers();
+    off(); offChoices(); offDeviceChoices(); offLock(); offViewed(); openedChanged.delete(onOpened); document.removeEventListener("visibilitychange", onVisibility); offAccess(); offSettings(); offTiers();
     if (showing) watcher?.viewing(session.profileId, false);
     offWatcher?.();
   };
@@ -572,13 +665,16 @@ export class TaskAlertsOffer extends Store<AlertContext | null> {
 function alertContext(command: PendingCommand, state: HostState): AlertContext | null {
   const body = command.body;
   const result = command.receipt?.result;
+  // Work started from a chat says how it went in that chat, so it brings no
+  // offer of its own: a suggestion's Start, and turning the chat into a task.
   if (body.command === "create_task" && body.placement.mode === "start_now" && result?.kind === "task_created") {
-    return { projectId: body.project_id, taskId: result.task_id };
+    return body.origin ? null : { projectId: body.project_id, taskId: result.task_id };
   }
   let taskId: string | undefined;
   if (body.command === "resume_task" || body.command === "send_message") taskId = body.task_id;
   if (body.command === "queue_start") taskId = Object.values(state.queues).flatMap((q) => q.items).find((i) => i.item_id === body.item_id)?.task_id;
   const task = taskId ? state.tasks[taskId] : undefined;
+  if (task && body.command === "resume_task" && body.mode && (task.conversation || task.access)) return null;
   return task ? { projectId: task.project_id, taskId: task.task_id } : null;
 }
 

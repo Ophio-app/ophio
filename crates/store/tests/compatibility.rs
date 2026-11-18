@@ -72,6 +72,76 @@ fn cacab2d_stored_commands_documents_and_journal_still_decode() {
     assert_eq!(approval, journal_approval);
 }
 
+/// Synthetic current-protocol fixtures, not replacements for release history.
+#[test]
+fn checks_v1_stored_commands_cover_every_command_and_person_edit() {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/checks-v1");
+    let dir = tempfile::tempdir().unwrap();
+    let mut db =
+        store::Store::open(dir.path().join("db.sqlite"), store::Retention::default()).unwrap();
+    let mut commands = BTreeSet::new();
+    let mut edits = BTreeSet::new();
+    let mut count = 0;
+    for entry in std::fs::read_dir(fixtures).unwrap() {
+        let path = entry.unwrap().path();
+        let json = std::fs::read_to_string(&path).unwrap();
+        let stored: StoredCommand = serde_json::from_str(&json)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let command = value["envelope"]["body"]["command"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        assert!(matches!(
+            stored.envelope.body,
+            Command::ChecksSave { .. }
+                | Command::ChecksAsk { .. }
+                | Command::ChecksApplyDraft { .. }
+                | Command::ChecksDiscardDraft { .. }
+                | Command::ChecksRunNow { .. }
+                | Command::ChecksStopJob { .. }
+        ));
+        if let Command::ChecksSave { ref edit, .. } = stored.envelope.body {
+            let edit_value = serde_json::to_value(edit).unwrap();
+            edits.insert(edit_value["kind"].as_str().unwrap().to_owned());
+        }
+        commands.insert(command);
+        assert_eq!(stored.envelope.command_id, stored.receipt.command_id);
+        db.write(protocol::time::Timestamp(1_700_000_000_000), |tx| {
+            tx.command(&stored)
+        })
+        .unwrap();
+        let decoded = db
+            .read(|read| read.command(stored.envelope.command_id))
+            .unwrap()
+            .unwrap();
+        assert_eq!(decoded.envelope, stored.envelope);
+        count += 1;
+    }
+    assert_eq!(
+        commands,
+        BTreeSet::from([
+            "checks_save".to_owned(),
+            "checks_ask".to_owned(),
+            "checks_apply_draft".to_owned(),
+            "checks_discard_draft".to_owned(),
+            "checks_run_now".to_owned(),
+            "checks_stop_job".to_owned(),
+        ])
+    );
+    assert_eq!(
+        edits,
+        BTreeSet::from([
+            "set_enabled".to_owned(),
+            "delete".to_owned(),
+            "save".to_owned(),
+            "undo".to_owned(),
+            "keep_inputs".to_owned(),
+        ])
+    );
+    assert_eq!(count, 10);
+}
+
 #[test]
 fn quarantine_is_atomic_and_reserves_the_original_row() {
     let dir = tempfile::tempdir().unwrap();

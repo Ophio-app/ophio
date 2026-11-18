@@ -32,6 +32,9 @@ body {
 
 #root {
   height: 100%;
+  /* Legacy single-view surfaces keep their full-window breakpoints. A
+     PaneFrame supplies a nearer container when split view is present. */
+  container: pane / size;
 }
 
 h1,

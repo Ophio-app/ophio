@@ -4,9 +4,12 @@
 // plus journal events in `seq` order, so everything the UI shows is traceable
 // to something the host said. Nothing here guesses a newer state from a timer.
 
+import type { ProjectChecksView } from "../protocol/generated/ProjectChecksView";
+import type { CheckJob } from "../protocol/generated/CheckJob";
 import { handBackReason, handBackTarget } from "./handBack";
 import { applyDeliveries } from "./timeline";
 import { withoutOutcome } from "./outcomeReport";
+import type { ObservedReply } from "../protocol/generated/ObservedReply";
 import type {
   Approval,
   ArtifactMeta,
@@ -59,6 +62,12 @@ export interface LiveText {
   /** Deltas were sent while the phone wasn't listening and are gone. Later
    * ones are not appended to it; the journaled message replaces it. */
   interrupted?: boolean;
+  /** UTF-8 byte position of the first cached delta, when supplied by the host. */
+  offset?: number;
+  bytes?: number;
+  /** A durable partial shares this stream. Its range and the cached range
+   * are projected together, without changing either observation. */
+  timelineSeq?: number;
 }
 
 export interface InterventionRecord {
@@ -125,6 +134,10 @@ export interface HostState {
   checklistEpoch: number;
   /** Bumped when the computer's agent logins change or one is used. */
   agentLoginsRevision: number;
+  /** Latest checks views read from the computer, including immediate local approvals. */
+  checksViews?: Record<string, ProjectChecksView>;
+  /** Check jobs positively identified as project holders, including taskless runs. */
+  checkJobs?: Record<string, CheckJob>;
   /** Counts the computer's word that which alerts reach the person changed. */
   notificationsRevision: number;
   /** Counts the computer's word that problem reports or their settings changed. */
@@ -353,13 +366,17 @@ export function applyTimelinePage(
   const oldest = items.length ? Math.min(...items.map((i) => i.seq)) : null;
   const kept = prev && !prev.loaded && !older && oldest !== null ? prev.items.filter((i) => i.seq >= oldest) : (prev?.items ?? []);
   const merged = mergeTimeline(kept, items);
-  return {
+  let next = {
     ...state,
     timelines: {
       ...state.timelines,
       [taskId]: { items: merged, hasMore: prev?.loaded ? prev.hasMore && hasMore : hasMore, loaded: true },
     },
   };
+  // Query pages can be the only delivery of a recovered partial after a
+  // snapshot or a journal gap; they reconcile the cache just like events.
+  for (const item of items) next = reconcileLiveText(next, taskId, item);
+  return next;
 }
 
 /** An agent's message as the person reads it: without the report it ends with for Ophio. */
@@ -446,16 +463,13 @@ function reduceEvent(state: HostState, env: EventEnvelope, now: number,
       return { ...s, tasks: { ...s.tasks, [e.task.task_id]: e.task } };
     case "run_upserted": {
       let next: HostState = { ...s, runs: { ...s.runs, [e.run.run_id]: e.run } };
-      if (isTerminalRunState(e.run.state)) next = clearLiveForRun(next, e.run.run_id);
+      if (isTerminalRunState(e.run.state)) next = endLiveForRun(next, e.run.run_id, e.run.state);
       return next;
     }
     case "timeline_appended": {
-      let next = append(s, e.task_id, e.item);
+      let next = reconcileLiveText(append(s, e.task_id, e.item), e.task_id, e.item);
       const body = e.item.item;
-      if (body.kind === "agent_message" && !body.partial && e.item.run_id) {
-        next = supersedeLiveText(next, e.item.run_id, body.text);
-      }
-      if (body.kind === "run_ended") next = clearLiveForRun(next, body.run_id);
+      if (body.kind === "run_ended") next = endLiveForRun(next, body.run_id, body.state);
       return next;
     }
     case "command_progress":
@@ -534,9 +548,9 @@ function reduceEvent(state: HostState, env: EventEnvelope, now: number,
           : s.agentLoginUse,
       };
     case "boot_epoch_changed":
-      // Leases and live streams from the previous boot are void. The host
-      // follows with fresh control views; until then ownership is unknown.
-      return {
+      // Old leases are void and deltas can no longer be joined, but words this
+      // phone already saw remain observations even if a checkpoint is older.
+      return interruptLive({
         ...s,
         bootEpoch: e.boot_epoch,
         control: Object.fromEntries(
@@ -545,9 +559,8 @@ function reduceEvent(state: HostState, env: EventEnvelope, now: number,
             { ...v, input_state: "unknown" as const, lease: v.lease ? { ...v.lease, state: "unknown" as const } : null },
           ]),
         ),
-        liveText: {},
         activity: {},
-      };
+      });
     default: {
       const unreachable: never = e;
       void unreachable;
@@ -568,22 +581,33 @@ export function applyLive(state: HostState, live: LiveEvent, now: number): HostS
     case "agent_text_delta": {
       const key = `${live.run_id}\u0000${live.message_key}`;
       const prev = state.liveText[key];
-      return {
-        ...state,
-        lastHeardAt: now,
-        liveText: {
-          ...state.liveText,
-          [key]: prev?.interrupted
-            ? { ...prev, at: now }
-            : {
-                taskId: live.task_id,
-                runId: live.run_id,
-                key: live.message_key,
-                text: (prev?.text ?? "") + live.text,
-                at: now,
-              },
-        },
-      };
+      const offset = live.text_offset;
+      let value: LiveText = { taskId: live.task_id, runId: live.run_id, key: live.message_key, text: live.text, at: now,
+        ...(offset === undefined ? {} : { offset, bytes: utf8Length(live.text) }) };
+      if (prev) {
+        value = { ...prev, at: now };
+        if (!prev.interrupted) {
+          if (offset === undefined || prev.offset === undefined) {
+            value.text += live.text;
+            if (value.bytes !== undefined) value.bytes += utf8Length(live.text);
+          } else {
+            const bytes = prev.bytes ?? utf8Length(prev.text);
+            const end = prev.offset + bytes;
+            if (offset === end) { value.text += live.text; value.bytes = bytes + utf8Length(live.text); }
+            else {
+              const overlapAt = utf8Index(prev.text, offset - prev.offset);
+              const overlap = overlapAt === null ? null : prev.text.slice(overlapAt);
+              // Offsets also make a repeated live frame harmless. A missing or
+              // conflicting range freezes the observation instead of splicing.
+              if (overlap !== null && live.text.startsWith(overlap)) {
+                const tail = live.text.slice(overlap.length);
+                value.text += tail; value.bytes = bytes + utf8Length(tail);
+              } else if (!(overlap !== null && overlap.startsWith(live.text))) value.interrupted = true;
+            }
+          }
+        }
+      }
+      return { ...state, lastHeardAt: now, liveText: { ...state.liveText, [key]: value } };
     }
     case "activity_status":
       return {
@@ -629,6 +653,8 @@ export function applyJournalReset(state: HostState, hostHead: number, now: numbe
     journalHead: hostHead,
     timelines,
     queues: {},
+    liveText: {},
+    activity: {},
     resolvedAttention: {},
     gaps: [...state.gaps.slice(-(MAX_GAPS - 1)), { requestedFrom: hostHead + 1, oldestRetained: hostHead + 1, at: now }],
   };
@@ -638,10 +664,81 @@ export function isTerminalRunState(s: Run["state"]): boolean {
   return s === "completed" || s === "failed" || s === "interrupted" || s === "reconciliation_required";
 }
 
+function endLiveForRun(state: HostState, runId: string, status: Run["state"]): HostState {
+  if (status === "completed") return clearLiveForRun(state, runId);
+  const entries = Object.entries(state.liveText);
+  if (!entries.some(([, v]) => v.runId === runId && !v.interrupted)) return state;
+  return { ...state, liveText: Object.fromEntries(entries.map(([k, v]) => [k, v.runId === runId ? { ...v, interrupted: true } : v])) };
+}
+
 function clearLiveForRun(state: HostState, runId: string): HostState {
   const entries = Object.entries(state.liveText).filter(([, v]) => v.runId !== runId);
   if (entries.length === Object.keys(state.liveText).length) return state;
   return { ...state, liveText: Object.fromEntries(entries) };
+}
+
+const utf8Length = (text: string): number => new TextEncoder().encode(text).length;
+
+/** Convert a byte position only at an actual UTF-8 character boundary. */
+function utf8Index(text: string, bytes: number): number | null {
+  if (!Number.isSafeInteger(bytes) || bytes < 0) return null;
+  let at = 0;
+  let index = 0;
+  for (const char of text) {
+    if (at === bytes) return index;
+    const point = char.codePointAt(0)!;
+    at += point <= 0x7f ? 1 : point <= 0x7ff ? 2 : point <= 0xffff ? 3 : 4;
+    if (at > bytes) return null;
+    index += char.length;
+  }
+  return at === bytes ? index : null;
+}
+
+function utf8Slice(text: string, from: number, to: number): string | null {
+  const start = utf8Index(text, from);
+  const end = utf8Index(text, to);
+  return start === null || end === null ? null : text.slice(start, end);
+}
+
+function reconcileLiveText(state: HostState, taskId: string, item: TimelineItem): HostState {
+  const body = item.item;
+  if (body.kind !== "agent_message" || !item.run_id) return state;
+  const entries = Object.entries(state.liveText);
+  const candidates = entries.filter(([, v]) => v.runId === item.run_id && v.taskId === taskId);
+  if (body.message_key !== undefined) {
+    const match = candidates.find(([, v]) => v.key === body.message_key);
+    if (!match) return state;
+    const [key, live] = match;
+    if (!body.partial) {
+      return { ...state, liveText: Object.fromEntries(entries.filter(([k]) => k !== key)) };
+    }
+    if (body.text_offset === undefined || live.offset === undefined || !sharedRange(live, body.text, body.text_offset)) return state;
+    if (live.timelineSeq !== undefined && live.timelineSeq >= item.seq) return state;
+    return { ...state, liveText: { ...state.liveText, [key]: { ...live, timelineSeq: item.seq } } };
+  }
+  if (!body.partial) return supersedeLiveText(state, item.run_id, body.text);
+  // Old computers cannot identify interleaved messages. Only an unambiguous
+  // shared prefix is usable; never discard an unmatched stream for a partial.
+  const matches = candidates.filter(([, v]) => (v.offset === undefined || v.offset === 0) && body.text.length > 0 && (body.text.startsWith(v.text) || v.text.startsWith(body.text)));
+  if (matches.length !== 1) return state;
+  const [key, live] = matches[0]!;
+  if (body.text.startsWith(live.text)) {
+    return { ...state, liveText: Object.fromEntries(entries.filter(([k]) => k !== key)) };
+  }
+  // A legacy message's first unique prefix anchors its following suffixes.
+  // A repeated opening in a later suffix must not move that anchor forward.
+  if (live.timelineSeq !== undefined && live.timelineSeq <= item.seq) return state;
+  return { ...state, liveText: { ...state.liveText, [key]: { ...live, timelineSeq: item.seq } } };
+}
+
+/** Exact overlap, or adjacent ranges of the same identified message. */
+function sharedRange(live: LiveText, text: string, offset: number): boolean {
+  if (!Number.isSafeInteger(offset) || offset < 0 || live.offset === undefined) return false;
+  const start = Math.max(live.offset, offset);
+  const end = Math.min(live.offset + (live.bytes ?? utf8Length(live.text)), offset + utf8Length(text));
+  if (start > end) return false;
+  const cached = utf8Slice(live.text, start - live.offset, end - live.offset);
+  return cached !== null && cached === utf8Slice(text, start - offset, end - offset);
 }
 
 function supersedeLiveText(state: HostState, runId: string, finalText: string): HostState {
@@ -760,10 +857,150 @@ export const projectTasks = (s: HostState, projectId: string): Task[] =>
     .filter((t) => t.project_id === projectId)
     .sort((a, b) => b.updated_at - a.updated_at);
 
-export const liveTextForTask = (s: HostState, taskId: string): LiveText[] =>
-  Object.values(s.liveText)
-    .filter((l) => l.taskId === taskId)
-    .sort((a, b) => a.at - b.at);
+type PartialRange = { item: TimelineItem; text: string; offset: number; end: number };
+
+/** Without message identities only consecutive, exact suffixes are usable.
+ * Stop at any boundary or text that another cached stream could own, rather
+ * than guessing across helpers, completed messages or a later run. */
+function legacyPartialRanges(timeline: TimelineState, cached: LiveText, live: LiveText[]): PartialRange[] {
+  const anchor = timeline.items.findIndex(item => item.seq === cached.timelineSeq);
+  if (anchor < 0 || (cached.offset !== undefined && cached.offset !== 0)) return [];
+  const positioned = { ...cached, offset: 0 };
+  const ranges: PartialRange[] = [];
+  let offset = 0;
+  const end = cached.bytes ?? utf8Length(cached.text);
+  for (let index = anchor; index < timeline.items.length && offset < end; index++) {
+    const item = timeline.items[index]!;
+    const body = item.item;
+    if (item.run_id !== cached.runId || body.kind !== "agent_message" || !body.partial
+      || body.message_key !== undefined || !body.text || !sharedRange(positioned, body.text, offset)) break;
+    // Even an exact suffix can be a helper's independent message. With no
+    // durable key, preserve that ambiguity instead of borrowing its row.
+    if (live.some(other => other !== cached && other.runId === cached.runId && other.text
+      && (other.text.startsWith(body.text) || body.text.startsWith(other.text)
+        || (index > anchor && other.text.includes(body.text))))) break;
+    const next = offset + utf8Length(body.text);
+    ranges.push({ item, text: body.text, offset, end: next });
+    offset = next;
+  }
+  return ranges;
+}
+
+type ConversationProjection = { source: TimelineState | undefined; timeline: TimelineState | undefined; live: LiveText[] };
+const conversationMemo = new WeakMap<HostState["liveText"], Map<string, ConversationProjection>>();
+
+/** Keep locally observed tails on their original reply, including when a page
+ * begins inside that message. Durable items themselves remain unchanged. */
+function conversationProjection(s: HostState, taskId: string): ConversationProjection {
+  let memo = conversationMemo.get(s.liveText);
+  if (!memo) { memo = new Map(); conversationMemo.set(s.liveText, memo); }
+  const timeline = s.timelines[taskId];
+  const prior = memo.get(taskId);
+  if (prior && prior.source === timeline) return prior;
+  const live = Object.values(s.liveText).filter(l => l.taskId === taskId).sort((a, b) => a.at - b.at);
+  const standalone: LiveText[] = [];
+  const replacements = new Map<number, string>();
+  for (const cached of live) {
+    if (cached.timelineSeq === undefined || !timeline) { standalone.push(cached); continue; }
+    const start = cached.offset ?? 0;
+    const positioned = cached.offset === undefined ? { ...cached, offset: start } : cached;
+    const end = start + (cached.bytes ?? utf8Length(cached.text));
+    const anchor = timeline.items.find(item => item.seq === cached.timelineSeq);
+    const legacy = anchor?.item.kind === "agent_message" && anchor.item.message_key === undefined;
+    const matching = legacy ? legacyPartialRanges(timeline, cached, live) : timeline.items.flatMap(item => {
+      if (item.run_id !== cached.runId || item.item.kind !== "agent_message" || !item.item.partial) return [];
+      const body = item.item;
+      const offset = body.message_key === cached.key ? body.text_offset : undefined;
+      return offset !== undefined && sharedRange(positioned, body.text, offset) ? [{ item, text: body.text, offset, end: offset + utf8Length(body.text) }] : [];
+    }).sort((a, b) => a.offset - b.offset || a.item.seq - b.item.seq);
+    if (!matching.length) { standalone.push(cached); continue; }
+    let covered = start;
+    for (const part of matching) {
+      const missingEnd = Math.min(part.offset, end);
+      const prefix = covered < missingEnd ? utf8Slice(cached.text, covered - start, missingEnd - start) ?? "" : "";
+      replacements.set(part.item.seq, prefix + part.text);
+      covered = Math.max(covered, Math.min(part.end, end));
+    }
+    const last = matching.at(-1)!;
+    const suffix = covered < end ? utf8Slice(cached.text, covered - start, end - start) ?? "" : "";
+    replacements.set(last.item.seq, withoutOutcome(replacements.get(last.item.seq)! + suffix));
+  }
+  let projected = timeline;
+  if (timeline && replacements.size) {
+    let changed = false;
+    const items = timeline.items.map(item => {
+      const text = replacements.get(item.seq);
+      if (text === undefined || item.item.kind !== "agent_message" || text === item.item.text) return item;
+      changed = true;
+      return { ...item, item: { ...item.item, text } };
+    });
+    if (changed) projected = { ...timeline, items };
+  }
+  const value = { source: timeline, timeline: projected, live: standalone };
+  memo.delete(taskId);
+  memo.set(taskId, value);
+  if (memo.size > INACTIVE_TIMELINES + 1) memo.delete(memo.keys().next().value!);
+  return value;
+}
+
+export const CHAT_REPLY_RECOVERY_FEATURE = "chat_reply_recovery_v1";
+export const OBSERVED_REPLY_BYTES = 8 * 1024;
+
+function boundedReplyTail(text: string): { text: string; removed: number } | null {
+  const encoded = new TextEncoder().encode(text);
+  let removed = Math.max(0, encoded.length - OBSERVED_REPLY_BYTES);
+  // Start after continuation bytes, never inside an emoji or accent.
+  while (removed < encoded.length && (encoded[removed]! & 0xc0) === 0x80) removed++;
+  const index = utf8Index(text, removed);
+  return index === null ? null : { text: text.slice(index), removed };
+}
+
+/** A bounded observation from this phone, never an amendment to host history.
+ * Evaluate at send time so a newer run or a changed capability cannot inherit
+ * an older reply's cached words. Only attach the newest stream when its bounded
+ * ending verifiably joins a durable partial; omitting optional evidence must
+ * not erase visible words or substitute an older stream for the newest one. */
+export function observedReplyForTask(s: HostState, taskId: string): ObservedReply | undefined {
+  if (!s.capabilities?.features.includes(CHAT_REPLY_RECOVERY_FEATURE)) return undefined;
+  const task = s.tasks[taskId];
+  const run = s.runs[task?.current_run ?? ""];
+  if (!task?.conversation || !run || run.task_id !== taskId || run.state !== "reconciliation_required" || !run.nothing_running) return undefined;
+  const cached = Object.values(s.liveText).filter(l => l.taskId === taskId && l.runId === run.run_id && l.interrupted
+    && l.offset !== undefined && Number.isSafeInteger(l.offset) && l.offset >= 0 && l.key && l.text)
+    .sort((a, b) => a.at - b.at).at(-1);
+  if (!cached) return undefined;
+  const parts = s.timelines[taskId]?.items.flatMap(item => item.run_id === run.run_id
+    && item.item.kind === "agent_message" && item.item.message_key === cached.key ? [item.item] : []) ?? [];
+  const latest = parts.at(-1);
+  if (!latest?.partial || latest.text_offset === undefined || !Number.isSafeInteger(latest.text_offset) || latest.text_offset < 0) return undefined;
+  let durable = latest.text;
+  let durableStart = latest.text_offset;
+  let durableBytes = utf8Length(durable);
+  // Like the companion, use only the latest contiguous durable suffix of this
+  // exact identity. An older matching segment cannot bridge a newer gap/final.
+  for (let index = parts.length - 2; index >= 0 && durableBytes < OBSERVED_REPLY_BYTES; index--) {
+    const part = parts[index]!;
+    const length = utf8Length(part.text);
+    if (!part.partial || part.text_offset === undefined || !Number.isSafeInteger(part.text_offset) || part.text_offset < 0
+      || part.text_offset + length !== durableStart) break;
+    durable = part.text + durable;
+    durableStart = part.text_offset;
+    durableBytes += length;
+  }
+  const anchor = boundedReplyTail(durable);
+  const observed = boundedReplyTail(cached.text);
+  if (!anchor || !observed) return undefined;
+  const offset = cached.offset! + observed.removed;
+  const anchorOffset = durableStart + anchor.removed;
+  const length = utf8Length(observed.text);
+  if (!Number.isSafeInteger(offset + length) || !Number.isSafeInteger(anchorOffset + utf8Length(anchor.text))
+    || !sharedRange({ ...cached, text: observed.text, offset, bytes: length }, anchor.text, anchorOffset)) return undefined;
+  return { run_id: run.run_id, message_key: cached.key, text_offset: offset, text: observed.text };
+}
+
+export const timelineForTask = (s: HostState, taskId: string): TimelineState | undefined => conversationProjection(s, taskId).timeline;
+
+export const liveTextForTask = (s: HostState, taskId: string): LiveText[] => [...conversationProjection(s, taskId).live];
 
 /** Unfinished task-list membership includes queued accepted tasks and uses the task summary, unlike isTaskRunning. */
 export function isActiveTask(t: Task): boolean {
@@ -791,6 +1028,8 @@ export function stillFinishing(run: Run): boolean {
  * own state decides: hiding a Stop for work that may be running is the worse
  * error. */
 export function isTaskRunning(s: HostState, task: Task): boolean {
+  // Ophio checks after the agent finishes; its ordinary Stop still applies.
+  if (task.state === "working" && task.checking) return true;
   // Unlike isActiveTask, excludes queued-only accepted tasks and follows native run state when it disagrees with the task summary.
   const run = task.current_run ? s.runs[task.current_run] : undefined;
   if (!run) return ["dispatching", "working", "awaiting_decision"].includes(task.state);

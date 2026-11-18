@@ -130,6 +130,8 @@ async fn start_task(
         .submit(
             &Caller::local_owner(),
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: None,

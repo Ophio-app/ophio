@@ -713,6 +713,8 @@ fn raise(entry: &Entry, group: ReportId, now: Timestamp, quiet: bool) -> Attenti
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     }
 }
 

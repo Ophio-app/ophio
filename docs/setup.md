@@ -3,8 +3,9 @@
 `ophio setup` goes through everything Øphio needs on a computer, one step at a
 time. The Linux installer starts it when it finishes in a terminal, and
 `ophio` with nothing after it starts it on a computer that has not run Øphio
-yet, or whose setup was left part way. On Windows, run `.\ophio.exe setup` in
-PowerShell in the extracted folder.
+yet, or whose setup was left part way. On Windows, once the install has
+finished, run `& "$env:LOCALAPPDATA\Programs\Ophio\ophio.exe" setup` in
+PowerShell, not as administrator.
 
 Setup draws a full screen in a terminal that can show one. `--plain` shows
 plain text, one screen after another, as a screen reader or a basic terminal

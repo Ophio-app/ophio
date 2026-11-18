@@ -83,6 +83,7 @@ class DevicePlugin(first: Activity) : Plugin(first) {
     private var shell: Shell? = null
     private var web: WebView? = null
     private var events: Channel? = null
+    private val windowLayout = WindowLayout { event -> events?.send(event) }
     @Volatile private var foreground = true
     private var notificationPrompt = false
     private var notificationHadRationale = false
@@ -114,6 +115,7 @@ class DevicePlugin(first: Activity) : Plugin(first) {
         activity = screen
         web = webView
         shell = Shell(screen, webView)
+        windowLayout.attach(screen, webView)
         foreground = (screen as? AppCompatActivity)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true
         appLock.attach(screen)
         reports.resume()
@@ -181,6 +183,7 @@ class DevicePlugin(first: Activity) : Plugin(first) {
         if (!AlertWatcher.running()) AlertWatcher.startHere(activity)
         AlertWatcher.retry()
         shell?.apply()
+        windowLayout.refresh()
         events?.send(JSObject().put("type", "foreground") as JSObject)
         val waiting = microphoneWaiting.values.toList()
         microphoneWaiting.clear()
@@ -193,6 +196,7 @@ class DevicePlugin(first: Activity) : Plugin(first) {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         shell?.configure(newConfig)
+        windowLayout.refresh()
     }
 
     override fun onDestroy(activity: AppCompatActivity) {
@@ -206,6 +210,7 @@ class DevicePlugin(first: Activity) : Plugin(first) {
         microphone.shutdown()
         AlertWatcher.screenAlive = false
         // The next screen's app registers its own listener.
+        windowLayout.detach()
         events = null
     }
 
@@ -329,12 +334,21 @@ class DevicePlugin(first: Activity) : Plugin(first) {
     }
 
     @Command
+    fun windowLayout(invoke: Invoke) {
+        activity.runOnUiThread { windowLayout.snapshot { invoke.resolve(it) } }
+    }
+
+    @Command
     fun events(invoke: Invoke) {
-        events = invoke.parseArgs(EventArgs::class.java).events
-        shares.ready()
-        shell?.apply()
-        flushEvents()
-        invoke.resolve()
+        val channel = invoke.parseArgs(EventArgs::class.java).events
+        activity.runOnUiThread {
+            events = channel
+            shares.ready()
+            shell?.apply()
+            windowLayout.replay()
+            flushEvents()
+            invoke.resolve()
+        }
     }
 
     @Command

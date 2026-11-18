@@ -12,6 +12,7 @@ name = "ophio"
 path = "src/main.rs"
 
 [dependencies]
+containment.workspace = true
 jev = { path = "../jev" }
 voice-control = { path = "../voice-control" }
 browser = { path = "../browser" }
@@ -73,7 +74,9 @@ zbus = { version = "5.19", default-features = false, features = ["tokio"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 platform-macos = { path = "../platform-macos" }
-platform-windows = { path = "../platform-windows" }
+
+[target.'cfg(any(windows, target_os = "macos"))'.dependencies]
+platform-desktop = { path = "../platform-desktop" }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "1.0", features = ["process", "fs", "param"] }
@@ -82,7 +85,7 @@ rustix = { version = "1.0", features = ["process", "fs", "param"] }
 platform-windows = { path = "../platform-windows" }
 
 [dev-dependencies]
-containment.workspace = true
+harness-claude = { path = "../harness-claude", features = ["test-fixtures"] }
 test-support = { path = "../test-support" }
 tokio = { workspace = true, features = ["test-util"] }
 services = { workspace = true, features = ["testing"] }

@@ -802,13 +802,23 @@ impl Proc {
         let not_started = |e: &dyn std::fmt::Display| format!("{name} could not start: {e}");
         let contained = Contained::new(name)?;
         if run.pty {
-            let pair = portable_pty::native_pty_system()
-                .openpty(portable_pty::PtySize {
+            // On the Mac the pty's ends are made first and marked
+            // close-on-exec afterwards, and a pipe in the start below
+            // likewise: each is made only while no other process is being
+            // started, so none keeps the sign-in's terminal or holds this
+            // start up.
+            let open = || {
+                portable_pty::native_pty_system().openpty(portable_pty::PtySize {
                     rows: 40,
                     cols: 200,
                     ..Default::default()
                 })
-                .map_err(|e| not_started(&e))?;
+            };
+            #[cfg(unix)]
+            let pair = containment::inherit::private(open);
+            #[cfg(windows)]
+            let pair = open();
+            let pair = pair.map_err(|e| not_started(&e))?;
             let mut reader = pair
                 .master
                 .try_clone_reader()
@@ -834,10 +844,12 @@ impl Proc {
                 for (k, v) in extra {
                     command.env(k, v);
                 }
-                let child = pair
-                    .slave
-                    .spawn_command(command)
-                    .map_err(|e| not_started(&e))?;
+                let spawn = || pair.slave.spawn_command(command);
+                #[cfg(unix)]
+                let child = containment::inherit::start(spawn);
+                #[cfg(windows)]
+                let child = spawn();
+                let child = child.map_err(|e| not_started(&e))?;
                 // Where the container is the tool's process group, the
                 // session the pty's spawn makes leads it. On Windows the
                 // tool joins its job only once it has started: what it

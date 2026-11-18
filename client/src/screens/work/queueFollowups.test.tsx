@@ -56,7 +56,7 @@ it("describes running, stopping, unresolved and absent writers accurately", asyn
   const host = window.__sim!.host;
   const run = host.runs.find(r => r.run_id === host.queue.writer)!;
   render(<NextUp route={{ screen: "next_up" }} />, { wrapper }); await advance();
-  expect(screen.getByText("Waiting for approval. This task holds the project’s writer slot.")).toBeTruthy();
+  expect(screen.getByText("Waiting for your approval. Other work can start when this task finishes.")).toBeTruthy();
   act(() => host.emit({ type: "run_upserted", run: { ...run, state: "working" } }));
   expect(screen.getByText("Running. This task is changing files.")).toBeTruthy();
   act(() => host.emit({ type: "run_upserted", run: { ...run, state: "stopping" } }));
@@ -66,12 +66,12 @@ it("describes running, stopping, unresolved and absent writers accurately", asyn
   fireEvent.click(screen.getByRole("button", { name: "Decide what happened" }));
   expect(app.ui.route()).toMatchObject({ screen: "receipt", taskId: run.task_id });
   act(() => host.emit({ type: "run_upserted", run: { ...run, state: "completed", holds_writer: true } }));
-  expect(screen.getByText("This task has ended. The computer is updating the writer slot.")).toBeTruthy();
+  expect(screen.getByText("This task has ended. The computer is checking that nothing is still changing this project.")).toBeTruthy();
   expect(screen.queryByText("Running. This task is changing files.")).toBeNull();
   act(() => host.emit({ type: "run_upserted", run: { ...run, state: "completed", holds_writer: false } }));
   expect(screen.getByText("No task is changing files")).toBeTruthy();
   queueChange({ writer: "unreported-writer" });
-  expect(screen.getByText("Waiting for the computer to report the writer’s state.")).toBeTruthy();
+  expect(screen.getByText("Waiting for the computer to report what is using this project.")).toBeTruthy();
   queueChange({ writer: null });
   expect(screen.getByText("No task is changing files")).toBeTruthy();
   expect(screen.queryByText(/current task/)).toBeNull();

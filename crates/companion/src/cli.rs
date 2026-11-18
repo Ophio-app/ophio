@@ -2362,10 +2362,16 @@ async fn uninstall_data(
     accounts: impl AsyncFnOnce(&Path) -> accounts::Config,
 ) -> Result<()> {
     if !confirmed {
+        // On a Mac settings and data share one folder: name it once.
+        let data = shown(&paths.data.display().to_string());
+        let config = shown(&paths.config.display().to_string());
+        let folders = if data == config {
+            data
+        } else {
+            format!("{data} and {config}")
+        };
         return Err(Error::Ended(format!(
-            "Nothing was deleted. `{COMMAND} uninstall-data --yes` deletes {PRODUCT_NAME}'s settings, paired devices and data from {} and {}. Stop {PRODUCT_NAME} first. If it starts when you log in, `{COMMAND} service uninstall` stops it and turns that off.",
-            shown(&paths.data.display().to_string()),
-            shown(&paths.config.display().to_string())
+            "Nothing was deleted. `{COMMAND} uninstall-data --yes` deletes {PRODUCT_NAME}'s settings, paired devices and data from {folders}. Stop {PRODUCT_NAME} first. If it starts when you log in, `{COMMAND} service uninstall` stops it and turns that off.",
         )));
     }
     paths.initialize()?;
@@ -3140,11 +3146,14 @@ mod fingerprint_tests {
         let text = super::describe_accounts(&view);
         assert_eq!(
             text,
-            "GitHub  (github)  active as sam-builds\n\
-             Google (Gmail)  (google)  signed out. Needs its OAuth client: `ophio accounts set-client google FILE`\n\
-             OpenRouter  (openrouter)  needs attention: The key\\u{1b}[8m was refused.\n\
+            format!(
+                "GitHub  (github)  active as sam-builds\n\
+             Google (Gmail)  (google)  signed out. Needs its OAuth client: `{} accounts set-client google FILE`\n\
+             OpenRouter  (openrouter)  needs attention: The key\\u{{1b}}[8m was refused.\n\
              Groq  (groq)  paused. Set its key in the app\n\
-             Keys are kept in Secret Service.\n"
+             Keys are kept in Secret Service.\n",
+                ports::COMMAND
+            )
         );
     }
 }
@@ -3327,6 +3336,22 @@ mod uninstall_tests {
             std::fs::read(paths.config_file()).unwrap(),
             b"# keep my settings"
         );
+        let data = paths.data.display().to_string();
+        let config = paths.config.display().to_string();
+        assert!(error.contains(&format!("{data} and {config}")), "{error}");
+        // A Mac keeps settings and data in one folder, named once.
+        let shared = Paths {
+            config: paths.data.clone(),
+            ..paths
+        };
+        let error = uninstall_data(&shared, false, async |_: &Path| -> accounts::Config {
+            unreachable!("a preview opens no accounts")
+        })
+        .await
+        .unwrap_err()
+        .to_string();
+        assert_eq!(error.matches(data.as_str()).count(), 1, "{error}");
+        assert!(error.contains(&format!("from {data}. Stop")), "{error}");
     }
 
     async fn uninstall_with_empty_accounts(paths: &Paths) {

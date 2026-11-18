@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { HostProfile, Platform } from "../../host/link";
 import type { PairingOffer } from "../../protocol/types";
 import { Welcome } from "./Welcome";
+import { ONE_LINE_INSTALL } from "./companionDownload";
 // Keyboard and cramped-height layout is checked in the browser; its focus
 // tracking would otherwise measure after this file's document is gone.
 vi.mock("../../shell/keyboard", () => ({ useKeyboardOpen: () => false, useCrampedLayout: () => false }));
@@ -42,8 +43,9 @@ it("names only the computers this release supports", () => {
   localStorage.clear();
   const platform = { parsePairingLink: () => ({ problem: "not-pairing" }) } as unknown as Platform;
   render(<Welcome platform={platform} onPaired={() => {}} />);
-  expect(screen.getByText("Runs on Linux computers")).toBeTruthy();
-  expect(screen.queryByText(/Mac|Windows/)).toBeNull();
+  expect(screen.getByText("Runs on Linux, Windows and Mac computers")).toBeTruthy();
+  expect(screen.queryByText("Runs on Linux computers")).toBeNull();
+  expect(screen.getByText(/Extract the archive for your computer and follow INSTALL.md/)).toBeTruthy();
 });
 
 it("system back steps back through pairing instead of leaving the app", () => {
@@ -54,8 +56,13 @@ it("system back steps back through pairing instead of leaving the app", () => {
   fireEvent.click(screen.getByRole("button", { name: "Pair a computer" }));
   expect(screen.getByRole("heading", { name: "Pair with your computer" })).toBeTruthy();
   expect(screen.getByText("Install Øphio on your computer")).toBeTruthy();
+  expect(screen.getByText(/Extract the archive for your computer and open/)).toBeTruthy();
+  expect(screen.queryByText(/Extract the Linux archive/)).toBeNull();
   expect(screen.getByText("INSTALL.md")).toBeTruthy();
   expect(screen.getByText("ophio pair")).toBeTruthy();
+  expect(screen.getByText(String.raw`& "$env:LOCALAPPDATA\Programs\Ophio\ophio.exe" setup`)).toBeTruthy();
+  expect(screen.queryByText(/extracted folder/)).toBeNull();
+  expect(screen.queryByText(/get-ophio/)).toBeNull();
   act(() => {
     window.dispatchEvent(new PopStateEvent("popstate"));
   });
@@ -123,6 +130,17 @@ it("pairs again with one of 32 computers in place of its earlier pairing", async
   fireEvent.click(screen.getByLabelText("Replace the earlier pairing on this phone"));
   await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Pair again" })); });
   expect((pair.mock.calls[0] as unknown[])[2]).toBe(true);
+});
+
+it("shows the one-line installers on the pairing page of builds that link to the official download page", () => {
+  localStorage.clear();
+  vi.stubEnv("VITE_OPHIO_DOWNLOAD_URL", "https://ophio.app/download/");
+  render(<Welcome platform={{ parsePairingLink: () => ({ problem: "not-pairing" }) } as unknown as Platform} onPaired={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "Pair a computer" }));
+  expect(screen.getByText(ONE_LINE_INSTALL.unix)).toBeTruthy();
+  expect(screen.getByText(ONE_LINE_INSTALL.windows)).toBeTruthy();
+  expect(screen.getByText(/Or by hand: extract the archive for your computer and open/)).toBeTruthy();
+  vi.unstubAllEnvs();
 });
 
 it.each(["", "https://downloads.example.test/ophio"])("offers configured acquisition and plain-text sharing (%s)", async url => {

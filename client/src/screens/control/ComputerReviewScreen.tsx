@@ -10,7 +10,7 @@ import { Age } from "../../design/Age";
 import { CommandError, OutcomeUnknownError } from "../../host/session";
 import { commandResult } from "../../host/commandResult";
 import { uuidv7 } from "../../protocol/ids";
-import type { Availability, Command, CommandReceipt, ControlTarget } from "../../protocol/types";
+import type { Availability, Command, CommandReceipt, ControlTarget, TaskOrigin } from "../../protocol/types";
 import { Screen } from "../../shell/Screen";
 import { NotAllowed } from "../../shell/NotAllowed";
 import type { RouteProps } from "../types";
@@ -21,9 +21,12 @@ import { writerActivity, writerHold, writerHoldText } from "../talk/intent";
 import "./control.css";
 import { HARNESS_ACCOUNT, useSignInOn } from "../settings/signIn";
 import { SignInAgainButton } from "../settings/SignInAgain";
+import { AgentModelUpdate } from "../settings/AgentModelUpdate";
 
 type Start = Extract<Command, { command: "create_task" }>;
-interface Draft { goal: string; target: string; harness: string; model: string; attempt?: { id: string; body: Start }; before?: string | null }
+interface Draft { goal: string; target: string; harness: string; model: string; attempt?: { id: string; body: Start }; before?: string | null;
+  /** The chat's card it was opened from: started here, still that card's task. */
+  origin?: TaskOrigin }
 const EMPTY: Draft = { goal: "", target: "", harness: "", model: "" };
 function read(key: string, projectId: string): Draft {
   try {
@@ -105,6 +108,7 @@ export default function ComputerReview({ route }: RouteProps<"computer_use_revie
       command: "create_task", project_id: project.project_id, kind: "computer_use", mode: "work", title: draft.goal.trim().split("\n")[0]?.slice(0, 120) ?? null,
       prompt: draft.goal.trim(), harness: selectedAgent.kind, model: model?.id ?? null, effort: null,
       target_id: selectedTarget.target_id, bundle: null, mission: null, placement: { mode: "start_now" },
+      ...(draft.origin ? { origin: draft.origin } : {}),
     } satisfies Start };
     if (!save({ attempt, harness: selectedAgent.kind, model: model?.id ?? "" })) return;
     setBusy(true); setError(null); setChecked(false);
@@ -155,6 +159,7 @@ export default function ComputerReview({ route }: RouteProps<"computer_use_revie
     {selectedAgent && <Section title="Model and account">
       <div className="computer-choices" role="group" aria-label="Models">{selectedAgent.models.length ? selectedAgent.models.map((m) => <button key={m.id} type="button" className="computer-choice" aria-pressed={modelId === m.id} disabled={!!draft.attempt}
         onClick={() => save({ harness, model: m.id })}><strong>{m.label}</strong>{m.suggested_for_computer_use && <span>Suggested for computer use</span>}{modelId === m.id && <Selected />}</button>) : <p>Native default model. The computer hasn’t reported its name yet.</p>}</div>
+      <AgentModelUpdate harness={selectedAgent} />
       <p className="fine">Account: {selectedAgent.account.state === "signed_in" ? selectedAgent.account.account_label ?? "Signed in on the computer; account name not reported" : "Not ready"}</p>
       <p>Pictures of {selectedTarget?.label ?? "the chosen target"} go to {selectedAgent.display_name}{itself ? "" : "’s computer specialist"}{model ? ` using ${model.label}` : ""}. Earlier pictures stay in the conversation.</p>
     </Section>}

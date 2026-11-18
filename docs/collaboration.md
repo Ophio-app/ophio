@@ -200,11 +200,14 @@ account of it, such as "changes notes.md, makes a git commit, connects to
 nas.local". Deleting, pushing, using administrator rights, installing
 software and running a downloaded script are marked, and where Ophio can't
 follow part of a command the line says so. The buttons sit on the card, and
-it offers only what the computer would accept: **Allow** and **Decline** for
+it offers only what the computer would accept: **Allow** and **Reject** for
 most requests; **Switch to Work and allow** when a Plan or Ask task asks to
 change something; **Turn into a task** when a chat asks for something only a
 task may do, such as using a saved login or posting on GitHub. After
-**Decline**, the agent is told not to ask again in that turn.
+**Reject**, the agent is told not to ask again in that turn. A question the
+agent asks is answered with **Send answer**, or turned down with **Decline**:
+a request is rejected, a question is declined, and a settled card says
+"Rejected" or "Declined" to match.
 
 An agent that needs more than it has asks with one card, such as "Claude
 Code needs to change files in ophio and reach your own network". In a chat,
@@ -212,11 +215,59 @@ Code needs to change files in ophio and reach your own network". In a chat,
 Work** switches the task to Work and the same session carries on. **Not
 now** declines.
 
+Nobody has to answer at once. A request or question nobody answers for ten
+minutes goes back to the agent, which is told to finish what doesn't depend
+on it and end its turn. The same happens straight away when the agent stops
+waiting by itself: its tool gave up on the call, its turn ended, or its
+connection to Ophio closed. Either way the card stays open, and the phone
+keeps showing that the chat or task needs you. An answer given later reaches
+the agent as its next message, and starts the chat or task again if its turn
+has ended. A later **Allow** on a request for access turns on what the card
+shows, worked out from the access as it is at that moment. If the access has
+changed since the agent asked, so that Allow would turn on something the card
+doesn't show, or lift every limit without the card saying so, Ophio changes
+nothing, says why and withdraws the card; the agent can ask again. A later
+**Allow** on a request the agent made to run a command, change a file or use
+a tool lets the agent do exactly that once, within half an hour, without a
+second card. Each request allowed this way counts on its own, and an Allow
+that went through like that never earns another. **Not now** on a card for
+the same request, **Stop**, or archiving the chat or task cancels it, so the
+agent is asked again. A later **Not now** tells the agent to carry on without it. Sending a message instead
+leaves the card open.
+
+Ending a turn early withdraws what the agent was still waiting on in that
+turn: **Stop**, a change in the access bar that needs a fresh turn,
+switching to Work and a few of Ophio's own checks that restart a turn all
+do. A card kept from an earlier turn stays until it is answered or the chat
+or task is archived; one that offers to switch to Work also goes once the
+task has switched. Using a saved login, typing a code a site sent, posting
+on GitHub and the computer specialist's requests keep their own time limit.
+So does a private question, one that asks for a password for example: its
+answer can only go to the agent while it is still waiting, so after ten
+minutes, or as soon as the agent stops waiting, it expires instead of
+staying open, and the agent asks again if it still needs it.
+
 Every chat and task says in one line whether it is a chat or a task and what
 it may do. Tapping the line opens what changes it: a chat's access bar, or a
 task's mode, with **Switch to Work** in one tap for a Plan or Ask task, even
-while it is working. With an older computer, the card offers Allow and Decline
+while it is working. With an older computer, the card offers Allow and Reject
 only.
+
+A long description or explanation starts shortened so the decision stays near
+the request. When the computer's account of a request is long, the card keeps
+only the parts that need attention, marked as usual, in at most three lines;
+when nothing needs attention it keeps the whole account, also in at most three
+lines. **Show command** or **Show details** reveals the full text and every
+one of the computer's checks, in its order. **Reject** (or **Not now** on a
+request for more access) is sent in one tap; **Reject with a reason**, on the
+line under the buttons beside the time to answer by, opens an optional reason
+first. That line is the only place the deadline is shown.
+Neither choice is shown as accepted until the computer confirms it.
+
+A question is just the question: its choices, a field for the person's own
+words, **Send answer**, and a quiet **Decline**. Send stays greyed until every
+question has an answer, and is the second tap even for a single choice, so a
+tap made while scrolling never answers by accident.
 
 ## Projects and unread results
 
@@ -299,5 +350,6 @@ loopback addresses (`127.0.0.1`, `[::1]`, `127.0.0.2`) are different previews;
 `localhost` is `127.0.0.1`. Each project still holds at most its usual
 number of previews.
 
-Finding previews works on Linux only. Windows doesn't say which folder a
-program works in, so add previews there by hand.
+Finding previews works on Linux and macOS. Windows does not yet have an
+automatic discovery adapter, so add previews there by hand. Opening a preview
+that was added by the person or an agent is separate from discovering it.

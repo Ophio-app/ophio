@@ -87,6 +87,13 @@ an empty file in `/ci-shared/passed`, which both runners read.
   the crates that export protocol bindings, the bindings themselves and the
   client's lock files run both. Docs run only the quick whole-tree stages.
   Anything else, such as the scripts or the workflow, runs every stage.
+- For every changed tree, `quick` runs before longer builds, both locally with
+  `bash scripts/ci.sh quick` and in the Linux job. It checks the phone's separate
+  Rust lock file without network access, reviewed crate dependency edges, lint
+  suppression counts and complete phone-request and simulator permission
+  policies. Missing cached phone packages need a locked fetch before retrying;
+  changed lock files must be regenerated and committed. `REVIEW.md` names the
+  protected policy files.
 - Two stages take most of a full run, so a change runs them only for the
   files they check. The repeated test runs (`parallel`: the whole suite
   three times, then twice with every core busy, about 15 minutes) run when

@@ -25,6 +25,11 @@ impl<R: AsyncRead + Unpin> Frames<R> {
             buffer: Vec::new(),
         }
     }
+    /// Discard remaining stdout during EOF-driven cleanup, even if a frame
+    /// was malformed or too large. A full pipe must not stall credential writes.
+    pub async fn drain(&mut self) {
+        let _ = tokio::io::copy(&mut self.reader, &mut tokio::io::sink()).await;
+    }
     // Cancellation safe: partial frames remain in self, including select! losers.
     pub async fn next(&mut self) -> Result<Option<Vec<u8>>, HarnessError> {
         loop {
@@ -135,10 +140,102 @@ pub(crate) async fn inspect_in(
         cmd.current_dir(cwd);
     }
     cmd.args(args).stdin(Stdio::null()).stderr(Stdio::piped());
-    tokio::time::timeout(Duration::from_secs(5), cmd.output())
+    let check = ports::claude_checks::run(check_home(binary), async move {
+        let mut child = containment::inherit::tokio_spawn(&mut cmd).ok()?;
+        let mut stdout = tokio::spawn(check_output(child.stdout.take()?));
+        let mut stderr = tokio::spawn(check_output(child.stderr.take()?));
+        let status = finish_check(
+            &mut child,
+            "status or help",
+            ports::claude_checks::EXIT_GRACE,
+        )
+        .await;
+        let output = tokio::time::timeout(Duration::from_secs(1), async {
+            Some(std::process::Output {
+                status: status?,
+                stdout: (&mut stdout).await.ok()??,
+                stderr: (&mut stderr).await.ok()??,
+            })
+        })
+        .await
+        .ok()
+        .flatten();
+        stdout.abort();
+        stderr.abort();
+        output
+    });
+    // Keep startup and readiness responsive. Timing out this caller does not
+    // cancel an admitted check's EOF cleanup or release its lock.
+    tokio::time::timeout(Duration::from_secs(5), check)
         .await
         .ok()?
         .ok()
+        .flatten()
+}
+
+pub(crate) fn check_home(binary: &Path) -> Option<PathBuf> {
+    // Synthetic executables and their homes share a fixture folder. Downstream
+    // tests opt in through a dev-dependency: cfg(test) alone does not reach
+    // their copy of this crate. Normal builds still use one lock per real home.
+    #[cfg(any(test, feature = "test-fixtures"))]
+    return binary.parent().map(Path::to_owned);
+    #[cfg(not(any(test, feature = "test-fixtures")))]
+    {
+        let _ = binary;
+        None
+    }
+}
+
+/// Keep draining even after the output limit, so the CLI can finish a login
+/// write instead of blocking on a full pipe. No native output is logged.
+async fn check_output(mut reader: impl AsyncRead + Unpin) -> Option<Vec<u8>> {
+    use tokio::io::AsyncReadExt;
+    const LIMIT: usize = 1024 * 1024;
+    let mut output = Vec::new();
+    let mut chunk = [0; 8192];
+    let mut oversized = false;
+    loop {
+        let count = reader.read(&mut chunk).await.ok()?;
+        if count == 0 {
+            return (!oversized).then_some(output);
+        }
+        if output.len() + count <= LIMIT && !oversized {
+            output.extend_from_slice(&chunk[..count]);
+        } else {
+            oversized = true;
+        }
+    }
+}
+
+/// EOF first; force termination only after the full persistence grace. The
+/// caller owns this future independently of whoever requested the check.
+pub(crate) async fn finish_check(
+    child: &mut tokio::process::Child,
+    operation: &'static str,
+    grace: Duration,
+) -> Option<std::process::ExitStatus> {
+    drop(child.stdin.take());
+    // Keep the leader unreaped on Unix until its process group has been
+    // cleaned up; otherwise its id could be reused before we signal helpers.
+    let mut leader = Leader::new(child).ok();
+    let status = tokio::time::timeout(grace, async {
+        match &mut leader {
+            Some(leader) => leader.exited(child).await,
+            None => child.wait().await.map_err(HarnessError::from),
+        }
+    })
+    .await;
+    if status.is_err() {
+        tracing::warn!(
+            operation,
+            pid = child.id(),
+            grace_seconds = grace.as_secs(),
+            "Claude background check did not exit after EOF; forcing termination; sign-in may need checking"
+        );
+    }
+    kill(child);
+    let _ = child.wait().await;
+    status.ok().and_then(Result::ok)
 }
 pub(crate) fn bridge_name(name: &str) -> Result<(), HarnessError> {
     if name.is_empty()

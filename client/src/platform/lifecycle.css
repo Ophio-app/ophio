@@ -10,6 +10,6 @@
 .handoff-banner .btn { min-height: var(--target-intervention); }
 .link-preview { display: grid; gap: var(--s3); overflow-wrap: break-word; }
 
-.connected-frame { height: 100dvh; display: flex; flex-direction: column; min-height: 0; overflow: hidden; overflow: clip; }
+.connected-frame { height: calc(100 * var(--pane-vh, 1dvh)); display: flex; flex-direction: column; min-height: 0; overflow: hidden; overflow: clip; }
 .connected-frame > :is(.app, .welcome) { flex: 1; height: auto; min-height: 0; }
-.connected-frame > .handoff-banner { flex: none; max-height: 35dvh; overflow-y: auto; }
+.connected-frame > .handoff-banner { flex: none; max-height: calc(35 * var(--pane-vh, 1dvh)); overflow-y: auto; }

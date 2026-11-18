@@ -47,7 +47,7 @@ impl BridgeConfig {
 pub(crate) struct TokenRecord {
     pub run_id: RunId,
     hash: [u8; 32],
-    epoch: BootEpoch,
+    pub(crate) epoch: BootEpoch,
 }
 
 pub async fn spawn_config(
@@ -64,12 +64,27 @@ impl CompanionHub {
             .as_ref()
             .ok_or_else(|| unsupported("Local tool bridge"))?;
         let token = random_secret()?;
-        let (task, github, answers, read_only) = self.write(|tx| {
+        let (task, github, answers, read_only, checks, check_names) = self.write(|tx| {
             let run: Run = tx.read().require("run", run_id)?;
             let task: Task = tx.read().require("task", run.task_id)?;
             let github = self.githubs(&tx.read(), &task)?;
             let answers = crate::checklist::answers(&tx.read(), task.task_id)?;
             let read_only = read_only(&run, &task, answers);
+            let checks = crate::checks_bridge::available(&task, answers);
+            let check_names = if checks {
+                tx.read().require::<Project>("project", task.project_id)?;
+                tx.read()
+                    .project_checks(task.project_id)?
+                    .into_iter()
+                    .flat_map(|approved| approved.checks)
+                    .filter(|check| {
+                        check.enabled && check.when == protocol::checks::CheckWhen::EveryTask
+                    })
+                    .map(|check| check.name)
+                    .collect()
+            } else {
+                Vec::new()
+            };
             if run.state != RunState::Dispatching {
                 return Err(error(
                     ErrorCode::Conflict,
@@ -93,7 +108,7 @@ impl CompanionHub {
                     epoch: self.inner.epoch,
                 },
             )?;
-            Ok((task, github, answers, read_only))
+            Ok((task, github, answers, read_only, checks, check_names))
         })?;
         Ok(ports::ToolBridge {
             server_name: "computer".into(),
@@ -109,6 +124,9 @@ impl CompanionHub {
             github: github && !answers && !read_only,
             checklist_answers: answers,
             read_only,
+            chat: task.conversation,
+            checks,
+            check_names,
         })
     }
     async fn broker_request(
@@ -130,6 +148,7 @@ impl CompanionHub {
                 || (binding.browser && !self.browses(&task))
                 || answers != binding.checklist_answers
                 || read_only(&run, &task, answers) != binding.read_only
+                || (binding.checks && !crate::checks_bridge::available(&task, answers))
             {
                 return Err(error(ErrorCode::PermissionDenied, "Bridge binding mismatch").into());
             }
@@ -153,8 +172,33 @@ impl CompanionHub {
                 "This turn only reads the checklist and answers the person on it",
             ));
         }
-        // A read-only turn may only ask for more.
-        if binding.read_only && !matches!(request, BridgeRequest::RequestAccess { .. }) {
+        if binding.read_only
+            && matches!(
+                request,
+                BridgeRequest::Checks {
+                    action: ChecksCall::Propose { .. }
+                }
+            )
+        {
+            return Err(error(
+                ErrorCode::PermissionDenied,
+                "This turn only reads; drafting checks needs a Work task",
+            ));
+        }
+        // A read-only turn may read checks, ask for more, or propose work,
+        // which starts nothing until the person does.
+        if binding.read_only
+            && !matches!(
+                request,
+                BridgeRequest::RequestAccess { .. }
+                    | BridgeRequest::Checks {
+                        action: ChecksCall::Read
+                    }
+                    | BridgeRequest::Work {
+                        action: WorkCall::Propose { .. }
+                    }
+            )
+        {
             return Err(error(
                 ErrorCode::PermissionDenied,
                 "This turn only reads; ask for more with request_access",
@@ -324,6 +368,9 @@ impl CompanionHub {
                     text: self.person_request(binding.run_id, &task, action).await?,
                 })
             }
+            BridgeRequest::Checks { action } => Ok(BridgeResponse::ChecksResult {
+                text: self.checks_request(binding, action)?,
+            }),
             BridgeRequest::RequestAccess { needs, reason } => {
                 // The specialist acts for another task, and a turn answering
                 // on the checklist only answers.
@@ -593,8 +640,10 @@ impl CompanionHub {
             name: app.name.clone(),
         };
         let launched = tokio::spawn(async move {
-            let authority = crate::launch_recheck::Recording::new(&authority);
-            let result = launcher.launch(&chosen, &authority).await;
+            let authority = std::sync::Arc::new(crate::launch_recheck::Recording::owned(
+                std::sync::Arc::new(authority),
+            ));
+            let result = launcher.launch_authorized(&chosen, authority.clone()).await;
             // A panic never gets here: its guard then counts as unstopped.
             guard.ended(
                 !matches!(result, Err(voice_control::Error::LaunchUnstopped)),
@@ -734,7 +783,10 @@ impl CompanionHub {
         tool_call: Option<String>,
     ) -> Result<ApprovalDecision, ProtocolError> {
         let now = self.inner.clock.now();
-        let carries_on = crate::carry_on::carries_on(facts.kind);
+        // A private question expires as a login does: its answer may only
+        // go to the live question.
+        let carries_on =
+            crate::carry_on::carries_on(facts.kind) && !facts.questions.iter().any(|q| q.secret);
         let project: Option<Project> = self.read(|r| r.get("project", task.project_id))?;
         let facts_line = crate::glance::approval_facts(&facts.subject, project.as_ref());
         let approval = Approval {
@@ -781,8 +833,7 @@ impl CompanionHub {
         // One that may be answered after its agent has moved on keeps no
         // deadline; it goes back to the agent unanswered before this wait
         // would end.
-        let carries_on =
-            crate::carry_on::carries_on(approval.kind) && approval.access_request.is_none();
+        let carries_on = crate::carry_on::outlives(&approval);
         let wait_for = std::time::Duration::from_secs(if carries_on { 900 } else { 600 });
         // The tool is answered from its own request; what is shown and kept
         // has the run's keys and tokens hidden.
@@ -857,8 +908,8 @@ impl CompanionHub {
                         item: TimelineBody::Approval { approval_id: id },
                     },
                 })?;
-                // The same request a switch to Work allowed is allowed again,
-                // once, without asking.
+                // The same request a switch to Work or a late Allow allowed
+                // is allowed again, once, without asking.
                 crate::switch_work::take_preapproved(tx, &approval, now)
             });
         let preapproved = match admitted {
@@ -964,6 +1015,7 @@ impl BridgeHandler for CompanionHub {
                         github,
                         checklist_answers: answers,
                         read_only,
+                        checks: crate::checks_bridge::available(&task, answers),
                     },
                     task,
                     project,
@@ -986,8 +1038,28 @@ impl BridgeHandler for CompanionHub {
         }
     }
     async fn unbound(&self, binding: &BridgeBinding) {
-        // The connection is consumed. Cancel its approvals and withdraw managed authority.
+        // The connection is consumed. Withdraw managed authority. Its
+        // agent has stopped waiting on what it asked: what may be answered
+        // later stays open as if it had gone back to the agent, unless the
+        // person stopped the turn; anything else expires.
         let _ = self.revoke_run(binding.run_id).await;
+        let now = self.inner.clock.now();
+        let _ = self.write(|tx| crate::carry_on::outlive_wait(tx, binding.run_id, now));
+        // Nothing receives an answer on this connection now: one to what
+        // stays open is the agent's next message.
+        let asked: Vec<ApprovalId> = self
+            .read(|r| r.list::<Approval>("approval"))
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|a| a.run_id == binding.run_id)
+            .map(|a| a.approval_id)
+            .collect();
+        {
+            let mut waits = self.inner.waits.lock().await;
+            for id in &asked {
+                waits.remove(id);
+            }
+        }
         let _ = self.write(|tx| {
             for mut approval in tx.read().list::<Approval>("approval")? {
                 // One given back to its agent stays open for an answer.

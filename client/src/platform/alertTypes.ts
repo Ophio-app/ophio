@@ -21,13 +21,15 @@ export interface AlertTypeInfo {
   group: TypeGroup;
   /** The recommended choice. */
   tier: Tier;
+  /** Whether a project may override this type. */
+  project: boolean;
 }
 
 /** Every type, in the order Settings lists them. */
 export const ALERT_TYPES = list as readonly AlertTypeInfo[];
 const byType = new Map(ALERT_TYPES.map((t) => [t.type, t]));
 export function typeInfo(type: AlertType): AlertTypeInfo {
-  return byType.get(type) ?? { type, name: type, description: "", group: "worth_a_look", tier: "alert" };
+  return byType.get(type) ?? { type, name: type, description: "", group: "worth_a_look", tier: type === "agent_update" ? "silent" : "alert", project: false };
 }
 export const isAlertType = (value: unknown): value is AlertType => typeof value === "string" && byType.has(value as AlertType);
 export const recommendedTier = (type: AlertType): Tier => typeInfo(type).tier;
@@ -60,8 +62,10 @@ export const followsTask = (type: AlertType): boolean => type === "finished" || 
  * `conversation` is whether its task is a chat. Null for an item that never
  * notifies.
  */
-export function alertTypeOf(item: Pick<AttentionItem, "kind" | "topic" | "alert" | "account_id" | "task_id" | "report_id">, conversation: boolean): AlertType | null {
+export function alertTypeOf(item: Pick<AttentionItem, "kind" | "topic" | "alert" | "account_id" | "task_id" | "report_id" | "new_version" | "agent_update">, conversation: boolean): AlertType | null {
   if (item.alert) return item.alert;
+  if (item.agent_update && !item.task_id) return "agent_update";
+  if (item.new_version && !item.task_id) return "new_version";
   if (item.account_id && !item.task_id) return "sign_in";
   if (item.report_id) {
     if (item.kind === "question") return "report_question";

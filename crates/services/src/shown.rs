@@ -267,9 +267,11 @@ impl CompanionHub {
             PersonCall::Wake {
                 minutes,
                 mut reason,
+                mut person_reason,
             } => {
                 hide(&mut reason);
-                self.wake_me(run_id, task, minutes, reason)
+                person_reason.iter_mut().for_each(&hide);
+                self.wake_me(run_id, task, minutes, reason, person_reason)
             }
             PersonCall::CanAsk => self.can_ask(),
             PersonCall::ChecklistRead => self.checklist_read(run_id, task),

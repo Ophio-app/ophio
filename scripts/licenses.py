@@ -34,6 +34,7 @@ TARGETS = {
     "linux": "x86_64-unknown-linux-gnu",
     "windows": "x86_64-pc-windows-gnullvm",
     "android": "aarch64-linux-android",
+    "macos": "aarch64-apple-darwin",
 }
 LEGAL = re.compile(
     r"^(?:licen[cs]es?|copying|copyrights?|notices?|authors|ofl|unlicense)(?:[._-].*)?$",

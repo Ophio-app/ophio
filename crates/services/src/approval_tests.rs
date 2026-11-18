@@ -1,6 +1,36 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
 
+#[test]
+fn tool_request_identity_stays_raw_when_notification_wording_changes() {
+    let facts =
+        ports::tool_approval::tool_approval("Grep", &serde_json::json!({"pattern":"needle"}));
+    assert_eq!(facts.title, "Use Grep");
+    let key = crate::switch_work::request_key(
+        &facts.kind,
+        Some("{\"pattern\":\"needle\"}"),
+        &facts.title,
+        facts.detail.as_deref(),
+    );
+    assert_eq!(
+        key,
+        "Tool\nUse Grep\n{\"pattern\":\"needle\"}\nPattern: needle\nPath: project directory (default)"
+    );
+    assert_eq!(
+        ports::tool_approval::plain_tool_title(&facts.title),
+        "Search files"
+    );
+    assert_ne!(
+        key,
+        crate::switch_work::request_key(
+            &facts.kind,
+            Some("{\"pattern\":\"needle\"}"),
+            "Use Glob",
+            facts.detail.as_deref()
+        )
+    );
+}
+
 #[tokio::test]
 async fn closed_permission_bridge_records_failed_delivery_and_keeps_attention_actionable() {
     let f = Fixture::new().await;
@@ -19,7 +49,9 @@ async fn closed_permission_bridge_records_failed_delivery_and_keeps_attention_ac
         run_id,
         project_id,
         native_request_id: format!("bridge:{approval_id}"),
-        kind: ApprovalKind::Tool,
+        // A request that keeps its own time limit: one that carries on
+        // takes the late path instead (outlives_turn_tests).
+        kind: ApprovalKind::ComputerUse,
         title: "Permit one tool".into(),
         detail: None,
         detail_lines: Vec::new(),
@@ -157,7 +189,9 @@ async fn attention_dismissed_before_a_failed_hand_off_is_raised_again_as_new() {
         run_id,
         project_id,
         native_request_id: format!("bridge:{approval_id}"),
-        kind: ApprovalKind::Tool,
+        // A request that keeps its own time limit: one that carries on
+        // takes the late path instead (outlives_turn_tests).
+        kind: ApprovalKind::ComputerUse,
         title: "Permit one tool".into(),
         detail: None,
         detail_lines: Vec::new(),
@@ -415,6 +449,7 @@ async fn a_denied_or_stopped_tool_call_is_recorded_as_not_run() {
         };
         tokio::spawn(async move {
             let binding = BridgeBinding {
+                checks: false,
                 run_id: run,
                 target_id: None,
                 computer_use: false,
@@ -693,6 +728,7 @@ async fn denied_native_and_bridge_permissions_resume_then_end_with_review_attent
             Some(tokio::spawn(async move {
                 hub.handle(
                     &BridgeBinding {
+                        checks: false,
                         run_id: run,
                         target_id: None,
                         computer_use: false,
@@ -872,6 +908,7 @@ async fn bridge_tool_approval_facts_match_fixtures_and_bound_oversized_input() {
         .await;
     let run = run_started(&f, task).await;
     let binding = BridgeBinding {
+        checks: false,
         run_id: run,
         target_id: None,
         computer_use: false,
@@ -926,7 +963,25 @@ async fn bridge_tool_approval_facts_match_fixtures_and_bound_oversized_input() {
             if !approval.facts.is_empty() {
                 facts["facts"] = serde_json::json!(approval.facts);
             }
-            assert_eq!(facts, case["approval"]);
+            let mut expected = case["approval"].clone();
+            // Only these fact paths are formatted for the host. The raw tool
+            // request and diff details retain the fixture's original spelling.
+            if let Some(facts) = expected
+                .get_mut("facts")
+                .and_then(serde_json::Value::as_array_mut)
+            {
+                for fact in facts {
+                    if let Some(path) = fact["text"]
+                        .as_str()
+                        .and_then(|s| s.strip_prefix("changes "))
+                    {
+                        let path: std::path::PathBuf =
+                            std::path::Path::new(path).components().collect();
+                        fact["text"] = serde_json::json!(format!("changes {}", path.display()));
+                    }
+                }
+            }
+            assert_eq!(facts, expected);
         } else {
             let detail = approval.detail.as_ref().unwrap();
             assert!(detail.chars().count() <= ports::tool_approval::DETAIL_LIMIT);
@@ -1181,7 +1236,11 @@ async fn a_codex_question_is_recorded_when_its_computer_tools_are_bound() {
         .write(|tx| {
             let mut run: Run = tx.read().require("run", run)?;
             run.harness = HarnessKind::Codex;
-            tx.put("run", run.run_id, &run)
+            tx.put("run", run.run_id, &run)?;
+            // This fixture models a Codex task, not a mid-run agent switch.
+            let mut task: Task = tx.read().require("task", task)?;
+            task.harness = HarnessKind::Codex;
+            tx.put("task", task.task_id, &task)
         })
         .unwrap();
     let token = f
@@ -1661,6 +1720,8 @@ async fn legacy_rejected_private_followup_commands_are_scrubbed_on_reopen() {
             }
         } else {
             Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 task_id,
                 text: Some(followup.text.clone()),
                 bundle: None,
@@ -1848,6 +1909,7 @@ async fn an_approval_says_what_the_request_does() {
     let hub = f.hub.clone();
     let asked = tokio::spawn(async move {
         let binding = BridgeBinding {
+            checks: false,
             run_id: run,
             target_id: None,
             computer_use: false,
@@ -1948,10 +2010,11 @@ async fn an_approval_says_what_the_request_does() {
     assert_eq!(native.headline.as_deref(), Some("Look at the accounts"));
     assert_eq!(native.facts.len(), 1);
     assert!(native.facts[0].risky);
+    let path: std::path::PathBuf = std::path::Path::new("/etc/passwd").components().collect();
     assert!(
         native.facts[0]
             .text
-            .starts_with("reads /etc/passwd outside "),
+            .starts_with(&format!("reads {} outside ", path.display())),
         "{:?}",
         native.facts
     );

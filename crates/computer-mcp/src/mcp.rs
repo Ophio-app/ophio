@@ -2,9 +2,9 @@
 use crate::{BINARY_NAME, BridgeError, PERMISSION_TOOL, framing, socket};
 use ports::bridge::{
     ACCESS_TOOL, ANSWER_TOOLS, ASK_TOOL, ASK_TOOLS, BROWSER_TOOLS, BridgeFile, BridgePointer,
-    BridgeRequest, BridgeResponse, BrowserAction, GITHUB_TOOLS, GithubCall, HUMAN_TOOL,
-    OPEN_APP_TOOL, PERSON_TOOLS, PersonCall, QUESTIONS_TOOL, RUN_TOKEN_ENV, SOCKET_ENV, WAKE_TOOL,
-    WORK_TOOLS, WorkCall,
+    BridgeRequest, BridgeResponse, BrowserAction, CHECKS_PROPOSE_TOOL, CHECKS_READ_TOOL,
+    GITHUB_TOOLS, GithubCall, HUMAN_TOOL, OPEN_APP_TOOL, PERSON_TOOLS, PROPOSE_TOOL, PersonCall,
+    QUESTIONS_TOOL, RUN_TOKEN_ENV, SOCKET_ENV, WAKE_TOOL, WORK_TOOLS, WorkCall,
 };
 use protocol::control::TargetPoint;
 use serde::Deserialize;
@@ -57,12 +57,20 @@ pub async fn run_stdio(bridge_file: Option<&Path>) -> Result<(), BridgeError> {
                 github,
                 checklist_answers,
                 read_only,
+                checks,
                 ..
-            } => Ok((computer_use, browser, github, checklist_answers, read_only)),
+            } => Ok((
+                computer_use,
+                browser,
+                github,
+                checklist_answers,
+                read_only,
+                checks,
+            )),
             _ => Err(BridgeError::Authentication),
         }
     };
-    let (computer_use, browser, github, checklist_answers, read_only) =
+    let (computer_use, browser, github, checklist_answers, read_only, checks) =
         tokio::time::timeout(Duration::from_secs(5), handshake)
             .await
             .map_err(|_| BridgeError::Timeout)??;
@@ -75,6 +83,7 @@ pub async fn run_stdio(bridge_file: Option<&Path>) -> Result<(), BridgeError> {
         github,
         checklist_answers,
         read_only,
+        checks,
         observation: None,
     };
     serve(tokio::io::stdin(), tokio::io::stdout(), client).await
@@ -91,8 +100,10 @@ struct Client<R, W> {
     github: bool,
     /// The run only reads the checklist and answers on it.
     checklist_answers: bool,
-    /// The run only reads (Plan, Ask) and may only ask for more.
+    /// The run only reads (Plan, Ask) and may request access or propose work.
     read_only: bool,
+    /// An ordinary run bound to a project can read its approved checks.
+    checks: bool,
     observation: Option<(u32, u32, u64)>,
 }
 
@@ -144,15 +155,26 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
         if !self.connected {
             return tool_error(&BridgeError::Disconnected.to_string());
         }
+        let checking = name == CHECKS_READ_TOOL || name == CHECKS_PROPOSE_TOOL;
+        if checking {
+            if !self.checks || self.computer_use || self.checklist_answers {
+                return tool_error("checks are not available for this run");
+            }
+            if self.read_only && name == CHECKS_PROPOSE_TOOL {
+                return tool_error("this turn only reads; drafting checks needs a Work task");
+            }
+        }
         if self.checklist_answers && !ANSWER_TOOLS.contains(&name) {
             return tool_error(
                 "this turn only reads the checklist and answers the person with checklist_reply",
             );
         }
-        if self.read_only && name != ACCESS_TOOL {
-            return tool_error("this turn only reads; ask for more with request_access");
+        if self.read_only && name != ACCESS_TOOL && name != PROPOSE_TOOL && !checking {
+            return tool_error("this turn only reads; request access or propose work");
         }
-        if let Some(reason) = refusal(name, self.computer_use, self.browser, self.github) {
+        if !checking
+            && let Some(reason) = refusal(name, self.computer_use, self.browser, self.github)
+        {
             return tool_error(reason);
         }
         // A checklist is long; the agent is told which part is wrong.
@@ -180,6 +202,7 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
         let showing = matches!(request, BridgeRequest::Person { .. });
         let planning = matches!(request, BridgeRequest::Work { .. });
         let asking = matches!(request, BridgeRequest::RequestAccess { .. });
+        let checking = matches!(request, BridgeRequest::Checks { .. });
         let looking = matches!(
             request,
             BridgeRequest::Browser {
@@ -233,6 +256,7 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
                 && !showing
                 && !planning
                 && !asking
+                && !checking
                 && width > 0
                 && height > 0 =>
             {
@@ -259,6 +283,7 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
             BridgeResponse::PersonResult { text } if showing => text_result(&text),
             BridgeResponse::WorkResult { text } if planning => text_result(&text),
             BridgeResponse::AccessResult { text } if asking => text_result(&text),
+            BridgeResponse::ChecksResult { text } if checking => text_result(&text),
             BridgeResponse::Done
                 if !permission
                     && !observe
@@ -266,7 +291,8 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
                     && !posting
                     && !showing
                     && !planning
-                    && !asking =>
+                    && !asking
+                    && !checking =>
             {
                 text_result("Done")
             }
@@ -277,7 +303,8 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
                     && !posting
                     && !showing
                     && !planning
-                    && !asking =>
+                    && !asking
+                    && !checking =>
             {
                 text_result(&text)
             }
@@ -288,7 +315,8 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin> Client<R, W> {
                     && !posting
                     && !showing
                     && !planning
-                    && !asking =>
+                    && !asking
+                    && !checking =>
             {
                 text_result(&text)
             }
@@ -386,13 +414,7 @@ where
                     if params.get("cursor").is_some_and(|v| !v.is_null()) {
                         Err((-32602, "unknown cursor"))
                     } else {
-                        let tools = if bridge.checklist_answers {
-                            answer_tools()
-                        } else if bridge.read_only {
-                            vec![access_tool()]
-                        } else {
-                            tools(bridge.computer_use, bridge.browser, bridge.github)
-                        };
+                        let tools = listed_tools(&bridge);
                         let mut list = json!({ "tools": tools });
                         // 2026-07-28 requires cache hints on a list. This
                         // run's list never changes while it lives and belongs
@@ -433,6 +455,29 @@ where
     Ok(())
 }
 
+fn listed_tools<R, W>(bridge: &Client<R, W>) -> Vec<Value> {
+    let mut result = if bridge.checklist_answers {
+        answer_tools()
+    } else if bridge.computer_use {
+        tools(true, bridge.browser, bridge.github)
+    } else if bridge.read_only {
+        let mut result = vec![access_tool()];
+        if !bridge.github {
+            result.push(propose_tool());
+        }
+        result
+    } else {
+        tools(false, bridge.browser, bridge.github)
+    };
+    if bridge.checks && !bridge.computer_use && !bridge.checklist_answers {
+        result.push(checks_read_tool());
+        if !bridge.read_only {
+            result.push(checks_propose_tool());
+        }
+    }
+    result
+}
+
 fn server_info() -> Value {
     json!({"name":BINARY_NAME,"version":env!("CARGO_PKG_VERSION")})
 }
@@ -446,6 +491,15 @@ fn tool_error(text: &str) -> Value {
     json!({"content":[{"type":"text","text":text}],"isError":true})
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Empty {}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ChecksProposal {
+    base_version: u64,
+    items: Vec<protocol::checks::CheckDraftItem>,
+}
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Permission {
@@ -571,6 +625,8 @@ struct AskCode {
 struct Pr {
     title: String,
     body: String,
+    #[serde(default)]
+    branch: Option<String>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -649,6 +705,16 @@ struct Ask {
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct Propose {
+    #[serde(default)]
+    tasks: Vec<Value>,
+    #[serde(default)]
+    in_order: bool,
+    #[serde(default)]
+    all_issues: bool,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Merge {
     expected_head: String,
 }
@@ -712,6 +778,8 @@ struct Invite {
 struct Wake {
     minutes: u32,
     reason: String,
+    #[serde(default)]
+    person_reason: Option<String>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -742,6 +810,8 @@ struct ChecklistReply {
 
 /// The longest caption or note shown in Talk.
 const MAX_NOTE: usize = 1_000;
+/// One short sentence on the Watching card, not the agent’s full reminder.
+const MAX_PERSON_REASON: usize = 240;
 /// The longest an agent may ask to sleep: a day.
 const MAX_WAKE_MINUTES: u32 = 24 * 60;
 /// The longest preview name, and the longest answer a question offers.
@@ -875,6 +945,18 @@ fn person_call(name: &str, args: Value) -> Result<PersonCall, &'static str> {
             PersonCall::Wake {
                 minutes: p.minutes,
                 reason: words(Some(p.reason), MAX_NOTE, REASON)?.ok_or(REASON)?,
+                person_reason: p
+                    .person_reason
+                    .map(|text| {
+                        const PLAIN: &str =
+                            "person_reason must be one short, plain sentence, up to 240 characters";
+                        let line = words(Some(text), MAX_PERSON_REASON, PLAIN)?.ok_or(PLAIN)?;
+                        if line.contains('\n') {
+                            return Err(PLAIN);
+                        }
+                        Ok(line)
+                    })
+                    .transpose()?,
             }
         }
         QUESTIONS_TOOL => PersonCall::CanAsk,
@@ -936,6 +1018,7 @@ fn github_call(name: &str, args: Value) -> Result<GithubCall, &'static str> {
             GithubCall::Pr {
                 title: title(p.title)?,
                 body: body(p.body)?,
+                branch: p.branch,
             }
         }
         "github_comment" => {
@@ -1032,6 +1115,17 @@ fn work_call(name: &str, args: Value) -> Result<WorkCall, &'static str> {
     const NOTE: &str = "a note is up to 1000 characters";
     Ok(match name {
         "ophio_agents" => parse::<Nothing>(args).map(|_| WorkCall::Agents)?,
+        PROPOSE_TOOL => {
+            let p: Propose = parse(args)?;
+            if p.tasks.len() > 8 || p.tasks.iter().any(|task| !task.is_object()) {
+                return Err("tasks must be up to 8 task objects");
+            }
+            WorkCall::Propose {
+                tasks: p.tasks,
+                in_order: p.in_order,
+                all_issues: p.all_issues,
+            }
+        }
         ASK_TOOL => {
             let p: Ask = parse(args)?;
             const PROMPT: &str = "prompt is what you ask, 1 to 60000 characters";
@@ -1306,6 +1400,33 @@ fn tool_request(
             let p: Human = parse(args)?;
             BridgeRequest::RequestHuman { reason: p.reason }
         }
+        CHECKS_READ_TOOL => {
+            let _: Empty = parse(args)?;
+            BridgeRequest::Checks {
+                action: ports::bridge::ChecksCall::Read,
+            }
+        }
+        CHECKS_PROPOSE_TOOL => {
+            let p: ChecksProposal = parse(args)?;
+            if p.base_version > protocol::MAX_SAFE_INTEGER {
+                return Err("base_version must be the version returned by checks_read");
+            }
+            if p.items.iter().any(|item| match item {
+                protocol::checks::CheckDraftItem::Add { check, .. }
+                | protocol::checks::CheckDraftItem::Change { check, .. } => {
+                    check.typical_secs.is_some()
+                }
+                protocol::checks::CheckDraftItem::Remove { .. } => false,
+            }) {
+                return Err("typical_secs is measured by Ophio; leave it out of the proposal");
+            }
+            BridgeRequest::Checks {
+                action: ports::bridge::ChecksCall::Propose {
+                    base_version: p.base_version,
+                    items: p.items,
+                },
+            }
+        }
         ACCESS_TOOL => {
             let p: Access = parse(args)?;
             if p.needs.is_empty() || p.needs.len() > 4 {
@@ -1344,6 +1465,51 @@ fn distinct_from_schema() -> Value {
     json!({"type":"array","maxItems":MAX_DISTINCT_FROM,"items":{"type":"integer","minimum":1},"description":"Only after Øphio listed issues that read alike: the numbers of those you read and found to be about a different problem."})
 }
 
+fn checks_read_tool() -> Value {
+    tool(
+        CHECKS_READ_TOOL,
+        "Read this project's full approved checks and their version from Ophio's own store, including commands, watched paths, time limits, internet access and inputs. The project comes from this run, never your arguments. Use the returned version as base_version when drafting changes.",
+        json!({}),
+        &[],
+    )
+}
+
+fn checks_propose_tool() -> Value {
+    let check = json!({"type":"object","properties":{
+        "check_id":{"type":"string","format":"uuid","description":"Keep the approved check's id for a change; use a fresh UUID for a new check."},
+        "name":{"type":"string","minLength":1,"description":"Two to five plain words, without commands or jargon."},
+        "about":{"type":"string","minLength":1,"description":"One to three short sentences saying what this proves and what a failure means, without commands or jargon."},
+        "run":{"type":"string","minLength":1,"description":"The shell command, run from the project folder."},
+        "setup":{"type":["string","null"],"description":"Optional setup command, stored but not run in this phase."},
+        "paths":{"type":"array","items":{"type":"string"},"description":"Project-relative watched globs; empty means any file change."},
+        "when":{"type":"string","enum":["every_task","before_merge"],"description":"every_task runs after work; before_merge is stored for a later phase."},
+        "timeout_secs":{"type":"integer","minimum":10,"maximum":3600,"default":600},
+        "network":{"type":"boolean","default":false},
+        "inputs":{"type":"array","items":{"type":"string"},"description":"Project-relative scripts and manifests this check depends on, all inside this project."},
+        "enabled":{"type":"boolean","default":true}
+    },"required":["check_id","name","about","run"],"additionalProperties":false});
+    let changed = |kind: &str| {
+        json!({"type":"object","properties":{
+        "kind":{"const":kind},"check":check.clone(),
+        "note":{"type":"string","minLength":1,"description":"One plain sentence explaining what changes."}
+    },"required":["kind","check","note"],"additionalProperties":false})
+    };
+    tool(
+        CHECKS_PROPOSE_TOOL,
+        "Replace this task's open draft of check additions, changes and removals. Read checks_read first and pass its version as base_version. Use a full check definition for add or change; for remove give check_id and a plain reason. Run each new or changed command first to prove it works, and list the scripts and manifests it depends on as inputs. Ophio validates the proposal and reports mistakes for you to fix now. This changes only a draft: approved checks stay unchanged until the person accepts it. Proof results are recorded by Ophio, never supplied here.",
+        json!({
+            "base_version":{"type":"integer","minimum":0,"maximum":protocol::MAX_SAFE_INTEGER},
+            "items":{"type":"array","items":{"oneOf":[changed("add"),changed("change"),
+                {"type":"object","properties":{
+                    "kind":{"const":"remove"},"check_id":{"type":"string","format":"uuid"},
+                    "reason":{"type":"string","minLength":1}
+                },"required":["kind","check_id","reason"],"additionalProperties":false}
+            ]}}
+        }),
+        &["base_version", "items"],
+    )
+}
+
 fn tool(name: &str, description: &str, properties: Value, required: &[&str]) -> Value {
     json!({"name":name,"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false}})
 }
@@ -1362,9 +1528,35 @@ const MAX_ACCESS_REASON: usize = 200;
 fn access_tool() -> Value {
     tool(
         ACCESS_TOOL,
-        "Ask the person for more than you have, as one card on their phone, before trying what would be refused. needs: change_files (change files and run commands in this project; in a read-only task, carry on in Work in this session), internet, local_network (their LAN, tailnet or other computers), whole_computer. reason: a few plain words starting with \"to\". If they decline, don't ask again this turn: finish without it and say what's left.",
+        "Ask the person for more than you have, as one card on their phone, before trying what would be refused. needs: change_files (change files and run commands in this project; in a read-only task, carry on in Work in this session), internet, local_network (their LAN, tailnet or other computers), whole_computer. reason: a few plain words starting with \"to\". If they decline, don't ask again this turn: finish without it and say what's left. If your tool runner returns before the answer, wait for this call; if your turn ends first, the answer comes as your next message.",
         json!({"needs":{"type":"array","minItems":1,"maxItems":4,"items":{"enum":["change_files","internet","local_network","whole_computer"]}},"reason":{"type":"string","maxLength":MAX_ACCESS_REASON}}),
         &["needs", "reason"],
+    )
+}
+
+fn propose_tool() -> Value {
+    tool(
+        PROPOSE_TOOL,
+        "Put work in front of the person as one card in this chat, for them to start with a tap. Use it for work that deserves its own task, an ordered set of tasks, or fixing every open issue. Nothing starts until the person taps Start, unless they have let this project start what you propose. Each task has a title, a brief with everything its agent needs, a mode (work changes files on its own branch, plan plans read-only, ask finds out read-only), an issue number to fix one GitHub issue, and needs: only what it needs past this project. Set in_order when each task should start only after the one before it has finished. Set all_issues, with no tasks, to propose fixing every issue in Agent can take it, one by one, with the person's usual fixer and reviewer.",
+        json!({
+            "tasks":{"type":"array","maxItems":8,"items":{"type":"object","properties":{
+                "title":{"type":"string","description":"Short name for the task."},
+                "brief":{"type":"string","description":"Full instructions the task's agent gets."},
+                "mode":{"type":"string","enum":["work","plan","ask"]},
+                "issue":{"type":"integer","description":"GitHub issue number to fix."},
+                "needs":{"type":"object","properties":{
+                    "read":{"type":"array","items":{"type":"string"}},
+                    "changes":{"type":"string"},
+                    "internet":{"type":"boolean"},
+                    "local_network":{"type":"boolean"},
+                    "whole_computer":{"type":"boolean"},
+                    "desktop":{"type":"boolean"}
+                },"additionalProperties":false}
+            },"required":["title","brief"],"additionalProperties":false}},
+            "in_order":{"type":"boolean"},
+            "all_issues":{"type":"boolean"}
+        }),
+        &[],
     )
 }
 
@@ -1529,8 +1721,8 @@ fn github_tools() -> Vec<Value> {
     vec![
         tool(
             "github_pr",
-            "Open this task's pull request from the branch you pushed, or rewrite the title and description of the one already open. Push first. Øphio adds the line saying an agent made it, the agent label and the link to this task, and opens it as a draft where the project asks for drafts.",
-            json!({"title":title,"body":body}),
+            "Open or update this task's draft pull request from its pushed branch. Pass branch only to deliberately replace its saved branch.",
+            json!({"title":title,"body":body,"branch":{"type":"string","minLength":1,"maxLength":255,"description":"Pushed replacement branch; remembered on success."}}),
             &["title", "body"],
         ),
         tool(
@@ -1596,9 +1788,9 @@ fn person_tools() -> Vec<Value> {
         ),
         tool(
             WAKE_TOOL,
-            "Have Ophio wake you later instead of waiting in your turn, for CI, a deploy, a reply or anything else. Give how many minutes and what for, then end your turn at once with a short summary: the project is free meanwhile, and the person sees the task as watching. Ophio starts your next turn with your reason; if it still isn't ready, call this again. A newer call replaces an earlier one.",
-            json!({"minutes":{"type":"integer","minimum":1,"maximum":MAX_WAKE_MINUTES,"description":"How long from now to wake you. Pick about how long the thing takes: 5 to 15 for CI checks, longer for slow work."},"reason":{"type":"string","minLength":1,"maxLength":MAX_NOTE,"description":"What you're waiting for and what to check when you wake, like \"CI on PR #42; merge if it's green\"."}}),
-            &["minutes", "reason"],
+            "Ophio wakes you later. End your turn now to free the project. reason is your full reminder on waking. person_reason leads the phone’s Watching card: one short sentence in plain words for a non-programmer. No branch names, file names, feature flags, tool names, issue numbers or internal shorthand. Example: It’s waiting for the project update to finish. When woken, carry on or call again and end your turn. A newer call replaces the earlier wake.",
+            json!({"minutes":{"type":"integer","minimum":1,"maximum":MAX_WAKE_MINUTES,"description":"Minutes from now."},"reason":{"type":"string","minLength":1,"maxLength":MAX_NOTE,"description":"Your reminder on waking."},"person_reason":{"type":"string","minLength":1,"maxLength":MAX_PERSON_REASON,"description":"One plain sentence for the person."}}),
+            &["minutes", "reason", "person_reason"],
         ),
         tool(
             QUESTIONS_TOOL,
@@ -1681,6 +1873,7 @@ fn work_tools() -> Vec<Value> {
             json!({}),
             &[],
         ),
+        propose_tool(),
         tool(
             ASK_TOOL,
             "Ask another agent on this computer to review or help with your work: Codex from Claude Code, Claude Code from Codex, or a model your own subagent tool can't run. Øphio runs it as a task of its own beside yours: it reads the project and changes nothing, and can't see this conversation or, for some agents, run commands, so put everything it needs in prompt: what you did and why, the commits or the diff, and which files to read. Returns at once; its final message comes back to you from Øphio. Keep working meanwhile, or end your turn if you need the answer first: Øphio starts your next turn with it. Don't wait or poll for it.",
@@ -1787,6 +1980,159 @@ mod chord_tests {
 mod isolation_tests {
     use super::*;
     #[test]
+    fn proposed_work_keeps_task_json_and_defaults_missing_arguments() {
+        let task = json!({"title":"Ship it","brief":"Keep all the details", "mode":"work", "issue":42,
+            "needs":{"read":["other"],"changes":"other","internet":true,"desktop":false}});
+        assert_eq!(
+            tool_request(
+                PROPOSE_TOOL,
+                json!({"tasks":[task.clone()],"in_order":true,"all_issues":false}),
+                None
+            ),
+            Ok(BridgeRequest::Work {
+                action: WorkCall::Propose {
+                    tasks: vec![task],
+                    in_order: true,
+                    all_issues: false,
+                }
+            })
+        );
+        assert_eq!(
+            tool_request(PROPOSE_TOOL, json!({}), None),
+            Ok(BridgeRequest::Work {
+                action: WorkCall::Propose {
+                    tasks: vec![],
+                    in_order: false,
+                    all_issues: false,
+                }
+            })
+        );
+        assert_eq!(
+            tool_request(PROPOSE_TOOL, json!({"all_issues":true}), None),
+            Ok(BridgeRequest::Work {
+                action: WorkCall::Propose {
+                    tasks: vec![],
+                    in_order: false,
+                    all_issues: true,
+                }
+            })
+        );
+        assert!(tool_request(PROPOSE_TOOL, json!({"tasks":[null]}), None).is_err());
+        assert!(tool_request(PROPOSE_TOOL, json!({"tasks":vec![json!({});9]}), None).is_err());
+        assert!(tool_request(PROPOSE_TOOL, json!({"project":"other"}), None).is_err());
+        let schema = propose_tool()["inputSchema"].clone();
+        assert_eq!(schema["properties"]["tasks"]["maxItems"], 8);
+        assert_eq!(
+            schema["properties"]["tasks"]["items"]["required"],
+            json!(["title", "brief"])
+        );
+        assert_eq!(
+            schema["properties"]["tasks"]["items"]["properties"]["mode"]["enum"],
+            json!(["work", "plan", "ask"])
+        );
+    }
+
+    #[tokio::test]
+    async fn proposed_work_only_reaches_the_bridge_from_eligible_turns() {
+        fn client(
+            read_only: bool,
+            github: bool,
+            computer_use: bool,
+            checklist_answers: bool,
+        ) -> (
+            Client<
+                tokio::io::ReadHalf<tokio::io::DuplexStream>,
+                tokio::io::WriteHalf<tokio::io::DuplexStream>,
+            >,
+            tokio::io::DuplexStream,
+        ) {
+            let (stream, peer) = tokio::io::duplex(4096);
+            let (read, write) = tokio::io::split(stream);
+            (
+                Client {
+                    read: BufReader::new(read),
+                    write,
+                    connected: true,
+                    computer_use,
+                    browser: false,
+                    github,
+                    checklist_answers,
+                    read_only,
+                    checks: false,
+                    observation: None,
+                },
+                peer,
+            )
+        }
+        let (mut plan, peer) = client(true, false, false, false);
+        let names: Vec<_> = listed_tools(&plan)
+            .into_iter()
+            .map(|t| t["name"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(names, [ACCESS_TOOL, PROPOSE_TOOL]);
+        let bridge = tokio::spawn(async move {
+            let (read, mut write) = tokio::io::split(peer);
+            let mut read = BufReader::new(read);
+            let request: BridgeRequest =
+                serde_json::from_slice(&framing::line(&mut read).await.unwrap().unwrap()).unwrap();
+            framing::write(
+                &mut write,
+                &BridgeResponse::WorkResult {
+                    text: "Card ready".into(),
+                },
+            )
+            .await
+            .unwrap();
+            request
+        });
+        let refused = plan
+            .call(&json!(1), "github_start_issue", json!({"number":1}))
+            .await;
+        assert_eq!(refused["isError"], true);
+        let result = plan
+            .call(
+                &json!(2),
+                PROPOSE_TOOL,
+                json!({"tasks":[{"title":"One","brief":"Do one"}]}),
+            )
+            .await;
+        assert_eq!(result["isError"], false);
+        assert_eq!(
+            bridge.await.unwrap(),
+            BridgeRequest::Work {
+                action: WorkCall::Propose {
+                    tasks: vec![json!({"title":"One","brief":"Do one"})],
+                    in_order: false,
+                    all_issues: false,
+                }
+            }
+        );
+        for (read_only, github, computer_use, checklist_answers) in [
+            (false, true, false, false),
+            (false, false, true, false),
+            (false, false, false, true),
+        ] {
+            let (mut restricted, _peer) =
+                client(read_only, github, computer_use, checklist_answers);
+            let names: Vec<_> = listed_tools(&restricted)
+                .into_iter()
+                .map(|t| t["name"].as_str().unwrap().to_owned())
+                .collect();
+            assert!(!names.iter().any(|name| name == PROPOSE_TOOL));
+            assert_eq!(
+                restricted.call(&json!(3), PROPOSE_TOOL, json!({})).await["isError"],
+                true
+            );
+        }
+        let (answer, _peer) = client(false, false, false, true);
+        let names: Vec<_> = listed_tools(&answer)
+            .into_iter()
+            .map(|t| t["name"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(names, ANSWER_TOOLS);
+    }
+
+    #[test]
     fn specialist_advertises_exact_tools_and_model_identity_cannot_override_binding() {
         let names: Vec<_> = tools(true, true, true)
             .iter()
@@ -1851,9 +2197,45 @@ mod isolation_tests {
                 action: PersonCall::Wake {
                     minutes: 20,
                     reason: "the checks on PR #12".into(),
+                    person_reason: None,
                 }
             }
         );
+        let plain = "It's waiting for the checks to finish.";
+        assert_eq!(
+            tool_request(
+                WAKE_TOOL,
+                json!({"minutes":20,"reason":"CI on PR #12", "person_reason":format!("  {plain}  ")}),
+                None
+            ).unwrap(),
+            BridgeRequest::Person {
+                action: PersonCall::Wake {
+                    minutes: 20,
+                    reason: "CI on PR #12".into(),
+                    person_reason: Some(plain.into()),
+                }
+            }
+        );
+        let wake_tool = person_tools()
+            .into_iter()
+            .find(|t| t["name"] == WAKE_TOOL)
+            .unwrap();
+        assert!(
+            wake_tool["inputSchema"]["required"]
+                .as_array()
+                .unwrap()
+                .contains(&json!("person_reason"))
+        );
+        for person_reason in [json!(" "), json!("x".repeat(241)), json!("first\nsecond")] {
+            assert!(
+                tool_request(
+                    WAKE_TOOL,
+                    json!({"minutes":5,"reason":"CI", "person_reason":person_reason}),
+                    None
+                )
+                .is_err()
+            );
+        }
         for minutes in [0, 1441] {
             assert_eq!(
                 tool_request(WAKE_TOOL, json!({"minutes":minutes,"reason":"CI"}), None),
@@ -2488,12 +2870,41 @@ mod isolation_tests {
             BridgeRequest::Github {
                 action: GithubCall::Pr {
                     title: "Fix the thing".into(),
-                    body: "Problem…".into()
+                    body: "Problem…".into(),
+                    branch: None,
                 }
             }
         );
-        // The repository, the pull request and the branch are the task's.
-        for field in ["repo", "owner", "number", "branch", "draft", "head"] {
+        assert_eq!(
+            tool_request(
+                "github_pr",
+                json!({"title":"t","body":"b","branch":"replacement"}),
+                None
+            )
+            .unwrap(),
+            BridgeRequest::Github {
+                action: GithubCall::Pr {
+                    title: "t".into(),
+                    body: "b".into(),
+                    branch: Some("replacement".into()),
+                }
+            }
+        );
+        // Older bridge requests still deserialize without a branch.
+        assert_eq!(
+            serde_json::from_value::<GithubCall>(json!({"do":"pr","title":"t","body":"b"}))
+                .unwrap(),
+            GithubCall::Pr {
+                title: "t".into(),
+                body: "b".into(),
+                branch: None
+            }
+        );
+        let schema = github_tools().remove(0)["inputSchema"].clone();
+        assert_eq!(schema["required"], json!(["title", "body"]));
+        assert_eq!(schema["properties"]["branch"]["maxLength"], 255);
+        // The repository and pull request remain bound to the task.
+        for field in ["repo", "owner", "number", "draft", "head"] {
             let mut arguments = json!({"title":"t","body":"b"});
             arguments[field] = json!("model-supplied");
             assert!(
@@ -2578,14 +2989,267 @@ mod isolation_tests {
     /// `checklist_read` rather than here. An agent's own items, and that
     /// work it is about to do stays off the checklist, took them to 17.2k
     /// and 15.75k. Asking for more access with one card (`request_access`)
-    /// took them to 18k and 16.55k.
+    /// took them to 18k and 16.55k. Proposing work adds the task shape
+    /// and its guidance to ordinary runs, bringing that list to 19.6k.
+    /// Telling it to keep waiting on the card when Codex's tool runner
+    /// returns early, 19.9k and 16.65k.
     #[test]
     fn the_tool_list_stays_within_its_budget() {
-        for (github, budget) in [(false, 18_000), (true, 16_550)] {
+        for (github, budget) in [(false, 19_900), (true, 16_650)] {
             let size = serde_json::to_string(&tools(false, false, github))
                 .unwrap()
                 .len();
             assert!(size <= budget, "github {github}: {size} characters");
         }
+    }
+}
+
+#[cfg(test)]
+mod checks_tests {
+    use super::*;
+    use ports::bridge::ChecksCall;
+
+    fn client() -> (
+        Client<
+            tokio::io::ReadHalf<tokio::io::DuplexStream>,
+            tokio::io::WriteHalf<tokio::io::DuplexStream>,
+        >,
+        tokio::io::DuplexStream,
+    ) {
+        let (stream, peer) = tokio::io::duplex(8192);
+        let (read, write) = tokio::io::split(stream);
+        (
+            Client {
+                read: BufReader::new(read),
+                write,
+                connected: true,
+                computer_use: false,
+                browser: false,
+                github: false,
+                checklist_answers: false,
+                read_only: false,
+                checks: true,
+                observation: None,
+            },
+            peer,
+        )
+    }
+
+    #[tokio::test]
+    async fn checks_tools_follow_project_and_write_authority() {
+        for enabled in [false, true] {
+            for read_only in [false, true] {
+                for special in ["ordinary", "computer", "checklist"] {
+                    let (mut client, mut peer) = client();
+                    client.checks = enabled;
+                    client.read_only = read_only;
+                    client.computer_use = special == "computer";
+                    client.checklist_answers = special == "checklist";
+                    let names: Vec<_> = listed_tools(&client)
+                        .into_iter()
+                        .map(|tool| tool["name"].as_str().unwrap().to_owned())
+                        .collect();
+                    let read = enabled && special == "ordinary";
+                    assert_eq!(names.iter().any(|name| name == CHECKS_READ_TOOL), read);
+                    assert_eq!(
+                        names.iter().any(|name| name == CHECKS_PROPOSE_TOOL),
+                        read && !read_only
+                    );
+                    // A forged call must be refused before any socket traffic.
+                    for name in [CHECKS_READ_TOOL, CHECKS_PROPOSE_TOOL] {
+                        if !read || (read_only && name == CHECKS_PROPOSE_TOOL) {
+                            assert_eq!(
+                                client.call(&json!(1), name, json!({})).await["isError"],
+                                true
+                            );
+                            let mut buffer = [0; 1];
+                            use tokio::io::AsyncReadExt;
+                            assert!(
+                                tokio::time::timeout(
+                                    Duration::from_millis(10),
+                                    peer.read(&mut buffer)
+                                )
+                                .await
+                                .is_err()
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn checks_read_cannot_choose_another_project() {
+        assert_eq!(
+            tool_request(CHECKS_READ_TOOL, json!({}), None),
+            Ok(BridgeRequest::Checks {
+                action: ChecksCall::Read
+            })
+        );
+        for arguments in [
+            json!({"project":"other"}),
+            json!({"task":"other"}),
+            json!({"run":"other"}),
+        ] {
+            assert!(tool_request(CHECKS_READ_TOOL, arguments, None).is_err());
+        }
+        assert_eq!(
+            checks_read_tool()["inputSchema"]["additionalProperties"],
+            false
+        );
+    }
+
+    #[test]
+    fn proposals_keep_typed_items_and_leave_proof_to_ophio() {
+        use protocol::checks::{CheckDraftItem, CheckWhen};
+        let check_id = protocol::CheckId::new();
+        let check = json!({"check_id":check_id,"name":"App builds correctly", "about":"The app can be built. A failure means it cannot be installed.","run":"npm run build"});
+        let arguments = json!({"base_version":3,"items":[
+            {"kind":"add","check":check,"note":"Check that the app builds."},
+            {"kind":"change","check":check,"note":"Use the current build command."},
+            {"kind":"remove","check_id":check_id,"reason":"A newer check covers this."}
+        ]});
+        let BridgeRequest::Checks {
+            action:
+                ChecksCall::Propose {
+                    base_version,
+                    items,
+                },
+        } = tool_request(CHECKS_PROPOSE_TOOL, arguments.clone(), None).unwrap()
+        else {
+            panic!("not a proposal");
+        };
+        assert_eq!(base_version, 3);
+        assert_eq!(items.len(), 3);
+        for item in &items[..2] {
+            let (CheckDraftItem::Add { check, .. } | CheckDraftItem::Change { check, .. }) = item
+            else {
+                panic!("missing check");
+            };
+            assert_eq!(check.check_id, check_id);
+            assert_eq!(check.timeout_secs, 600);
+            assert_eq!(check.when, CheckWhen::EveryTask);
+            assert!(check.enabled);
+            assert!(!check.network);
+            assert!(check.inputs.is_empty());
+            assert_eq!(check.typical_secs, None);
+        }
+        assert!(matches!(items[2], CheckDraftItem::Remove { check_id: id, .. } if id == check_id));
+        for field in ["project_id", "task_id", "run_id", "proofs"] {
+            let mut forged = arguments.clone();
+            forged[field] = json!([]);
+            assert!(tool_request(CHECKS_PROPOSE_TOOL, forged, None).is_err());
+        }
+        let mut measured = arguments.clone();
+        measured["items"][0]["check"]["typical_secs"] = json!(1.0);
+        assert_eq!(
+            tool_request(CHECKS_PROPOSE_TOOL, measured, None),
+            Err("typical_secs is measured by Ophio; leave it out of the proposal")
+        );
+        for invalid in [
+            json!({"items":[]}),
+            json!({"base_version":3}),
+            json!({"base_version":3,"items":[{"kind":"unknown"}]}),
+            json!({"base_version":protocol::MAX_SAFE_INTEGER + 1,"items":[]}),
+        ] {
+            assert!(tool_request(CHECKS_PROPOSE_TOOL, invalid, None).is_err());
+        }
+        let schema = checks_propose_tool()["inputSchema"].clone();
+        assert_eq!(schema["required"], json!(["base_version", "items"]));
+        assert_eq!(
+            schema["properties"]["items"]["items"]["oneOf"]
+                .as_array()
+                .unwrap()
+                .len(),
+            3
+        );
+        assert_eq!(
+            schema["properties"]["items"]["items"]["oneOf"][0]["properties"]["check"]["properties"]
+                ["timeout_secs"]["minimum"],
+            10
+        );
+        assert_eq!(
+            schema["properties"]["items"]["items"]["oneOf"][0]["properties"]["check"]["properties"]
+                ["timeout_secs"]["maximum"],
+            3600
+        );
+    }
+
+    #[tokio::test]
+    async fn check_errors_are_visible_and_can_be_corrected_without_reconnecting() {
+        let (mut client, peer) = client();
+        let bridge = tokio::spawn(async move {
+            let (read, mut write) = tokio::io::split(peer);
+            let mut read = BufReader::new(read);
+            for (index, response) in [
+                BridgeResponse::Error {
+                    message: "The draft is based on an older version. Read the checks again."
+                        .into(),
+                },
+                BridgeResponse::ChecksResult {
+                    text: "Draft saved".into(),
+                },
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let request: BridgeRequest =
+                    serde_json::from_slice(&framing::line(&mut read).await.unwrap().unwrap())
+                        .unwrap();
+                assert_eq!(
+                    request,
+                    BridgeRequest::Checks {
+                        action: ChecksCall::Propose {
+                            base_version: index as u64 + 1,
+                            items: vec![]
+                        }
+                    }
+                );
+                framing::write(&mut write, &response).await.unwrap();
+            }
+        });
+        let error = client
+            .call(
+                &json!(1),
+                CHECKS_PROPOSE_TOOL,
+                json!({"base_version":1,"items":[]}),
+            )
+            .await;
+        assert_eq!(error["isError"], true);
+        assert!(
+            error["content"][0]["text"]
+                .as_str()
+                .unwrap()
+                .contains("older version")
+        );
+        let corrected = client
+            .call(
+                &json!(2),
+                CHECKS_PROPOSE_TOOL,
+                json!({"base_version":2,"items":[]}),
+            )
+            .await;
+        assert_eq!(corrected["isError"], false);
+        assert_eq!(corrected["content"][0]["text"], "Draft saved");
+        bridge.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn checks_never_accept_an_unrelated_action_response() {
+        let (mut client, peer) = client();
+        let bridge = tokio::spawn(async move {
+            let (read, mut write) = tokio::io::split(peer);
+            let mut read = BufReader::new(read);
+            framing::line(&mut read).await.unwrap().unwrap();
+            framing::write(&mut write, &BridgeResponse::Done)
+                .await
+                .unwrap();
+        });
+        assert_eq!(
+            client.call(&json!(1), CHECKS_READ_TOOL, json!({})).await["isError"],
+            true
+        );
+        bridge.await.unwrap();
     }
 }

@@ -1,19 +1,42 @@
 # Updating and restoring an earlier version
 
-Øphio doesn't look for or download new versions of itself: you obtain each
-new package from the same trusted source as the installed one. It installs
-them for you, though, and keeps the agents it runs up to date
+Øphio doesn't download new versions of itself: you obtain each new package
+from the same trusted source as the installed one. It tells you when one is
+out ([below](#finding-out-about-new-versions)), installs them for you, and
+keeps the agents it runs up to date
 ([below](#keeping-claude-code-and-codex-up-to-date)). Settings → Versions shows
 the app version, installer when Android reports a recognized store, the
-version of Øphio on the computer and the negotiated protocol.
+version of Øphio on the computer, a newer version when there is one, and the
+negotiated protocol.
 
 On Linux, `ophio update <download>` installs a new version: it waits until
 nothing is running, restarts Øphio on the new version, checks that it came back
 working and goes back to the earlier version if it didn't. It keeps only that
 one earlier version and removes everything else an update unpacks, so updates
 don't pile up on the disk. `packaging/linux/INSTALL.md` describes each step;
-`ophio update --rollback` goes back. On Windows, replace `ophio.exe` and
-`computer-mcp.exe` with the new download's while Øphio is stopped.
+`ophio update --rollback` goes back.
+
+Windows has an experimental unsigned download. The
+experimental Mac download updates as Linux does, with `ophio update` and the
+new archive; see [the Mac install guide](../packaging/macos/INSTALL.md#updating).
+For a Windows per-user installation, extract the new ZIP into a new folder,
+then run the stable launcher in `%LOCALAPPDATA%\Programs\Ophio`:
+
+```powershell
+.\ophio.exe update "C:\path\to\extracted-directory"
+```
+
+The updater copies what it needs and waits until Øphio has been idle for one
+minute. Add `--now` to stop Øphio and update without that wait. Use the same
+launcher with `update` alone to check status, `update --cancel` to cancel
+before replacement begins, or `update --rollback` to restore the retained
+previous version. Do not replace installed executables by hand. Recovery
+uses the recorded helper after an interrupted update, including one interrupted
+before replacement, and checks that the expected version starts. Keep its
+recovery files if an executable stays locked, and retry a command when the
+launcher asks. See [Windows installation and recovery](../packaging/windows/INSTALL.md).
+Native recovery tests are not complete packaged install-and-update qualification;
+see [the remaining limits](qualification/windows-macos.md).
 
 A computer whose download carries the phone app offers it to its paired
 Android phones, which update themselves over their connection to it, on the
@@ -25,7 +48,9 @@ installed app. Update a store-installed app through its store.
 
 A connection requires a protocol version supported by both installations. An
 incompatible connection leaves remote actions unavailable; phone drafts, Inbox
-items and downloaded files remain local. Update the side named by the connection
+items and downloaded files remain local. The connection screen says **An update
+is needed** and offers **Check updates**, which opens Settings → Versions instead
+of retrying the same incompatible connection. Update the side named by the connection
 error. Older versions on the computer may not report their supported versions;
 in that case compare the two packages from their original source before
 updating.
@@ -49,7 +74,29 @@ Stored commands from older releases remain readable even when a newer app must
 send additional safety information. For example, old permission-change history
 may lack the editor's expected grants; a new request without that baseline is
 refused with an instruction to update the app. Pending commands recovered after
-a restart require review and are never automatically sent again.
+a restart require review and are never automatically sent again. A chat whose
+reply a restart cut off is the one exception to the review, and only when the
+computer confirms the agent and what it started under Øphio have stopped: the person's next
+message carries on in the same session. Confirmed local helpers are recorded as
+stopped too; helpers of unknown lifetime or outside confirmed containment still
+need review. A chat ready to carry on has no outcome-decision alert or demand to
+mark it failed or completed. It tells you once, using your ordinary Chat reply
+notification settings: “Reply cut off. Write to carry on.” Opening it goes to
+the Chat; seeing the Chat clears it, and later restarts do not repeat it. Nothing
+is left pending on Home. Replies already carried on before updating do not
+raise this notice. Its receipt keeps the changes and steps, and says
+when the person carried on. The cut-off reply is still not sent again.
+
+Words reach the phone immediately and are saved on the computer about once a
+second, and before a reply ends or a message interrupts it. A normal shutdown
+saves the remaining words. A sudden crash can lose roughly the last second, or
+more if the disk cannot save it. If a restart cuts a reply off, saved words and
+recorded steps stay in the Chat, with the existing quiet **Cut off** line. Steps
+from helpers do not split a reply; they can appear before the saved cut-off text.
+Reopening the Chat or restarting again does not add another copy. This does not mean an
+unfinished step succeeded. A task made from the Chat includes partial replies
+in its conversation context, labelled as partial. Words lost during a restart
+on an older version cannot be recovered by this update.
 
 If an individual stored command cannot be decoded, Øphio keeps its
 original bytes, permanently reserves its command ID, and records an unknown
@@ -93,6 +140,121 @@ Android app, phone drafts, downloads or native agent accounts. Pairing and
 revocation records also return to their backup state: review device/channel
 access before reconnecting. Never assume a restored record proves an external
 action was undone.
+
+## Updating to 0.3.0
+
+The final 0.3.0 Android and Linux files passed upgrade, phone self-update,
+computer rollback and re-upgrade checks with an Android 15 emulator and an
+Ubuntu 24.04.5 virtual machine. Chat replies and completed Tasks worked with
+one end on 0.2.0 in both directions, using synthetic agents rather than real
+providers. Pairing and observed history survived; a complete audit of every
+setting and a second project was not run. Physical phones remain unqualified.
+Keep a protected backup before updating. See the
+[release-file results](qualification/linux.md#030-release-file-checks).
+
+Update the computer first, with `ophio update
+ophio-0.3.0-x86_64-linux.tar.gz`. Once it runs 0.3.0 it offers the new app to
+its paired Android phones, and **Settings → Versions → Update now** installs
+it over the phone's connection to the computer; installing
+`ophio-0.3.0-arm64.apk` from the release by hand does the same. The app is
+signed with the same release key as 0.2.0, so Android keeps its pairings and
+settings. If Android says the signature doesn't match, stop: never uninstall
+the app to get past it. Android may ask you to allow Øphio to install apps if
+you turned that off after the last update, as [the phone's first
+update](#the-phones-first-update-from-010) describes. If the first try just
+after allowing installs from Øphio fails, tap **Try again**. That retry was
+needed in the emulator when updating from 0.2.0; it does not describe a later
+update started by 0.3.0.
+
+0.3.0 doesn't change the computer's database format, so the update doesn't
+need to back up or convert your data. The default for keeping Claude Code and
+Codex up to date is now **Tell me when there's an update**. A computer that had
+automatic agent updates on keeps them; one that had them off, or never chose,
+now gets told about updates instead. See [Agent updates](agent-updates.md).
+
+### While the phone and the computer run different versions
+
+Most of what is new needs both ends on 0.3.0. Each end leaves out what the
+other can't do rather than failing, but some things are missing until both
+are updated.
+
+**A 0.2.0 phone with a 0.3.0 computer:**
+
+- Chats can't show attached files, and a suggested-work card can't be started
+  as work linked to its chat.
+- The phone can't set up or change a project's checks. Checks already approved
+  still run after each task, and the task stays Working, with its **Stop**
+  button, until they finish.
+- **Settings › Agent apps** shows the old on-off switch, which can't show the
+  new **Tell me** or **Don't check** choices.
+- A notice about a new agent version may open a screen with nothing useful on
+  it. The phone's own update offer works, so update the phone.
+
+**A 0.3.0 phone with a 0.2.0 computer:**
+
+- The phone hides what the computer can't do: switching agents in a chat,
+  attaching files, suggested-work sets and automatic start, checks, and the
+  three agent-update choices. **Settings › Agent apps** shows the computer's
+  old switch.
+- Tasks that are Watching say so in neutral words, without the newer
+  explanation of what they wait for.
+- Review drafts and **Run all** cards kept from a 0.3.0 computer can lose their
+  link to the chat, so no summary comes back to it. Check the task itself for
+  its result.
+
+The single chat list across all projects and split view, on a tablet or an
+unfolded foldable, are part of the phone app alone and work with either
+computer version.
+
+## Going back to 0.2.0
+
+0.3.0 doesn't change the database format, so `ophio update --rollback`
+restores the computer's previous version, as for any update. It doesn't put
+the 0.2.0 app back on the phone, and it doesn't undo anything agents did in
+your projects. The phone keeps the 0.3.0 app, which works with a 0.2.0
+computer as described above. Rollback and re-upgrade were checked with the
+final Linux archive and Android emulator, with pairing and observed history
+retained. The older version's settings behavior below also has source tests;
+this is not a physical-phone or complete settings-retention result.
+
+What stays:
+
+- Tasks, chats and history.
+- Finished or skipped setup stays finished. `ophio setup` doesn't ask its
+  Agents question again.
+- Øphio's own copies of Claude Code and Codex stay and stay in use, whichever
+  of the three update choices you had.
+
+What changes:
+
+- **Automatic agent updates start again.** 0.2.0 has only an on-off switch,
+  and its "off" removes Øphio's copies, so 0.3.0 saves every choice as "on".
+  0.2.0 checks for agent updates as soon as it starts and every six hours
+  after, and installs them, even if you chose **Tell me** or **Don't check**.
+  To stop that on 0.2.0, turn its switch off, knowing that this removes the
+  copies and sends tasks back to the computer's own Claude Code and Codex.
+- **The three-way choice is lost.** 0.2.0's first check rewrites the saved
+  setting without it, so when you update to 0.3.0 again the setting is
+  **Update automatically**. Choose **Tell me** or **Don't check** again in
+  Settings › Agent apps if that is what you want.
+- **The previous-agent selection is removed.** Published 0.2.0 removes the
+  record of which older managed-agent version to fall back to. The current
+  selection and saved program files stayed in the lab, but updating back to
+  0.3.0 did not recreate the missing record. There is no recorded previous
+  version to fall back to until a successful agent update creates one.
+- **A failed agent update can remove a copy.** 0.3.0 keeps the working copy
+  when an update fails; 0.2.0 doesn't have that fix.
+- **Checks don't run.** 0.2.0 doesn't know about a project's checks, so tasks
+  finish without them. They run again after you update to 0.3.0.
+- **Some records show as unknown.** 0.2.0 can't read records of things only
+  0.3.0 does. As with earlier versions, it keeps them, never repeats them, and
+  lists their outcome as unknown, as
+  [above](#updating-and-restoring-an-earlier-version) describes. If you know
+  they finished, there is nothing to do.
+
+After going back, and again after updating to 0.3.0, check that the phone is
+still paired, that tasks show the results you expect, and that the agent
+update setting is the one you want.
 
 ## Updating to 0.2.0
 
@@ -181,34 +343,95 @@ Other things 0.1.1 doesn't know about:
   [above](#updating-and-restoring-an-earlier-version) describes. If you know
   they finished, there is nothing to do.
 
+## Finding out about new versions
+
+Once a day, Øphio on the computer asks GitHub whether a newer Øphio has been
+released. When one has, your paired phones get one notification, "Øphio
+0.3.0 is available", and **Settings → Versions** shows the new version, a
+**What's new** button that opens its release page in the phone's browser, and
+how to update that computer. On the computer, `ophio update` with nothing
+after it says the same, and `ophio update --json` includes it under
+`release_check`. Nothing is downloaded or installed until you update.
+
+- **What is checked.** The latest release of the public `Ophio-app/ophio`
+  repository on GitHub, as GitHub's "latest release" gives it, which leaves
+  out drafts and pre-releases. Only a stable version newer than the one on the
+  computer counts. An answer that names no stable version, such as a tag
+  that isn't a version number or a repository with no release, counts as no
+  answer: a newer version already found stays.
+- **How often.** The first check comes between 2 and 20 minutes after
+  Øphio starts, then one a day, each up to 20 minutes late so computers don't
+  all ask at once. Restarting Øphio doesn't ask again sooner, and a computer
+  that sleeps much of the day still checks once a day while awake. Turning
+  the check on from off asks at once. A check that gets no answer, for example because
+  the computer is offline, says nothing and is tried again about six hours
+  later.
+- **What is sent.** One ordinary web request to `api.github.com`, without
+  signing in. A GitHub account or token you gave Øphio is never used for it,
+  and no cookies are kept. The request names the program only as `ophio`: not
+  its version, the computer's name or anything about you or your projects. As
+  with any web request, GitHub sees the computer's internet address.
+- **Who is told.** The notification goes to the phones and tablets with the
+  Tasks permission, as other notifications do. Every paired device sees the
+  newer version in Settings → Versions.
+- **Each computer checks for itself,** since each needs its own update, so
+  with two computers you may be told twice about the same version, once for
+  each. A version is told once per computer: swiping the notification away
+  or opening it on one phone clears it from your other phones too, and it
+  doesn't come back after a restart, an update of the app or turning the
+  check off and on. A later version is told again. Once the computer runs
+  that version or a newer one, the notice clears. The notification's type is
+  **New Øphio versions** in Settings → Notifications, Silent by default; see
+  [Notifications](notifications.md#what-notifies-you).
+
+For the supported Linux download, run `ophio update` with the new archive,
+as [above](#updating-and-restoring-an-earlier-version). The experimental Mac
+download updates the same way. Windows has an experimental unsigned download.
+Its per-user installations use the stable launcher with an extracted update
+directory, not manual executable replacement. Settings → Versions shows
+instructions for the computer's platform.
+
+**Turning it off.** **Settings → Versions → Check for new versions of Øphio**
+turns the check on or off for that computer. The choice is kept on the
+computer, so it holds for every phone paired with it, and changing it needs
+the Manage access permission. Off, the computer sends no requests, any
+notice about a newer version clears, and what earlier checks found is
+forgotten, so turned on again nothing is called the newest until a check
+answers. A change shows at once on every phone
+with Versions open, and so does a check under way. Builds made from the source with
+`OPHIO_PERSONAL_SIGNING=1` start with it off, since they are built from the
+newest source already; turning it on works the same there.
+
+A computer whose Øphio predates this check shows nothing new in Versions, and
+a phone app that predates it isn't sent the notice.
+
+A fork that publishes its own releases points the check at its repository
+with the `REPOSITORY` constant in `crates/companion/src/release_check.rs`.
+
 ## Keeping Claude Code and Codex up to date
 
 Øphio can keep its own copies of Claude Code and Codex at their makers' newest
-releases, so new models show up without anyone updating the computer. It is
-off until you turn it on: `ophio setup` asks once in its Agents step and
-recommends it, and **Settings › Agent apps › Keep Claude Code and
-Codex up to date** in the app turns it on or off. Changing it from the app needs
-the Manage access permission.
+releases, so new models show up without anyone updating the computer. One
+setting, in `ophio setup`'s Agents step and in **Settings › Agent apps** in the
+app, offers three choices: **Update automatically**, **Tell me when there's an
+update** (the default) and **Don't check**. Changing it from the app needs the
+Manage access permission. [Agent updates](agent-updates.md) describes each
+choice, the **Update now** button and the notices about new models.
 
-While it is on, Øphio checks when it starts and every six hours. For each agent
-installed on the computer it downloads the newest release's program for this
-computer's system from the npm registry, where Anthropic and OpenAI publish
-them; checks it against the checksum the registry publishes; and starts it once
-with `--version`. Only a copy that passes all three is used, from the next task
-on. Each check starts the copy in use the same way; one that no longer starts
-is set aside, so tasks use the computer's program until a new copy replaces
-it. Tasks already running keep the version they started with, which stays
-until the following update. The settings card shows each copy's version, when
-it was last checked, and why a check or download didn't finish.
+An update downloads the newest release's program for this computer's system
+from the npm registry, where Anthropic and OpenAI publish them; checks it
+against the checksum the registry publishes; and starts it once with
+`--version`. Only a copy that passes all three is used, from the next task on.
+If an update fails, the copy already in use stays. Tasks already running keep
+the version they started with. The settings card shows each copy's version,
+when it was last checked, and why a check or download didn't finish.
 
 Tasks and terminals Øphio starts then use its copies. The Claude Code and Codex
 installed on the computer stay as they are, with the same sign-in, settings
 and history; Øphio's copy of Claude Code starts with its own updater off so it
 never installs over the computer's. The copies live in `agents/` in Øphio's
-data directory and take up to about 1.5 GB. Turning the setting off sends the
-next tasks back to the computer's programs and removes the copies; the one
-tasks were last using stays for those still running until the next check or
-restart.
+data directory and take up to about 1.5 GB. None of the three choices removes
+them.
 
 ## Upgrading from the earlier companion program
 

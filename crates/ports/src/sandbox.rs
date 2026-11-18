@@ -3,7 +3,7 @@
 //! it reach, by the computer rather than by asking the agent. The reach can
 //! change while the agent works: what it gains it can use at once, and what
 //! it loses it loses at once, or the turn is stopped.
-use crate::harness::{HarnessError, RunEnv};
+use crate::harness::{Disabled, HarnessError, RunEnv};
 use async_trait::async_trait;
 use protocol::capability::{Availability, HarnessKind};
 use std::ffi::OsString;
@@ -176,14 +176,32 @@ impl std::fmt::Debug for SandboxSpec {
 
 /// The command that runs an agent inside its sandbox: `program`, then
 /// `args`, then the agent's own program and arguments.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Wrapped {
     pub program: PathBuf,
     pub args: Vec<OsString>,
-    /// Set on the command after everything else.
+    /// Applied after inherited/account values. Harnesses may then force relay
+    /// endpoints and safety switches, preserving only the wrapped local key.
     pub env: Vec<(String, String)>,
     /// Clear the inherited environment and account overrides before applying env.
     pub clear_env: bool,
+    /// At least one user skill was selected and placed in the private settings
+    /// folder. This is launch evidence, not permission to run outside the sandbox.
+    pub shared_skills: bool,
+}
+impl std::fmt::Debug for Wrapped {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // The wrapped environment can hold a run-local relay capability. Keep
+        // names useful for diagnostics without exposing any environment value.
+        let names: Vec<&str> = self.env.iter().map(|(name, _)| name.as_str()).collect();
+        f.debug_struct("Wrapped")
+            .field("program", &self.program)
+            .field("args", &self.args)
+            .field("env", &names)
+            .field("clear_env", &self.clear_env)
+            .field("shared_skills", &self.shared_skills)
+            .finish()
+    }
 }
 
 /// What the harness gives [`Sandbox::wrap`].
@@ -199,6 +217,12 @@ pub struct WrapRequest<'a> {
     pub env: &'a RunEnv,
     /// The native session the run resumes.
     pub resume: Option<&'a str>,
+    /// What the run is told to leave out. None of the person's own
+    /// instructions or skills given to a sandboxed run is one of these, holds
+    /// one or leads to one: the agent finds what is given in the sandbox's
+    /// copy of its settings folder, where a disabled file's path wouldn't
+    /// match.
+    pub disabled: &'a Disabled,
 }
 
 /// Whether a change of reach reached the running agent.
@@ -229,6 +253,16 @@ pub trait Sandbox: Send + Sync + std::fmt::Debug {
     }
     /// The command line that starts the agent's program held in.
     fn wrap(&self, request: WrapRequest<'_>) -> Result<Wrapped, HarnessError>;
+    /// Whether a file the agent reports writing at `path`, as the agent
+    /// names it, is only this conversation's own copy of the agent's settings
+    /// folder: a file nothing of the person's is, holds or leads to, which is
+    /// never carried back to their real folder. A receipt leaves such a file
+    /// out, since listing it would claim a change to the person's files that
+    /// didn't happen. Anything not known for certain, as before
+    /// [`Sandbox::wrap`], is not: the receipt lists it.
+    fn own_settings_file(&self, _path: &Path) -> bool {
+        false
+    }
     /// Lets the wrapped command keep what the sandbox hands it. Call before
     /// spawning, and [`Sandbox::started`] once it has.
     fn prepare(&self, command: &mut std::process::Command) -> std::io::Result<()>;
@@ -265,5 +299,54 @@ pub fn unwrapped(program: &Path) -> Wrapped {
         args: Vec::new(),
         env: Vec::new(),
         clear_env: false,
+        shared_skills: false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wrapped_debug_keeps_environment_names_and_never_values() {
+        let mut wrapped = unwrapped(Path::new("/usr/bin/fixture-agent"));
+        wrapped.env = vec![
+            (
+                "ANTHROPIC_API_KEY".into(),
+                "fixture-local-capability".into(),
+            ),
+            (
+                "OPHIO_RELAY_DUMMY_KEY".into(),
+                "fixture-other-capability".into(),
+            ),
+            ("PATH".into(), "fixture-private-runtime-path".into()),
+        ];
+        wrapped.clear_env = true;
+        // Container/derived Debug implementations must remain safe too, not
+        // just direct formatting of the launch wrapper.
+        for debug in [
+            format!("{wrapped:?}"),
+            format!("{wrapped:#?}"),
+            format!("{:?}", Some(vec![wrapped.clone()])),
+        ] {
+            for (name, value) in &wrapped.env {
+                assert!(debug.contains(name));
+                assert!(!debug.contains(value));
+            }
+            assert!(debug.contains("fixture-agent"));
+        }
+        let env = RunEnv(wrapped.env);
+        let request = WrapRequest {
+            program: Path::new("/usr/bin/fixture-agent"),
+            visible: &[],
+            env: &env,
+            resume: None,
+            disabled: &Disabled::default(),
+        };
+        let debug = format!("{request:?}");
+        for (name, value) in &env.0 {
+            assert!(debug.contains(name));
+            assert!(!debug.contains(value));
+        }
     }
 }

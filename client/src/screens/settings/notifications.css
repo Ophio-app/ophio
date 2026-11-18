@@ -1,6 +1,52 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Settings › Notifications: each type a calm row, its words over its choice. */
 
+/* A delivery limit stays visible without bringing the setup explanation back. */
+.notif-delivery-warning {
+  display: grid;
+  justify-items: start;
+  gap: var(--s1);
+  padding: var(--s3);
+  border-radius: var(--r-md);
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Delivery controls remain available without preceding the alert choices. */
+.settings-screen .notif-delivery > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  min-height: 48px;
+  cursor: pointer;
+  color: var(--ink-2);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.settings-screen .notif-delivery > summary::before {
+  grid-row: 1 / 3;
+  align-self: start;
+}
+.notif-delivery__title {
+  grid-column: 2;
+  font-weight: 600;
+  color: var(--ink);
+}
+.notif-delivery__status {
+  display: grid;
+  grid-column: 2;
+  gap: var(--s1);
+  margin-top: var(--s2);
+  font-size: var(--text-sm);
+}
+.notif-delivery__body {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
 .notif-intro {
   display: grid;
   gap: var(--s3);

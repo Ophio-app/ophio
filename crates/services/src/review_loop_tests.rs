@@ -591,6 +591,8 @@ async fn a_review_has_three_rounds_then_the_person_decides() {
     let run = r.get(task).current_run.unwrap();
     let resume = edit(
         Command::ResumeTask {
+            observed_reply: None,
+            harness: None,
             task_id: task,
             text: Some("Go on".into()),
             bundle: None,
@@ -1105,6 +1107,8 @@ async fn local(
         .submit(
             &Caller::local_owner(),
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: Some(TaskMode::Work),
@@ -1776,6 +1780,8 @@ async fn in_session(r: &Repo, run: RunId) {
 async fn asked_aside(r: &Repo, task: TaskId) -> RunId {
     let command = edit(
         Command::ResumeTask {
+            observed_reply: None,
+            harness: None,
             task_id: task,
             mode: None,
             text: Some("What did you look at?".into()),

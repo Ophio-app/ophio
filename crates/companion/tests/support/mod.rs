@@ -521,6 +521,8 @@ impl Hub for FakeHub {
                     account_id: None,
                     alert: None,
                     alert_handled_at: Some(self.clock.now()),
+                    new_version: None,
+                    agent_update: None,
                 },
             });
         }
@@ -670,7 +672,7 @@ pub struct Fixture {
     pub address: std::net::SocketAddr,
     pub shutdown: tokio_util::sync::CancellationToken,
     /// Listeners the running server takes on as well.
-    pub later: tokio::sync::mpsc::UnboundedSender<tokio::net::TcpListener>,
+    pub later: tokio::sync::mpsc::UnboundedSender<containment::inherit::TcpListener>,
     task: tokio::task::JoinHandle<companion::Result<()>>,
 }
 impl Fixture {

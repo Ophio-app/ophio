@@ -36,6 +36,9 @@ pub struct ComposeOptions {
     /// Manage the computer's real accounts: its keyring, browser and sign-in
     /// tools. Tests leave it off so nothing touches the owner's own stores.
     pub accounts: bool,
+    /// Ask GitHub once a day whether a newer Øphio is out, while the person
+    /// has that on. Tests leave it off so none of them asks GitHub.
+    pub release_check: bool,
 }
 /// What composition reads of the companion's own environment. The agents'
 /// homes are among it: the agent tools inherit them, so the agents and
@@ -85,6 +88,7 @@ impl ComposeOptions {
             desktop_factory: None,
             speech_factory: Arc::new(crate::frontdoors::LocalSpeech),
             accounts: true,
+            release_check: true,
         })
     }
 }
@@ -97,13 +101,13 @@ pub struct DesktopSession {
     #[cfg(target_os = "linux")]
     pub portal: Option<platform_linux::portal::PortalDriver>,
     #[cfg(any(windows, target_os = "macos"))]
-    pub windows: Option<platform_windows::desktop::WindowsDesktop>,
+    pub managed: Option<platform_desktop::ManagedDesktop>,
 }
 impl DesktopSession {
     async fn close(&self) -> Result<()> {
         #[cfg(any(windows, target_os = "macos"))]
-        if let Some(windows) = &self.windows {
-            windows.close().await.map_err(desktop_error)?;
+        if let Some(managed) = &self.managed {
+            managed.close().await.map_err(desktop_error)?;
         }
         #[cfg(target_os = "linux")]
         if let Some(portal) = &self.portal {
@@ -251,19 +255,16 @@ impl Runtime {
     ) -> Result<Arc<Self>> {
         paths.initialize()?;
         config.validate(&paths)?;
-        let home = options
-            .environment
-            .get("HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| paths.data.join("instruction-home-unavailable"));
+        let home = composition_home(&options.environment);
         let library_dir = paths.data.join("library");
+        let instructions = instruction_config(&paths.data, &options.environment);
+        let mut library_config =
+            library::LibraryConfig::new(library_dir.clone(), instructions.home.clone());
+        library_config.instructions = instructions;
         crate::identity::private_dir(&library_dir)?;
         let library = Arc::new(
-            library::FsLibrary::new(
-                library::LibraryConfig::new(library_dir, home),
-                options.clock.clone(),
-            )
-            .map_err(|_| Error::Config("Cannot initialize Library storage".into()))?,
+            library::FsLibrary::new(library_config, options.clock.clone())
+                .map_err(|_| Error::Config("Cannot initialize Library storage".into()))?,
         );
         library
             .set_roots(config.root_specs())
@@ -272,7 +273,21 @@ impl Runtime {
         // Øphio's own copies of the agents, while the owner keeps them up
         // to date; a program given by path is always used as given.
         let agents = paths.data.join("agents");
-        let updater = Arc::new(crate::agent_updates::NpmUpdater::new(agents.clone()));
+        let pinned = [
+            (
+                options.claude_binary.is_some(),
+                protocol::capability::HarnessKind::ClaudeCode,
+            ),
+            (
+                options.codex_binary.is_some(),
+                protocol::capability::HarnessKind::Codex,
+            ),
+        ]
+        .into_iter()
+        .filter_map(|(pinned, kind)| pinned.then_some(kind))
+        .collect();
+        let updater =
+            Arc::new(crate::agent_updates::NpmUpdater::new(agents.clone()).with_pinned(pinned));
         let claude = Arc::new(options.claude_binary.as_ref().map_or_else(
             || {
                 harness_claude::ClaudeAdapter::new()
@@ -372,17 +387,23 @@ impl Runtime {
             .desktop_unavailable(Availability::PermissionMissing {
                 remedy: DESKTOP_REMEDY.into(),
             });
+        // Without a client made as it must be, the computer doesn't check.
+        if options.release_check
+            && let Some(source) = crate::release_check::GithubReleases::new()
+        {
+            builder = builder.release_check(services::ReleaseCheck {
+                source: Arc::new(source),
+                on_by_default: crate::release_check::ON_BY_DEFAULT,
+                installed: env!("CARGO_PKG_VERSION").into(),
+            });
+        }
         if let Some(inbox) = config.resolved_inbox_directory(&paths)? {
             builder = builder.inbox_dir(inbox);
         }
         for private in [&paths.data, &paths.config, &paths.runtime] {
             builder = builder.private_dir(private);
         }
-        if let Some(home) = options
-            .environment
-            .get("HOME")
-            .or_else(|| options.environment.get("USERPROFILE"))
-        {
+        if let Some(home) = &home {
             builder = builder.home_dir(home);
         }
         builder = builder.launchers(services::LauncherDirs {
@@ -414,6 +435,15 @@ impl Runtime {
                 ),
             ));
         }
+        #[cfg(target_os = "macos")]
+        {
+            builder = builder.window_actions(Arc::new(
+                platform_macos::windows::MacWindows::from_environment(
+                    &options.environment,
+                    options.clock.clone(),
+                ),
+            ));
+        }
         // Read only while someone has Control's System section open.
         #[cfg(target_os = "linux")]
         {
@@ -429,7 +459,11 @@ impl Runtime {
             builder = builder.system_monitor(Arc::new(platform_macos::system::MacSystem::new()));
         }
         // A site served from a project's folder joins its previews by itself.
-        // Not on Windows, which doesn't say which folder a program works in.
+        #[cfg(windows)]
+        {
+            builder =
+                builder.local_servers(Arc::new(platform_windows::servers::WindowsServers::new()));
+        }
         #[cfg(target_os = "linux")]
         {
             builder = builder.local_servers(Arc::new(platform_linux::servers::LinuxServers::new()));
@@ -485,12 +519,8 @@ impl Runtime {
         // Again, now with the agents and one-offs folders that join them.
         hub.set_library_roots(config.root_specs()).await?;
         crate::voice::configure(&hub, paths.data.clone(), jev, &options.environment).await?;
-        if let Some(home) = options
-            .environment
-            .get("HOME")
-            .or_else(|| options.environment.get("USERPROFILE"))
-        {
-            hub.set_session_observer(Arc::new(crate::observed::NativeSessions::new(home.into())));
+        if let Some(home) = home {
+            hub.set_session_observer(Arc::new(crate::observed::NativeSessions::new(home)));
         }
         let speech =
             crate::frontdoors::open_speech(&paths, &config, options.speech_factory.clone()).await;
@@ -1082,24 +1112,55 @@ fn executable_is_usable(path: &std::path::Path) -> bool {
         meta.is_file() && windows_executable_path(path)
     }
 }
+/// HOME takes precedence when usable; Windows accounts may only have
+/// USERPROFILE. Never resolve an empty or relative home against our working directory.
+fn composition_home(environment: &BTreeMap<String, String>) -> Option<PathBuf> {
+    ["HOME", "USERPROFILE"].into_iter().find_map(|key| {
+        environment
+            .get(key)
+            .map(PathBuf::from)
+            .filter(|home| home.is_absolute())
+    })
+}
+
+/// An explicit invalid override must not silently expose the default folder.
+/// Relative agent folders vary with each task's working directory and are unknown here.
+fn agent_home(
+    environment: &BTreeMap<String, String>,
+    home: Option<&std::path::Path>,
+    variable: &str,
+    default: &str,
+) -> Option<PathBuf> {
+    match environment.get(variable) {
+        Some(path) => Some(PathBuf::from(path)).filter(|path| path.is_absolute()),
+        None => home.map(|home| home.join(default)),
+    }
+}
+
+fn instruction_config(
+    data: &std::path::Path,
+    environment: &BTreeMap<String, String>,
+) -> library::InstructionConfig {
+    let home = composition_home(environment);
+    // Preserve the private unavailable-home fallback, never the current directory.
+    let unavailable = data.join("instruction-home-unavailable");
+    let mut config =
+        library::InstructionConfig::new(home.clone().unwrap_or_else(|| unavailable.clone()));
+    config.claude_home = agent_home(environment, home.as_deref(), "CLAUDE_CONFIG_DIR", ".claude")
+        .unwrap_or_else(|| unavailable.join(".claude"));
+    config.codex_home = agent_home(environment, home.as_deref(), "CODEX_HOME", ".codex")
+        .unwrap_or_else(|| unavailable.join(".codex"));
+    config
+}
+
 /// Where agents, skills and one-offs are on this computer. Ophio's own
 /// agents folder is made now, so Library can hold it from the start.
 fn launcher_dirs(
     config: &Config,
     environment: &BTreeMap<String, String>,
 ) -> services::LauncherDirs {
-    let home = environment
-        .get("HOME")
-        .or_else(|| environment.get("USERPROFILE"))
-        .map(PathBuf::from)
-        .filter(|home| home.is_absolute());
-    // A tool's own folder named relative to where the tool runs is a
-    // different folder for every task, so it isn't known: none of its agents
-    // or skills are offered, and the tool loads none of them itself.
-    let own = |variable: &str, default: &str| match environment.get(variable) {
-        Some(path) => Some(PathBuf::from(path)).filter(|path| path.is_absolute()),
-        None => home.as_ref().map(|home| home.join(default)),
-    };
+    let home = composition_home(environment);
+    let own = |variable, default| agent_home(environment, home.as_deref(), variable, default);
     // Outside Øphio's own folders, which Library never reaches.
     let ophio = home.as_ref().map(|home| home.join("Ophio"));
     services::LauncherDirs {
@@ -1530,11 +1591,17 @@ fn desktop_error(error: ports::PlatformError) -> Error {
     protocol::ProtocolError::new(error.code(), error.to_string()).into()
 }
 /// What holds agents to what a conversation may reach.
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
 fn native_sandboxes(executable_dir: &std::path::Path) -> Arc<dyn ports::sandbox::Sandboxes> {
     Arc::new(sandbox::Bubblewrap::new(
         executable_dir.join("ophio-sandbox-shim"),
     ))
+}
+/// Nothing holds agents in on Windows yet: this says so and refuses every
+/// conversation with limits, so none starts without them.
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn native_sandboxes(_executable_dir: &std::path::Path) -> Arc<dyn ports::sandbox::Sandboxes> {
+    Arc::new(sandbox::NoWindowsSandbox)
 }
 /// What holds agents to what a conversation may reach.
 #[cfg(target_os = "macos")]
@@ -1545,7 +1612,7 @@ fn native_sandboxes(_executable_dir: &std::path::Path) -> Arc<dyn ports::sandbox
 /// What the phone is told when sharing could not be opened.
 #[cfg(any(windows, target_os = "macos"))]
 fn desktop_failure(error: &Error) -> Availability {
-    windows_desktop_failure(error)
+    managed_desktop_failure(error)
 }
 /// What the phone is told when sharing could not be opened.
 #[cfg(not(any(windows, target_os = "macos")))]
@@ -1562,7 +1629,7 @@ fn desktop_failure(error: &Error) -> Availability {
     }
 }
 #[cfg(any(windows, target_os = "macos", test))]
-fn windows_desktop_failure(error: &Error) -> Availability {
+fn managed_desktop_failure(error: &Error) -> Availability {
     let reason = error.to_string();
     match error {
         Error::Protocol(error) => match error.code {
@@ -1580,12 +1647,12 @@ fn windows_desktop_failure(error: &Error) -> Availability {
 }
 #[cfg(windows)]
 async fn native_desktop(_paths: &Paths, options: &ComposeOptions) -> Result<DesktopSession> {
-    let desktop = platform_windows::desktop::WindowsDesktop::new()
+    let desktop = platform_windows::desktop::open()
         .map_err(desktop_error)?
         .with_clock(options.clock.clone());
     Ok(DesktopSession {
         backend: Arc::new(desktop.clone()),
-        windows: Some(desktop),
+        managed: Some(desktop),
     })
 }
 #[cfg(target_os = "macos")]
@@ -1599,13 +1666,202 @@ async fn native_desktop(_paths: &Paths, options: &ComposeOptions) -> Result<Desk
     let desktop = platform_macos::desktop::open(options.clock.clone());
     Ok(DesktopSession {
         backend: Arc::new(desktop.clone()),
-        windows: Some(desktop),
+        managed: Some(desktop),
     })
 }
 
 #[cfg(test)]
 mod path_tests {
     use super::*;
+    #[test]
+    fn composition_home_uses_the_first_absolute_home() {
+        let base = tempfile::tempdir().unwrap();
+        let home = base.path().join("home");
+        let profile = base.path().join("profile");
+        let mut environment =
+            BTreeMap::from([("USERPROFILE".into(), profile.display().to_string())]);
+        assert_eq!(composition_home(&environment), Some(profile.clone()));
+        environment.insert("HOME".into(), home.display().to_string());
+        assert_eq!(composition_home(&environment), Some(home));
+        for invalid in ["", "relative-home"] {
+            environment.insert("HOME".into(), invalid.into());
+            assert_eq!(composition_home(&environment), Some(profile.clone()));
+            environment.remove("USERPROFILE");
+            assert_eq!(composition_home(&environment), None);
+            environment.insert("USERPROFILE".into(), profile.display().to_string());
+        }
+        for invalid in ["", "relative-profile"] {
+            environment.insert("USERPROFILE".into(), invalid.into());
+            assert_eq!(composition_home(&environment), None);
+        }
+        assert_eq!(composition_home(&BTreeMap::new()), None);
+    }
+
+    #[test]
+    fn instruction_and_launcher_homes_agree_without_unsafe_fallbacks() {
+        let base = tempfile::tempdir().unwrap();
+        let data = base.path().join("data");
+        let home = base.path().join("profile");
+        let unavailable = data.join("instruction-home-unavailable");
+        let mut environment = BTreeMap::from([("USERPROFILE".into(), home.display().to_string())]);
+        for override_value in [None, Some(""), Some("relative"), Some("absolute")] {
+            for (variable, default) in [("CLAUDE_CONFIG_DIR", ".claude"), ("CODEX_HOME", ".codex")]
+            {
+                match override_value {
+                    None => {
+                        environment.remove(variable);
+                    }
+                    Some("absolute") => {
+                        environment.insert(
+                            variable.into(),
+                            base.path().join(default).display().to_string(),
+                        );
+                    }
+                    Some(value) => {
+                        environment.insert(variable.into(), value.into());
+                    }
+                }
+            }
+            let instructions = instruction_config(&data, &environment);
+            let dirs = launcher_dirs(&Config::default(), &environment);
+            assert_eq!(instructions.home, home);
+            assert_eq!(
+                instructions.claude_home,
+                dirs.claude_home
+                    .unwrap_or_else(|| unavailable.join(".claude"))
+            );
+            assert_eq!(
+                instructions.codex_home,
+                dirs.codex_home
+                    .unwrap_or_else(|| unavailable.join(".codex"))
+            );
+        }
+        // Explicit absolute agent homes remain known even without a user home.
+        environment.remove("USERPROFILE");
+        let instructions = instruction_config(&data, &environment);
+        assert_eq!(instructions.home, unavailable);
+        assert_eq!(instructions.claude_home, base.path().join(".claude"));
+        assert_eq!(instructions.codex_home, base.path().join(".codex"));
+        let environment = BTreeMap::new();
+        let instructions = instruction_config(&data, &environment);
+        assert_eq!(instructions.home, unavailable);
+        assert_eq!(instructions.claude_home, unavailable.join(".claude"));
+        assert_eq!(instructions.codex_home, unavailable.join(".codex"));
+        let dirs = launcher_dirs(&Config::default(), &environment);
+        assert!(
+            dirs.claude_home.is_none() && dirs.codex_home.is_none() && dirs.agents_home.is_none()
+        );
+    }
+
+    #[tokio::test]
+    async fn userprofile_and_custom_homes_discover_instructions_and_skills() {
+        use protocol::capability::HarnessKind;
+        let base = tempfile::tempdir().unwrap();
+        let home = base.path().join("profile");
+        let project = base.path().join("project");
+        std::fs::create_dir_all(&project).unwrap();
+        for custom in [false, true] {
+            let data = base
+                .path()
+                .join(if custom { "custom-data" } else { "data" });
+            let mut environment =
+                BTreeMap::from([("USERPROFILE".into(), home.display().to_string())]);
+            if custom {
+                environment.insert(
+                    "CLAUDE_CONFIG_DIR".into(),
+                    base.path().join("custom-claude").display().to_string(),
+                );
+                environment.insert(
+                    "CODEX_HOME".into(),
+                    base.path().join("custom-codex").display().to_string(),
+                );
+            }
+            let instructions = instruction_config(&data, &environment);
+            for root in [&instructions.claude_home, &instructions.codex_home] {
+                std::fs::create_dir_all(root.join("skills/example")).unwrap();
+                std::fs::write(root.join("skills/example/SKILL.md"), "fixture skill").unwrap();
+            }
+            let claude_doc = instructions.claude_home.join("CLAUDE.md");
+            let codex_doc = instructions.codex_home.join("AGENTS.md");
+            std::fs::write(&claude_doc, "fixture claude").unwrap();
+            std::fs::write(&codex_doc, "fixture codex").unwrap();
+            let mut config = library::LibraryConfig::new(data, instructions.home.clone());
+            config.instructions = instructions;
+            let library = library::FsLibrary::new(config, Arc::new(ports::SystemClock)).unwrap();
+            for (kind, doc) in [
+                (HarnessKind::ClaudeCode, claude_doc),
+                (HarnessKind::Codex, codex_doc),
+            ] {
+                let sources = library.instruction_sources(&project, kind, &[], true).await;
+                assert!(
+                    sources
+                        .iter()
+                        .any(|source| source.current_revision.is_some()
+                            && source.host_path.as_deref() == doc.to_str()),
+                    "{sources:?}"
+                );
+            }
+            let dirs = launcher_dirs(&Config::default(), &environment);
+            let roots = library.suggested_roots(&project).await;
+            assert!(
+                roots
+                    .iter()
+                    .any(|root| root.path == dirs.claude_home.as_ref().unwrap().join("skills"))
+            );
+            assert!(
+                roots
+                    .iter()
+                    .any(|root| root.path == dirs.codex_home.as_ref().unwrap().join("skills"))
+            );
+            assert_eq!(roots.len(), 2);
+        }
+    }
+
+    #[tokio::test]
+    async fn unavailable_homes_and_invalid_overrides_do_not_read_default_instructions() {
+        use protocol::{capability::HarnessKind, library::InstructionScope};
+        let base = tempfile::tempdir().unwrap();
+        let home = base.path().join("home");
+        let project = base.path().join("project");
+        std::fs::create_dir_all(&project).unwrap();
+        for (folder, doc) in [(".claude", "CLAUDE.md"), (".codex", "AGENTS.md")] {
+            std::fs::create_dir_all(home.join(folder).join("skills")).unwrap();
+            std::fs::write(home.join(folder).join(doc), "must not be read").unwrap();
+        }
+        for (index, environment) in [
+            BTreeMap::new(),
+            BTreeMap::from([
+                ("HOME".into(), "".into()),
+                ("USERPROFILE".into(), "relative".into()),
+            ]),
+            BTreeMap::from([
+                ("HOME".into(), home.display().to_string()),
+                ("CLAUDE_CONFIG_DIR".into(), "relative".into()),
+                ("CODEX_HOME".into(), "".into()),
+            ]),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let data = base.path().join(format!("data-{index}"));
+            let instructions = instruction_config(&data, &environment);
+            let mut config = library::LibraryConfig::new(data, instructions.home.clone());
+            config.instructions = instructions;
+            let library = library::FsLibrary::new(config, Arc::new(ports::SystemClock)).unwrap();
+            for kind in [HarnessKind::ClaudeCode, HarnessKind::Codex] {
+                let sources = library.instruction_sources(&project, kind, &[], true).await;
+                assert!(
+                    !sources
+                        .iter()
+                        .any(|source| source.scope == InstructionScope::User
+                            && source.current_revision.is_some()),
+                    "{sources:?}"
+                );
+            }
+            assert!(library.suggested_roots(&project).await.is_empty());
+        }
+    }
+
     #[test]
     fn agents_are_found_in_the_homes_the_agent_tools_use() {
         // Claude Code and Codex inherit the companion's environment.
@@ -1719,9 +1975,9 @@ mod path_tests {
         );
     }
     #[test]
-    fn windows_setup_failures_preserve_their_capability_state() {
+    fn managed_desktop_failures_preserve_their_capability_state() {
         let unavailable = |code| {
-            windows_desktop_failure(&protocol::ProtocolError::new(code, "synthetic failure").into())
+            managed_desktop_failure(&protocol::ProtocolError::new(code, "synthetic failure").into())
         };
         assert!(matches!(
             unavailable(protocol::ErrorCode::Unsupported),
@@ -1818,6 +2074,7 @@ mod path_tests {
             env: Default::default(),
             github: None,
             scratch: None,
+            attached: None,
             questions: true,
             sandbox: None,
             web: false,

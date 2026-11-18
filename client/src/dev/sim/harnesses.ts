@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { HarnessInfo } from "../../protocol/types";
+import { claudeModels } from "./modelCatalog";
 const effortLabels: Record<string, string> = { low: "Low", medium: "Medium", high: "High", xhigh: "Extra high", max: "Maximum" };
 const unavailable = { state: "unsupported" as const, reason: "Installed, not supported by this version of the app yet" };
 /** The agents the computer reports, with the models and efforts each offers. */
@@ -10,6 +11,12 @@ export function simCatalog(base: HarnessInfo[]): HarnessInfo[] {
     if (h.kind === "codex") h.models = [h.models[0]!, { id: "gpt-6-sol", label: "GPT-6-Sol", suggested_for_computer_use: false, is_default: false }];
     if (h.kind === "claude_code") h.models = [h.models[0]!, { id: "opus", label: "Claude Opus (latest)", suggested_for_computer_use: false, is_default: false }, { id: "fable", label: "Claude Fable (latest)", suggested_for_computer_use: false, is_default: false }];
     for (const m of h.models) m.details = { alias: !m.id.includes("-"), default_effort: m.id === "gpt-6-sol" ? "low" : "high", efforts: (m.id === "gpt-6-sol" ? ["low", "medium"] : h.efforts).map((id) => ({ id, label: effortLabels[id] ?? id })) };
+    // Opt in to the crowded native catalog without changing existing simulator journeys.
+    if (h.kind === "claude_code" && new URLSearchParams(location.search).get("models") === "full") {
+      h.models = structuredClone(claudeModels);
+      h.catalog.default_model = "opus";
+      h.native_version = "2.1.321 (Claude Code)";
+    }
   }
   const example = managed[0];
   if (!example) return [];

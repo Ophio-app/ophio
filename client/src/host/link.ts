@@ -179,6 +179,10 @@ export interface LocalNotification {
   /** How it shows after the project's choice and the task's bell are
    * applied over this device's choice for its type. */
   want?: Tier;
+  /** Android owns this project's membership across foreground/background posts. */
+  fold?: { projectId: string; project: string; computer: string };
+  /** Individual notification identities represented by a project summary. */
+  handles?: string[];
 }
 
 /** How the background watcher's connection to one computer is doing. */
@@ -245,6 +249,9 @@ export interface SendOutbox {
 /** Everything the interface needs from the platform. */
 export interface Platform {
   readonly kind: "native" | "simulated";
+  /** Native fold geometry in CSS pixels relative to the current app WebView. */
+  windowLayout?(): Promise<import("../platform/windowLayout").WindowLayout>;
+  onWindowLayout?(listener: (layout: import("../platform/windowLayout").WindowLayout) => void): () => void;
   profiles(): Promise<HostProfile[]>;
   parsePairingLink(link: string): ParsedPairingLink;
   /**
@@ -284,6 +291,8 @@ export interface Platform {
   /** Explicit foreground permission request; never posts a task alert. */
   requestNotifications?(): Promise<void>;
   notify?(notification: LocalNotification): void | Promise<void>;
+  /** Native posting and cancellation own project summaries; the page sends individuals. */
+  readonly nativeNotificationFolding?: boolean;
   /** Clears alerts by id, whichever of the app and the watcher raised them. */
   cancelNotifications?(ids: string[]): Promise<void>;
   onNotificationOpen?(

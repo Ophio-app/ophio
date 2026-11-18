@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Window geometry lives here; each contained app lays out at its own width. */
+.split-frame { display:flex; flex-direction:column; width:100%; height:100dvh; min-width:0; min-height:0; }
+/* Cap the entire retained-warning stack, not each warning independently.
+   The percentage follows the available frame, including hinge-safe segments. */
+.split-global { flex:none; min-width:0; max-height:35%; overflow-y:auto; overscroll-behavior-y:contain; }
+.split-space { flex:1; min-height:0; min-width:0; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); position:relative; }
+.split-slot { grid-row:1; min-width:0; min-height:0; overflow:hidden; }
+.split-divider { grid-row:1; background:var(--line); pointer-events:none; min-width:0; position:relative; }
+.split-divider::after { content:""; position:absolute; inset:0; min-width:1px; background:var(--line); }
+.split-invitation { grid-row:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1rem; gap:1rem; text-align:center; min-width:0; background:var(--bg); }
+.split-control { display:inline-flex; flex:none; }
+.split-control--rail { display:none; }
+.split-control__open { min-height:var(--target); padding-inline:var(--s3); }
+.split-control--rail > .nav__tab { width:100%; min-width:var(--target); }
+/* Keep the named action out of the title's space on narrow headers. Close
+   stays icon-only, so an opened pane retains its existing compact header. */
+@container pane (max-width:40rem) {
+  .ctx:has(> .ctx__end > .split-control:not(.split-control--close)),
+  .bar:has(> .bar__actions > .split-control:not(.split-control--close)) { flex-wrap:wrap; }
+  .ctx:has(> .ctx__end > .split-control:not(.split-control--close)) > :is(.ctx__heading, .ctx__context) { flex:1 0 100%; }
+  .ctx__end:has(> .split-control:not(.split-control--close)),
+  .bar__actions:has(> .split-control:not(.split-control--close)) { flex:1 0 100%; flex-wrap:wrap; justify-content:flex-end; }
+}
+/* Native text zoom can enlarge glyphs without changing container-query units.
+   Let the conversation title's actual content decide when actions wrap. */
+.chat-head:has(> .chat-head__end > .split-control:not(.split-control--close)) > .chat-head__heading { flex-basis:max-content; }
+/* Reserve a row rather than covering the desktop's Take over or Stop tools. */
+.app--full:has(> .split-floating > .split-control) {
+  grid-template-areas:"notice" "split-actions" "main" "safety" "nav";
+  grid-template-rows:auto auto minmax(0,1fr) auto auto;
+}
+.split-floating { grid-area:split-actions; justify-self:end; margin:var(--s2); border-radius:var(--radius); background:var(--surface); }
+.split-floating:empty { display:none; }
+@container pane (min-width:900px) {
+  /* Six rail items must still fit at large text sizes. Keep ordinary spacing
+     when it fits, and retain scrolling when the minimum targets cannot fit. */
+  .nav:has(> .split-control--rail) {
+    grid-auto-rows:minmax(var(--nav-h), min(4.5rem, calc((100 * var(--pane-vh, 1dvh) - var(--safe-top) - var(--safe-bottom) - var(--s4)) / 6)));
+    overflow-y:auto;
+  }
+  .split-control--rail { display:flex; justify-content:center; }
+  .split-control--header:not(.split-control--close):not(.split-control--focused) { display:none; }
+}

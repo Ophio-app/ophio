@@ -15,6 +15,7 @@ members = [
     "crates/harness-claude",
     "crates/harness-codex",
     "crates/platform-linux",
+    "crates/platform-desktop",
     "crates/platform-windows",
     "crates/platform-macos",
     "crates/channels",
@@ -27,6 +28,7 @@ members = [
     "crates/voice-control",
     "crates/browser",
     "crates/accounts",
+    "crates/check-runner",
     "crates/intake",
 ]
 # The Tauri client has its own Cargo workspace under client/src-tauri so that
@@ -34,7 +36,7 @@ members = [
 exclude = ["client"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.92"
 license = "Apache-2.0"
@@ -53,6 +55,7 @@ sandbox = { path = "crates/sandbox" }
 harness-claude = { path = "crates/harness-claude" }
 harness-codex = { path = "crates/harness-codex" }
 platform-linux = { path = "crates/platform-linux" }
+platform-desktop = { path = "crates/platform-desktop" }
 platform-windows = { path = "crates/platform-windows" }
 channels = { path = "crates/channels" }
 computer-mcp = { path = "crates/computer-mcp" }

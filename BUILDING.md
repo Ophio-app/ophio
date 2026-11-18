@@ -41,6 +41,16 @@ After changing the display name, regenerate NOTICE with
   Configure Cargo's target linker and C/C++ compiler variables for that target.
   The current runtime-notice baseline is LLVM 23.1.2. Do not silently substitute
   a different static runtime without updating its inventory and notices.
+- Mac Rust cross-check (`scripts/ci.sh macos`): the installed
+  `aarch64-apple-darwin` Rust standard library, `clang` and `llvm-ar` (CI reuses
+  the archiver from its existing Windows cross toolchain).
+  This runs workspace check and Clippy, including test targets, except for the
+  Linux-only Wayland crate `platform-linux`. It needs no Apple SDK: the compiler
+  wrapper emits empty Mac object files only for these checks. Its compiler
+  settings stay within this stage, and its outputs stay under
+  `$CARGO_TARGET_DIR/macos-check-only`, separate from normal builds. It does not
+  link or validate native C code, foreign-function interfaces (FFI), or runtime
+  behavior. A native Mac build and native tests are still required.
 - Advisory checks (`scripts/ci.sh advisories`): cargo-audit 0.22.2 and network
   access. The stage finds `cargo-audit` on `PATH`, or else under
   `$BUILD_TOOLS_HOME/cargo-audit/bin` when `BUILD_TOOLS_HOME` is set. Install it
@@ -210,6 +220,7 @@ packaging copies the files Git tracks. Android packaging also needs
 | --- | --- | --- |
 | Linux | `scripts/package-linux.sh` | `dist/linux/<name>-<version>-x86_64-linux.tar.gz` |
 | Windows, cross-build only | `scripts/package-windows.sh` | `dist/windows/<name>-<version>-x86_64-windows.zip` |
+| Mac, Apple silicon, on a Mac | `scripts/package-macos.sh` | `dist/macos/<name>-<version>-aarch64-macos.tar.gz` |
 | Android ARM64 | `scripts/package-android.sh` | unsigned APK/AAB and separate locally test-signed APK under `dist/android/` |
 
 All scripts generate and check licences before final distribution assembly.
@@ -221,6 +232,24 @@ the extracted companion's `--version` and `--help` using isolated application
 directories. It never installs or starts a service; `ophio service install`
 writes the user unit when someone runs it.
 Windows checks x64 PE headers; no Windows runtime claim follows from that check.
+
+The Mac archive is built on an Apple silicon Mac with Xcode's command line
+tools. `scripts/sign_macos.py` signs both programs with the hardened runtime
+and records each signature in `target/packaging/macos/signing.json`, which
+packing checks. Without settings it signs ad hoc, which needs no Apple account:
+macOS runs the programs, but the signature names nobody and differs with every
+build. With a Developer ID Application certificate in the keychain, set
+`OPHIO_MACOS_SIGNING_IDENTITY` to its name (and `OPHIO_MACOS_KEYCHAIN` to its
+keychain file, if it is not the default one). To notarize as well, save the
+notary credentials once with `xcrun notarytool store-credentials NAME` and set
+`OPHIO_MACOS_NOTARY_PROFILE=NAME`; packaging then waits for Apple's answer and
+fails unless Apple accepts the programs. A public build refuses any certificate
+other than Apple's Developer ID. Android's tools are needed to check the phone
+app, and a Mac usually lacks them, so the Mac script packs no phone app: copy
+`target/packaging/macos` and `target/packaging/licenses/macos` to a system that
+has them and run `scripts/package-artifacts.py macos` there with
+`OPHIO_PHONE_APK` set. The packed `ophio --version` runs only on an Apple
+silicon Mac.
 
 `dist/MANIFEST.txt` lists every distribution file, byte count and SHA-256. Archive
 entry order, timestamps and modes are stable for identical inputs;

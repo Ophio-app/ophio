@@ -15,6 +15,8 @@ import Talk from "./Talk";
 let app: App;
 const astra = { harness: "codex" as const, model: "gpt-6-astra", effort: "high" };
 const tick = async () => act(async () => { await vi.advanceTimersByTimeAsync(900); });
+/** Opens Review's folded sections, as a person taps them open. */
+const unfold = () => document.querySelectorAll<HTMLButtonElement>('.fold__head[aria-expanded="false"]').forEach((b) => fireEvent.click(b));
 beforeEach(async () => {
   localStorage.clear(); vi.useFakeTimers();
   HTMLDialogElement.prototype.showModal = function () { this.open = true; };
@@ -29,7 +31,7 @@ beforeEach(async () => {
 });
 afterEach(() => { cleanup(); app.session.stop(); window.__sim?.host.dispose(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function view(route: Route = { screen: "talk" }) {
-  return render(<AppProvider app={app}><RouteProvider value={{ tab: "talk", depth: 1, active: true, route }}>{route.screen === "review" ? <Review route={route} /> : <Talk route={{ screen: "talk" }} />}</RouteProvider></AppProvider>);
+  return render(<AppProvider app={app}><RouteProvider value={{ tab: "talk", depth: route.screen === "review" ? 1 : 0, active: true, route }}>{route.screen === "review" ? <Review route={route} /> : <Talk route={{ screen: "talk" }} />}</RouteProvider></AppProvider>);
 }
 function unavailableCodex() {
   const host = window.__sim!.host;
@@ -55,7 +57,7 @@ function oldTask(chosen = true) {
 it.each(["standard", "bypass_permissions", "sandboxed"] as const)("reviews and persists the exact launch policy %s", async launchPolicy => {
   oldTask(false); app.ui.selectTask(ids.pTide, null);
   app.ui.saveDraft(ids.pTide, null, { text: "Check the parser", agent: { ...astra, launchPolicy }, mode: "work" });
-  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick();
+  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
   const body = Object.values(app.session.commands.get()).find(c => c.body.command === "create_task")?.body;
   expect(body).toMatchObject({ command: "create_task", ...astra, launch_policy: launchPolicy });
@@ -76,7 +78,7 @@ it("requires confirmation for a flags-only continuation mismatch without changin
 });
 it("starts a Next up from a task with no saved flags with the person's default flags", async () => {
   const task = oldTask(false);
-  view({ screen: "review", projectId: task.project_id, taskId: task.task_id, intent: "next_up" }); await tick();
+  view({ screen: "review", projectId: task.project_id, taskId: task.task_id, intent: "next_up" }); await tick(); unfold();
   expect(screen.getByText("Permission prompts: Skip permissions")).toBeTruthy();
   // The flags are folded away; that it won't ask is said in words.
   const fold = screen.getByText("What it’s started with").closest("details")!;
@@ -99,7 +101,7 @@ function runningPlan(github?: { from_stranger: boolean }) {
 }
 it("starts a new task from a running Plan in Work, with the person's flags, and says it is switching", async () => {
   const task = runningPlan();
-  view({ screen: "review", projectId: task.project_id, taskId: task.task_id, intent: "next_up" }); await tick();
+  view({ screen: "review", projectId: task.project_id, taskId: task.task_id, intent: "next_up" }); await tick(); unfold();
   expect(screen.getByRole<HTMLInputElement>("radio", { name: /Work/ }).checked).toBe(true);
   // Said right above the button that makes the switch.
   const note = document.querySelector<HTMLElement>(".mode-switch")!;
@@ -117,7 +119,7 @@ it("starts a new task from a running Plan in Work, with the person's flags, and 
 });
 it("keeps a Next up from a stranger's work read-only", async () => {
   const task = runningPlan({ from_stranger: true });
-  view({ screen: "review", projectId: task.project_id, taskId: task.task_id, intent: "next_up" }); await tick();
+  view({ screen: "review", projectId: task.project_id, taskId: task.task_id, intent: "next_up" }); await tick(); unfold();
   expect(screen.getByRole<HTMLInputElement>("radio", { name: /Plan/ }).checked).toBe(true);
   expect(screen.queryByRole("note")).toBeNull();
 });
@@ -165,9 +167,9 @@ it("blocks Start rather than rewriting a selected agent after readiness changes"
   app.ui.selectTask(ids.pTide, null);
   app.ui.saveDraft(ids.pTide, null, { text: "Read the git history", agent: astra, mode: "ask" });
   view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" });
-  await tick();
+  await tick(); unfold();
   act(unavailableCodex);
-  expect(screen.getByRole("button", { name: /Codex · GPT-6-Astra/ })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /^Codex · GPT-6-Astra/ })).toBeTruthy();
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Start task" }).disabled).toBe(true);
   expect(screen.getByText(/Command helper is missing/)).toBeTruthy();
   expect(Object.values(app.session.commands.get()).some(c => c.body.command === "create_task")).toBe(false);
@@ -190,7 +192,7 @@ it("carries the message to a reviewed Codex task, never resumes Claude, and keep
   expect(app.ui.draft(task.project_id, null)).toMatchObject({ text: "Read the git history", agent: astra });
   const route = app.ui.route();
   expect(route).toMatchObject({ screen: "review", taskId: null });
-  mounted.unmount(); view(route); await tick();
+  mounted.unmount(); view(route); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
   const commands = Object.values(app.session.commands.get()).map(c => c.body);
   expect(commands.some(c => c.command === "resume_task")).toBe(false);
@@ -213,7 +215,7 @@ it("honors Codex/Astra chosen through the real picker when returning to an older
   act(() => app.ui.selectTask(task.project_id, task.task_id)); await tick();
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Continue" }).disabled).toBe(true);
   fireEvent.click(screen.getByRole("button", { name: "New task with this selection" })); await tick();
-  const route = app.ui.route(); mounted.unmount(); view(route); await tick();
+  const route = app.ui.route(); mounted.unmount(); view(route); await tick(); unfold();
   fireEvent.click(screen.getByRole("button", { name: "Start task" })); await tick();
   const commands = Object.values(app.session.commands.get()).map(c => c.body);
   expect(commands.some(c => c.command === "resume_task")).toBe(false);
@@ -234,7 +236,7 @@ it.each([
 ] as const)("blocks an explicit %s in Review without changing the selection", async (_, message, change) => {
   app.ui.selectTask(ids.pTide, null);
   app.ui.saveDraft(ids.pTide, null, { text: "Read the git history", agent: astra, mode: "ask" });
-  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick();
+  view({ screen: "review", projectId: ids.pTide, taskId: null, intent: "new_task" }); await tick(); unfold();
   act(() => window.__sim!.host.emit({ type: "harnesses_changed", harnesses: app.session.state.get().harnesses
     .filter(h => change !== "harness" || h.kind !== "codex")
     .map(h => h.kind !== "codex" ? h : change === "model" ? { ...h, models: [] }

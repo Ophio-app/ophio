@@ -164,6 +164,8 @@ impl CompanionHub {
         let harness = self.planning_agent(project_id)?;
         let picture = self.report_picture(caller, &bundle).await?;
         let envelope = CommandEnvelope::new(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             project_id,
             kind: TaskKind::Coding,
             mode: Some(TaskMode::Plan),
@@ -317,6 +319,7 @@ impl CompanionHub {
             steps: Vec::new(),
             general_note: None,
             speech: None,
+            files: vec![],
         }))
     }
 }

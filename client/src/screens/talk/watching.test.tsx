@@ -57,7 +57,8 @@ it("pins what the task is watching, and Stop watching drops the wake without sta
   </RouteProvider></AppProvider>);
   const pins = view();
   const pin = screen.getByRole("group", { name: "Watching" });
-  expect(pin.textContent).toMatch(/^Watching · the checks on PR #214 · wakes it in 20 min/);
+  expect(pin.textContent).toMatch(/^Watching · wakes it in 20 min/);
+  expect(pin.textContent).not.toContain("the checks on PR #214");
   const runs = Object.keys(app.session.state.get().runs).length;
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Stop watching" })));
   await tick(1500);
@@ -68,6 +69,34 @@ it("pins what the task is watching, and Stop watching drops the wake without sta
   pins.unmount();
   view();
   expect(screen.queryByRole("group", { name: "Watching" })).toBeNull();
+});
+
+it("pins the agent's plain sentence for the person, never its own reminder", async () => {
+  const id = watching();
+  const host = window.__sim!.host;
+  const task = host.tasks.find(t => t.task_id === id)!;
+  const reminder = "Resume with internal job 731; redo setup on checks_v1 against main.";
+  const view = () => render(<AppProvider app={app}><RouteProvider value={{ tab: "talk", depth: 1, active: true, route: { screen: "talk" } }}>
+    <TalkPins task={app.session.state.get().tasks[id]!} />
+  </RouteProvider></AppProvider>);
+
+  Object.assign(task, { wake: { ...task.wake!, reason: reminder, person_reason: "  It's waiting for the project update to finish.  " } });
+  host.emit({ type: "task_upserted", task: { ...task } });
+  await tick();
+  const pins = view();
+  const pin = screen.getByRole("group", { name: "Watching" });
+  expect(pin.textContent).toMatch(/^Watching · It's waiting for the project update to finish · wakes it in \d+ min/);
+  expect(pin.textContent).not.toContain("job 731");
+  pins.unmount();
+
+  // An older agent or computer sends no sentence: the pin says only when.
+  Object.assign(task, { wake: { at: task.wake!.at, reason: reminder } });
+  host.emit({ type: "task_upserted", task: { ...task } });
+  await tick();
+  view();
+  const bare = screen.getByRole("group", { name: "Watching" });
+  expect(bare.textContent).toMatch(/^Watching · wakes it in \d+ min/);
+  expect(bare.textContent).not.toContain("job 731");
 });
 
 it("pins the other agent's answer a task waits for, and on the task asked, the task that asked it", async () => {

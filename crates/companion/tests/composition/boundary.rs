@@ -89,6 +89,9 @@ async fn lifecycle(harness: HarnessKind) {
         .unwrap();
     phone
         .effect(Command::SendMessage {
+            harness: None,
+            model: None,
+            effort: None,
             task_id: task,
             text: "later".into(),
             bundle: None,
@@ -103,6 +106,9 @@ async fn lifecycle(harness: HarnessKind) {
     let receipt = phone
         .command(
             Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id: task,
                 text: "boundary message".into(),
                 bundle: None,
@@ -197,6 +203,8 @@ async fn lifecycle(harness: HarnessKind) {
     phone
         .command(
             Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 mode: None,
                 task_id: task,
                 text: Some("complete".into()),

@@ -121,6 +121,8 @@ pub async fn hub_with_run(path: &Path, harness: &Arc<FakeHarness>) -> (Companion
         .submit(
             &owner,
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: None,

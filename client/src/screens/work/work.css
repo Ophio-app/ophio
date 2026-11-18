@@ -96,14 +96,31 @@
 .work-row-state {
   display: block;
 }
+/* The origin mark shares the status line; its accessible name keeps the
+   full chat title without adding another line to every task. */
+.work-row-from {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  margin-inline-end: 0.4em;
+  color: var(--ink-3);
+}
 .work-row-line,
 .work-row-may {
   margin-top: var(--s1);
 }
 .work-task-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   padding-right: var(--s1);
+}
+.checks-setup-offer {
+  flex-basis: 100%;
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
 }
 .work-task-row > .row {
   flex: 1;
@@ -334,6 +351,31 @@
   font-size: var(--text-md);
   color: var(--ink-2);
 }
+/* The chat it came from, as a quiet link back to it. */
+.work-receipt-from {
+  position: relative;
+  justify-self: start;
+  max-width: 100%;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  border-radius: var(--r-sm);
+}
+.work-receipt-from-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 2px;
+}
+button.work-receipt-from::after {
+  content: "";
+  position: absolute;
+  inset: -12px -4px;
+}
+button.work-receipt-from:active { background: var(--surface-pressed); }
+button.work-receipt-from:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 /* The verdict sits under the receipt's headline, so it is in reach at any
    text size without scrolling past the evidence. */
 .work-review {
@@ -600,12 +642,12 @@
 .work-sheet .approval__facts dd {
   flex-basis: 7rem;
 }
-@media (max-width: 380px) {
+@container pane (max-width: 380px) {
   .work-facts > div > * {
     flex-basis: 100%;
   }
 }
-@media (max-height: 440px) {
+@container pane (max-height: 440px) {
   .work-safety {
     padding-block: var(--s1);
   }
@@ -778,7 +820,7 @@
    away with the list to leave it what little height there is, and section
    titles take only their own line. New keeps its own row while Set up GitHub
    is under it. */
-@media (max-height: 480px) and (min-width: 700px) {
+@container pane (max-height: 480px) and (min-width: 700px) {
   .work-root .screen__inner {
     grid-template-columns: 8rem minmax(0, 1fr);
   }
@@ -825,4 +867,10 @@
 .work-other {
   color: var(--accent-text);
   font-weight: 700;
+}
+/* A stopped chat's way on, under the “Stopped” line that already says it. */
+.receipt-outcome--quiet {
+  padding: 0;
+  background: none;
+  border: 0;
 }

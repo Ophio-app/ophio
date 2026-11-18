@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{
     config::{AgentCli, Config, Provider},
-    repository, *,
+    contained, repository, *,
 };
 use ports::{RunEnv, sandbox::*};
 use protocol::{capability::HarnessKind, time::Timestamp};
@@ -37,10 +37,7 @@ impl Default for Limits {
     }
 }
 pub fn readiness(config: &Config) -> Result<()> {
-    if !sandbox::Bubblewrap::new(&config.shim)
-        .availability()
-        .is_available()
-    {
+    if !contained::available(&config.shim) {
         return Err(Error::Operation("sandbox user namespaces are unavailable"));
     }
     let _container = containment::Container::limited(containment::ResourceLimits {
@@ -124,10 +121,10 @@ async fn bounded_read(
 }
 struct RunBudget<'a> {
     limits: &'a Limits,
-    disk: Arc<sandbox::DiskBudget>,
+    disk: Arc<contained::DiskBudget>,
     deadline_ms: i64,
 }
-async fn disk_check(disk: Arc<sandbox::DiskBudget>) -> Result<()> {
+async fn disk_check(disk: Arc<contained::DiskBudget>) -> Result<()> {
     if tokio::task::spawn_blocking(move || disk.exceeded())
         .await
         .map_err(|_| Error::Signal(Signal::BudgetSpent))?
@@ -137,7 +134,7 @@ async fn disk_check(disk: Arc<sandbox::DiskBudget>) -> Result<()> {
     }
     Ok(())
 }
-async fn disk_watch(disk: Arc<sandbox::DiskBudget>) -> Result<Output> {
+async fn disk_watch(disk: Arc<contained::DiskBudget>) -> Result<Output> {
     loop {
         disk_check(disk.clone()).await?;
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -167,6 +164,7 @@ async fn execute(
     let guard = containment::Guard::new(container.clone());
     let wrapped = sandbox
         .wrap(WrapRequest {
+            disabled: &ports::Disabled::default(),
             program,
             visible: &[],
             env: &env,
@@ -348,14 +346,8 @@ impl AgentRunner for SandboxedAgents {
                 seen
             })),
         });
-        let disk = Arc::new(sandbox::DiskBudget::new(
-            self.limits.disk_bytes,
-            self.limits.disk_entries,
-        )?);
-        let sandbox = sandbox::Bubblewrap::new(&self.config.shim)
-            .with_disk_budget(disk.clone())
-            .create(spec)
-            .map_err(|_| Error::Operation("sandbox unavailable"))?;
+        let (sandbox, disk) =
+            contained::create(&self.config.shim, &self.limits, spec, "sandbox unavailable")?;
         let endpoint = sandbox.relay().ok_or(Error::Operation("relay missing"))?;
         let mut env = RunEnv(vec![(
             "HOME".into(),
@@ -545,14 +537,8 @@ impl SandboxedTests {
         spec.reach
             .read
             .extend([self.cargo_cache.clone(), self.npm_cache.clone()]);
-        let disk = Arc::new(sandbox::DiskBudget::new(
-            self.limits.disk_bytes,
-            self.limits.disk_entries,
-        )?);
-        let sandbox = sandbox::Bubblewrap::new(&self.shim)
-            .with_disk_budget(disk.clone())
-            .create(spec)
-            .map_err(|_| Error::Operation("test sandbox unavailable"))?;
+        let (sandbox, disk) =
+            contained::create(&self.shim, &self.limits, spec, "test sandbox unavailable")?;
         if sandbox.relay().is_some() {
             return Err(Error::Operation("test network forbidden"));
         }

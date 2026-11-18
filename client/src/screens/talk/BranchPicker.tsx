@@ -76,7 +76,8 @@ export function BranchSheet({ open, onClose, branches, chosen, onPick, computer 
     ? "The agent makes it from what’s checked out before changing any file; uncommitted changes come with it."
     : `The agent makes it from ${listing.current ?? "the checked-out commit"} before changing any file${listing.dirty_files ? `, and your ${changesText(listing.dirty_files)} come with it` : ""}.`;
   return (
-    <Sheet open={open} onClose={onClose} title={naming === null ? "Branch" : "New branch"} subtitle={`On ${computer}`}>
+    // A new branch's name outlasts another screen in front; picking only changes the draft.
+    <Sheet open={open} keepWhenHidden onClose={onClose} title={naming === null ? "Branch" : "New branch"} subtitle={`On ${computer}`}>
       {failed && (
         <Notice tone="warn" title="Couldn’t read the branches" action={<Button onClick={branches.refresh} pending={loading}>Try again</Button>}>
           {computer} didn’t answer in time. You can still leave it to All branches{naming === null ? "" : ", or name a new one"}.

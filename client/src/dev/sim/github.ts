@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   Command, CommandResult, GithubAction, GithubItem, GithubItemKind, GithubItems, GithubPrView, GithubProjectView, GithubRepo,
-  GithubSettings, IssueRun, LaunchChoice, MergeTogether, ProjectFolder, ProtocolError, RunFix, RunStep, Task, TaskBranch, TaskGithub,
+  GithubSettings, IssueRun, LaunchChoice, TaskOrigin, MergeTogether, ProjectFolder, ProtocolError, RunFix, RunStep, Task, TaskBranch, TaskGithub,
   TriageGroup,
 } from "../../protocol/types";
 import { going, itemStatus, writesNothing } from "../../state/githubStatus";
@@ -71,6 +71,8 @@ export class GithubSim {
   readonly together = new Map<string, MergeTogether>();
   /** Items the person put in a group themselves; a Sort leaves them there. */
   readonly #byYou = new Set<string>();
+  /** Chat cards that have started a Run all, as the computer's `task_origin`. */
+  readonly #cards = new Set<string>();
   #timers: ReturnType<typeof setTimeout>[] = [];
   constructor(private readonly host: SimHost, now: number) {
     this.settings.set(ids.pTide, { ...defaultSettings(), mode: "drafts" });
@@ -248,7 +250,8 @@ export class GithubSim {
     switch (action.action) {
       case "run_issues":
         if (!this.#onGithub(id)) throw fail("not_found", "This project's `origin` isn't on github.com.");
-        return this.#run(id, action.step).finally(() => this.#changed(id)).then(() => null);
+        if (action.origin && action.step !== "start") throw fail("invalid_request", "Only starting comes from a chat's card.");
+        return this.#run(id, action.step, action.origin ?? null).finally(() => this.#changed(id)).then(() => null);
       case "set_group":
         this.#setGroup(id, action.number, action.pr, action.group ?? null);
         break;
@@ -403,8 +406,8 @@ export class GithubSim {
     return this.host.tasks.find((t) => t.task_id === id);
   }
 
-  async #run(projectId: string, step: RunStep): Promise<void> {
-    if (step === "start") return this.#start(projectId);
+  async #run(projectId: string, step: RunStep, origin: TaskOrigin | null = null): Promise<void> {
+    if (step === "start") return this.#start(projectId, origin);
     const run = this.#active(projectId);
     if (!run) return;
     const working = () => run.view.fixes.map((f) => this.#task(f.task_id)).filter((t): t is Task => !!t && ["dispatching", "working"].includes(t.state));
@@ -447,7 +450,22 @@ export class GithubSim {
     }
   }
 
-  async #start(projectId: string): Promise<void> {
+  /** As `from_card` in `github_run.rs`: a chat's card for fixing every issue here, not yet started. */
+  #fromCard(projectId: string, origin: TaskOrigin) {
+    if (origin.auto) throw fail("invalid_request", "Only the person starts fixing every issue.");
+    const chat = this.#task(origin.chat);
+    if (!chat) throw fail("invalid_request", "This chat does not exist.");
+    if (!chat.conversation || chat.project_id !== projectId) throw fail("invalid_request", "This work must come from a chat in the same project.");
+    if (chat.state === "archived") throw fail("invalid_request", "This chat is archived. Bring it back first, or start the work from Tasks.");
+    const run = this.host.runs.find((r) => r.run_id === origin.run);
+    if (!run) throw fail("invalid_request", "This chat turn does not exist.");
+    if (run.task_id !== origin.chat) throw fail("invalid_request", "This turn does not belong to that chat.");
+    if (!run.outcome?.report?.new_work[origin.index]?.all_issues) throw fail("invalid_request", "What would start differs from the suggestion you saw.");
+    if (this.#cards.has(`${origin.chat}/${origin.run}/${origin.index}`)) throw fail("conflict", "This was already started.");
+  }
+
+  async #start(projectId: string, origin: TaskOrigin | null = null): Promise<void> {
+    if (origin) this.#fromCard(projectId, origin);
     const s = this.#settings(projectId);
     if (s.mode === "off") throw fail("invalid_request", "Turn GitHub on for this project first");
     const fixWith = s.workflow.fix_with;
@@ -465,6 +483,10 @@ export class GithubSim {
     if (!run.view.fixes.length && !run.view.sorting) {
       run.view.ended_at = Date.now();
       throw fail("invalid_request", "Nothing to fix: no open issue is in Agent can take it, and none is waiting to be sorted");
+    }
+    if (origin) {
+      this.#cards.add(`${origin.chat}/${origin.run}/${origin.index}`);
+      run.view.origin ??= { ...origin };
     }
     // Run all is the go-ahead for Next up as well.
     this.#holdQueue(projectId, null);

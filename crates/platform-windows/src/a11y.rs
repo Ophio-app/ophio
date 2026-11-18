@@ -248,25 +248,6 @@ fn revalidated<'a, T>(
         .map(|(_, native)| native)
         .ok_or(Error::StaleTarget)
 }
-pub(crate) fn map_point(
-    x: f64,
-    y: f64,
-    origin_x: i32,
-    origin_y: i32,
-    width: u32,
-    height: u32,
-    current: bool,
-) -> Result<protocol::control::TargetPoint, ports::PlatformError> {
-    let point = protocol::control::TargetPoint {
-        x: (x - f64::from(origin_x)) / f64::from(width.saturating_sub(1)),
-        y: (y - f64::from(origin_y)) / f64::from(height.saturating_sub(1)),
-    };
-    if !current || !(0.0..=1.0).contains(&point.x) || !(0.0..=1.0).contains(&point.y) {
-        return Err(ports::PlatformError::GeometryChanged);
-    }
-    Ok(point)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

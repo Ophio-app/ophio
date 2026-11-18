@@ -218,6 +218,11 @@ pub enum LibraryError {
     AlreadyExists,
     #[error("root is read-only")]
     ReadOnly,
+    /// A safe, path-free explanation suitable for a connected client.
+    #[error(
+        "This drive's format does not support the safe saving Ophio needs. Reading still works."
+    )]
+    UnsupportedVolume,
     #[error("file changed since it was read")]
     Conflict,
     /// A filesystem mutation started but its final state could not be proven.
@@ -239,6 +244,7 @@ impl LibraryError {
             LibraryError::UnknownRoot | LibraryError::NotFound => ErrorCode::NotFound,
             LibraryError::PathNotAllowed(_) => ErrorCode::PathNotAllowed,
             LibraryError::ReadOnly => ErrorCode::PermissionDenied,
+            LibraryError::UnsupportedVolume => ErrorCode::Unsupported,
             LibraryError::AlreadyExists | LibraryError::Conflict => ErrorCode::Conflict,
             LibraryError::OutcomeUnknown => ErrorCode::OutcomeUnknown,
             LibraryError::NotEditable | LibraryError::TooLarge(_) => ErrorCode::InvalidRequest,
@@ -249,7 +255,9 @@ impl LibraryError {
 
 #[cfg(test)]
 mod tests {
-    use super::{canonical, reserved_on_windows, resolved};
+    use super::reserved_on_windows;
+    #[cfg(unix)]
+    use super::{canonical, resolved};
 
     #[test]
     fn device_names_are_reserved_however_windows_spells_them() {
@@ -339,18 +347,50 @@ pub fn canonical(path: &Path) -> std::io::Result<PathBuf> {
 /// that exists, its links followed, with the missing rest after it. A missing
 /// folder under a link is checked where it would be made.
 pub fn resolved(path: &Path) -> std::io::Result<PathBuf> {
+    resolve_with(path, canonical, false)
+}
+
+/// One spelling for containment comparisons, never for display. On Windows,
+/// retain the canonical extended prefix at every path length and resolve SUBST
+/// drives and junctions before appending missing components. An existing but
+/// unresolved entry is refused rather than treated as a missing directory.
+/// This is a filesystem snapshot, not protection against concurrent remounts.
+pub fn comparison(path: &Path) -> std::io::Result<PathBuf> {
+    #[cfg(windows)]
+    {
+        resolve_with(path, |path| std::fs::canonicalize(path), true)
+    }
+    #[cfg(not(windows))]
+    {
+        resolved(path)
+    }
+}
+
+fn resolve_with(
+    path: &Path,
+    follow: impl Fn(&Path) -> std::io::Result<PathBuf>,
+    reject_unresolved_existing: bool,
+) -> std::io::Result<PathBuf> {
     use std::path::Component;
     let mut missing = Vec::new();
     let mut existing = path;
     loop {
-        match canonical(existing) {
+        match follow(existing) {
             Ok(mut real) => {
                 for part in missing.iter().rev() {
                     real.push(part);
                 }
                 return Ok(real);
             }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                if reject_unresolved_existing {
+                    match std::fs::symlink_metadata(existing) {
+                        Ok(_) => return Err(e),
+                        Err(metadata) if metadata.kind() == std::io::ErrorKind::NotFound => {}
+                        Err(metadata) => return Err(metadata),
+                    }
+                }
+            }
             Err(e) => return Err(e),
         }
         match (existing.components().next_back(), existing.parent()) {

@@ -7,14 +7,49 @@ use base64::Engine as _;
 use desktop::Recorder;
 use ports::accounts::mask;
 use protocol::accounts::ServiceKind;
-use std::os::unix::fs::PermissionsExt;
+#[path = "tests/fs_support.rs"]
+mod fs_support;
+use fs_support::{assert_owner_only, deny_directory_writes, deny_reads, deny_removal};
+#[path = "tests/process_support.rs"]
+mod process_support;
+use process_support::{HelperProcess, executable, put_agent};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use vault::MemoryVault;
+
+/// Only authored loopback endpoints may answer these tests. IP literals do not
+/// need DNS; provider hostnames are refused before any connection is attempted.
+fn http() -> reqwest::Client {
+    struct NoProviderDns;
+    impl reqwest::dns::Resolve for NoProviderDns {
+        fn resolve(&self, _: reqwest::dns::Name) -> reqwest::dns::Resolving {
+            Box::pin(async {
+                Err(std::io::Error::other("provider DNS is disabled in account tests").into())
+            })
+        }
+    }
+    reqwest::Client::builder()
+        .no_proxy()
+        .dns_resolver(Arc::new(NoProviderDns))
+        .timeout(Duration::from_secs(30))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap()
+}
+
+#[tokio::test]
+async fn fixtures_refuse_provider_dns_instead_of_contacting_live_accounts() {
+    let refused = http()
+        .get("https://example.invalid/accounts-fixture")
+        .send()
+        .await;
+    assert!(refused.unwrap_err().is_connect());
+}
 
 /// Writes an executable stand-in at `path`. A test spawning a tool at the same
 /// moment inherits any write handle open in this process until its exec, and
 /// running the stand-in then fails as busy; so a child process writes it. It
 /// takes the place of the one before whole, which a running copy keeps.
+#[cfg(target_os = "linux")]
 fn put_script(path: &Path, script: &str) {
     use std::io::Write as _;
     let mut child = std::process::Command::new("/bin/sh")
@@ -24,6 +59,7 @@ fn put_script(path: &Path, script: &str) {
             "sh",
         ])
         .arg(path)
+        .env("PATH", "/usr/bin:/bin")
         .stdin(std::process::Stdio::piped())
         .spawn()
         .unwrap();
@@ -36,47 +72,63 @@ fn put_script(path: &Path, script: &str) {
     assert!(child.wait().unwrap().success(), "could not write {path:?}");
 }
 
-const GH: &str = r#"#!/bin/sh
-PATH=/usr/bin:/bin
-state="$GH_CONFIG_DIR/hosts.yml"
-case "$1 $2" in
-"auth login")
-  printf '! First copy your one-time code: ABCD-1234\n'
-  printf 'Press Enter to open https://github.com/login/device in your browser... '
-  read _ || exit 1
-  "$GH_BROWSER" https://github.com/login/device
-  while [ ! -e "$TEST_GO" ]; do sleep 0.05; done
-  printf 'user: octo\n' > "$state" ;;
-"auth status")
-  if [ -e "$state" ]; then
-    printf '{"hosts":{"github.com":[{"state":"success","active":true,"login":"octo"}]}}\n'
-  else
-    printf '{"hosts":{}}\n'; exit 1
-  fi ;;
-"auth token") [ -e "$state" ] && printf 'gho_TestToken0123456789\n' || exit 1 ;;
-"auth logout") rm -f "$state" ;;
-esac
-"#;
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cancelled_claude_status_keeps_running_and_blocks_the_next_check() {
+    let f = Fixture::new();
+    f.agent("claude", "claude-held-status");
+    let home = f.root.path().join("home");
+    let first = tokio::spawn({
+        let accounts = f.accounts.clone();
+        async move { accounts.check(Some("claude")).await }
+    });
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !home.join("started").exists() {
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .unwrap();
+    first.abort();
+    let second = tokio::spawn({
+        let accounts = f.accounts.clone();
+        async move { accounts.check(Some("claude")).await }
+    });
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(!second.is_finished(), "the second check bypassed the first");
+    assert!(
+        !home.join("finished").exists(),
+        "the first check ended early"
+    );
+    f.go();
+    tokio::time::timeout(Duration::from_secs(5), second)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(home.join("finished").exists());
+    assert_eq!(f.account("claude").await.state, AccountState::Active);
+}
 
-const CLAUDE: &str = r#"#!/bin/sh
-PATH=/usr/bin:/bin
-case "$1 $2" in
-"auth login")
-  printf 'Opening your browser to sign in...\n'
-  "$BROWSER" 'https://claude.ai/oauth/authorize?code=true'
-  while [ ! -e "$TEST_GO" ]; do sleep 0.05; done
-  touch "$HOME/claude-in" ;;
-"auth status")
-  if [ -e "$HOME/claude-in" ]; then
-    printf '{"loggedIn":true,"email":"me@example.com"}\n'
-  else
-    printf '{"loggedIn":false}\n'
-  fi ;;
-"auth logout") rm -f "$HOME/claude-in" ;;
-esac
-"#;
-
-const CODEX: &str = "#!/bin/sh\necho 'Not logged in' >&2\nexit 1\n";
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn claude_status_waits_past_its_regular_deadline_without_killing_the_tool() {
+    let root = tempfile::tempdir().unwrap();
+    let bin = root.path().join("bin");
+    std::fs::create_dir(&bin).unwrap();
+    put_agent(&bin.join("slow-status"), "slow-status");
+    let tools = Tools {
+        env: vec![
+            ("PATH".into(), bin.into()),
+            ("HOME".into(), root.path().into()),
+        ],
+    };
+    let began = std::time::Instant::now();
+    let output = tools
+        .run_claude_status(&["slow-status".into()], &[], Duration::from_millis(100))
+        .await
+        .unwrap();
+    assert!(began.elapsed() >= Duration::from_millis(100));
+    assert!(output.success);
+    assert_eq!(output.stdout, "{\"loggedIn\":true}\n");
+}
 
 struct Fixture {
     root: tempfile::TempDir,
@@ -99,8 +151,8 @@ impl Fixture {
         let root = tempfile::tempdir().unwrap();
         let bin = root.path().join("bin");
         std::fs::create_dir(&bin).unwrap();
-        for (name, script) in [("gh", GH), ("claude", CLAUDE), ("codex", CODEX)] {
-            put_script(&bin.join(name), script);
+        for name in ["gh", "claude", "codex"] {
+            put_agent(&bin.join(name), name);
         }
         let home = root.path().join("home");
         std::fs::create_dir(&home).unwrap();
@@ -115,7 +167,10 @@ impl Fixture {
             tools: Tools {
                 env: vec![
                     ("PATH".into(), bin.into()),
-                    ("HOME".into(), home.into()),
+                    ("HOME".into(), home.clone().into()),
+                    ("USERPROFILE".into(), home.clone().into()),
+                    ("APPDATA".into(), home.join("AppData/Roaming").into()),
+                    ("LOCALAPPDATA".into(), home.join("AppData/Local").into()),
                     ("TEST_GO".into(), root.path().join("go").into()),
                 ],
             },
@@ -130,9 +185,29 @@ impl Fixture {
         }
     }
 
-    /// Replaces the stand-in `name` with `script`.
+    /// Selects an authored tool behavior without replacing a running image.
+    fn agent(&self, name: &str, mode: &str) {
+        put_agent(&self.root.path().join("bin").join(name), mode);
+    }
+
+    /// Retains Linux-only terminal and escaped-session stress fixtures.
+    #[cfg(target_os = "linux")]
     fn script(&self, name: &str, script: &str) {
         put_script(&self.root.path().join("bin").join(name), script);
+    }
+
+    fn assert_browser_requests(&self, urls: &[&str]) {
+        #[cfg(unix)]
+        assert_eq!(self.opener.opened(), urls);
+        #[cfg(windows)]
+        {
+            // Windows tools open their own browser; the authored fixture logs
+            // the request rather than touching a real browser or account.
+            assert!(self.opener.opened().is_empty());
+            let requested =
+                std::fs::read_to_string(self.root.path().join("home/browser-opened")).unwrap();
+            assert_eq!(requested.lines().collect::<Vec<_>>(), urls);
+        }
     }
 
     /// Lets a stand-in sign-in finish.
@@ -161,7 +236,7 @@ impl Fixture {
     /// Waits for the view to show what `what` looks for.
     async fn until<T>(&self, what: impl Fn(&AccountsView) -> Option<T>) -> T {
         let mut changed = self.accounts.changed();
-        tokio::time::timeout(Duration::from_secs(20), async {
+        let reached = tokio::time::timeout(Duration::from_secs(20), async {
             loop {
                 if let Some(found) = what(&self.accounts.view().await) {
                     return found;
@@ -169,8 +244,14 @@ impl Fixture {
                 changed.changed().await.unwrap();
             }
         })
-        .await
-        .expect("the accounts did not get there in time")
+        .await;
+        match reached {
+            Ok(found) => found,
+            Err(_) => panic!(
+                "the accounts did not get there in time: {:?}",
+                self.accounts.view().await
+            ),
+        }
     }
 
     async fn until_stage(&self, want: impl Fn(&SignInStage) -> bool) -> SignInStage {
@@ -266,7 +347,7 @@ async fn github_signs_in_with_its_code_and_tasks_get_its_own_folder() {
             identity: Some("octo".into())
         }
     );
-    assert_eq!(f.opener.opened(), ["https://github.com/login/device"]);
+    f.assert_browser_requests(&["https://github.com/login/device"]);
     let github = f.account("github").await;
     assert_eq!(github.state, AccountState::Active);
     assert_eq!(github.identity.as_deref(), Some("octo"));
@@ -278,8 +359,7 @@ async fn github_signs_in_with_its_code_and_tasks_get_its_own_folder() {
     // The sign-in lives in the account's own private folder.
     let folder = f.dir().join("config").join("github");
     assert!(folder.join("hosts.yml").is_file());
-    let mode = std::fs::metadata(&folder).unwrap().permissions().mode();
-    assert_eq!(mode & 0o077, 0, "only the owner can open {folder:?}");
+    assert_owner_only(&folder);
     assert!(!f.dir().join("signin").exists(), "the scratch is emptied");
 
     // A task gets the folder, and gh's token is masked in what it says.
@@ -337,18 +417,7 @@ async fn github_without_permission_for_workflows_says_to_sign_in_again() {
     let f = Fixture::new();
     // gh keeps the scopes it was asked for; it was signed in before Ophio
     // asked for workflows.
-    f.script(
-        "gh",
-        &GH.replace(
-            r#"  printf 'user: octo\n' > "$state" ;;"#,
-            r#"  printf 'user: octo\nscopes: %s\n' "$*" > "$state" ;;"#,
-        )
-        .replace(
-            r#"    printf '{"hosts":{"github.com":[{"state":"success","active":true,"login":"octo"}]}}\n'"#,
-            r#"    grep -q -- '--scopes workflow' "$state" && more=', workflow' || more=''
-    printf '{"hosts":{"github.com":[{"state":"success","active":true,"login":"octo","scopes":"gist, read:org, repo%s"}]}}\n' "$more""#,
-        ),
-    );
+    f.agent("gh", "gh-scopes");
     let dir = f.dir().join("config").join("github");
     files::private_dir(&dir).unwrap();
     std::fs::write(dir.join("hosts.yml"), "user: octo\nscopes: auth login\n").unwrap();
@@ -399,10 +468,7 @@ async fn claude_signs_in_through_a_terminal_and_signs_out_with_its_own_command()
             identity: Some("me@example.com".into())
         }
     );
-    assert_eq!(
-        f.opener.opened(),
-        ["https://claude.ai/oauth/authorize?code=true"]
-    );
+    f.assert_browser_requests(&["https://claude.ai/oauth/authorize?code=true"]);
     f.act(AccountAction::SignOut {
         account_id: "claude".into(),
     })
@@ -448,7 +514,10 @@ async fn forgetting_all_ends_what_it_can_and_keeps_the_agents_logins() {
     assert_eq!(open[0].1, "https://github.com/settings/applications");
     // Claude Code's login is the owner's own.
     assert!(f.root.path().join("home").join("claude-in").exists());
-    assert_eq!(f.opener.opened().len(), 2, "nothing more is opened");
+    f.assert_browser_requests(&[
+        "https://github.com/login/device",
+        "https://claude.ai/oauth/authorize?code=true",
+    ]);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -619,28 +688,13 @@ async fn nothing_a_stopped_sign_in_started_outlives_it() {
     assert!(!f.dir().join("config").join("github").join("login").exists());
 }
 
-#[cfg(target_os = "linux")]
-/// A sign-in that prints on both streams without end, the helper printing
-/// on the second having its id in `$HOME/err.pid`.
-const FLOODING_LOGIN: &str = r#"#!/bin/sh
-PATH=/usr/bin:/bin
-case "$1 $2" in
-"auth login")
-  yes err >&2 &
-  echo $! > "$HOME/err.pid"
-  exec yes out ;;
-*) exit 1 ;;
-esac
-"#;
-
-#[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_sign_in_that_prints_without_end_is_ended_at_the_output_limit() {
     let f = Fixture::new();
     let home = f.root.path().join("home");
     // gh's sign-in has pipes, Claude Code's a terminal.
     for (tool, account) in [("gh", "github"), ("claude", "claude")] {
-        f.script(tool, FLOODING_LOGIN);
+        f.agent(tool, "flood-login");
         let began = std::time::Instant::now();
         f.act(AccountAction::SignIn {
             account_id: account.into(),
@@ -661,12 +715,9 @@ async fn a_sign_in_that_prints_without_end_is_ended_at_the_output_limit() {
             began.elapsed()
         );
         // Said only once nothing it started is left.
-        let err = std::fs::read_to_string(home.join("err.pid")).unwrap();
-        let running =
-            std::fs::read_to_string(format!("/proc/{}/stat", err.trim())).is_ok_and(|stat| {
-                !(stat.rsplit(')').next().unwrap_or("").trim_start()).starts_with('Z')
-            });
-        assert!(!running, "{tool}'s helper still runs");
+        let helper = HelperProcess::from_file(&home.join("err.pid"));
+        assert!(!helper.running(), "{tool}'s helper still runs");
+        drop(helper);
         std::fs::remove_file(home.join("err.pid")).unwrap();
     }
 }
@@ -733,41 +784,29 @@ async fn a_sign_in_that_asks_for_enter_without_reading_still_stops() {
     assert!(!running(&pid), "the timed-out sign-in still runs");
 }
 
-#[cfg(target_os = "linux")]
-/// Exits at once, leaving a helper in a session of its own that keeps the
-/// output open. The helper's id is in `$HOME/held.pid`.
-const HOLDS_OUTPUT: &str = r#"#!/bin/sh
-PATH=/usr/bin:/bin
-setsid sh -c 'echo $$ > "$HOME/held.tmp" && mv "$HOME/held.tmp" "$HOME/held.pid" && exec sleep 30' &
-# The parent may exit only once its helper is ready; containment can end
-# everything it left immediately after that exit.
-while [ ! -s "$HOME/held.pid" ]; do sleep 0.005; done
-echo done
-"#;
-
-/// Signing in right after an installer put the agent in `~/.local/bin`,
-/// before Øphio's own `PATH` has that folder, finds it where setup and tasks
-/// do, and starts it with its folder on `PATH` for what it runs in turn.
-#[cfg(unix)]
+/// An authored per-user installation is found outside PATH, as setup and
+/// tasks find it. Unix also adds its folder to PATH for adjacent runtimes.
 #[tokio::test]
 async fn an_agent_installed_for_the_person_alone_is_found_off_path() {
     let root = tempfile::tempdir().unwrap();
     let bin = root.path().join("bin");
     let home = root.path().join("home");
-    let installed = home.join(".local/bin");
+    let installed = home.join(if cfg!(windows) {
+        "AppData/Roaming/npm"
+    } else {
+        ".local/bin"
+    });
     std::fs::create_dir(&bin).unwrap();
     std::fs::create_dir_all(&installed).unwrap();
-    put_script(
-        &installed.join("claude"),
-        "#!/bin/sh\nprintf '%s' \"$PATH\"\n",
-    );
+    put_agent(&installed.join("claude"), "path");
     let tools = Tools {
         env: vec![
             ("PATH".into(), bin.clone().into()),
             ("HOME".into(), home.clone().into()),
+            ("USERPROFILE".into(), home.clone().into()),
         ],
     };
-    assert_eq!(tools.find("claude"), installed.join("claude"));
+    assert_eq!(tools.find("claude"), executable(&installed.join("claude")));
     assert_eq!(tools.find("codex"), PathBuf::from("codex"), "not installed");
     let ran = tools
         .run(&["claude".into()], &[], Duration::from_secs(10))
@@ -776,23 +815,25 @@ async fn an_agent_installed_for_the_person_alone_is_found_off_path() {
     assert!(ran.success);
     assert_eq!(
         std::env::split_paths(&ran.stdout).collect::<Vec<_>>(),
-        [bin, installed]
+        if cfg!(windows) {
+            vec![bin]
+        } else {
+            vec![bin, installed]
+        }
     );
 
     // On PATH, it is found there first, and PATH is left as it is.
     let on_path = root.path().join("on-path");
     std::fs::create_dir(&on_path).unwrap();
-    put_script(
-        &on_path.join("claude"),
-        "#!/bin/sh\nprintf '%s' \"$PATH\"\n",
-    );
+    put_agent(&on_path.join("claude"), "path");
     let tools = Tools {
         env: vec![
             ("PATH".into(), on_path.clone().into()),
-            ("HOME".into(), home.into()),
+            ("HOME".into(), home.clone().into()),
+            ("USERPROFILE".into(), home.into()),
         ],
     };
-    assert_eq!(tools.find("claude"), on_path.join("claude"));
+    assert_eq!(tools.find("claude"), executable(&on_path.join("claude")));
     let ran = tools
         .run(&["claude".into()], &[], Duration::from_secs(10))
         .await
@@ -800,7 +841,6 @@ async fn an_agent_installed_for_the_person_alone_is_found_off_path() {
     assert_eq!(ran.stdout, on_path.to_str().unwrap());
 }
 
-#[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_tool_keeps_to_its_limit_when_a_helper_holds_its_output() {
     let root = tempfile::tempdir().unwrap();
@@ -808,7 +848,7 @@ async fn a_tool_keeps_to_its_limit_when_a_helper_holds_its_output() {
     let home = root.path().join("home");
     std::fs::create_dir(&bin).unwrap();
     std::fs::create_dir(&home).unwrap();
-    put_script(&bin.join("holder"), HOLDS_OUTPUT);
+    put_agent(&bin.join("holder"), "holds-output");
     let tools = Tools {
         env: vec![
             ("PATH".into(), bin.into()),
@@ -828,43 +868,26 @@ async fn a_tool_keeps_to_its_limit_when_a_helper_holds_its_output() {
         "{:?}",
         began.elapsed()
     );
-    let held = std::fs::read_to_string(home.join("held.pid")).unwrap();
-    let held = held.trim();
-    // Running and not yet ended: a zombie has ended.
-    let running = std::fs::read_to_string(format!("/proc/{held}/stat"))
-        .is_ok_and(|stat| !(stat.rsplit(')').next().unwrap_or("").trim_start()).starts_with('Z'));
-    // A cgroup ends even what left the tool's session; a process group
-    // alone does not, and its output is then given up at the limit.
+    let held = HelperProcess::from_file(&home.join("held.pid"));
+    // Complete containment ends even a helper that left the tool's process
+    // group; a group-only backend instead gives up reading at the deadline.
     if matches!(
         containment::Container::new().unwrap().containment(),
         ports::Containment::Complete
     ) {
         assert_eq!(ran.unwrap().stdout, "done\n");
-        assert!(!running);
+        assert!(!held.running(), "the contained helper still runs");
     } else {
         assert_eq!(ran.unwrap_err(), "holder did not answer in time");
-        let _ = std::process::Command::new("kill").arg(held).status();
+        assert!(
+            held.running(),
+            "the helper did not actually hold output open"
+        );
     }
+    // The guard also cleans an escaped helper up on assertion failure.
+    drop(held);
 }
 
-#[cfg(target_os = "linux")]
-/// Prints without end on both streams. The helper writing to stderr has its
-/// id in `$HOME/err.pid`.
-const FLOODS: &str = r#"#!/bin/sh
-PATH=/usr/bin:/bin
-yes err >&2 &
-echo $! > "$HOME/err.pid"
-exec yes out
-"#;
-
-#[cfg(target_os = "linux")]
-/// Prints past the limit and exits.
-const PRINTS_TOO_MUCH: &str = r#"#!/bin/sh
-PATH=/usr/bin:/bin
-head -c 3000000 /dev/zero | tr '\0' x
-"#;
-
-#[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_tool_that_prints_without_end_is_ended_at_the_output_limit() {
     let root = tempfile::tempdir().unwrap();
@@ -872,8 +895,8 @@ async fn a_tool_that_prints_without_end_is_ended_at_the_output_limit() {
     let home = root.path().join("home");
     std::fs::create_dir(&bin).unwrap();
     std::fs::create_dir(&home).unwrap();
-    for (name, script) in [("flood", FLOODS), ("chatty", PRINTS_TOO_MUCH)] {
-        put_script(&bin.join(name), script);
+    for name in ["flood", "chatty"] {
+        put_agent(&bin.join(name), name);
     }
     let tools = Tools {
         env: vec![
@@ -892,10 +915,9 @@ async fn a_tool_that_prints_without_end_is_ended_at_the_output_limit() {
         "{:?}",
         began.elapsed()
     );
-    let err = std::fs::read_to_string(home.join("err.pid")).unwrap();
-    let running = std::fs::read_to_string(format!("/proc/{}/stat", err.trim()))
-        .is_ok_and(|stat| !(stat.rsplit(')').next().unwrap_or("").trim_start()).starts_with('Z'));
-    assert!(!running);
+    let helper = HelperProcess::from_file(&home.join("err.pid"));
+    assert!(!helper.running(), "the output helper still runs");
+    drop(helper);
 
     // Exiting first doesn't make the rest of its output welcome.
     let ran = tools
@@ -1181,9 +1203,19 @@ async fn checks_read_each_tools_own_answer() {
     assert_eq!(f.account("github").await.state, AccountState::SignedOut);
     assert_eq!(f.account("openrouter").await.state, AccountState::SignedOut);
 
-    // An agent that was signed in and then disappears needs attention.
-    std::fs::remove_file(f.accounts.config().tools.find("claude")).unwrap();
-    f.accounts.check(Some("claude")).await;
+    // A signed-in tool that disappears needs attention. Pin this check to
+    // the fixture's absolute path so Windows cannot search a real agent PATH.
+    let missing = f.accounts.config().tools.find("claude");
+    std::fs::remove_file(&missing).unwrap();
+    let mut profile = f.accounts.profile("claude").unwrap();
+    let Method::Agent { status, .. } = &mut profile.method else {
+        unreachable!()
+    };
+    status[0] = missing.to_str().unwrap().to_owned();
+    assert!(matches!(
+        f.accounts.check_one(&profile).await,
+        Checked::Missing(_)
+    ));
     assert!(matches!(
         f.account("claude").await.state,
         AccountState::NeedsAttention { .. }
@@ -1394,10 +1426,7 @@ async fn an_oauth_service_signs_in_through_the_browser_and_refreshes_for_tasks()
     let file = PathBuf::from(env_of(&given, GOOGLE_CREDENTIALS).unwrap());
     let credentials = std::fs::read_to_string(&file).unwrap();
     assert!(credentials.contains("1//Refresh0123456789"));
-    assert_eq!(
-        std::fs::metadata(&file).unwrap().permissions().mode() & 0o077,
-        0
-    );
+    assert_owner_only(&file);
     for secret in [
         "ya29.FirstAccess0123",
         "1//Refresh0123456789",
@@ -1587,13 +1616,7 @@ async fn a_sign_out_ends_the_sign_in_going_first() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_login_that_exits_with_an_error_is_not_a_sign_in() {
     let f = Fixture::new();
-    f.script(
-        "claude",
-        &CLAUDE.replace(
-            r#"touch "$HOME/claude-in" ;;"#,
-            r#"touch "$HOME/claude-in"; exit 1 ;;"#,
-        ),
-    );
+    f.agent("claude", "claude-failed-login");
     f.act(AccountAction::SignIn {
         account_id: "claude".into(),
         on_phone: false,
@@ -1618,13 +1641,7 @@ async fn a_sign_out_or_delete_that_fails_says_so_and_keeps_the_account() {
     std::fs::write(f.root.path().join("home").join("claude-in"), "").unwrap();
     f.accounts.check(Some("claude")).await;
     assert_eq!(f.account("claude").await.state, AccountState::Active);
-    f.script(
-        "claude",
-        &CLAUDE.replace(
-            r#""auth logout") rm -f "$HOME/claude-in" ;;"#,
-            r#""auth logout") exit 1 ;;"#,
-        ),
-    );
+    f.agent("claude", "claude-failed-logout");
     let failed = f
         .act(AccountAction::SignOut {
             account_id: "claude".into(),
@@ -1658,13 +1675,13 @@ async fn a_sign_out_or_delete_that_fails_says_so_and_keeps_the_account() {
     .unwrap();
     let folder = f.dir().join("config").join("cloud");
     std::fs::create_dir_all(folder.join("inner")).unwrap();
-    std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o500)).unwrap();
+    let denied = deny_removal(&folder);
     let failed = f
         .act(AccountAction::Delete {
             account_id: "cloud".into(),
         })
         .await;
-    std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o700)).unwrap();
+    drop(denied);
     assert!(matches!(failed, Err(AccountsError::Failed(_))));
     f.account("cloud").await;
     assert!(
@@ -1706,8 +1723,8 @@ async fn nothing_is_reported_removed_while_the_keyring_holding_it_is_away() {
 async fn the_keyring_is_not_used_unless_noted_as_used() {
     let dir = tempfile::tempdir().unwrap();
     let accounts = dir.path().join("accounts");
-    std::fs::create_dir(&accounts).unwrap();
-    std::fs::set_permissions(&accounts, std::fs::Permissions::from_mode(0o500)).unwrap();
+    files::private_dir(&accounts).unwrap();
+    let denied = deny_directory_writes(&accounts);
     // The note can't be written, so the stand-in keyring is left alone.
     let keyring = Arc::new(MemoryVault::default());
     let vault = vault::with_keyring(&accounts, keyring.clone());
@@ -1719,7 +1736,7 @@ async fn the_keyring_is_not_used_unless_noted_as_used() {
             .is_err()
     );
     assert!(keyring.is_empty());
-    std::fs::set_permissions(&accounts, std::fs::Permissions::from_mode(0o700)).unwrap();
+    drop(denied);
 
     // Noted, the keyring is used, and a later start without it refuses to
     // call anything removed.
@@ -2047,13 +2064,7 @@ async fn nothing_starts_on_an_account_while_it_is_signed_out() {
     files::private_dir(&dir).unwrap();
     std::fs::write(dir.join("hosts.yml"), "user: octo\n").unwrap();
     // Its own sign-out waits to be let go.
-    f.script(
-        "gh",
-        &GH.replace(
-            r#""auth logout") rm -f "$state" ;;"#,
-            r#""auth logout") while [ ! -e "$TEST_GO" ]; do sleep 0.05; done; rm -f "$state" ;;"#,
-        ),
-    );
+    f.agent("gh", "gh-held-logout");
     let signing_out = f.act(AccountAction::SignOut {
         account_id: "github".into(),
     });
@@ -2624,13 +2635,13 @@ async fn a_pause_that_cannot_be_saved_says_so_and_still_holds() {
     .await
     .unwrap();
     let dir = f.dir().to_path_buf();
-    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o500)).unwrap();
+    let denied = deny_directory_writes(&dir);
     let paused = f
         .act(AccountAction::Pause {
             account_id: "groq".into(),
         })
         .await;
-    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+    drop(denied);
     let refused = paused.unwrap_err();
     assert!(
         refused.to_string().contains("restart would undo it"),
@@ -2757,9 +2768,9 @@ async fn a_recovery_that_could_not_be_saved_still_starts_paused() {
     let file = f.dir().join("accounts.json");
     std::fs::write(&file, b"{ damaged").unwrap();
     // Neither the paused state nor the copy aside can be saved.
-    std::fs::set_permissions(f.dir(), std::fs::Permissions::from_mode(0o500)).unwrap();
+    let denied = deny_directory_writes(f.dir());
     let first = start();
-    std::fs::set_permissions(f.dir(), std::fs::Permissions::from_mode(0o700)).unwrap();
+    drop(denied);
     assert!(all_paused(&first).await);
     assert_eq!(std::fs::read(&file).unwrap(), b"{ damaged");
     // Room again: still paused, and now saved so.
@@ -2771,9 +2782,9 @@ async fn a_recovery_that_could_not_be_saved_still_starts_paused() {
     assert!(Store::new(f.dir()).load().is_none());
     assert!(all_paused(&start()).await);
     // Unreadable is not missing.
-    std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o000)).unwrap();
+    let denied = deny_reads(&file);
     let unreadable = Store::new(f.dir()).load();
-    std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o600)).unwrap();
+    drop(denied);
     assert!(unreadable.is_none());
 }
 
@@ -2785,21 +2796,7 @@ async fn a_tool_token_read_before_a_new_sign_in_is_not_given() {
     std::fs::write(dir.join("hosts.yml"), "user: octo\n").unwrap();
     let home = f.root.path().join("home");
     // The first read waits, and gives the token from before.
-    f.script(
-        "gh",
-        &GH.replace(
-            r#""auth token") [ -e "$state" ] && printf 'gho_TestToken0123456789\n' || exit 1 ;;"#,
-            r#""auth token")
-  [ -e "$state" ] || exit 1
-  if [ -e "$HOME/hold" ]; then
-    rm -f "$HOME/hold"; touch "$HOME/held"
-    while [ ! -e "$HOME/release" ]; do sleep 0.05; done
-    printf 'gho_Before0123456789\n'
-  else
-    printf 'gho_After01234567890\n'
-  fi ;;"#,
-        ),
-    );
+    f.agent("gh", "gh-held-token");
     std::fs::write(home.join("hold"), "").unwrap();
     let reading = f.accounts.token("github");
     let signing = async {
@@ -3098,54 +3095,6 @@ async fn github_calls_go_as_the_signed_in_account_and_say_what_github_refused() 
 
 // ---- Signing in from the phone's own browser ---------------------------
 
-/// Claude Code as 2.1.289 is on a terminal: it opens the page that returns
-/// to this computer, prints the one to finish elsewhere as a terminal link,
-/// and reads the code that page shows. Every line it reads is written down,
-/// to count them; an unknown code is refused and another read.
-const CLAUDE_ON_PHONE: &str = r#"#!/bin/sh
-PATH=/usr/bin:/bin
-case "$1 $2" in
-"auth login")
-  "$BROWSER" 'https://claude.com/cai/oauth/authorize?code=true&redirect_uri=http%3A%2F%2Flocalhost%3A40401%2Fcallback&state=s1'
-  link='https://claude.com/cai/oauth/authorize?code=true&redirect_uri=https%3A%2F%2Fplatform.claude.com%2Foauth%2Fcode%2Fcallback&state=s1'
-  printf 'Opening browser to sign in\342\200\246\r\nIf the browser didn'"'"'t open, visit: \033]8;;%s\007%s\033]8;;\007\r\nPaste code here if prompted > ' "$link" "$link"
-  while read -r code; do
-    printf '%s\n' "$code" >> "$HOME/claude-codes"
-    if [ "$code" = 'good-code#s1' ]; then
-      touch "$HOME/claude-in"; printf 'Login successful.\r\n'; exit 0
-    fi
-    printf 'Invalid code. Please make sure the full code was copied.\r\n' >&2
-  done
-  exit 1 ;;
-"auth status")
-  if [ -e "$HOME/claude-in" ]; then
-    printf '{"loggedIn":true,"email":"me@example.com"}\n'
-  else
-    printf '{"loggedIn":false}\n'
-  fi ;;
-"auth logout") rm -f "$HOME/claude-in" ;;
-esac
-"#;
-
-/// `codex login --device-auth` as 0.164 prints it, coloured, then waits for
-/// the owner to finish on the page.
-const CODEX_ON_PHONE: &str = r#"#!/bin/sh
-PATH=/usr/bin:/bin
-case "$1 $2" in
-"login --device-auth")
-  printf '\nWelcome to Codex [v\033[90m0.164.0\033[0m]\n\nFollow these steps to sign in with ChatGPT using device code authorization:\n\n1. Open this link in your browser and sign in to your account\n   \033[94mhttps://auth.openai.com/codex/device\033[0m\n\n2. Enter this one-time code \033[90m(expires in 15 minutes)\033[0m\n   \033[94mAB12-CDE34\033[0m\n\n'
-  if [ -n "$TEST_OFF" ] && [ -e "$TEST_OFF" ]; then
-    printf 'Error logging in with device code: device auth failed with status 403 Forbidden\n' >&2
-    exit 1
-  fi
-  while [ ! -e "$TEST_GO" ]; do sleep 0.05; done
-  touch "$HOME/codex-in"
-  printf 'Successfully logged in\n' >&2 ;;
-"login status")
-  if [ -e "$HOME/codex-in" ]; then echo 'Logged in using ChatGPT' >&2; else echo 'Not logged in' >&2; exit 1; fi ;;
-esac
-"#;
-
 /// Everything logged while `f` runs, at every level.
 async fn logged<T>(f: impl std::future::Future<Output = T>) -> (T, String) {
     #[derive(Clone, Default)]
@@ -3198,7 +3147,7 @@ async fn code(f: &Fixture, code: &str) -> AccountAction {
 #[tokio::test(flavor = "current_thread")]
 async fn claude_signs_in_on_the_phone_with_the_code_its_page_shows() {
     let f = Fixture::new();
-    f.script("claude", CLAUDE_ON_PHONE);
+    f.agent("claude", "claude-phone");
     let home = f.root.path().join("home");
     let ((), log) = logged(async {
         tracing::trace!("the log is caught");
@@ -3268,8 +3217,8 @@ async fn claude_signs_in_on_the_phone_with_the_code_its_page_shows() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_code_is_taken_only_while_a_sign_in_waits_for_one() {
     let f = Fixture::new();
-    f.script("claude", CLAUDE_ON_PHONE);
-    f.script("codex", CODEX_ON_PHONE);
+    f.agent("claude", "claude-phone");
+    f.agent("codex", "codex-phone");
     // Nothing running.
     assert!(matches!(
         f.act(code(&f, "good-code#s1").await).await,
@@ -3338,7 +3287,7 @@ async fn a_code_is_taken_only_while_a_sign_in_waits_for_one() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn codex_signs_in_on_the_phone_with_a_device_code() {
     let f = Fixture::new();
-    f.script("codex", CODEX_ON_PHONE);
+    f.agent("codex", "codex-phone");
     f.act(on_phone("codex")).await.unwrap();
     let page = f
         .until_stage(|s| matches!(s, SignInStage::OnPhone { code: Some(_), .. }))
@@ -3369,7 +3318,7 @@ async fn codex_signs_in_on_the_phone_with_a_device_code() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn codex_without_device_code_sign_in_says_where_to_turn_it_on() {
     let f = Fixture::new();
-    f.script("codex", CODEX_ON_PHONE);
+    f.agent("codex", "codex-phone");
     // The stand-in refuses as Codex does when the account doesn't allow it.
     let off = f.root.path().join("off");
     std::fs::write(&off, "").unwrap();

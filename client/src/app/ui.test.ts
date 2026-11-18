@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { beforeEach, expect, it, vi } from "vitest";
 import { homeTab, TABS, UiStore } from "./ui";
+import { talkAll } from "./talkScope";
+import { emptyHostState } from "../state/projection";
 
 beforeEach(() => localStorage.clear());
 
@@ -393,6 +395,46 @@ it("Back from a To-Do opened in Tasks returns to the exact Tasks destination", (
   ui.openChecklist("q");
   ui.back();
   expect(ui.get().tab).toBe("talk");
+  ui.retire();
+});
+
+it("keeps Chat and To-Do All choices independent of other tabs and preserves them across restart", () => {
+  const ui = new UiStore("talk-scope");
+  ui.selectProject("first");
+  ui.setTodoAll(true);
+  ui.setTalkAll(true);
+  expect(ui.get()).toMatchObject({ projectId: "first", talkAll: true, todoAll: true });
+  ui.selectTalkProject("second");
+  expect(ui.get()).toMatchObject({ projectId: "second", talkAll: false, todoAll: true });
+  ui.setTalkAll(true);
+  ui.selectTab("library");
+  ui.selectProject("third");
+  expect(ui.get().talkAll).toBe(true);
+  ui.persistNow(); ui.retire();
+  const reopened = new UiStore("talk-scope");
+  expect(reopened.get()).toMatchObject({ projectId: "third", talkAll: true, todoAll: false });
+  reopened.retire();
+});
+
+it("older saved interface state has no explicit Chat scope; default uses distinct known conversation projects only after catch-up", () => {
+  const seed = new UiStore("talk-legacy");
+  seed.selectProject("first");
+  seed.persistNow(); seed.retire();
+  const saved = JSON.parse(localStorage.getItem("ui.talk-legacy")!);
+  delete saved.state.talkAll;
+  localStorage.setItem("ui.talk-legacy", JSON.stringify(saved));
+  const ui = new UiStore("talk-legacy");
+  expect(ui.get().talkAll).toBeNull();
+  const tasks = {
+    a: { project_id: "first", conversation: true },
+    b: { project_id: "second", conversation: true },
+    unknown: { project_id: "third", conversation: true },
+  };
+  const host = { ...emptyHostState, projects: { first: {} as never, second: {} as never }, tasks: tasks as never };
+  expect(talkAll(ui.get(), { ...host, tasks: { a: tasks.a } as never })).toBe(false);
+  expect(talkAll(ui.get(), host)).toBe(true);
+  ui.setTalkAll(false);
+  expect(talkAll(ui.get(), host)).toBe(false);
   ui.retire();
 });
 

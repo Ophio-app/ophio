@@ -159,7 +159,7 @@ export class TransferManager extends Store<ManagerState> {
   private wait = RESUME_FIRST_MS;
   private pendingProgress = new Map<string, Progress>();
   private progressTimer: ReturnType<typeof setTimeout> | undefined;
-  constructor(private app: App) {
+  constructor(private app: Pick<App, "platform" | "profile" | "session">) {
     const key = `transfers.v1.${app.profile.profileId}`;
     let jobs: Record<string, TransferJob> = {};
     let storageError: string | null = null, storageRecovery: string | null = null;
@@ -175,7 +175,7 @@ export class TransferManager extends Store<ManagerState> {
     this.unread = storageError !== null;
     this.watch();
   }
-  bind(app: App) {
+  bind(app: Pick<App, "platform" | "profile" | "session">) {
     this.app = app;
     this.watch();
   }
@@ -660,7 +660,7 @@ export class TransferManager extends Store<ManagerState> {
   }
 }
 const managers = new Map<string, TransferManager>();
-export function transferManager(app: App): TransferManager {
+export function transferManager(app: Pick<App, "platform" | "profile" | "session">): TransferManager {
   let m = managers.get(app.profile.profileId);
   if (!m) {
     m = new TransferManager(app);

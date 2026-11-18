@@ -1,0 +1,57 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.checks-body,
+.checks-project,
+.checks-form {
+  display: grid;
+  gap: var(--s4);
+  min-width: 0;
+}
+.checks-project > .section__title { margin-bottom: 0; }
+.checks-row__about,
+.checks-row__state { display: block; }
+.checks-row__state { margin-top: var(--s1); color: var(--ink-3); }
+.checks-suggestions { border-bottom: 1px solid var(--line); }
+.checks-suggestions:empty { display: none; }
+.checks-inputs { padding: var(--s2) var(--s4) var(--s3); font-size: var(--text-sm); color: var(--warn-text); }
+.checks-inputs p { margin: 0 0 var(--s1); }
+.checks-add { padding-top: var(--s2); }
+.checks-sheet { overflow-wrap: anywhere; }
+.checks-sheet .sheet__body { display: grid; align-content: start; gap: var(--s6); }
+.checks-sheet section,
+.checks-sheet p { min-width: 0; }
+.checks-sheet section > h3,
+.checks-sheet .checks-draft-heading h3 { margin: 0 0 var(--s2); font-size: var(--text-lg); font-weight: 650; }
+.checks-sheet section > p,
+.checks-facts p,
+.checks-proof p { margin: 0 0 var(--s2); }
+.checks-facts { color: var(--ink-2); }
+.checks-failed { color: var(--stop-text); }
+.checks-form > .btn { justify-self: start; }
+.checks-actions,
+.checks-draft-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s2); }
+.checks-actions > .btn { max-width: 100%; }
+.checks-sheet .sheet__footer .checks-actions > .btn { flex: 1 1 auto; }
+.checks-draft-heading { justify-content: space-between; }
+.checks-draft-heading h3 { flex: 1 1 10rem; }
+.checks-item-kind { font-size: var(--text-sm); color: var(--ink-3); }
+.checks-draft-item { border-top: 1px solid var(--line); padding-top: var(--s4); }
+.checks-draft-item--left-out { border-top-style: dashed; }
+.checks-draft-item--left-out > :not(.checks-draft-heading) { color: var(--ink-3); }
+.checks-differences { border-left: 2px solid var(--line-strong); padding-left: var(--s3); margin-block: var(--s3); }
+.checks-differences ul { padding-left: var(--s4); margin-block: var(--s2); }
+.checks-differences li + li { margin-top: var(--s1); }
+.checks-proof { margin-top: var(--s3); }
+.checks-details,
+.checks-history { border-top: 1px solid var(--line); padding-top: var(--s4); }
+.checks-output summary,
+.checks-details summary { min-height: var(--target); cursor: pointer; padding-block: var(--s2); font-weight: 550; }
+.checks-output pre,
+.checks-details pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-mono); font-size: var(--text-sm); line-height: 1.6; }
+.checks-output pre { background: var(--surface-sunken); padding: var(--s3); border-radius: var(--r-sm); max-height: 22rem; overflow: auto; }
+.checks-details dt { color: var(--ink-3); font-size: var(--text-sm); margin-top: var(--s3); }
+.checks-details dd { margin: var(--s1) 0; }
+.checks-hand { padding-top: var(--s3); }
+.checks-checkbox { display: flex; align-items: center; gap: var(--s2); min-height: var(--target); }
+.checks-run { margin-top: var(--s3); }
+.checks-body .empty { padding: var(--s4) var(--s2); }
+.checks-body .empty__body { max-width: 48ch; }

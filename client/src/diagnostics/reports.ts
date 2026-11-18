@@ -101,13 +101,22 @@ export class ReportService extends Store<ReportsState> {
     if (!profileId || profileId === this.#session?.profileId) return this.#session;
     return this.#sessions(profileId) ?? null;
   }
-  attach(session: Session, ui: Pick<UiStore, "get">): () => void {
+  /** Active-side defaults do not own a connection subscription. */
+  context(session: Session, ui: Pick<UiStore, "get">): () => void {
+    const read = () => ({ host: session.state.get(), ui: ui.get() });
     this.#session = session;
-    this.#store = () => ({ host: session.state.get(), ui: ui.get() });
+    this.#store = read;
+    return () => { if (this.#store === read) { this.#session = null; this.#store = () => ({}); } };
+  }
+  watch(session: Session): () => void {
     const changed = () => { if (this.#reachable(session)) void this.flush(); };
     const offLink = session.link.subscribe(changed), offState = session.state.subscribe(changed);
     changed();
-    return () => { offLink(); offState(); if (this.#session === session) { this.#session = null; this.#store = () => ({}); } };
+    return () => { offLink(); offState(); };
+  }
+  attach(session: Session, ui: Pick<UiStore, "get">): () => void {
+    const offContext = this.context(session, ui), offWatch = this.watch(session);
+    return () => { offWatch(); offContext(); };
   }
   async setPlatform(platform: Platform): Promise<void> {
     let info: Awaited<ReturnType<NonNullable<Platform["appInfo"]>>> | undefined;

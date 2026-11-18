@@ -22,6 +22,8 @@ impl Repo {
             .submit(
                 &Caller::local_owner(),
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: None,
                     agent_chosen: None,
                     mode: None,
@@ -127,6 +129,9 @@ async fn talk_files_issues_that_start_nothing_until_the_person_asks() {
     let spec = r.f.harness.specs.lock().unwrap().last().cloned().unwrap();
     let told = ports::harness::person_instruction(&spec).unwrap();
     assert!(told.contains("github_new_issue"), "{told}");
+    // Only a chat proposes work as cards, so a task isn't told to.
+    assert!(!spec.bridge.as_ref().unwrap().chat);
+    assert!(!told.contains("ophio_propose"), "{told}");
 
     let said = work(&r.f, &binding, WorkCall::Agents).await.unwrap();
     for words in [
@@ -380,6 +385,7 @@ async fn a_task_working_on_github_doesnt_plan_other_work() {
     let spec = r.f.harness.specs.lock().unwrap().last().cloned().unwrap();
     let told = ports::harness::person_instruction(&spec).unwrap();
     assert!(!told.contains("github_new_issue"), "{told}");
+    assert!(!told.contains("ophio_propose"), "{told}");
     for action in [
         new_issue("Unrelated work", &[]),
         start_issue(3, true),
@@ -538,6 +544,8 @@ async fn a_held_chat_plans_only_within_its_access() {
         .submit(
             &owner,
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: Some(TaskMode::Ask),
@@ -574,7 +582,10 @@ async fn a_held_chat_plans_only_within_its_access() {
         told.contains("invite_person") && told.contains("Jev"),
         "{told}"
     );
+    // A chat proposes work that deserves its own branch rather than doing it.
+    assert!(told.contains("ophio_propose"), "{told}");
     let bridge = spec.bridge.expect("a bridge");
+    assert!(bridge.chat);
     let token = (bridge.env.iter())
         .find(|(key, _)| key == ports::bridge::RUN_TOKEN_ENV)
         .map(|(_, token)| token.clone())
@@ -793,6 +804,7 @@ async fn a_restricted_review_cannot_read_private_files_with_native_tools() {
     )]);
     let wrapped = sandbox
         .wrap(WrapRequest {
+            disabled: &ports::Disabled::default(),
             program: Path::new("/bin/sh"),
             visible: &[],
             env: &env,

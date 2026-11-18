@@ -36,6 +36,18 @@ const LISTING: &str = "ophio-models";
 /// lists them. Asking starts no turn, so it spends nothing, and runs no hooks
 /// or tools.
 pub(crate) async fn listed(binary: &Path) -> Option<Vec<Listed>> {
+    let binary = binary.to_owned();
+    let check = ports::claude_checks::run(crate::io::check_home(&binary), async move {
+        listed_owned(&binary).await
+    });
+    tokio::time::timeout(Duration::from_secs(10), check)
+        .await
+        .ok()?
+        .ok()
+        .flatten()
+}
+
+async fn listed_owned(binary: &Path) -> Option<Vec<Listed>> {
     let cwd = tempfile::tempdir().ok()?;
     let mut cmd = crate::io::command(binary);
     cmd.current_dir(cwd.path());
@@ -63,7 +75,7 @@ pub(crate) async fn listed(binary: &Path) -> Option<Vec<Listed>> {
     let mut frames = crate::io::Frames::new(child.stdout.take()?);
     let ask =
         json!({"type":"control_request","request_id":LISTING,"request":{"subtype":"initialize"}});
-    // The child is killed as it drops, answered or not.
+    // Getting the answer does not mean the CLI has saved a renewed login.
     let result = tokio::time::timeout(Duration::from_secs(10), async {
         crate::io::write(&mut stdin, &ask).await.ok()?;
         while let Some(frame) = frames.next().await.ok()? {
@@ -83,8 +95,14 @@ pub(crate) async fn listed(binary: &Path) -> Option<Vec<Listed>> {
     .await
     .ok()
     .flatten();
-    crate::io::kill(&mut child);
-    let _ = child.wait().await;
+    drop(stdin);
+    let finishing =
+        crate::io::finish_check(&mut child, "model list", ports::claude_checks::EXIT_GRACE);
+    tokio::pin!(finishing);
+    tokio::select! {
+        _ = &mut finishing => {},
+        _ = frames.drain() => { finishing.await; },
+    }
     result
 }
 

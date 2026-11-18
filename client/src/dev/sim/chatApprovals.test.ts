@@ -37,7 +37,7 @@ async function started(body: Command): Promise<Task> {
 }
 
 it("lets a chat allow a command or edit inside its sandbox, and only decline what acts outside it", async () => {
-  const projectId = host.projects[0]!.project_id;
+  const projectId = host.projects.find((p) => !p.active_writer && !p.one_off)!.project_id;
   const chat = await started(startConversation(projectId, "Tidy the scratch folder", { harness: "claude_code", model: null, effort: null }, {
     access: { read: [projectId], write: [projectId], whole_read: false, whole_write: false, internet: false, local_network: false },
   }));
@@ -53,6 +53,28 @@ it("lets a chat allow a command or edit inside its sandbox, and only decline wha
     expect((await allow(a)).error?.code).toBe("unsupported");
     expect((await deny(a)).status).toBe("accepted");
   }
+});
+
+it("holds the project for a writing chat only when free, while occupied and read-only chats still start", async () => {
+  const free = host.projects.find((p) => !p.active_writer && !p.one_off)!;
+  const occupied = host.projects.find((p) => !!p.active_writer)!;
+  const agent = { harness: "claude_code" as const, model: null, effort: null };
+  const access = (projectId: string, writing: boolean) => ({
+    read: [projectId], write: writing ? [projectId] : [], whole_read: false,
+    whole_write: false, internet: false, local_network: false,
+  });
+  const first = await started(startConversation(free.project_id, "Write a note", agent, { access: access(free.project_id, true) }));
+  const firstRun = host.runs.find((r) => r.task_id === first.task_id)!;
+  expect(firstRun.holds_writer).toBe(true);
+  expect(host.projects.find((p) => p.project_id === free.project_id)?.active_writer).toBe(firstRun.run_id);
+  const beside = await started(startConversation(free.project_id, "Another note", agent, { access: access(free.project_id, true) }));
+  expect(host.runs.find((r) => r.task_id === beside.task_id)?.holds_writer).toBe(false);
+  expect(host.projects.find((p) => p.project_id === free.project_id)?.active_writer).toBe(firstRun.run_id);
+  const advisory = raise(beside, "file_edit");
+  expect(host.approvals.find((a) => a.approval_id === advisory.approval_id)?.actions).toEqual(["allow", "deny"]);
+  const reader = await started(startConversation(occupied.project_id, "Read a note", agent, { access: access(occupied.project_id, false) }));
+  expect(host.runs.find((r) => r.task_id === reader.task_id)?.holds_writer).toBe(false);
+  expect(host.projects.find((p) => p.project_id === occupied.project_id)?.active_writer).toBe(occupied.active_writer);
 });
 
 it("still refuses Allow in an Ask task that is not a chat", async () => {

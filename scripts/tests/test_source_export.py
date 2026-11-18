@@ -262,6 +262,16 @@ class ExportReview(unittest.TestCase):
                 self.assertFalse(destination.exists())
                 self.assertFalse(receipt.exists())
 
+    def test_public_review_rules_are_exported_with_exact_bytes(self) -> None:
+        rules = b"# Public review rules\nReview permission changes carefully.\n"
+        self.add_file("REVIEW.md", rules)
+        revision = commit_all(self.root)
+        report = export_source.export(self.root, revision, self.destination, self.receipt)
+        self.assertEqual((self.destination / "REVIEW.md").read_bytes(), rules)
+        self.assertEqual([item["path"] for item in report["files"]], ["REVIEW.md"])
+        self.assertEqual(report["audit_findings"], [])
+        self.assertTrue(report["private_terms_checked"])
+
     def test_a_top_level_name_off_the_public_list_is_refused(self) -> None:
         self.add_file("README.md", b"Public source\n")
         self.add_file("drafts/launch.md", b"Not meant to ship\n")

@@ -17,7 +17,7 @@ use crate::{
 use protocol::{
     Command, Query, QueryData,
     accounts::{AccountAction, SignInStage},
-    agent_updates::AgentUpdatesView,
+    agent_updates::{AgentUpdateMode, AgentUpdatesView},
     auth::{DeviceRecord, Grants, PairingOffer},
     capability::{HarnessInfo, HarnessKind},
     checklist::{FileDelivery, FileDeliveryView},
@@ -230,8 +230,8 @@ impl Host for Real {
         }
     }
 
-    async fn set_agent_updates(&mut self, enabled: bool, revision: u64) -> Result<()> {
-        self.command_at(Command::SetAgentUpdates { enabled }, Some(revision))
+    async fn set_agent_update_mode(&mut self, mode: AgentUpdateMode, revision: u64) -> Result<()> {
+        self.command_at(Command::SetAgentUpdateMode { mode }, Some(revision))
             .await
             .map(drop)
     }
@@ -520,6 +520,8 @@ impl Host for Real {
     ) -> Result<TaskId> {
         let receipt = self
             .command(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 // A one-off's project is made with it.
                 project_id: ProjectId::new(),
@@ -747,6 +749,9 @@ pub(super) fn telling(
     match now {
         Some((TaskState::Working | TaskState::AwaitingDecision, _)) => (
             Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id,
                 text: text.into(),
                 bundle: None,
@@ -756,6 +761,8 @@ pub(super) fn telling(
         ),
         _ => (
             Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 task_id,
                 mode: None,
                 text: Some(text.into()),
@@ -841,12 +848,16 @@ fn home() -> Option<PathBuf> {
 }
 
 pub(super) fn expand_home(folder: &str) -> PathBuf {
+    expand_home_from(folder, home().as_deref())
+}
+
+pub(super) fn expand_home_from(folder: &str, home: Option<&Path>) -> PathBuf {
     match (
         folder.strip_prefix("~/").or(folder.strip_prefix("~\\")),
-        home(),
+        home,
     ) {
         (Some(rest), Some(home)) => home.join(rest),
-        _ if folder == "~" => home().unwrap_or_else(|| folder.into()),
+        _ if folder == "~" => home.map_or_else(|| folder.into(), Path::to_path_buf),
         _ => folder.into(),
     }
 }

@@ -96,7 +96,8 @@ it("lists every type in plain words under its heading, each with Alert, Silent a
     expect(screen.getByRole("heading", { level: 2, name: heading })).toBeTruthy();
   for (const heading of ["Needs you", "Worth a look", "Only in the app"])
     expect(screen.getByRole("heading", { level: 3, name: heading })).toBeTruthy();
-  for (const t of ALERT_TYPES) {
+  expect(screen.queryByRole("group", { name: "New Øphio versions" })).toBeNull();
+  for (const t of ALERT_TYPES.filter((t) => t.type !== "new_version")) {
     const row = screen.getByRole("group", { name: t.name });
     expect(row.getAttribute("aria-describedby") && document.getElementById(row.getAttribute("aria-describedby")!)?.textContent).toBe(t.description);
     const radios = group(t.name).getAllByRole("radio");
@@ -104,7 +105,7 @@ it("lists every type in plain words under its heading, each with Alert, Silent a
     // The recommended choice is marked, and chosen at first.
     expect(group(t.name).getByRole("radio", { name: `${TIER_LABELS[t.tier]}, recommended` }).getAttribute("aria-checked")).toBe("true");
   }
-  expect(screen.getAllByRole("radio", { name: /, recommended$/ })).toHaveLength(ALERT_TYPES.length);
+  expect(screen.getAllByRole("radio", { name: /, recommended$/ })).toHaveLength(ALERT_TYPES.length - 1);
   // The words come from the computer's own list, in its order.
   expect(ALERT_TYPES.map((t) => t.type)).toContain("app_update");
   expect((screen.getByRole("button", { name: "Use the recommended choices" }) as HTMLButtonElement).disabled).toBe(true);
@@ -112,6 +113,88 @@ it("lists every type in plain words under its heading, each with Alert, Silent a
   expect(screen.getByText(/Telegram or Discord aren’t covered here/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: /^Chat links/ }));
   expect(top()).toEqual({ screen: "connections" });
+});
+
+it("puts choices first and keeps background controls in a closed, truthful delivery section", async () => {
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
+  expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+    "What notifies you", "This phone", "Projects", "How they look", "Elsewhere",
+  ]);
+  const delivery = screen.getByText("Background delivery and phone settings").closest("details")!;
+  const summary = delivery.querySelector("summary")!;
+  expect(delivery.open).toBe(false);
+  expect(summary.textContent).toContain("Alerts are on");
+  expect(summary.textContent).toContain("Background delivery stops when Øphio closes.");
+  // Folding is presentation only: the watcher keeps updating its status.
+  window.__sim!.device.setAlerts({ android: { running: false } });
+  await advance(2000);
+  expect(summary.textContent).toContain("Android stopped background notifications.");
+  expect(delivery.open).toBe(false);
+  fireEvent.click(summary);
+  expect(delivery.open).toBe(true);
+  const toggle = screen.getByRole("checkbox", { name: "Notify me when Øphio is closed" }) as HTMLInputElement;
+  expect(toggle.checked).toBe(true);
+  fireEvent.click(toggle);
+  expect(toggle.checked).toBe(false);
+  await advance();
+  expect(window.__sim!.device.alerts.settings?.enabled).toBe(false);
+  expect(summary.textContent).toContain("Background delivery is off.");
+});
+
+it("keeps blocked notification permission visible while delivery details are closed", async () => {
+  window.__sim!.device.notificationPermission("blocked");
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
+  const delivery = screen.getByText("Background delivery and phone settings").closest("details")!;
+  expect(delivery.open).toBe(false);
+  expect(delivery.querySelector("summary")!.textContent).toContain("Alerts are blocked in the phone’s settings");
+  expect(screen.getByRole("radiogroup", { name: "Questions" })).toBeTruthy();
+});
+
+it.each([
+  ["blocked", "Phone settings block notifications."],
+  ["off", "Phone notifications are off."],
+  ["unknown", "Notification permission is unknown. Alerts may not arrive."],
+  ["stopped", "Android stopped background notifications."],
+  ["disabled", "Background delivery is off. Notifications stop when Øphio closes."],
+  ["limited", "Background delivery stops when Øphio closes."],
+  ["unavailable", "Background delivery status is unavailable."],
+  ["disconnected", "Some computers aren’t delivering background notifications."],
+  ["unsupported", "This build can’t show system notifications."],
+  ["no-watcher", "Notifications arrive only while Øphio is open."],
+])("shows a compact %s warning before choices and opens the existing delivery controls", async (state, text) => {
+  const device = window.__sim!.device;
+  device.setAlerts({ android: { unrestricted: true }, statuses: { [app.profile.profileId]: "watching" } });
+  if (state === "blocked") device.notificationPermission("blocked");
+  if (state === "off") device.notificationPermission("promptable");
+  if (state === "unknown") vi.spyOn(app.platform, "notificationPermission").mockRejectedValue(new Error("Unavailable"));
+  if (state === "stopped") device.setAlerts({ android: { running: false } });
+  if (state === "disabled") device.setAlerts({ settings: { ...device.alerts.settings!, enabled: false } });
+  if (state === "limited") device.setAlerts({ android: { unrestricted: false } });
+  if (state === "unavailable") vi.spyOn(app.platform.alerts!, "state").mockRejectedValue(new Error("Unavailable"));
+  if (state === "disconnected") device.setAlerts({ statuses: { [app.profile.profileId]: "unreachable" } });
+  if (state === "unsupported") delete app.platform.notify;
+  if (state === "no-watcher") delete app.platform.alerts;
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
+  const warning = screen.getByRole("complementary", { name: "Notification delivery limits" });
+  expect(within(warning).getByText(text)).toBeTruthy();
+  const choices = screen.getByRole("radiogroup", { name: "Questions" });
+  expect(warning.compareDocumentPosition(choices) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const delivery = screen.getByText("Background delivery and phone settings").closest("details")!;
+  const scroll = vi.fn();
+  delivery.scrollIntoView = scroll;
+  expect(delivery.open).toBe(false);
+  fireEvent.click(within(warning).getByRole("button", { name: "Delivery settings" }));
+  expect(delivery.open).toBe(true);
+  expect(document.activeElement).toBe(delivery.querySelector("summary"));
+  expect(scroll).toHaveBeenCalledWith({ block: "start" });
+});
+
+it("removes the compact warning once delivery is healthy", async () => {
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
+  expect(screen.getByRole("complementary", { name: "Notification delivery limits" })).toBeTruthy();
+  window.__sim!.device.setAlerts({ android: { running: true, unrestricted: true }, statuses: { [app.profile.profileId]: "watching" } });
+  await advance(2000);
+  expect(screen.queryByRole("complementary", { name: "Notification delivery limits" })).toBeNull();
 });
 
 it("changes a type on the tap, tells Android at once, goes back with a toast when refused, and resets to the recommended choices", async () => {
@@ -180,9 +263,10 @@ it("keeps one project's choices per type in tiers: muted, a type over the defaul
   window.__sim!.host.notificationSettings = { off: [], bundle: true, projects: [], revision: 4 };
   show({ screen: "settings", section: "settings-notifications", projectId: ids.pTide }); await advance();
   expect(screen.getByText("tidewater-api")).toBeTruthy();
-  // Every type but the app's own updates, each with Default showing this phone's choice.
+  // Only types which permit project choices, each with Default showing this phone's choice.
+  expect(screen.queryByRole("radiogroup", { name: "New Øphio versions" })).toBeNull();
   expect(screen.queryByRole("radiogroup", { name: "Øphio updates" })).toBeNull();
-  expect(screen.getAllByRole("radiogroup").length).toBe(ALERT_TYPES.length - 1 + 1);
+  expect(screen.getAllByRole("radiogroup").length).toBe(ALERT_TYPES.filter((t) => t.project).length + 1);
   expect(group("Finished tasks").getByRole("radio", { name: "Default (Off)" }).getAttribute("aria-checked")).toBe("true");
   expect(group("Questions").getByRole("radio", { name: "Default (Alert)" }).getAttribute("aria-checked")).toBe("true");
   fireEvent.click(group("Finished tasks").getByRole("radio", { name: "Alert" }));
@@ -243,4 +327,37 @@ it("opens a project's Needs you from the note that counts its alerts", async () 
   expect(screen.getByRole("heading", { name: "To look at" })).toBeTruthy();
   expect(screen.getByText("Add rate-limit headers to /v1/orders")).toBeTruthy();
   expect(screen.getByText("Fix the flaky retry test in the payments client")).toBeTruthy();
+});
+
+it("shows the new-version device row only when this computer supports it", async () => {
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
+  expect(screen.queryByRole("group", { name: "New Øphio versions" })).toBeNull();
+  const host = window.__sim!.host;
+  act(() => { host.host.capabilities.features.push("release_check_v1"); host.emit({ type: "capabilities_changed", capabilities: host.host.capabilities }); });
+  await advance();
+  expect(screen.getByRole("group", { name: "New Øphio versions" })).toBeTruthy();
+});
+
+it("does not send stored non-project tiers when changing a project", async () => {
+  const host = window.__sim!.host;
+  host.notificationSettings = { off: [], bundle: false, revision: 0, projects: [{ project_id: ids.pTide, mute: false, on: [], off: [], tiers: [{ type: "new_version", tier: "off" }, { type: "app_update", tier: "silent" }] }] };
+  const command = vi.spyOn(app.session, "command");
+  show({ screen: "settings", section: "settings-notifications", projectId: ids.pTide }); await advance();
+  fireEvent.click(group("Questions").getByRole("radio", { name: "Off" })); await advance(900);
+  expect(command).toHaveBeenCalledWith(expect.objectContaining({ command: "set_notification_settings", projects: [expect.objectContaining({ tiers: [{ type: "question", tier: "off" }] })] }), expect.anything());
+});
+
+it("does not count or reset the hidden new-version choice", async () => {
+  const device = window.__sim!.device;
+  device.setAlerts({ tiers: { ...device.alerts.tiers, new_version: "off" } });
+  show({ screen: "settings", section: "settings-notifications" }); await advance();
+  expect(screen.queryByRole("group", { name: "New Øphio versions" })).toBeNull();
+  expect(screen.getByText("These are the recommended choices.")).toBeTruthy();
+  fireEvent.click(group("Questions").getByRole("radio", { name: "Silent" }));
+  await advance(0);
+  expect(screen.getByRole("status").textContent).toMatch(/^1 choice differs/);
+  fireEvent.click(screen.getByRole("button", { name: "Use the recommended choices" }));
+  await advance(0);
+  expect(device.alerts.tiers?.new_version).toBe("off");
+  expect(device.tierChanges).not.toContainEqual({ alertType: "new_version", tier: "alert" });
 });

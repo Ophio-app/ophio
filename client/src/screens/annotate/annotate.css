@@ -66,7 +66,7 @@
   padding: var(--s2);
   /* Gives a little so one source and "Add source" fit a phone's width. */
   flex: 0 1 13rem;
-  min-width: min(10rem, 70vw);
+  min-width: min(10rem, calc(70 * var(--pane-vw, 1vw)));
   min-height: var(--target);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -296,10 +296,10 @@
 }
 
 /* At enlarged text, give the origin the card's full width below the image. */
-:root.app-narrow .an-source { flex-direction: column; align-items: stretch; }
-:root.app-narrow .an-source img { width: 100%; }
-:root.app-narrow .an-source__text { width: 100%; }
-:root.app-narrow .an-source__text > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .an-source { flex-direction: column; align-items: stretch; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .an-source img { width: 100%; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .an-source__text { width: 100%; }
+:is(:root:not(:has(.pane)), .pane).app-narrow .an-source__text > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 /* ---- Steps ---------------------------------------------------------------
    A scrolling page with Review pinned under it; the tab bar gives way, and
@@ -311,10 +311,10 @@
 .app:has(.tab:not(.is-hidden) .route:not(.is-hidden) > .an-screen:not(.an-screen--full)) .nav {
   display: none;
 }
-:root.app-tight .an-screen:not(.an-screen--full) { overflow: hidden; }
-:root.app-tight .an-screen:not(.an-screen--full) .screen__body { min-height: 0; }
+:is(:root:not(:has(.pane)), .pane).app-tight .an-screen:not(.an-screen--full) { overflow: hidden; }
+:is(:root:not(:has(.pane)), .pane).app-tight .an-screen:not(.an-screen--full) .screen__body { min-height: 0; }
 .an-screen > .screen__footer { flex: none; }
-@media (max-height: 500px) and (min-width: 600px) {
+@container pane (max-height: 500px) and (min-width: 600px) {
   .an-review {
     grid-template-columns: 1fr auto;
     align-items: center;
@@ -590,7 +590,7 @@
 /* One row on a 360px phone; two only once large text needs it. */
 .an-tools .full-tool {
   flex: 1 0 auto;
-  min-width: clamp(44px, 12vw, 60px);
+  min-width: clamp(44px, calc(12 * var(--pane-vw, 1vw)), 60px);
   padding-inline: 4px;
 }
 .an-tools__gap {
@@ -770,7 +770,7 @@
 }
 
 /* Landscape has height to spare at the side, not below. */
-@media (orientation: landscape) and (min-aspect-ratio: 4/3) {
+@container pane (orientation: landscape) and (min-aspect-ratio: 4/3) {
   .an-overlay {
     grid-template:
       "tools top" auto

@@ -66,10 +66,10 @@
 .talk-jump::before { mask-image: none; }
 .welcome__actions::before {
   inset: 0 auto 0 50%;
-  width: 100vw;
-  margin-left: -50vw;
+  width: calc(100 * var(--pane-vw, 1vw));
+  margin-left: calc(-50 * var(--pane-vw, 1vw));
   background:
-    radial-gradient(120vw 70dvh at 100% 100%, var(--glow-a), transparent 70%),
+    radial-gradient(calc(120 * var(--pane-vw, 1vw)) calc(70 * var(--pane-vh, 1dvh)) at 100% 100%, var(--glow-a), transparent 70%),
     linear-gradient(90deg, transparent, var(--mat-veil) max(15%, 50% - var(--content-max) / 2) min(85%, 50% + var(--content-max) / 2), transparent),
     var(--mat) 0 100% / 320px,
     var(--mat) 157px calc(100% - 91px) / 452px,
@@ -84,7 +84,7 @@
     repeating-conic-gradient(from -0.3deg at 50% 1400%, var(--gill) 0deg 0.12deg, transparent 0.12deg 0.6deg),
     var(--surface);
 }
-@media (min-width: 900px) {
+@container pane (min-width: 900px) {
   .nav {
     background:
       linear-gradient(90deg, var(--surface) 30%, transparent),

@@ -37,8 +37,7 @@ impl Opener for Desktop {
             for (name, value) in session_display() {
                 command.env(name, value);
             }
-            let mut child = command
-                .spawn()
+            let mut child = containment::inherit::spawn(&mut command)
                 .map_err(|e| format!("The computer's browser could not be opened: {e}"))?;
             // Reap it in the background; xdg-open returns once the browser has it.
             std::thread::spawn(move || {

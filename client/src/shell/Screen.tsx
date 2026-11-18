@@ -10,6 +10,7 @@ import { useApp, useUi } from "../app/context";
 import type { Route, Tab } from "../app/ui";
 import { ContextHeader, ScreenBar } from "./ContextHeader";
 import { useTightLayout } from "./keyboard";
+import { usePane } from "./pane";
 import { isFocused } from "./focus";
 
 export interface RouteInfo {
@@ -37,7 +38,8 @@ export function useRoute(): RouteInfo {
 
 /** Whether what calls it is on screen now; outside any route, it is. */
 export function useOnScreen(): boolean {
-  return useContext(RouteCtx)?.active ?? true;
+  const pane = usePane();
+  return (useContext(RouteCtx)?.active ?? true) && (pane?.visible ?? true);
 }
 
 export interface ScreenProps {
@@ -81,6 +83,7 @@ export interface ScreenProps {
 
 export function Screen({ title, bodyHeading = false, backLabel, stepBack, subtitle, actions, children, footer, footerFlows, top, header, bodyRef, wide, fixed, bare, className }: ScreenProps) {
   const { ui } = useApp();
+  const pane = usePane();
   const { tab, route, depth, active } = useRoute();
   const below = useUi((s) => s.stacks[tab]?.[depth - 1]);
   const focused = isFocused(route, depth);
@@ -94,13 +97,13 @@ export function Screen({ title, bodyHeading = false, backLabel, stepBack, subtit
   useLayoutEffect(() => {
     const el = pinned.current;
     if (!active || !hasPinned || !el) return;
-    const root = document.documentElement.style;
+    const root = (pane?.root ?? document.documentElement).style;
     const publish = () => root.setProperty("--screen-footer-h", `${el.offsetHeight}px`);
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);
     observer?.observe(el);
     publish();
     return () => { observer?.disconnect(); root.removeProperty("--screen-footer-h"); };
-  }, [active, hasPinned]);
+  }, [active, hasPinned, pane?.root]);
   return (
     <div className={`screen${className ? ` ${className}` : ""}`}>
       {bare ? null : depth === 0 ? (

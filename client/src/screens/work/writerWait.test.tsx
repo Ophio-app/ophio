@@ -110,6 +110,22 @@ it.each(cases)("Next up's front item says what holds it (%s)", async (writer, _w
   expect(states.slice(1).every((s) => /^(After \d|Blocked)/.test(s ?? ""))).toBe(true);
 });
 
+it("names the chat holding the writer in Review and Next up", async () => {
+  const host = window.__sim!.host;
+  const old = host.runs.find((r) => r.run_id === ids.rFlaky)!;
+  host.tasks = host.tasks.map((t) => t.task_id === old.task_id ? { ...t, conversation: true, title: "Fix the login flow" } : t);
+  act(() => host.emit({ type: "task_upserted", task: host.tasks.find((t) => t.task_id === old.task_id)! }));
+  await writerIs("working");
+  app.ui.saveDraft(ids.pTide, null, { text: "Tidy the README" });
+  render(<Review route={{ screen: "review", projectId: ids.pTide, taskId: null }} />, { wrapper });
+  expect(screen.getByText("Chat “Fix the login flow” is replying in tidewater-api. This task can start when its reply ends.")).toBeTruthy();
+  cleanup();
+  render(<NextUp route={{ screen: "next_up" }} />, { wrapper });
+  await advance();
+  expect(document.querySelector(".work-queue-state")?.textContent).toBe("Can start when chat “Fix the login flow” finishes its reply");
+  expect(screen.getByText("This chat holds the project while it replies. Work can start when its reply ends.")).toBeTruthy();
+});
+
 it("only a front item that can start now reads Ready — needs your go-ahead", async () => {
   const host = window.__sim!.host;
   // An ask-first item moves to the front: the computer calls it awaiting its start.

@@ -115,7 +115,7 @@ it("alerts for direct report progress and respects the Reports topic switch", as
   const d = await submitted();
   const summary = window.__sim!.host.reports.view.reports.find(r => r.report_id === d.id)!;
   reports.set(s => ({ ...s, direct: [summary] }));
-  const toast = vi.spyOn(toastModule, "toast").mockImplementation(() => {});
+  const toast = vi.spyOn(toastModule, "toast").mockImplementation(() => () => {});
   render(<ConnectedReports />, { wrapper }); await advance(200);
   act(() => reports.set(s => ({ ...s, direct: [{ ...summary, history: [...summary.history, { at: Date.now(), status: { state: "reproduced" } }] }] })));
   expect(toast).toHaveBeenCalledWith(expect.stringContaining("Reproduced"), expect.objectContaining({ action: expect.objectContaining({ label: "Open report" }) }));

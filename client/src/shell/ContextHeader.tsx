@@ -5,6 +5,7 @@
 // while the safety rail steps aside. Pushed screens use ScreenBar instead,
 // which keeps the freshness dot and the count.
 
+import { SplitControl } from "../app/SplitControl";
 import { ArrowLeft, ChevronDown, KeyboardOff, Settings, X } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { useApp, useHost, useLink, useUi } from "../app/context";
@@ -16,6 +17,7 @@ import { elsewhere, ProjectSheet } from "./ProjectSheet";
 import { StatusSheet } from "./StatusSheet";
 import { ComputerControl } from "./ComputerMenu";
 import { useEveryProject } from "../app/everyProject";
+import { useTalkAll } from "../app/talkScope";
 import { RailCount } from "../screens/control/SafetyStrip";
 import { useRailOpen } from "./focus";
 import { useOnScreen, useRouteTab } from "./Screen";
@@ -26,7 +28,7 @@ import { useOnScreen, useRouteTab } from "./Screen";
  * shows the status as its dot alone while the link is live, keeping the
  * project's name whole. `inert` shows it without taking taps, as while its
  * screen loads. */
-export function ContextHeader({ heading = false, actions, inert = false }: { heading?: boolean; actions?: ReactNode; inert?: boolean }) {
+export function ContextHeader({ heading = false, actions, inert = false, conversations = false }: { heading?: boolean; actions?: ReactNode; inert?: boolean; conversations?: boolean }) {
   const { profile, ui, all: allComputers } = useApp();
   const rail = useRailOpen();
   // Only the header on screen counts, not one under a pushed screen.
@@ -41,7 +43,8 @@ export function ContextHeader({ heading = false, actions, inert = false }: { hea
   // With All computers, Tasks and To-Do show every project on every one.
   const everywhere = useEveryProject(routeTab);
   const todoAll = useUi((s) => s.todoAll);
-  const all = everywhere || (!allComputers && todoAll && onTodo);
+  const chatAll = useTalkAll();
+  const all = conversations ? chatAll : everywhere || (!allComputers && todoAll && onTodo);
   const project = useHost((s) => (projectId ? s.projects[projectId] : undefined));
   const [sheet, setSheet] = useState<"project" | null>(null);
   const kb = useKeyboardOpen();
@@ -63,16 +66,17 @@ export function ContextHeader({ heading = false, actions, inert = false }: { hea
         </span>
         {/* The pill names the computer, unless it says All: then the
             project names the computer it is on. */}
-        {allComputers && <span className="ctx__computer ctx__computer--all">{everywhere ? "On every computer" : <>On <bdi>{profile.name}</bdi></>}</span>}
+        {allComputers && <span className="ctx__computer ctx__computer--all">{!conversations && everywhere ? "On every computer" : <>On <bdi>{profile.name}</bdi></>}</span>}
       </button>)}
       <div className="ctx__end">
         {active && <RailCount open={rail} />}
         {actions}
+        {active && <SplitControl />}
         <IconButton icon={Settings} label="Settings" onClick={() => ui.push({ screen: "settings" })} />
         {kb && <IconButton icon={KeyboardOff} label="Hide keyboard" onClick={hideKeyboard} />}
         <ComputerControl compact={narrow} />
       </div>
-      <ProjectSheet open={sheet === "project"} onClose={() => setSheet(null)} allowAll={onTodo || (!!allComputers && onWork)} />
+      <ProjectSheet open={sheet === "project"} onClose={() => setSheet(null)} conversations={conversations} allowAll={conversations || onTodo || (!!allComputers && onWork)} />
     </header>
   );
 }
@@ -138,6 +142,7 @@ export function ScreenBar({ title, heading = true, subtitle, actions, onBack, ba
       <div className="bar__actions">
         {kb && <IconButton icon={KeyboardOff} label="Hide keyboard" onClick={hideKeyboard} />}
         {actions}
+        <SplitControl focused />
         {rail && <RailCount open={open} />}
         <StatusButton compact onOpen={() => setStatus(true)} />
       </div>

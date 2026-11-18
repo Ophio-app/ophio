@@ -5,7 +5,16 @@ import type { Timestamp } from "./Timestamp";
  * A wake the agent asked for: Ophio starts its next turn at `at`, with
  * what it was waiting for.
  */
-export type TaskWake = { at: Timestamp, reason: string, 
+export type TaskWake = { at: Timestamp, 
+/**
+ * The full reminder handed back to the agent when it wakes.
+ */
+reason: string, 
+/**
+ * One plain sentence for the person about what the task is waiting for.
+ * Older agents and computers may omit it; never display `reason` instead.
+ */
+person_reason?: string, 
 /**
  * Waiting for another agent's answer, which wakes it when it comes;
  * `at` is when Ophio wakes it anyway.

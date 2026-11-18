@@ -112,6 +112,28 @@ impl Tools {
         extra: &[(String, OsString)],
         limit: Duration,
     ) -> Result<Output, String> {
+        self.run_with_grace(argv, extra, limit, None).await
+    }
+
+    /// Only Claude's background status check waits through the additional
+    /// safety grace. Other tools retain their original deadline and bounds.
+    pub async fn run_claude_status(
+        &self,
+        argv: &[String],
+        extra: &[(String, OsString)],
+        limit: Duration,
+    ) -> Result<Output, String> {
+        self.run_with_grace(argv, extra, limit, Some(ports::claude_checks::EXIT_GRACE))
+            .await
+    }
+
+    async fn run_with_grace(
+        &self,
+        argv: &[String],
+        extra: &[(String, OsString)],
+        limit: Duration,
+        grace: Option<Duration>,
+    ) -> Result<Output, String> {
         let name = &argv[0];
         let contained = Contained::new(name)?;
         let mut command = self.command(argv, extra);
@@ -127,8 +149,16 @@ impl Tools {
         let pid = child.id();
         let deadline = tokio::time::Instant::now() + limit;
         let budget = Arc::new(Budget::default());
-        let stdout = Reader(tokio::spawn(read_all(child.stdout.take(), budget.clone())));
-        let stderr = Reader(tokio::spawn(read_all(child.stderr.take(), budget.clone())));
+        let stdout = Reader(tokio::spawn(read_all(
+            child.stdout.take(),
+            budget.clone(),
+            grace.is_some(),
+        )));
+        let stderr = Reader(tokio::spawn(read_all(
+            child.stderr.take(),
+            budget.clone(),
+            grace.is_some(),
+        )));
         let exited = tokio::time::timeout_at(deadline, async {
             tokio::select! {
                 success = exit(&mut child, pid) => Some(success),
@@ -136,6 +166,44 @@ impl Tools {
             }
         })
         .await;
+        let late = || format!("{name} did not answer in time");
+        let too_much = |_| format!("{name} printed more than Ophio reads");
+        if let Some(grace) = grace {
+            // The reader tasks continue consuming both pipes even once their
+            // combined output is too large. Otherwise a full pipe could keep
+            // the tool from exiting throughout the grace period.
+            let grace_deadline = deadline + grace;
+            let completed = tokio::time::timeout_at(grace_deadline, async {
+                match exited {
+                    Ok(Some(success)) => success,
+                    _ => exit(&mut child, pid).await,
+                }
+            })
+            .await;
+            if completed.is_err() {
+                // Never include the command's output, arguments or environment.
+                tracing::warn!(
+                    "accounts: Claude status check exceeded safety grace; forcing termination"
+                );
+            }
+            // Do not release the shared check lock while containment cleanup
+            // is still being retried or the leader has not been reaped.
+            contained.end(pid).await;
+            let _ = child.wait().await;
+            let success = completed.map_err(|_| late())?;
+            // End leftover helpers before waiting for their copies of stdout
+            // and stderr to close. They must not consume the login grace.
+            let (stdout, stderr) = tokio::time::timeout(Duration::from_secs(1), async {
+                (stdout.all().await, stderr.all().await)
+            })
+            .await
+            .map_err(|_| late())?;
+            return Ok(Output {
+                success,
+                stdout: stdout.map_err(too_much)?,
+                stderr: stderr.map_err(too_much)?,
+            });
+        }
         // Ending what it left running also ends its output.
         let ended = contained.end_once(pid).await;
         let _ = child.try_wait();
@@ -145,8 +213,6 @@ impl Tools {
                 "{name} left something running that Ophio could not end"
             ));
         }
-        let late = || format!("{name} did not answer in time");
-        let too_much = |_| format!("{name} printed more than Ophio reads");
         let success = exited
             .map_err(|_| late())?
             .ok_or(TooMuch)
@@ -193,20 +259,33 @@ struct TooMuch;
 async fn read_all(
     stream: Option<impl tokio::io::AsyncRead + Unpin>,
     budget: Arc<Budget>,
+    drain_overflow: bool,
 ) -> Result<String, TooMuch> {
     let mut out = Vec::new();
+    let mut overflow = false;
     if let Some(mut stream) = stream {
         let mut chunk = [0u8; 8192];
         while let Ok(n @ 1..) = stream.read(&mut chunk).await {
+            if overflow {
+                continue;
+            }
             if budget.read.fetch_add(n, Ordering::Relaxed) + n > OUTPUT_LIMIT {
-                // Kept for the run to find, however late it looks.
                 budget.over.notify_one();
-                return Err(TooMuch);
+                if !drain_overflow {
+                    return Err(TooMuch);
+                }
+                overflow = true;
+                out.clear();
+                continue;
             }
             out.extend_from_slice(&chunk[..n]);
         }
     }
-    Ok(String::from_utf8_lossy(&out).into_owned())
+    if overflow || budget.read.load(Ordering::Relaxed) > OUTPUT_LIMIT {
+        Err(TooMuch)
+    } else {
+        Ok(String::from_utf8_lossy(&out).into_owned())
+    }
 }
 
 /// Waits for `child`, process `pid`, to exit, and says whether it

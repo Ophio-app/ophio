@@ -21,6 +21,8 @@ fn attention(task_id: TaskId, kind: AttentionKind, at: i64, resolved: bool) -> A
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     }
 }
 fn store(f: &Fixture, items: &[AttentionItem]) {
@@ -96,6 +98,35 @@ async fn the_open_list_is_open_task_items_oldest_first_and_the_newest_when_long(
         alerts.last().unwrap().attention_id,
         many.last().unwrap().attention_id
     );
+    f.close().await;
+}
+
+#[tokio::test]
+async fn a_chat_notification_names_the_agent_that_raised_it_not_the_next_agent() {
+    let f = Fixture::new().await;
+    let owner = Caller::local_owner();
+    let project = f.project().await;
+    let (task_id, _) = f
+        .task(project, TaskPlacement::StartNow, &owner, false)
+        .await;
+    let mut item = attention(task_id, AttentionKind::Question, 1_000_000, false);
+    f.hub
+        .write(|tx| {
+            let mut task: Task = tx.read().require("task", task_id)?;
+            item.run_id = task.current_run;
+            task.conversation = true;
+            task.harness = HarnessKind::Codex;
+            tx.put("task", task_id, &task)
+        })
+        .unwrap();
+    store(&f, std::slice::from_ref(&item));
+    let alert = f
+        .hub
+        .alert(&owner, item.attention_id, false)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(alert.harness, HarnessKind::ClaudeCode);
     f.close().await;
 }
 

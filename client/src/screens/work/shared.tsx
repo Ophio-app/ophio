@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { fromChatLine, useFromChat } from "../talk/fromChat";
 import { unsentAnswers } from "../talk/previewAnswers";
 import { HandBack } from "../talk/HandBack";
 import { handBackReason, handBackTarget } from "../../state/handBack";
@@ -34,6 +35,7 @@ import type { HostSession, PendingCommand } from "../../host/session";
 import { commandResult } from "../../host/commandResult";
 import { confirmHere } from "../settings/useAccounts";
 import { ApprovalCard, ApprovalDetailText, FactsLine } from "../../design/ApprovalCard";
+import { refusalWord } from "../../design/approvalWords";
 import { ListRow } from "../../design/ListRow";
 import { Notice } from "../../design/Notice";
 import { NotAllowed } from "../../shell/NotAllowed";
@@ -58,6 +60,7 @@ import { taskRowBadge } from "../talk/TaskBar";
 import { useMayDo } from "../talk/MayDoLine";
 import { mayDo } from "../talk/mayDo";
 import { accessHeld } from "../talk/access";
+import { QuestionReply } from "./QuestionReply";
 
 /** Tasks the computer has from before those this device holds, read a page
  * at a time when the person reaches the end of a list. */
@@ -139,7 +142,7 @@ export function useOpenTask() {
     // A conversation is its chat, whatever its state; a task's receipt reads better once it ends.
     if (isActiveTask(task) || task.conversation) {
       ui.openTask(task.project_id, task.task_id);
-    } else ui.push({ screen: "receipt", taskId: task.task_id });
+    } else ui.push({ screen: "receipt", taskId: task.task_id, taskEntry: true });
   };
 }
 export function taskIcon(task: Task, reason: string | null) {
@@ -165,6 +168,13 @@ export function WhereLine({ projectId }: { projectId: string | undefined }) {
   return <span className="work-row-line work-row-where"><bdi className="all-projects__computer">{profile.name}</bdi>{project ? <> · {project}</> : null}</span>;
 }
 
+/** A compact origin mark in a row's existing detail line; the task's own
+ * heading still has the full, tappable link back to its chat. */
+export function FromChatMark({ task }: { task: Task }) {
+  const from = useFromChat(task);
+  return from && <MessagesSquare className="work-row-from" role="img" aria-label={fromChatLine(from.title)} />;
+}
+
 /** A task in a list. `where` names its computer and project, as All does. */
 export function TaskRow({ task, where = false }: { task: Task; where?: boolean }) {
   const stop = useStopIntent(task);
@@ -180,7 +190,7 @@ export function TaskRow({ task, where = false }: { task: Task; where?: boolean }
   );
   const open = useOpenTask();
   const badge = stop?.phase === "not_running" ? "Not running · result being checked" : taskRowBadge(task, run, queue, reason).label;
-  const line = besideBadge(reason ?? activity?.text ?? status, badge);
+  const line = task.state === "working" && task.checking ? "Ophio is checking the agent’s work." : besideBadge(reason ?? activity?.text ?? status, badge);
   // Whether it is a chat or a task, and what it may do; the row opens it.
   const may = useMayDo(task);
   return (
@@ -192,6 +202,7 @@ export function TaskRow({ task, where = false }: { task: Task; where?: boolean }
       subtitle={
         <>
           <span className="work-row-state">
+            <FromChatMark task={task} />
             {badge} · {modelLabel(run, harnesses, task)}{task.start ? ` · ${startedLabel(task.start)}` : ""} ·{" "}
             <Age at={activity?.at ?? task.updated_at} suffix=" ago" />
           </span>
@@ -380,7 +391,7 @@ export function AttentionList({ projectId, review = false, lead = false, quiet =
         else if (a.approval_id) setChosen(a.approval_id);
         else if (a.task_id) {
           const t = session.state.get().tasks[a.task_id];
-          if (t && (a.kind === "completed" || a.kind === "failure")) ui.push({ screen: "receipt", taskId: t.task_id, ...(a.run_id ? { runId: a.run_id } : {}) });
+          if (t && (a.kind === "completed" || a.kind === "failure")) ui.push({ screen: "receipt", taskId: t.task_id, taskEntry: true, ...(a.run_id ? { runId: a.run_id } : {}) });
           else if (t) open(t);
         }
       }}
@@ -500,15 +511,16 @@ export function useApprovalDecision(approval: Approval) {
     // Letting an agent sign in or post on GitHub as the owner asks for this
     // phone's unlock.
     if ((approval.kind === "login_use" || approval.kind === "github_post") && decision.decision === "allow") await confirmHere(platform, approval.title);
-    await send({ command: "resolve_approval", approval_id: approval.approval_id, decision }, DECISION_LABEL[decision.decision], approval.revision);
+    const no = refusalWord(approval);
+    await send({ command: "resolve_approval", approval_id: approval.approval_id, decision }, decision.decision === "deny" ? no : DECISION_LABEL[decision.decision], approval.revision);
     setText("");
-    announce(DECIDED[decision.decision]);
+    announce(decision.decision === "deny" ? DENIED[no] : DECIDED[decision.decision]);
   };
   const onCode = async (code: string) => {
     await send({ command: "agent_login", action: { action: "answer_code", approval_id: approval.approval_id, code } }, "Code");
     announce("Code sent.");
   };
-  // The ways forward the computer says it takes, in place of Decline and
+  // The ways forward the computer says it takes, in place of Reject and
   // Allow where they differ (Switch to Work, Turn into a task, Not now).
   const actions = useApprovalWayButtons(approval);
   return {
@@ -528,14 +540,18 @@ export function useApprovalDecision(approval: Approval) {
   };
 }
 /** Said once a decision is sent: what it means for the work. */
-const DECIDED: Record<ApprovalDecision["decision"], string> = {
+const DECIDED: Record<Exclude<ApprovalDecision["decision"], "deny">, string> = {
   allow: "Allowed.",
-  deny: "Declined. The agent carries on without it.",
   answer: "Answer sent.",
 };
-const DECISION_LABEL: Record<ApprovalDecision["decision"], string> = {
+/** Said once no is sent, in the word its button used. */
+const DENIED: Record<ReturnType<typeof refusalWord>, string> = {
+  Reject: "Rejected. The agent carries on without it.",
+  Decline: "Declined. The agent carries on without it.",
+  "Not now": "Not now. The agent carries on without it.",
+};
+const DECISION_LABEL: Record<Exclude<ApprovalDecision["decision"], "deny">, string> = {
   allow: "Allow",
-  deny: "Decline",
   answer: "Answer",
 };
 
@@ -563,6 +579,7 @@ function WorkApproval({
       />
       {!saved && <UnsavedAnswer />}
       <CommandFeedback match={match} hideAccepted={approval.state === "pending"} runEnded={approval.state === "cancelled"} />
+      <QuestionReply approval={approval} onOpenTask={task ? onOpenTask : undefined} />
     </div>
   );
 }

@@ -1,0 +1,36 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.receipt-checks {
+  min-width: 0;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.receipt-checks__result + .receipt-checks__result {
+  border-top: 1px solid var(--line);
+}
+.receipt-checks__result > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.receipt-checks__result > summary::-webkit-details-marker {
+  display: none;
+}
+.receipt-checks__result--warning > summary .row__icon,
+.receipt-checks__result--warning > summary .row__subtitle {
+  color: var(--warn-text);
+}
+.receipt-checks__result[open] > summary .row__chevron {
+  transform: rotate(90deg);
+}
+.receipt-checks__output {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+  padding: 0 var(--s4) var(--s4);
+  font-size: var(--text-sm);
+}
+.receipt-checks__output pre {
+  padding: var(--s3);
+  background: var(--surface-sunken);
+  border-radius: var(--r-sm);
+}

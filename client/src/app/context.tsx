@@ -13,6 +13,7 @@ import { shallowEqual, useStore } from "../state/store";
 import { openReport } from "../reports/request";
 import { toast } from "../design/Toast";
 import { signInForCommand, startWhenShown } from "./signInFeature";
+import { useCheckWriters } from "./checkWriters";
 import type { Route, UiState, UiStore } from "./ui";
 
 export interface App {
@@ -22,6 +23,8 @@ export interface App {
   profiles: HostProfile[];
   session: HostSession;
   ui: UiStore;
+  /** The app coordinator already owns each computer’s background work. */
+  computerServices?: boolean;
   /** Every paired computer's session while the app runs. The optional
    * parts are absent where a screen is shown on its own, as in tests. */
   computers?: Computers;
@@ -55,7 +58,15 @@ export interface App {
 const Ctx = createContext<App | null>(null);
 
 export function AppProvider({ app, children }: { app: App; children: ReactNode }) {
-  return <Ctx.Provider value={app}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={app}>
+    {app.computerServices !== false && app.session?.state && app.session?.link && <CheckWriterState session={app.session} />}
+    {children}
+  </Ctx.Provider>;
+}
+
+function CheckWriterState({ session }: { session: HostSession }) {
+  useCheckWriters(session);
+  return null;
 }
 
 export function useApp(): App {

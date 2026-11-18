@@ -311,6 +311,11 @@ pub async fn link_close(core: State<'_, AppCore>, link_id: u32) -> Result<()> {
     Ok(())
 }
 #[tauri::command]
+pub async fn window_layout(core: State<'_, AppCore>) -> Result<Value> {
+    core.device.call("windowLayout", json!({})).await
+}
+
+#[tauri::command]
 pub async fn device_events(core: State<'_, AppCore>, events: Channel<Value>) -> Result<()> {
     let links = core.links.clone();
     let channel = Channel::<Value>::new(move |body| {
@@ -453,28 +458,65 @@ pub struct Notification {
     alert_type: Option<AlertType>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     want: Option<Tier>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    handles: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    fold: Option<alerts::AppFold>,
+}
+#[cfg(any(target_os = "android", test))]
+impl From<Notification> for alerts::Note {
+    fn from(notification: Notification) -> Self {
+        Self {
+            tag: notification.id,
+            category: match notification.category.as_deref() {
+                Some("finished") => alerts::Category::Finished,
+                Some("notice") => alerts::Category::Notice,
+                _ => alerts::Category::NeedsYou,
+            },
+            title: notification.title,
+            body: notification.body,
+            group: notification.group,
+            group_title: notification.group_title,
+            route: notification.route.unwrap_or(Value::Null),
+            question: None,
+            silent: notification.silent,
+            alert_type: notification.alert_type,
+            want: notification.want,
+            handles: notification.handles,
+        }
+    }
 }
 /// Android refuses an alert once the shade holds as many as the watcher
 /// keeps there, rather than dropping it unseen.
 #[tauri::command]
 pub async fn notify(core: State<'_, AppCore>, notification: Notification) -> Result<()> {
-    /// Android's answer when the alert was answered while its post waited.
-    #[derive(Deserialize)]
-    struct Cleared {
-        cleared: bool,
+    #[cfg(target_os = "android")]
+    {
+        let _ = core;
+        let mut notification = notification;
+        let fold = notification.fold.take();
+        alerts::post_from_app(notification.into(), fold).await
     }
-    let tag = notification.id.clone();
-    let posted = core
-        .device
-        .call::<Option<Cleared>>("notify", notification)
-        .await?;
-    if posted.is_some_and(|p| p.cleared) {
-        return Ok(());
+    #[cfg(not(target_os = "android"))]
+    {
+        /// Android's answer when the alert was answered while its post waited.
+        #[derive(Deserialize)]
+        struct Cleared {
+            cleared: bool,
+        }
+        let tag = notification.id.clone();
+        let posted = core
+            .device
+            .call::<Option<Cleared>>("notify", notification)
+            .await?;
+        if posted.is_some_and(|p| p.cleared) {
+            return Ok(());
+        }
+        if let Err(error) = alerts::raised_by_app(&tag) {
+            tracing::warn!(%error, "alerts: could not record an alert the app raised");
+        }
+        Ok(())
     }
-    if let Err(error) = alerts::raised_by_app(&tag) {
-        tracing::warn!(%error, "alerts: could not record an alert the app raised");
-    }
-    Ok(())
 }
 /// Clears alerts answered elsewhere, by the tag they were raised with.
 #[tauri::command]
@@ -482,13 +524,21 @@ pub async fn cancel_notifications(core: State<'_, AppCore>, ids: Vec<String>) ->
     if ids.len() > 256 || ids.iter().any(|id| id.len() > 256) {
         return Err(Error::Invalid("Too many alerts."));
     }
-    // Cleared by the app, as answered or seen: the watcher puts none back.
-    if let Err(error) = alerts::cleared_by_app(&ids) {
-        tracing::warn!(%error, "alerts: could not note alerts the app cleared");
+    #[cfg(target_os = "android")]
+    {
+        let _ = core;
+        alerts::clear_from_app(ids).await
     }
-    core.device
-        .call("cancelNotifications", json!({ "ids": ids }))
-        .await
+    #[cfg(not(target_os = "android"))]
+    {
+        // iPhone keeps its existing plugin posting/cancellation path.
+        if let Err(error) = alerts::cleared_by_app(&ids) {
+            tracing::warn!(%error, "alerts: could not note alerts the app cleared");
+        }
+        core.device
+            .call("cancelNotifications", json!({ "ids": ids }))
+            .await
+    }
 }
 #[tauri::command]
 pub async fn request_notifications(
@@ -589,13 +639,21 @@ pub async fn alerts_handled(
     if profile_id.len() > 256 || attention_ids.len() > protocol::alerts::MAX_OPEN_ALERTS {
         return Err(Error::Invalid("Too many alerts."));
     }
-    let tags = alerts::handled(&profile_id, &attention_ids)?;
-    if !tags.is_empty() {
-        core.device
-            .call::<()>("cancelNotifications", json!({ "ids": tags }))
-            .await?;
+    #[cfg(target_os = "android")]
+    {
+        let _ = core;
+        alerts::handle_from_app(profile_id, attention_ids).await
     }
-    Ok(())
+    #[cfg(not(target_os = "android"))]
+    {
+        let tags = alerts::handled(&profile_id, &attention_ids)?;
+        if !tags.is_empty() {
+            core.device
+                .call::<()>("cancelNotifications", json!({ "ids": tags }))
+                .await?;
+        }
+        Ok(())
+    }
 }
 #[tauri::command]
 pub async fn alerts_configure(
@@ -688,6 +746,71 @@ pub(crate) fn binary_body(body: &InvokeBody) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn foreground_notification_keeps_android_type_tier_and_route() {
+        let payload = json!({
+            "id": "p1/project:site", "title": "Site has 2 notifications", "body": "Studio",
+            "category": "finished", "alertType": "reply", "want": "silent", "silent": true,
+            "route": {"kind": "needs_you", "profileId": "p1", "projectId": "site"},
+            "group": "p1:finished", "groupTitle": "Studio",
+            "handles": ["p1/first", "p1/second"],
+        });
+        let notification: Notification = serde_json::from_value(payload.clone()).unwrap();
+        let note: alerts::Note = notification.into();
+        let json = serde_json::to_value(note).unwrap();
+        assert_eq!(json["tag"], payload["id"]);
+        for field in [
+            "title",
+            "body",
+            "category",
+            "alertType",
+            "want",
+            "silent",
+            "route",
+            "group",
+            "groupTitle",
+            "handles",
+        ] {
+            assert_eq!(json[field], payload[field], "{field}");
+        }
+    }
+
+    #[test]
+    fn round2_foreground_fold_metadata_is_optional_and_stays_local() {
+        let id = protocol::AttentionId::new();
+        let project = protocol::ProjectId::new();
+        let mut payload = json!({
+            "id": format!("p1/{id}"), "title": "New reply", "body": "Studio",
+            "category": "finished", "alertType": "reply", "want": "alert",
+            "route": {"kind": "attention", "profileId": "p1", "attentionId": id},
+        });
+        let legacy: Notification = serde_json::from_value(payload.clone()).unwrap();
+        assert!(legacy.fold.is_none());
+        assert!(legacy.handles.is_empty());
+        assert!(serde_json::to_value(&legacy).unwrap().get("fold").is_none());
+        let note: alerts::Note = legacy.into();
+        assert!(note.handles.is_empty());
+        assert!(!note.silent);
+        payload["fold"] = json!({"projectId": project, "project": "Site", "computer": "Studio"});
+        let mut notification: Notification = serde_json::from_value(payload.clone()).unwrap();
+        let fold = notification.fold.take().unwrap();
+        assert_eq!(serde_json::to_value(fold).unwrap(), payload["fold"]);
+        let note = serde_json::to_value(alerts::Note::from(notification)).unwrap();
+        assert_eq!(note["tag"], payload["id"]);
+        assert_eq!(note["alertType"], payload["alertType"]);
+        assert_eq!(note["want"], payload["want"]);
+        assert_eq!(note["route"], payload["route"]);
+        assert!(note.get("fold").is_none());
+        for bad in [
+            json!({"projectId": "invalid", "project": "Site", "computer": "Studio"}),
+            json!({"projectId": project, "computer": "Studio"}),
+            json!({"projectId": project, "project": "Site", "computer": 3}),
+        ] {
+            payload["fold"] = bad;
+            assert!(serde_json::from_value::<Notification>(payload.clone()).is_err());
+        }
+    }
+
     #[test]
     fn android_binary_bridge_enforces_types_and_bounds() {
         assert_eq!(

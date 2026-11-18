@@ -64,6 +64,12 @@ pub(crate) fn owner_request(request: &OwnerRequest) -> Option<&'static str> {
 pub(crate) fn command(command: &Command) -> Option<&'static str> {
     use Command::*;
     match command {
+        ChecksSave { .. }
+        | ChecksApplyDraft { .. }
+        | ChecksDiscardDraft { .. }
+        | ChecksRunNow { .. }
+        | ChecksStopJob { .. }
+        | ChecksAsk { .. } => Some("approve or change project checks"),
         ResolveApproval { .. } | PrepareContribution { .. } | SetContributionRoot { .. } => {
             Some("answer an approval")
         }
@@ -71,6 +77,9 @@ pub(crate) fn command(command: &Command) -> Option<&'static str> {
         SwitchToWork { .. } => Some("switch a task to Work"),
         // An agent can't widen what holds it.
         SetConversationAccess { .. } => Some("change what a conversation may reach"),
+        SetChatAccessDefault { .. } => Some("change what a new conversation may reach"),
+        // An agent can't give itself leave to start work unasked, or widen it.
+        SetAutoStart { .. } => Some("let a project start what its agents propose"),
         // Files the person may still want are theirs to delete.
         DeleteOneOff { .. } => Some("delete a one-off's folder"),
         // Every paired phone shows the name, so a program could pass this
@@ -228,6 +237,10 @@ pub(crate) fn command(command: &Command) -> Option<&'static str> {
         | CreateUploadReviewed { .. }
         | CancelMessage { .. }
         | SetAgentUpdates { .. }
+        | SetAgentUpdateMode { .. }
+        | CheckAgentUpdates { .. }
+        | UpdateAgent { .. }
+        | SetReleaseCheck { .. }
         | Voice { .. }
         | SetVoice { .. }
         | WindowAction { .. }
@@ -241,6 +254,10 @@ pub(crate) fn command(command: &Command) -> Option<&'static str> {
 pub(crate) fn query(query: &Query) -> Option<&'static str> {
     use Query::*;
     match query {
+        Query::ChecksList { .. }
+        | Query::ChecksHistory { .. }
+        | Query::TaskChecks { .. }
+        | Query::CheckJob { .. } => None,
         AgentLoginPassword { .. } => Some("read a login's password"),
         InboxReportCode { .. } => Some("read untrusted report code"),
         // Its names are what agents are kept from.
@@ -280,6 +297,7 @@ pub(crate) fn query(query: &Query) -> Option<&'static str> {
         | TaskArtifacts { .. }
         | ProjectShown { .. }
         | AgentUpdates
+        | ReleaseCheck
         | AgentPreferences
         | NotificationSettings
         | Checklists
@@ -311,6 +329,40 @@ pub(crate) fn query(query: &Query) -> Option<&'static str> {
 mod tests {
     use super::*;
     use protocol::contribution::{ContributionApproval, ContributionInput};
+
+    #[test]
+    fn an_agent_cannot_confirm_an_uncertain_check_job_has_stopped() {
+        let action = Command::ChecksStopJob {
+            job_id: protocol::CheckJobId::new(),
+            confirmed_stopped: true,
+        };
+        let what = command(&action).expect("an agent cannot resolve its uncertain checks");
+        assert_eq!(refusal(what).code, ErrorCode::PermissionDenied);
+    }
+
+    #[test]
+    fn only_the_person_changes_new_chat_access() {
+        let action = Command::SetChatAccessDefault {
+            project_id: protocol::ProjectId::new(),
+            access: Some(protocol::access::ConversationAccess::default()),
+        };
+        let what = command(&action).expect("an agent cannot choose a new chat's access");
+        assert_eq!(what, "change what a new conversation may reach");
+        assert_eq!(refusal(what).code, ErrorCode::PermissionDenied);
+    }
+
+    #[test]
+    fn only_the_person_lets_proposals_start_unasked() {
+        for auto_start in [Some(protocol::work_cards::AutoStart::DEFAULT), None] {
+            let action = Command::SetAutoStart {
+                project_id: protocol::ProjectId::new(),
+                auto_start,
+            };
+            let what = command(&action).expect("an agent cannot turn this on, widen it or off");
+            assert_eq!(what, "let a project start what its agents propose");
+            assert_eq!(refusal(what).code, ErrorCode::PermissionDenied);
+        }
+    }
 
     /// An agent can't make its own task's finish alert the person, as
     /// they can't be asked whether it should.

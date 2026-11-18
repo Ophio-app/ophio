@@ -7,6 +7,7 @@
 // a silent loss or a silent double send.
 
 import { useEffect } from "react";
+import { Store, useStore } from "../../state/store";
 import type { App } from "../../app/context";
 import { describeProtocolError, useApp, useLink } from "../../app/context";
 import { talkProject, talkTask, taskOnScreen } from "../../app/taskOnScreen";
@@ -14,17 +15,94 @@ import { announce, withdraw } from "../../design/Announcer";
 import { toast } from "../../design/Toast";
 import { previewCaptureIn, previewDeliveryFocus, recordPreviewSend } from "../control/previewDelivery";
 import { recordSend } from "../../app/outbox";
-import type { Route, SendAttempt, UiState } from "../../app/ui";
+import { draftKey, type Route, type SendAttempt, type UiState, type UiStore } from "../../app/ui";
 import { CommandError, NotConnectedError, OutcomeUnknownError, type HostSession } from "../../host/session";
 import { TransferError } from "../../host/transfer";
 import type { AnnotationBundle, Command, CommandReceipt } from "../../protocol/types";
-import { refreshFromSnapshot, type HostState } from "../../state/projection";
+import { observedReplyForTask, refreshFromSnapshot, type HostState } from "../../state/projection";
 import { uuidv7 } from "../../protocol/ids";
 import { taskBadge, taskHeadingFocus } from "./TaskBar";
 import { annotationStore, editedSinceSent, holdLabels, markSent, releaseLabels, toBundle } from "../../state/annotations";
 import { placeMoments } from "../annotate/WatchView";
 import { NEW_CONVERSATION } from "./conversation";
 import { unplacedMoments } from "../annotate/watch";
+import { consumeFiles, MissingFile, uploadFiles, withFiles } from "./chatFiles";
+
+type SendBusy = { label: string; detail: string | null };
+type AutoSettlement = { users: number; stop(): void };
+
+/** A computer owns sends; the independently navigable panes only observe them. */
+const sendingByComputer = new WeakMap<UiStore, {
+  busy: Store<Readonly<Record<string, SendBusy>>>;
+  inFlight: Map<string, Promise<SendOutcome>>;
+  queries: Map<string, Promise<void>>;
+  automatic: Map<string, AutoSettlement>;
+  origins: Map<string, App>;
+  completed: Set<string>;
+}>();
+
+function sendState(ui: UiStore) {
+  const shared = ui.sharedStore();
+  let state = sendingByComputer.get(shared);
+  if (!state) {
+    state = {
+      busy: new Store<Readonly<Record<string, SendBusy>>>({}), inFlight: new Map(),
+      queries: new Map(), automatic: new Map(), origins: new Map(), completed: new Set(),
+    };
+    sendingByComputer.set(shared, state);
+  }
+  return state;
+}
+
+export function useSendBusy(projectId: string, draftTaskId: string | null): SendBusy | null {
+  const { ui } = useApp();
+  const key = draftKey(projectId, draftTaskId);
+  return useStore(sendState(ui).busy, (state) => state[key] ?? null);
+}
+
+/** Acquire before calling work: even markup preparation can yield to another pane. */
+function onceSending(app: App, projectId: string, draftTaskId: string | null, label: string,
+  work: (progress: (detail: string | null) => void) => Promise<SendOutcome>,
+): Promise<SendOutcome> {
+  const state = sendState(app.ui);
+  const key = draftKey(projectId, draftTaskId);
+  const existing = state.inFlight.get(key);
+  if (existing) return existing.then((out) => ({ ...out, joined: true }));
+  let resolve!: (out: SendOutcome) => void;
+  let reject!: (error: unknown) => void;
+  const pending = new Promise<SendOutcome>((yes, no) => { resolve = yes; reject = no; });
+  state.inFlight.set(key, pending);
+  const progress = (detail: string | null) => state.busy.set((before) => ({ ...before, [key]: { label, detail } }));
+  progress(null);
+  const release = () => {
+    state.inFlight.delete(key);
+    state.busy.set((before) => {
+      const { [key]: _finished, ...remaining } = before;
+      return remaining;
+    });
+  };
+  // Do not defer work to a microtask: an ordinary send still leaves in this turn.
+  try {
+    work(progress).then((out) => { release(); resolve(out); }, (error) => { release(); reject(error); });
+  } catch (error) {
+    release();
+    reject(error);
+  }
+  return pending;
+}
+
+function rememberOrigin(app: App, commandId: string): void {
+  const origins = sendState(app.ui).origins;
+  if (!origins.has(commandId)) origins.set(commandId, app);
+}
+
+/** Claim confirmation before consuming text or notifying any mounted view. */
+function completeOnce(app: App, commandId: string): boolean {
+  const state = sendState(app.ui);
+  if (state.completed.has(commandId)) return false;
+  state.completed.add(commandId);
+  return true;
+}
 
 /** Follow a created task while making a change of project explicit. */
 export function selectCreatedTask(app: App, projectId: string, taskId: string): boolean {
@@ -58,13 +136,14 @@ export function confirmed(app: App, projectId: string, taskId: string | null, sa
  * looking at the draft or Talk still shows it; the current tab never changes.
  * Call it after the sent words are consumed from the draft.
  */
-function delivered(app: App, projectId: string, draftTaskId: string | null, body: Command | null | undefined, receipt: CommandReceipt): void {
+function delivered(app: App, projectId: string, draftTaskId: string | null, body: Command | null | undefined, receipt: CommandReceipt, ordered = false): void {
   const { ui, session, profile } = app;
   const ofDraft = (r: Route | undefined) => r?.screen === "review" && !r.queueItemId && r.projectId === projectId && r.taskId === draftTaskId;
   const before = ui.get();
   const spent = ui.draft(projectId, draftTaskId) === null;
   const watching = spent && ofDraft(before.stacks[before.tab].at(-1));
-  if (spent) ui.closeReviews(ofDraft);
+  const reviewing = ui.navigationStores().filter((side) => side !== ui && ofDraft(side.get().stacks[side.get().tab].at(-1)));
+  if (spent) for (const side of ui.navigationStores()) side.closeReviews(ofDraft);
   const state = session.state.get();
   const task = draftTaskId ? state.tasks[draftTaskId] : undefined;
   const title = task?.title;
@@ -81,6 +160,27 @@ function delivered(app: App, projectId: string, draftTaskId: string | null, body
     : body?.command === "queue_continuation" ? (title ? `Put “${title}” in Next up` : "Put in Next up")
     : title ? `Sent to “${title}”` : "Sent";
   const created = receipt.result?.kind === "task_created" ? receipt.result.task_id : null;
+  // Reviewing one ordered step approves only that step. Return to its card
+  // after the computer confirms the task, so the rest remain actionable.
+  const chat = ordered && body?.command === "create_task" && body.origin?.reviewed ? state.tasks[body.origin.chat] : undefined;
+  // Another pane participates only if its visible Review was for this draft.
+  // Merely showing a new-task root does not invite a background pane to jump.
+  if (spent) for (const side of reviewing) {
+    if (created && chat && side.get().tab === "talk") side.selectTask(chat.project_id, chat.task_id);
+    else {
+      const capture = side.get().tab === "control" ? previewCaptureIn(body, profile.hostId) : null;
+      if (capture) previewDeliveryFocus(side).set({ captureId: capture, at: Date.now() });
+      if (created && (draftTaskId === null || draftTaskId === NEW_CONVERSATION)) {
+        if (side.get().tab === "talk") taskHeadingFocus(side).set(created);
+        side.selectCreated(home, created);
+      }
+    }
+  }
+  if (created && chat && watching && before.tab === "talk") {
+    ui.selectTask(chat.project_id, chat.task_id);
+    confirmed(app, home, created, said);
+    return;
+  }
   // Markup from a preview, sent from Control: Control shows where it went.
   const picture = watching && ui.get().tab === "control" ? previewCaptureIn(body, profile.hostId) : null;
   if (picture) previewDeliveryFocus(ui).set({ captureId: picture, at: Date.now() });
@@ -123,14 +223,29 @@ export interface SendRequest {
   build(bundle: AnnotationBundle | null): Command;
 }
 
-export type SendOutcome = { ok: true; receipt: CommandReceipt } | { ok: false; attempt: SendAttempt };
+export type SendOutcome = ({ ok: true; receipt: CommandReceipt } | { ok: false; attempt: SendAttempt }) & {
+  /** Another pane owns the UI follow-up. */
+  joined?: boolean;
+};
 
-export async function send(app: App, req: SendRequest, progress: (detail: string | null) => void): Promise<SendOutcome> {
+export function send(app: App, req: SendRequest, progress: (detail: string | null) => void): Promise<SendOutcome> {
+  return onceSending(app, req.projectId, req.draftTaskId, req.label, (sharedProgress) =>
+    prepareAndSend(app, req, (detail) => { sharedProgress(detail); progress(detail); }));
+}
+
+async function prepareAndSend(app: App, req: SendRequest, progress: (detail: string | null) => void): Promise<SendOutcome> {
   const { session, platform, profile, ui } = app;
+  // Files, like markup and words, belong to the tap, not to later edits made
+  // in either pane while preparation is waiting.
+  const files = req.readOnly || req.asTask ? [] : (ui.draft(req.projectId, req.draftTaskId)?.files ?? []);
   const store = annotationStore(profile.profileId);
   let holder: string | null = null;
+  let outgoingId: string | null = null;
   const fail = (a: Omit<SendAttempt, "at" | "text">): SendOutcome => {
-    if (a.phase !== "unknown") letGo(app, req.annotationId, holder);
+    if (a.phase !== "unknown") {
+      letGo(app, req.annotationId, holder);
+      if (outgoingId) sendState(ui).origins.delete(outgoingId);
+    }
     const attempt: SendAttempt = { ...a, at: Date.now(), text: req.text, annotationId: req.annotationId, ...(req.readOnly ? { readOnly: true } : {}), ...(req.asTask ? { asTask: true } : {}) };
     ui.saveDraft(req.projectId, req.draftTaskId, { attempt });
     return { ok: false, attempt };
@@ -156,12 +271,35 @@ export async function send(app: App, req: SendRequest, progress: (detail: string
     }
   }
 
-  const body = req.build(bundle);
+  // A chat message's files go after its markup and before the message, so
+  // the message is never on the computer without them. One that never
+  // arrives keeps them, and what did upload isn't sent again.
+  if (files.length) {
+    try {
+      bundle = withFiles(bundle, await uploadFiles(app, req.projectId, req.draftTaskId, files, progress));
+    } catch (e) {
+      if (req.annotationId) store.preparing.delete(req.annotationId);
+      return fail(unprepared(e, profile.name, files.length === 1 ? `“${files[0]!.name}”` : "the files"));
+    }
+  }
+  const sentFiles = files.length ? { files: files.map((f) => f.key) } : {};
+
+  const built = req.build(bundle);
+  // Keep the phone's last observed words explicitly separate from the person's
+  // message and host history. Capture once, before saving the command, so a
+  // retry repeats exactly the same observation rather than newer local state.
+  const observed_reply = built.command === "resume_task" && !built.read_only && built.mode === undefined && !req.readOnly && !req.asTask
+    ? observedReplyForTask(session.state.get(), built.task_id) : undefined;
+  const body: Command = built.command === "resume_task" && observed_reply ? { ...built, observed_reply } : built;
   const delivery = body.command === "send_message" ? body.delivery : undefined;
   progress(null);
   // Record the request before it leaves the phone: if the app stops before
   // the answer, the next start asks about this id instead of sending anew.
   const commandId = uuidv7();
+  outgoingId = commandId;
+  const previousId = ui.draft(req.projectId, req.draftTaskId)?.attempt?.commandId;
+  if (previousId) sendState(ui).origins.delete(previousId);
+  rememberOrigin(app, commandId);
   const historyId = session.commandHistory;
   const expectedRevision = req.expectedRevision ?? null;
   const markup = req.annotationId ? (store.prepared.get(req.annotationId) ?? null) : null;
@@ -179,6 +317,7 @@ export async function send(app: App, req: SendRequest, progress: (detail: string
     body,
     expectedRevision,
     markup,
+    ...sentFiles,
   };
   // The markup now holds its letters under this send until its outcome is
   // known, whatever later sends on this message do to its attempt.
@@ -190,7 +329,7 @@ export async function send(app: App, req: SendRequest, progress: (detail: string
   if (req.annotationId) store.preparing.delete(req.annotationId);
   const saved = recorded(app, req.projectId, req.draftTaskId, attempt);
   if (!(typeof saved === "boolean" ? saved : await saved)) return fail({ ...unrecorded(profile.name), delivery });
-  const sent = { text: req.text, annotationId: req.annotationId, markup, commandId };
+  const sent = { text: req.text, annotationId: req.annotationId, markup, commandId, ...sentFiles };
   return deliver(app, req.projectId, req.draftTaskId, { body, commandId, expectedRevision, label: req.label, sent }, (a) => fail({ ...a, historyId, delivery }));
 }
 
@@ -215,8 +354,9 @@ function recorded(app: App, projectId: string, draftTaskId: string | null, attem
  * or failure follows the same sentence. A problem found on this device
  * before anything left is said as it is.
  */
-function unprepared(e: unknown, computer: string): Omit<SendAttempt, "at" | "text"> {
-  const stage = `Couldn’t upload the markup. Nothing was sent to ${computer}.`;
+function unprepared(e: unknown, computer: string, what = "the markup"): Omit<SendAttempt, "at" | "text"> {
+  const stage = `Couldn’t upload ${what}. Nothing was sent to ${computer}.`;
+  if (e instanceof MissingFile) return { phase: "failed", commandId: null, detail: `${e.message} Nothing was sent to ${computer}.` };
   const lost = e instanceof NotConnectedError || e instanceof OutcomeUnknownError || (e instanceof TransferError && e.resumable)
     || (e instanceof CommandError && e.error.code === "outcome_unknown");
   if (lost) return { phase: "not_delivered", commandId: null, detail: stage };
@@ -243,13 +383,21 @@ export const repeatable = (a: SendAttempt | null, session: HostSession): boolean
  * Send an unknown attempt again under its original id. The computer
  * recognises the id: it answers with what it recorded rather than acting twice.
  */
-export async function resend(app: App, projectId: string, draftTaskId: string | null, attempt: SendAttempt, label: string): Promise<SendOutcome> {
+export function resend(app: App, projectId: string, draftTaskId: string | null, attempt: SendAttempt, label: string): Promise<SendOutcome> {
+  return onceSending(app, projectId, draftTaskId, label, () => repeatSend(app, projectId, draftTaskId, attempt, label));
+}
+
+async function repeatSend(app: App, projectId: string, draftTaskId: string | null, attempt: SendAttempt, label: string): Promise<SendOutcome> {
   const { body, commandId } = attempt;
   if (!body || !commandId || !repeatable(attempt, app.session)) throw new Error("This attempt can’t be repeated safely. Check its outcome first.");
+  rememberOrigin(app, commandId);
   const expectedRevision = attempt.expectedRevision ?? null;
   const fail = (a: Omit<SendAttempt, "at" | "text">): SendOutcome => {
     const next: SendAttempt = { ...attempt, ...a, at: Date.now() };
-    if (next.phase !== "unknown") letGo(app, attempt.annotationId, commandId);
+    if (next.phase !== "unknown") {
+      letGo(app, attempt.annotationId, commandId);
+      sendState(app.ui).origins.delete(commandId);
+    }
     app.ui.saveDraft(projectId, draftTaskId, { attempt: next });
     return { ok: false, attempt: next };
   };
@@ -267,7 +415,7 @@ export async function resend(app: App, projectId: string, draftTaskId: string | 
     settle(app, projectId, draftTaskId, attempt, null);
     throw new Error("This attempt can’t be repeated safely. Check its outcome first.");
   }
-  const sent = { text: attempt.text, annotationId: attempt.annotationId ?? null, markup: attempt.markup ?? null, commandId };
+  const sent = { text: attempt.text, annotationId: attempt.annotationId ?? null, markup: attempt.markup ?? null, commandId, files: attempt.files };
   return deliver(app, projectId, draftTaskId, { body, commandId, expectedRevision, label, sent }, (a) =>
     // Its id stays bound to that request, so a refusal can't be retried under it.
     fail(a.phase === "unknown" ? { ...a, body, expectedRevision }
@@ -287,10 +435,14 @@ async function deliver(
   const { session, platform, profile } = app;
   const { body, commandId } = out;
   const accepted = (receipt: CommandReceipt): SendOutcome => {
+    if (!completeOnce(app, commandId)) return { ok: true, receipt };
+    const origin = sendState(app.ui).origins.get(commandId) ?? app;
+    sendState(app.ui).origins.delete(commandId);
     recordPreviewSend(app, body, receipt);
+    const ordered = !!app.ui.draft(projectId, draftTaskId)?.review?.ordered;
     consume(app, projectId, draftTaskId, out.sent);
     platform.haptic?.("confirm");
-    delivered(app, projectId, draftTaskId, body, receipt);
+    delivered(origin, projectId, draftTaskId, body, receipt, ordered);
     return { ok: true, receipt };
   };
   // The answer was lost, but the computer's record of the send may already be here.
@@ -338,10 +490,12 @@ async function deliver(
  * The computer has what was sent: take exactly that out of the draft. Text
  * typed or markup changed after Send is newer work and stays.
  */
-type Sent = { text: string; annotationId: string | null; markup: SendAttempt["markup"]; commandId: string | null };
+type Sent = { text: string; annotationId: string | null; markup: SendAttempt["markup"]; commandId: string | null; files?: string[] };
 
 function consume(app: App, projectId: string, draftTaskId: string | null, sent: Sent): void {
   const { ui } = app;
+  // The files sent are on the computer now; any added since stay.
+  consumeFiles(ui, projectId, draftTaskId, sent.files);
   const draft = ui.draft(projectId, draftTaskId);
   if (!draft) return;
   const store = annotationStore(app.profile.profileId);
@@ -354,7 +508,7 @@ function consume(app: App, projectId: string, draftTaskId: string | null, sent: 
   const markup = store.get()[draft.annotationId ?? ""];
   const markupKept = draft.annotationId !== null && (draft.annotationId !== sentMarkup || (markup !== undefined && editedSinceSent(markup)));
   const text = remaining(draft.text, sent.text);
-  if (!text.trim() && !markupKept) ui.clearDraft(projectId, draftTaskId);
+  if (!text.trim() && !markupKept && !draft.files?.length) ui.clearDraft(projectId, draftTaskId);
   // Agent and review choices belonged to the request that was sent.
   else ui.saveDraft(projectId, draftTaskId, { text, agent: null, access: undefined, attempt: null, review: null, ...(markupKept ? {} : { annotationId: null }) });
 }
@@ -373,6 +527,22 @@ function remaining(now: string, sent: string): string {
  */
 export function settle(app: App, projectId: string, draftTaskId: string | null, attempt: SendAttempt, receipt: CommandReceipt | null): void {
   const { ui } = app;
+  const current = ui.draft(projectId, draftTaskId)?.attempt;
+  // A late receipt must not overwrite a newer command. An accepted receipt
+  // can still resolve a prior rejection, or record delivery after the pending
+  // draft was removed; the submitted content remains its own snapshot.
+  if (!attempt.commandId || (current?.commandId && current.commandId !== attempt.commandId)) return;
+  if ((!receipt || receipt.status === "rejected") && current && current.phase !== "unknown" && current.phase !== "sending") return;
+  if (receipt && receipt.command_id !== attempt.commandId) return;
+  const state = sendState(ui);
+  if (state.completed.has(attempt.commandId)) return;
+  const final = receipt !== null || app.session.sameCommandHistory(attempt.historyId);
+  // A query begun before a retry can say "not received" just before that
+  // retry arrives. Only positive proof claims the one-time consumption.
+  const accepted = receipt !== null && receipt.status !== "rejected";
+  if (accepted && !completeOnce(app, attempt.commandId)) return;
+  const origin = state.origins.get(attempt.commandId) ?? app;
+  if (final && (accepted || !state.inFlight.has(draftKey(projectId, draftTaskId)))) state.origins.delete(attempt.commandId);
   // Whatever it is now, it is no longer in doubt as announced.
   withdraw(attempt.detail);
   if (!receipt && !app.session.sameCommandHistory(attempt.historyId)) {
@@ -403,15 +573,30 @@ export function settle(app: App, projectId: string, draftTaskId: string | null, 
     return;
   }
   recordPreviewSend(app, attempt.body, receipt, attempt.at);
-  consume(app, projectId, draftTaskId, { text: attempt.text, annotationId: attempt.annotationId ?? null, markup: attempt.markup ?? null, commandId: attempt.commandId });
-  delivered(app, projectId, draftTaskId, attempt.body, receipt);
+  const ordered = !!ui.draft(projectId, draftTaskId)?.review?.ordered;
+  consume(app, projectId, draftTaskId, { text: attempt.text, annotationId: attempt.annotationId ?? null, markup: attempt.markup ?? null, commandId: attempt.commandId, files: attempt.files });
+  delivered(origin, projectId, draftTaskId, attempt.body, receipt, ordered);
 }
 
-/** Ask the computer what happened to an unknown command. */
-export async function check(app: App, projectId: string, draftTaskId: string | null, attempt: SendAttempt): Promise<void> {
-  if (!attempt.commandId) return;
-  const r = await app.session.query({ kind: "command_status", command_id: attempt.commandId });
-  settle(app, projectId, draftTaskId, attempt, r.receipt);
+/** Explicit Check can refresh a stalled automatic query; two manual checks still join. */
+export function check(app: App, projectId: string, draftTaskId: string | null, attempt: SendAttempt): Promise<void> {
+  return queryStatus(app, projectId, draftTaskId, attempt, false);
+}
+
+function queryStatus(app: App, projectId: string, draftTaskId: string | null, attempt: SendAttempt, automatic: boolean): Promise<void> {
+  if (!attempt.commandId) return Promise.resolve();
+  const state = sendState(app.ui);
+  if (state.completed.has(attempt.commandId)) return Promise.resolve();
+  const key = JSON.stringify([draftKey(projectId, draftTaskId), attempt.commandId, automatic]);
+  const existing = state.queries.get(key);
+  if (existing) return existing;
+  const pending = app.session.query({ kind: "command_status", command_id: attempt.commandId }).then((r) => {
+    settle(app, projectId, draftTaskId, attempt, r.receipt);
+  });
+  state.queries.set(key, pending);
+  const remove = () => { if (state.queries.get(key) === pending) state.queries.delete(key); };
+  void pending.then(remove, remove);
+  return pending;
 }
 
 /**
@@ -442,42 +627,48 @@ export function useAutoSettle(projectId: string, draftTaskId: string | null, att
   const id = attempt?.phase === "unknown" ? attempt.commandId : null;
   useEffect(() => {
     if (!id || !attempt) return;
-    const { session, ui } = app;
-    const current = () => ui.draft(projectId, draftTaskId)?.attempt?.commandId === id;
-    const recorded = () => {
-      const receipt = current() ? journaled(session, id, attempt.body) : null;
-      if (receipt) settle(app, projectId, draftTaskId, attempt, receipt);
-      return receipt !== null;
-    };
-    if (recorded()) return;
-    const offJournal = session.state.subscribe(() => void recorded());
-    if (!session.commands.get()[id]) {
-      if (!online) return offJournal;
-      let live = true;
-      session.query({ kind: "command_status", command_id: id }).then(
-        (r) => {
-          if (live && current()) settle(app, projectId, draftTaskId, attempt, r.receipt);
-        },
-        () => undefined,
-      );
-      return () => {
-        live = false;
-        offJournal();
+    const state = sendState(app.ui);
+    const key = JSON.stringify([draftKey(projectId, draftTaskId), id, online]);
+    let entry = state.automatic.get(key);
+    if (!entry) {
+      entry = { users: 0, stop: () => {} };
+      state.automatic.set(key, entry);
+      const { session, ui } = app;
+      const current = () => {
+        const now = ui.draft(projectId, draftTaskId)?.attempt;
+        return now?.commandId === id && now.phase === "unknown";
       };
+      const recorded = () => {
+        const receipt = current() ? journaled(session, id, attempt.body) : null;
+        if (receipt) settle(app, projectId, draftTaskId, attempt, receipt);
+        return receipt !== null;
+      };
+      if (!recorded()) {
+        const offJournal = session.state.subscribe(() => void recorded());
+        if (!session.commands.get()[id]) {
+          if (online && current()) void queryStatus(app, projectId, draftTaskId, attempt, true).catch(() => {});
+          entry.stop = offJournal;
+        } else {
+          const test = () => {
+            const c = session.commands.get()[id];
+            if (!c || !current()) return;
+            if ((c.phase === "accepted" || c.phase === "duplicate" || c.phase === "rejected") && c.receipt) settle(app, projectId, draftTaskId, attempt, c.receipt);
+            else if (c.phase === "not_delivered") settle(app, projectId, draftTaskId, attempt, null);
+            else if (c.phase === "unknown" && online && !session.sameCommandHistory(attempt.historyId)) settle(app, projectId, draftTaskId, attempt, null);
+          };
+          test();
+          const offCommands = session.commands.subscribe(test);
+          entry.stop = () => { offJournal(); offCommands(); };
+        }
+      }
     }
-    const test = () => {
-      const c = session.commands.get()[id];
-      if (!c || !current()) return;
-      if ((c.phase === "accepted" || c.phase === "duplicate" || c.phase === "rejected") && c.receipt) settle(app, projectId, draftTaskId, attempt, c.receipt);
-      else if (c.phase === "not_delivered") settle(app, projectId, draftTaskId, attempt, null);
-      else if (c.phase === "unknown" && online && !session.sameCommandHistory(attempt.historyId)) settle(app, projectId, draftTaskId, attempt, null);
-    };
-    test();
-    const offCommands = session.commands.subscribe(test);
+    entry.users++;
     return () => {
-      offJournal();
-      offCommands();
+      if (--entry.users === 0) {
+        entry.stop();
+        state.automatic.delete(key);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, online]);
+  }, [app.ui, id, online]);
 }

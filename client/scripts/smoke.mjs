@@ -85,8 +85,9 @@ async function main() {
   vite.stdout.on("data", (d) => (viteLog += d));
   vite.stderr.on("data", (d) => (viteLog += d));
   const exited = new Promise((resolve) => vite.on("close", resolve));
-  // The simulator needs a localhost address; 127.0.0.1 has no app bridge.
-  const base = `http://localhost:${port}`;
+  // Probe and browse the same address Vite binds. localhost can resolve
+  // only to ::1 on a runner; sim mode selects the bridge on either address.
+  const base = `http://127.0.0.1:${port}`;
   try {
     let up = false;
     for (let i = 0; i < 120 && !up && vite.exitCode === null; i++) {

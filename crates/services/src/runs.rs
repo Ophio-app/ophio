@@ -3,6 +3,11 @@ use crate::{CompanionHub, api::Caller, error, unsupported};
 #[path = "admitted_followups.rs"]
 mod admitted_followups;
 pub(crate) use admitted_followups::fail_undispatched_followup;
+pub(crate) use chat_message_queue::fail_undispatched_chat_turn;
+#[path = "chat_handover.rs"]
+mod chat_handover;
+#[path = "chat_message_queue.rs"]
+mod chat_message_queue;
 #[path = "queue_completion.rs"]
 pub(crate) mod queue_completion;
 use ports::{Containment, HarnessError, HarnessEvent, MessageRef, PromptInput, RunExit};
@@ -30,6 +35,9 @@ struct RunIntent {
     text: Option<String>,
     #[serde(default)]
     bundle: Option<Box<AnnotationBundle>>,
+    /// Frozen with admission, never rebuilt when a launch is retried.
+    #[serde(default)]
+    chat_handover_text: Option<String>,
 }
 
 /// Whether `run_id`, `task`'s turn, was one Ophio started to see its pull
@@ -263,6 +271,10 @@ pub(crate) struct QueuePermit {
 /// message, which carried it along: run id → its timeline sequence.
 const CARRIED_MESSAGE: &str = "carried_start_message";
 
+/// Reports included in a run's opening prompt, awaiting native delivery.
+/// Keep the chat's waiting copy until that confirmation, not just a spawn.
+const CHAT_NEWS_DELIVERY: &str = "chat_news_delivery";
+
 impl CompanionHub {
     /// Correlate the admitted prompt with its journal sequence before dispatch.
     /// Queued prompts acquire a run only when Next up actually starts them.
@@ -286,6 +298,19 @@ impl CompanionHub {
         run: &Run,
         state: DeliveryState,
     ) -> store::Result<()> {
+        if run.chat_handover.is_some() && state == DeliveryState::NativeDelivered {
+            tx.put(chat_handover::DELIVERED, run.run_id, &true)?;
+        }
+        if let Some(news) = tx
+            .read()
+            .get::<Vec<crate::chat_news::News>>(CHAT_NEWS_DELIVERY, run.run_id)?
+        {
+            if state == DeliveryState::NativeDelivered {
+                crate::chat_news::heard(tx, run.task_id, &news)?;
+            }
+            // Failure or uncertainty leaves the waiting reports for a retry.
+            tx.delete(CHAT_NEWS_DELIVERY, run.run_id)?;
+        }
         if let Some(seq) = tx.read().get::<u64>(CARRIED_MESSAGE, run.run_id)? {
             tx.delete(CARRIED_MESSAGE, run.run_id)?;
             self.settle_message(tx, run, seq, state)?;
@@ -371,9 +396,8 @@ impl CompanionHub {
             .ok_or_else(|| unsupported("Selected harness readiness"))?;
         domain::availability(&info.capabilities.start_run)?;
         domain::task_mode(info, mode)?;
-        if task.current_run.is_some() {
-            domain::availability(&info.capabilities.resume_session)?;
-        }
+        // A fresh destination needs start support, not resume support. Check
+        // resume only after selecting that agent's own session below.
         if task.kind == TaskKind::ComputerUse && mode != TaskMode::Work {
             return Err(error(
                 ErrorCode::InvalidRequest,
@@ -382,9 +406,38 @@ impl CompanionHub {
             .into());
         }
         let mut project: Project = tx.read().require("project", task.project_id)?;
+        // This is the ordinary busy response; the central transaction guard
+        // independently prevents every writer path from taking this claim.
+        let continuation = self
+            .inner
+            .checking_continuations
+            .lock()
+            .map_err(crate::internal)?
+            .get(&task.project_id)
+            .copied()
+            .filter(|claim| claim.command_id != command_id);
+        if mode == TaskMode::Work && continuation.is_some() {
+            return Err(error(
+                ErrorCode::Conflict,
+                "This project is reserved while a person continues its checking task.",
+            )
+            .into());
+        }
         if mode == TaskMode::Work
             && let Some(writer) = project.active_writer
         {
+            if let Some(job) = tx.read().check_job(CheckJobId(writer.0))? {
+                let message = if let Some(task_id) = job.task_id {
+                    let holder: Task = tx.read().require("task", task_id)?;
+                    format!(
+                        "Checking this task’s work: “{}”. This can start once the checks finish, or stop them.",
+                        holder.title
+                    )
+                } else {
+                    "Ophio is checking this project. This can start once the checks finish, or stop them in the Library.".into()
+                };
+                return Err(error(ErrorCode::Conflict, message).into());
+            }
             if let Some(holder) = tx.read().get::<Run>("run", writer)?
                 && helpers_finishing(&holder)
             {
@@ -398,12 +451,42 @@ impl CompanionHub {
                 )
                 .into());
             }
-            return Err(error(
-                ErrorCode::Conflict,
-                "Project already has an active or uncertain writer",
-            )
-            .into());
+            let holder: Run = tx.read().require("run", writer)?;
+            let uncertain = holder.state == RunState::ReconciliationRequired;
+            let holder: Task = tx.read().require("task", holder.task_id)?;
+            let message = if uncertain {
+                format!(
+                    "“{}” ended without a confirmed result. Check what happened before starting this task.",
+                    holder.title
+                )
+            } else if holder.conversation {
+                format!(
+                    "Chat “{}” is replying in this project. This task can start when its reply ends.",
+                    holder.title
+                )
+            } else {
+                format!(
+                    "“{}” is changing this project. This task can start when it finishes.",
+                    holder.title
+                )
+            };
+            return Err(error(ErrorCode::Conflict, message).into());
         }
+        // Admission and the project reservation share this transaction. Chats
+        // never wait for another writer: this turn instead keeps a read-only
+        // project view (or an instruction only for unrestricted access).
+        let chat_writes =
+            !read_only && crate::access::conversation_writes_project(&tx.read(), task)?;
+        let writer_hold = if chat_writes {
+            project
+                .active_writer
+                .or(continuation.map(|claim| claim.run_id))
+                .map(|id| writer_task(&tx.read(), id))
+                .transpose()?
+        } else {
+            None
+        };
+        let holds_writer = mode == TaskMode::Work || (chat_writes && writer_hold.is_none());
         // A turn that ended while what it started may still run keeps its
         // task. Replacing it would leave nothing to stop that with, and
         // nothing to raise for the person if it can't be confirmed ended.
@@ -438,6 +521,19 @@ impl CompanionHub {
         } else {
             (None, previous_mode)
         };
+        let handover = chat_handover::prepare(&tx.read(), task)?;
+        let (resume, resume_from_mode, chat_handover, chat_handover_text) = match handover {
+            Some(handover) => (
+                handover.resume,
+                handover.resume_from_mode,
+                Some(handover.boundary),
+                Some(handover.text),
+            ),
+            None => (resume, resume_from_mode, None, None),
+        };
+        if resume.is_some() {
+            domain::availability(&info.capabilities.resume_session)?;
+        }
         // The next message waiting in Next up goes with this turn, ahead of
         // anything sent with it. A side question leaves it waiting.
         let continuation = tx
@@ -486,10 +582,13 @@ impl CompanionHub {
         let run_id = RunId::new();
         let now = self.inner.clock.now();
         let run = Run {
+            chat_handover,
             human_resolution: None,
+            carried_on: None,
             helpers_checked: None,
             force_stoppable: false,
             cleanup_pending: false,
+            nothing_running: false,
             run_id,
             task_id: task.task_id,
             harness: task.harness,
@@ -508,12 +607,12 @@ impl CompanionHub {
             children: Vec::new(),
             earlier_children: None,
             outcome: None,
-            holds_writer: mode == TaskMode::Work,
+            holds_writer,
             mode: Some(mode),
             revisions: None,
             follow_up: None,
         };
-        if mode == TaskMode::Work {
+        if holds_writer {
             project.active_writer = Some(run_id);
         }
         if read_only {
@@ -524,6 +623,9 @@ impl CompanionHub {
         task.updated_at = now;
         task.revision += 1;
         tx.put("run", run_id, &run)?;
+        if task.conversation && !read_only {
+            tx.put(crate::access::CHAT_WRITER_HOLD, run_id, &writer_hold)?;
+        }
         tx.put("run_task_revision", run_id, &task.revision)?;
         // A check of a pull request decides it by this run, however it was
         // started or run again, and holds its merge until that reports.
@@ -561,15 +663,16 @@ impl CompanionHub {
                 resume_from_mode,
                 text,
                 bundle,
+                chat_handover_text,
             },
         )?;
-        if mode == TaskMode::Work {
+        if holds_writer {
             tx.put("project", project.project_id, &project)?;
             tx.emit(Event::ProjectUpserted { project })?;
         }
         tx.emit(Event::RunUpserted { run: Box::new(run) })?;
         let mut q: QueueView = tx.read().require("queue", task.project_id)?;
-        if mode == TaskMode::Work {
+        if holds_writer {
             q.writer = Some(run_id);
         }
         bump_queue_revision(tx, &mut q)?;
@@ -584,6 +687,14 @@ impl CompanionHub {
             item.authorization_expires_at = None;
             // The run holds the request now; Next up no longer waits on it.
             item.request = None;
+        }
+        // The person's own message, waiting in Next up, makes this turn theirs.
+        if let Some(item) = q.items.iter().find(|i| {
+            i.task_id == task.task_id
+                && matches!(i.state, QueueItemState::Started { run_id: r } if r == run_id)
+        }) && crate::proposals::take_person_queued(tx, task.task_id, item.item_id)?
+        {
+            crate::proposals::person_turn(tx, run_id)?;
         }
         forget_finished(tx, &mut q)?;
         tx.put("queue", q.project_id, &q)?;
@@ -746,11 +857,26 @@ impl CompanionHub {
             if *self.inner.shutdown.borrow() {
                 return Ok(Vec::new());
             }
-            let mut starts = Vec::new();
+            let mut starts = self.advance_chat_turns(tx)?;
             for queue in tx.read().list::<QueueView>("queue")? {
                 loop {
                     let mut q: QueueView = tx.read().require("queue", queue.project_id)?;
-                    if q.paused {
+                    // Steps of a card's set after one that didn't succeed
+                    // never hold it up, paused or not.
+                    if crate::proposals::let_go_after_failure(tx, &mut q, self.inner.clock.now())? {
+                        self.refresh_queue(tx, &mut q)?;
+                        tx.put("queue", q.project_id, &q)?;
+                        crate::runs::sync_queue_attention(tx, &q, self.inner.clock.now())?;
+                        tx.emit(Event::QueueChanged { queue: q.clone() })?;
+                    }
+                    if q.paused
+                        || self
+                            .inner
+                            .checking_continuations
+                            .lock()
+                            .map_err(crate::internal)?
+                            .contains_key(&q.project_id)
+                    {
                         break;
                     }
                     self.refresh_queue(tx, &mut q)?;
@@ -827,6 +953,8 @@ impl CompanionHub {
                             expires_at: None,
                             expires_in_ms: None,
                             body: Command::ResumeTask {
+                                observed_reply: None,
+                                harness: None,
                                 mode: None,
                                 task_id: task.task_id,
                                 text: None,
@@ -927,7 +1055,50 @@ impl CompanionHub {
                     .into());
                 }
                 let intent: RunIntent = tx.read().require("run_intent", id)?;
-                let project: Project = tx.read().require("project", task.project_id)?;
+                let mut project: Project = tx.read().require("project", task.project_id)?;
+                // Access may have changed after admission but before dispatch.
+                // Reserve atomically before using the latest grant, or keep
+                // this turn read-only when someone else already reserved it.
+                if !run.holds_writer
+                    && tx.read().get::<TaskState>(SIDE_TURN, id)?.is_none()
+                    && crate::access::conversation_writes_project(&tx.read(), &task)?
+                    && tx
+                        .read()
+                        .get::<Option<TaskId>>(crate::access::CHAT_WRITER_HOLD, id)?
+                        .flatten()
+                        .is_none()
+                {
+                    let claim = self
+                        .inner
+                        .checking_continuations
+                        .lock()
+                        .map_err(crate::internal)?
+                        .get(&task.project_id)
+                        .copied();
+                    let hold = project
+                        .active_writer
+                        .or(claim
+                            .filter(|claim| claim.command_id != intent.command_id)
+                            .map(|claim| claim.run_id))
+                        .map(|writer| writer_task(&tx.read(), writer))
+                        .transpose()?;
+                    tx.put(crate::access::CHAT_WRITER_HOLD, id, &hold)?;
+                    if hold.is_none() {
+                        run.holds_writer = true;
+                        project.active_writer = Some(id);
+                        tx.put("project", project.project_id, &project)?;
+                        tx.emit(Event::ProjectUpserted {
+                            project: project.clone(),
+                        })?;
+                        let mut queue: QueueView =
+                            tx.read().require("queue", project.project_id)?;
+                        queue.writer = Some(id);
+                        bump_queue_revision(tx, &mut queue)?;
+                        tx.put("queue", queue.project_id, &queue)?;
+                        sync_queue_attention(tx, &queue, self.inner.clock.now())?;
+                        tx.emit(Event::QueueChanged { queue })?;
+                    }
+                }
                 let prompt: (String, Option<Box<AnnotationBundle>>) =
                     tx.read().require("prompt", task_id)?;
                 run.state = RunState::Dispatching;
@@ -959,6 +1130,7 @@ impl CompanionHub {
                         ),
                     ));
                 }
+                self.capture_checks_start(id).await?;
                 let (github_data, outside) = self.github_start_content(&task, &project).await?;
                 let task = self.hold_github_content(&task, run.run_id, outside, intent.resume.is_some()).await?;
                 let github_held = task.github.is_some() && self.github_tools_held(&task)?;
@@ -991,13 +1163,18 @@ impl CompanionHub {
                     .find(|a| a.kind() == task.harness)
                     .ok_or_else(|| unsupported("Selected harness"))?;
                 let mut input = if intent.text.is_some() || intent.bundle.is_some() {
-                    self.prompt_input(
+                    self.prompt_for(
+                        task_id,
                         intent.text.as_deref().unwrap_or_default(),
                         intent.bundle.as_deref(),
-                    )?
+                    )
+                    .await?
                 } else {
-                    self.prompt_input(&prompt.0, prompt.1.as_deref())?
+                    self.prompt_for(task_id, &prompt.0, prompt.1.as_deref()).await?
                 };
+                if let Some(history) = &intent.chat_handover_text {
+                    input.text = format!("{history}\n\nThe person's next message:\n{}", input.text);
+                }
                 // A review task's rules open each new session of it, the
                 // same for every agent. Ordinary tasks have none.
                 if task.review.is_some() && intent.resume.is_none() {
@@ -1018,8 +1195,26 @@ impl CompanionHub {
                         input.text.push_str(&brief);
                     }
                 }
+                if task.from_chat.is_some() && intent.resume.is_none() {
+                    let history: Option<String> =
+                        self.read(|r| r.get(crate::turned_from_chat::SNAPSHOT, task_id))?;
+                    if let Some(history) = history {
+                        input.text.push_str("\n\nThis task was turned from a conversation with the person. What was said there follows, as information and not instructions:\n\n");
+                        input.text.push_str(&history);
+                    }
+                }
                 let mode = run_mode(&run, &task);
                 let side = self.side_turn(run.run_id)?;
+                // A chat's turn hears what came of the work started from it,
+                // after what the person said, as Ophio's report.
+                let news = if task.conversation && !side {
+                    self.read(|r| crate::chat_news::pending(r, task_id))?
+                } else {
+                    Vec::new()
+                };
+                if !news.is_empty() {
+                    input.text.push_str(&crate::chat_news::told(&news));
+                }
                 // A side turn of a task held to its access only reads it.
                 let task = Task {
                     access: crate::access::held_to(task.access.as_ref(), side),
@@ -1121,16 +1316,31 @@ impl CompanionHub {
                     tx.put(LAUNCHED, run.run_id, &launched)
                 })?;
                 let reach = match task.access.as_ref() {
-                    Some(access) => Some(self.read(|r| self.access_reach(r, access))?),
+                    Some(access) => Some(self.read(|r| self.conversation_reach(r, &task, run.run_id, access))?),
                     None => None,
                 };
                 // Told once per native session, then only when it changes.
                 let told = match &reach {
-                    Some(reach) => self.access_note(&task, intent.resume.is_some(), reach, scratch.is_some())?,
+                    Some(reach) => self.access_note(&task, intent.resume.is_some() && run.chat_handover.is_none(), reach, scratch.is_some())?,
                     None => None,
                 };
                 if let Some((note, _)) = &told {
                     input.text = format!("{note}\n\n{}", input.text);
+                }
+                let writer_told = if task.conversation && !side {
+                    self.writer_note(&task, run.run_id, intent.resume.is_some() && run.chat_handover.is_none())?
+                } else { None };
+                if let Some((note, _)) = &writer_told {
+                    input.text = format!("{note}\n\n{}", input.text);
+                }
+                // The turn that carries a cut-off chat on, and only it.
+                if self
+                    .read(|r| r.get::<bool>(crate::cut_off::CUT_OFF_TURN, run.run_id))?
+                    .unwrap_or(false)
+                {
+                    let context = self.read(|r| r.get::<String>(crate::cut_off::CONTEXT, run.run_id))?
+                        .unwrap_or_else(|| crate::cut_off::CUT_OFF_NOTE.into());
+                    input.text = format!("{context}\n\n{}", input.text);
                 }
                 let spec = ports::RunSpec {
                     run_id: run.run_id,
@@ -1151,6 +1361,7 @@ impl CompanionHub {
                     env,
                     github,
                     scratch,
+                    attached: self.prepare_attached(task_id).await,
                     questions: self.read(Self::agent_preferences)?.questions,
                     sandbox,
                     web: controlled && task.access.as_ref().is_some_and(|a| a.internet),
@@ -1165,10 +1376,10 @@ impl CompanionHub {
                         .await?,
                 };
                 self.record_repository_revision(run.run_id, true).await?;
-                Ok::<_, ProtocolError>(Some((adapter, spec, told.map(|(_, access)| access))))
+                Ok::<_, ProtocolError>(Some((adapter, spec, told.map(|(_, access)| access), news)))
             }
             .await;
-            let (adapter, spec, told) = match prepared {
+            let (adapter, spec, told, news) = match prepared {
                 Ok(Some(prepared)) => prepared,
                 Ok(None) => return Ok(()),
                 Err(e) => {
@@ -1185,6 +1396,11 @@ impl CompanionHub {
                     return self.refuse_start(task_id, run.run_id, e.code, e.message);
                 }
             };
+            // The agent can't read the folder made after it starts, so files
+            // sent while it runs are refused, saying so.
+            if spec.attached.is_none() {
+                self.write(|tx| tx.put(crate::attached::NO_FOLDER, run.run_id, &true))?;
+            }
             if let Some(sandbox) = &spec.sandbox {
                 self.inner
                     .sandbox_runs
@@ -1242,12 +1458,49 @@ impl CompanionHub {
             }
             drop(access_guard);
             self.guard_run(run.run_id);
+            // What a later Øphio can check about where its processes are.
+            let group = crate::cut_off::RunGroup {
+                contained: started.control.containment()
+                    == Some(ports::harness::Containment::Complete),
+                dir: started.control.run_group(),
+                boot: crate::cut_off::boot_id(),
+            };
             self.write(|tx| {
                 let mut owned: Run = tx.read().require("run", run.run_id)?;
                 owned.force_stoppable = true;
                 tx.put("run", owned.run_id, &owned)?;
+                tx.put(crate::cut_off::RUN_GROUP, owned.run_id, &group)?;
                 if let Some(access) = &told {
                     tx.put(crate::access::TOLD, task_id, access)?;
+                }
+                if task.conversation && tx.read().get::<TaskState>(SIDE_TURN, run.run_id)?.is_none() {
+                    let holder = tx.read().get::<Option<TaskId>>(crate::access::CHAT_WRITER_HOLD, run.run_id)?.flatten();
+                    tx.put(crate::access::WRITER_TOLD, task_id, &holder)?;
+                    let previous = tx.read().get::<Option<TaskId>>("chat_writer_shown", task_id)?.flatten();
+                    if holder != previous {
+                        if let Some(id) = holder {
+                            let subject = if tx.read().check_job(CheckJobId(id.0))?.is_some() {
+                                "Ophio is checking this project".to_owned()
+                            } else {
+                                let blocker: Task = tx.read().require("task", id)?;
+                                if blocker.checking.is_some() {
+                                    "Ophio is checking this project".to_owned()
+                                } else {
+                                    format!("“{}” is changing this project", blocker.title)
+                                }
+                            };
+                            let text = if task.access.as_ref().is_some_and(|a| a.unrestricted()) {
+                                format!("{subject}. Replies here are asked not to change it until that finishes, but unrestricted access cannot enforce this.")
+                            } else {
+                                format!("{subject}, so replies here can read it but not change it until that finishes.")
+                            };
+                            tx.emit(Event::TimelineAppended { task_id, item: TimelineItem { seq: 0, at: self.inner.clock.now(), run_id: Some(run.run_id), item: TimelineBody::Note { text } } })?;
+                        }
+                        tx.put("chat_writer_shown", task_id, &holder)?;
+                    }
+                }
+                if !news.is_empty() {
+                    tx.put(CHAT_NEWS_DELIVERY, run.run_id, &news)?;
                 }
                 tx.emit(Event::RunUpserted {
                     run: Box::new(owned),
@@ -1339,6 +1592,9 @@ impl CompanionHub {
         self.write(|tx| {
             let run: Run = tx.read().require("run", run_id)?;
             self.settle_start_message(tx, &run, DeliveryState::Failed)?;
+            // These failures are confirmed to occur before an agent receives
+            // its prompt. There was no Work process whose files need checking.
+            tx.put("run_start_refused", run_id, &true)?;
             tx.emit(Event::TimelineAppended {
                 task_id,
                 item: TimelineItem {
@@ -1362,7 +1618,12 @@ impl CompanionHub {
         self.conversation_block_event(id, &event)?;
         // Masked before it is cut to fit, so no part of a value survives.
         self.mask_run_event(id, &mut event);
-        let mut event = crate::native_text::fitted(event);
+        // A final message repeats its streamed prefix. Remove any prefix
+        // already journaled before applying the final message's frame limit.
+        let mut event = match event {
+            event @ HarnessEvent::AgentMessage { .. } => event,
+            other => crate::native_text::fitted(other),
+        };
         if let HarnessEvent::ApprovalRequested(native) = &event
             && !crate::native_text::native_approval_fits(native)
         {
@@ -1393,6 +1654,19 @@ impl CompanionHub {
             let run: Run = self.read(|r| r.require("run", id))?;
             tracing::info!(harness = ?run.harness, %reason, "an agent refused a run for want of a sign-in");
             return self.run_signed_out(run.harness, run.dispatched_at.unwrap_or(run.admitted_at));
+        }
+        // Once the agent handed over to checks, only that lifecycle can
+        // clear its compatibility Stop flag or finish the reserved writer.
+        // A repeated native exit must not release the final handback either.
+        if matches!(
+            event,
+            HarnessEvent::CleanupPending | HarnessEvent::Exited { .. }
+        ) {
+            let run: Run = self.read(|r| r.require("run", id))?;
+            let task: Task = self.read(|r| r.require("task", run.task_id))?;
+            if task.current_run == Some(id) && task.checking.is_some() {
+                return Ok(());
+            }
         }
         if matches!(event, HarnessEvent::CleanupPending) {
             // The run stays as it is, holding what it holds and stoppable,
@@ -1507,12 +1781,17 @@ impl CompanionHub {
                 // All of it held back until the next piece shows what it is.
                 return Ok(());
             }
+            let (checkpoint, message_key, text_offset) = self.buffer_reply(id, &message_key, &text);
             self.live(LiveEvent::AgentTextDelta {
+                text_offset: Some(text_offset),
                 task_id: run.task_id,
                 run_id: id,
                 message_key,
                 text,
             });
+            if checkpoint {
+                self.save_reply(id).await?;
+            }
             return Ok(());
         }
         if let HarnessEvent::Exited { exit, outcome } = event {
@@ -1524,6 +1803,31 @@ impl CompanionHub {
                 self.child_control_closed(id)?;
             }
             let run: Run = self.read(|r| r.require("run", id))?;
+            if !parent_ended
+                && let Some(mut end) = self.read(|r| {
+                    r.get::<crate::check_lifecycle::DeferredEnd>(
+                        crate::check_lifecycle::HELPERS_END,
+                        id,
+                    )
+                })?
+            {
+                // Snapshot only once the last helper has stopped writing, while
+                // the original run still reserves the project's writer.
+                if self.read(|r| Ok(r.get::<bool>("stopped", id)?.unwrap_or(false)))?
+                    || matches!(exit, RunExit::Interrupted)
+                {
+                    end.state = RunState::Interrupted;
+                } else if matches!(exit, RunExit::Unknown { .. })
+                    || outcome.as_ref().is_some_and(|outcome| {
+                        !outcome.still_active.is_empty() || !outcome.unknowns.is_empty()
+                    })
+                {
+                    end.state = RunState::ReconciliationRequired;
+                }
+                self.prepare_checks_end(&end).await?;
+                self.end_run(id, end.state, end.outcome, false, end.why)?;
+                return self.after_run_exit(id, run.task_id, end.state).await;
+            }
             // An uncertain parent has an end timestamp, but only process exit
             // can finish its pending Force stop and release the writer.
             let finishing_force_stop = !parent_ended
@@ -1585,6 +1889,19 @@ impl CompanionHub {
                 ),
                 _ => None,
             };
+            if !parent_ended {
+                // Processes are gone, but the run still owns the project.
+                // Capture and hash before opening the completion transaction;
+                // only frozen admission and the writer hand-over belong there.
+                self.prepare_checks_end(&crate::check_lifecycle::DeferredEnd {
+                    run_id: id,
+                    state,
+                    outcome: outcome.clone(),
+                    helpers_running: false,
+                    why: why.clone(),
+                })
+                .await?;
+            }
             self.end_run(id, state, outcome, parent_ended, why)?;
             return self.after_run_exit(id, run.task_id, state).await;
         }
@@ -1670,13 +1987,19 @@ impl CompanionHub {
                         task.state = TaskState::Working;
                     }
                 }
-                HarnessEvent::AgentMessage { text, .. } => {
+                HarnessEvent::AgentMessage { message_key, text } => {
                     crate::usage_limits::usage_returned(tx, run.harness)?;
                     crate::sign_in_watch::proven(tx, run.harness, now)?;
-                    timeline = Some(TimelineBody::AgentMessage {
-                        text,
-                        partial: false,
-                    })
+                    let completed = self.complete_reply(tx, &run, &message_key, text)?;
+                    let text = crate::native_text::fit(completed.text, crate::native_text::MESSAGE);
+                    if !text.is_empty() || completed.message_key.is_some() {
+                        timeline = Some(TimelineBody::AgentMessage {
+                            message_key: completed.message_key,
+                            text_offset: Some(completed.text_offset),
+                            text,
+                            partial: false,
+                        });
+                    }
                 }
                 HarnessEvent::Activity {
                     key,
@@ -1837,6 +2160,11 @@ impl CompanionHub {
                     let outcome = run.outcome.get_or_insert_with(empty_outcome);
                     outcome.usage = usage;
                 }
+                HarnessEvent::UsageNotice { text } => {
+                    if crate::usage_limits::notice_once(tx, task.task_id, &text, now)? {
+                        timeline = Some(TimelineBody::Note { text });
+                    }
+                }
                 HarnessEvent::Warning { text }
                 | HarnessEvent::ReadinessWarning { reason: text } => {
                     timeline = Some(TimelineBody::Note { text })
@@ -1975,6 +2303,39 @@ impl CompanionHub {
         }
         Ok(())
     }
+    /// Complete a durable handback that was interrupted by a restart.
+    pub(crate) fn finish_recovered_checks(&self) -> Result<(), ProtocolError> {
+        for end in self.recoverable_deferred_ends()? {
+            // A transient failed store write must not strand a finished job's
+            // hand-over. Keep the durable finalizing marker until one succeeds.
+            self.end_run(
+                end.run_id,
+                end.state,
+                end.outcome.clone(),
+                end.helpers_running,
+                end.why.clone(),
+            )
+            .or_else(|_| {
+                self.end_run(
+                    end.run_id,
+                    end.state,
+                    end.outcome,
+                    end.helpers_running,
+                    end.why,
+                )
+            })?;
+        }
+        Ok(())
+    }
+    pub(crate) fn check_job_ended(&self, id: CheckJobId) -> Result<(), ProtocolError> {
+        self.write(|tx| self.advance_task_checks(tx, id))?;
+        // Also retry an earlier failed replay: advance is intentionally a no-op
+        // once finalization already returned ownership to the original run.
+        self.finish_recovered_checks()?;
+        self.inner.checks.changed.notify_waiters();
+        self.progress_queues();
+        Ok(())
+    }
     /// With `helpers_running`, the turn ended while helpers it started still
     /// run in the agent's process. The run keeps the outcome the turn left,
     /// and records them as unconfirmed: it stays stoppable, and a Work run
@@ -1988,15 +2349,114 @@ impl CompanionHub {
         helpers_running: bool,
         why: Option<String>,
     ) -> Result<(), ProtocolError> {
-        let (after, replied, set_up, local, judged) = self.write(|tx| {
+        let mut freed_chat = false;
+        let (after, replied, set_up, local, judged, proposed) = self.write(|tx| {
             let mut run: Run = tx.read().require("run", id)?;
+            // Checking delays all completion effects, including alerts and queued
+            // work. Only the durable finalization marker can replay this end.
+            let finalizing = tx
+                .read()
+                .get::<bool>(crate::check_lifecycle::FINALIZING, id)?
+                .unwrap_or(false);
+            if finalizing {
+                tx.delete(crate::check_lifecycle::FINALIZING, id)?;
+                #[cfg(test)]
+                if self
+                    .inner
+                    .checks
+                    .finalization_failures
+                    .try_update(
+                        std::sync::atomic::Ordering::AcqRel,
+                        std::sync::atomic::Ordering::Acquire,
+                        |remaining| remaining.checked_sub(1),
+                    )
+                    .is_ok()
+                {
+                    // Exercise a real transaction rollback after deleting the
+                    // finalization marker, just like a failed store write.
+                    return Err(store::Error::IntegerExhausted);
+                }
+            }
             // A run already ended for reconciliation ends once; only a later
             // terminal outcome may replace that.
-            if run.state.is_terminal() || (run.ended_at.is_some() && !state.is_terminal()) {
-                return Ok((false, false, None, false, None));
+            let helper_end = tx.read().get::<crate::check_lifecycle::DeferredEnd>(
+                crate::check_lifecycle::HELPERS_END,
+                id,
+            )?;
+            let finishing_helpers = helper_end.is_some() && !helpers_running;
+            if !finalizing
+                && !finishing_helpers
+                && (run.state.is_terminal() || (run.ended_at.is_some() && !state.is_terminal()))
+            {
+                return Ok((false, false, None, false, None, Vec::new()));
             }
             let mut task: Task = tx.read().require("task", run.task_id)?;
+            if finalizing {
+                task.checking = None;
+                tx.delete("check_deferred_end", task.task_id)?;
+            }
+            if !finalizing
+                && self.defer_helper_checks(
+                    tx,
+                    &mut run,
+                    &mut task,
+                    crate::check_lifecycle::DeferredEnd {
+                        run_id: id,
+                        state,
+                        outcome: outcome.clone(),
+                        helpers_running,
+                        why: why.clone(),
+                    },
+                )?
+            {
+                return Ok((false, false, None, false, None, Vec::new()));
+            }
+            if !helpers_running {
+                self.finish_reply(tx, &run)?;
+            } else if state != RunState::Completed {
+                self.partial_boundary(tx, &run)?;
+            }
+            if !finalizing
+                && !tx
+                    .read()
+                    .get::<bool>("run_start_refused", id)?
+                    .unwrap_or(false)
+                && self.defer_run_checks(
+                    tx,
+                    &mut run,
+                    &mut task,
+                    crate::check_lifecycle::DeferredEnd {
+                        run_id: id,
+                        state,
+                        outcome: outcome.clone(),
+                        helpers_running,
+                        why: why.clone(),
+                    },
+                )?
+            {
+                tx.delete(crate::check_lifecycle::HELPERS_END, id)?;
+                return Ok((false, false, None, false, None, Vec::new()));
+            }
+            tx.delete(crate::check_lifecycle::HELPERS_END, id)?;
+            let why =
+                if finishing_helpers && !matches!(state, RunState::Completed | RunState::Failed) {
+                    let note = if state == RunState::Interrupted {
+                        "Not checked: stopped before the background helpers finished."
+                    } else {
+                        "Not checked: the background helpers could not be confirmed finished."
+                    };
+                    Some(match why {
+                        Some(why) => format!("{why}\n\n{note}"),
+                        None => note.into(),
+                    })
+                } else {
+                    why
+                };
             let now = self.inner.clock.now();
+            // A helper still writing finishes its own message later. What it
+            // has written so far stays pending rather than being shown now
+            // and again, whole, in its final message. A turn that did not
+            // complete shows what there is and keeps count of it.
             // The explanation commits with the end, so a retried exit cannot
             // repeat it after a later write in this transaction fails.
             if let Some(text) = why {
@@ -2018,10 +2478,18 @@ impl CompanionHub {
             }
             let was_unresolved = run.state == RunState::ReconciliationRequired;
             run.state = state;
+            if state != RunState::Completed {
+                self.cancel_chat_turns(
+                    tx,
+                    task.task_id,
+                    tx.read().get::<bool>("stopped", id)?.unwrap_or(false),
+                )?;
+            }
             self.finish_message_delivery(tx, id, task.task_id)?;
             run.ended_at = Some(now);
             let mode = run_mode(&run, &task);
-            run.holds_writer = mode == TaskMode::Work && (helpers_running || !state.is_terminal());
+            let held_writer = run.holds_writer;
+            run.holds_writer = held_writer && (helpers_running || !state.is_terminal());
             // Recorded with the turn's end, so events lost before the adapter
             // says more leave the helpers for the person to check.
             if helpers_running && state.is_terminal() {
@@ -2035,6 +2503,11 @@ impl CompanionHub {
             {
                 crate::reported::keep(&tx.read(), task.task_id, id, outcome)?;
             }
+            let proposed = if state.is_terminal() {
+                crate::proposals::merge(tx, id, &mut run.outcome)?
+            } else {
+                Vec::new()
+            };
             if state.is_terminal() {
                 crate::follow_up::note(tx, &run, now)?;
             }
@@ -2044,11 +2517,13 @@ impl CompanionHub {
                 RunState::Interrupted => TaskState::Interrupted,
                 _ => TaskState::ReconciliationRequired,
             };
+            let mut side = false;
             if state.is_terminal()
                 && let Some(before) = tx.read().get::<TaskState>(SIDE_TURN, id)?
             {
                 task.state = before;
                 tx.delete(SIDE_TURN, id)?;
+                side = true;
             }
             task.revision += 1;
             task.updated_at = now;
@@ -2077,7 +2552,15 @@ impl CompanionHub {
                     error: command.error,
                 })?;
             }
+            // A cut-off chat whose exit confirmed everything ended carries
+            // on when the person writes. Marked with the end, never after it.
+            if crate::cut_off::exit_confirms(tx, &mut run, &task, now)? {
+                run.nothing_running = true;
+                run.holds_writer = false;
+            }
+            let confirmed_chat_end = task.conversation && run.nothing_running;
             tx.put("run", id, &run)?;
+            let ended_run = run.clone();
             tx.emit(Event::RunUpserted { run: Box::new(run) })?;
             tx.emit(Event::TimelineAppended {
                 task_id: task.task_id,
@@ -2088,6 +2571,11 @@ impl CompanionHub {
                     item: TimelineBody::RunEnded { run_id: id, state },
                 },
             })?;
+            // What its agent asked through Ophio's bridge and was still
+            // waiting on when the turn ended stays open, unless the person
+            // stopped it: kept before the end is told. Its own native
+            // requests end with it, as before.
+            crate::carry_on::outlive_wait(tx, id, now)?;
             // An interrupt is someone's Stop, not a failure: the task keeps its
             // stopped state and Continue, but nothing is raised for attention.
             // The kind says what happened; the title says which task.
@@ -2095,6 +2583,12 @@ impl CompanionHub {
                 RunState::Completed => Some(AttentionKind::Completed),
                 RunState::Failed => Some(AttentionKind::Failure),
                 RunState::Interrupted => None,
+                _ if task.conversation
+                    && ended_run.nothing_running
+                    && crate::cut_off::settled_but_unknown(&ended_run) =>
+                {
+                    None
+                }
                 _ => Some(AttentionKind::ReconciliationRequired),
             };
             // What a linked read-only run found is acted on once it has
@@ -2165,6 +2659,7 @@ impl CompanionHub {
                     }
                 }
             }
+            let mut held_quiet = false;
             if let Some(kind) = raised {
                 let body = match kind {
                     AttentionKind::Completed => {
@@ -2190,22 +2685,35 @@ impl CompanionHub {
                     account_id: None,
                     alert: None,
                     alert_handled_at: None,
+                    agent_update: None,
+                    new_version: None,
                 };
                 // Done, with nothing for the person, as part of something
                 // that alerts as a whole: a Run all, or a pull request Ophio
                 // is seeing through. What comes of those alerts instead.
-                attention.quiet = kind == AttentionKind::Completed
+                // Or started from a chat's card, which shows it as it goes:
+                // the chat's summary alerts once its cards' work is through.
+                attention.quiet = !task.notify_done
+                    && kind == AttentionKind::Completed
                     && attention.body.is_none()
                     && (crate::calm::held(&tx.read(), &attention)?
-                        || ophio_round(&tx.read(), id, &task)?);
+                        || ophio_round(&tx.read(), id, &task)?
+                        || crate::chat_news::held(&tx.read(), &task)?);
+                held_quiet = attention.quiet;
                 tx.put("attention", attention.attention_id, &attention)?;
                 tx.emit(Event::AttentionUpserted { item: attention })?;
+            }
+            // The chat the work came from hears how it went. A chat's side
+            // turn, or a turn that waits to be woken, isn't the work ending.
+            if state.is_terminal() && !side && !quiet {
+                crate::chat_news::ended(tx, &task, &ended_run, state, held_quiet, now)?;
             }
             if mode == TaskMode::Work && state == RunState::Failed {
                 self.pause_after_failure(tx, &task)?;
             }
-            if mode == TaskMode::Work && state.is_terminal() && !helpers_running {
+            if held_writer && ((state.is_terminal() && !helpers_running) || confirmed_chat_end) {
                 self.release_writer(tx, task.project_id, id)?;
+                freed_chat = task.conversation;
             } else {
                 self.tidy_queue(tx, task.project_id)?;
             }
@@ -2237,10 +2745,30 @@ impl CompanionHub {
             // Publish the terminal task only after approval blockers are closed,
             // so channel completion notifications never see a stale count.
             task.attention_count = blocking_attention_count(&tx.read(), task.task_id)?;
+            let proposed = match state == RunState::Completed && !side && task.conversation {
+                true => proposed,
+                false => Vec::new(),
+            };
             tx.put("task", task.task_id, &task)?;
             tx.emit(Event::TaskUpserted { task })?;
-            Ok((after, replied, set_up, local, judged))
+            // What a chat's own turn proposed may start without asking, if
+            // the person lets this project's do.
+            Ok((after, replied, set_up, local, judged, proposed))
         })?;
+        // The completion write succeeded, including a bypass or reconciliation.
+        // A failed write must retain this journal for an exact retry.
+        self.remove_prepared_checks_end(id);
+        if freed_chat {
+            self.progress_queues();
+        }
+        if proposed.iter().any(|alone| *alone) {
+            let hub = self.clone();
+            self.spawn(async move {
+                if let Err(e) = hub.start_proposed(id, proposed).await {
+                    tracing::warn!(code = ?e.code, "starting what a chat proposed failed");
+                }
+            });
+        }
         if after {
             let hub = self.clone();
             self.spawn(async move { hub.github_after_run(id).await });
@@ -2279,10 +2807,31 @@ impl CompanionHub {
     /// followed now that the agent's process is gone, so the writer slot
     /// they kept is free.
     fn helpers_ended(&self, id: RunId) -> Result<(), ProtocolError> {
-        self.write(|tx| {
-            let run: Run = tx.read().require("run", id)?;
-            self.free_helpers_writer(tx, run)
-        })
+        let freed_chat = self.write(|tx| {
+            let mut run: Run = tx.read().require("run", id)?;
+            let task: Task = tx.read().require("task", run.task_id)?;
+            if task.current_run == Some(id) && task.checking.is_some() {
+                return Ok(false);
+            }
+            let held = run.holds_writer;
+            // Words a helper was still writing when the process ended are
+            // shown now, not at the next start.
+            self.finish_reply(tx, &run)?;
+            if crate::cut_off::exit_confirms(tx, &mut run, &task, self.inner.clock.now())? {
+                run.nothing_running = true;
+                run.holds_writer = false;
+                tx.put("run", id, &run)?;
+                tx.emit(Event::RunUpserted { run: Box::new(run) })?;
+                self.release_writer(tx, task.project_id, id)?;
+            } else {
+                self.free_helpers_writer(tx, run)?;
+            }
+            Ok(held && task.conversation && !tx.read().require::<Run>("run", id)?.holds_writer)
+        })?;
+        if freed_chat {
+            self.progress_queues();
+        }
+        Ok(())
     }
     fn free_helpers_writer(&self, tx: &mut store::Write<'_>, mut run: Run) -> store::Result<()> {
         if !helpers_finishing(&run) {
@@ -2304,8 +2853,28 @@ impl CompanionHub {
         self.write(|tx| {
             let mut run: Run = tx.read().require("run", id)?;
             let mut task: Task = tx.read().require("task", run.task_id)?;
-            cleanup_unconfirmed(tx, &mut run, &mut task, now)
-        })
+            // No more of a helper's message can arrive.
+            self.finish_reply(tx, &run)?;
+            cleanup_unconfirmed(tx, &mut run, &mut task, now)?;
+            if run.state == RunState::ReconciliationRequired {
+                if tx.read().get::<crate::check_lifecycle::DeferredEnd>(crate::check_lifecycle::HELPERS_END, id)?.is_some() {
+                    tx.emit(Event::TimelineAppended {
+                        task_id: task.task_id,
+                        item: TimelineItem { seq: 0, at: now, run_id: Some(id), item: TimelineBody::Note {
+                            text: "Not checked: the background helpers could not be confirmed finished.".into(),
+                        } },
+                    })?;
+                }
+                tx.delete(crate::check_lifecycle::HELPERS_END, id)?;
+            }
+            Ok(())
+        })?;
+        if self
+            .read(|r| Ok(r.require::<Run>("run", id)?.state == RunState::ReconciliationRequired))?
+        {
+            self.remove_prepared_checks_end(id);
+        }
+        Ok(())
     }
     /// A failed Work run may have left the project half changed. Nothing
     /// else starts by itself until the person has looked and resumed.
@@ -2661,6 +3230,11 @@ impl CompanionHub {
         // Revoking a chat waits for this lock before it withdraws what the chat
         // left held, so a message it sends after that finds its access ended.
         self.authorize(caller, |g| g.tasks)?;
+        if self.is_chat_turn_command(command_id)? {
+            // Admission already kept this message for its own next run. It
+            // must never be sent into whichever agent happens to be live.
+            return Ok(());
+        }
         if self.run_stopped(id)? {
             return Err(error(
                 ErrorCode::Conflict,
@@ -2682,11 +3256,21 @@ impl CompanionHub {
                     "No agent is running for this task, so the message wasn’t sent. Start or continue the task, then send it again.",
                 )
             })?;
+        if bundle.is_some_and(|b| !b.files.is_empty())
+            && self
+                .read(|r| r.get::<bool>(crate::attached::NO_FOLDER, id))?
+                .unwrap_or(false)
+        {
+            return Err(error(
+                ErrorCode::Unsupported,
+                "The agent working now started without a folder for attached files, so it couldn't read these. Send the message without them, or stop the agent and send it again.",
+            ));
+        }
         if let Some(bundle) = bundle {
             // Reject changed reviewed revisions before delivering their contents.
             self.write(|tx| crate::results::link_bundle(tx, task_id, Some(id), bundle))?;
         }
-        let input = self.prompt_input(text, bundle)?;
+        let input = self.prompt_for(task_id, text, bundle).await?;
         // Commands save their words during admission. Internally generated
         // answers and wakes enter here directly, still pinned to this run.
         let message: admitted_followups::Followup = self.write(|tx| {
@@ -2854,6 +3438,8 @@ impl CompanionHub {
             account_id: None,
             alert: None,
             alert_handled_at: None,
+            agent_update: None,
+            new_version: None,
         };
         tx.put("attention", item.attention_id, &item)?;
         tx.emit(Event::AttentionUpserted { item })?;
@@ -2875,6 +3461,9 @@ impl CompanionHub {
                 ErrorCode::AlreadyResolved,
                 "Approval already resolved",
             ));
+        }
+        if !self.read(|r| crate::carry_on::same_agent_as_task(r, &approval))? {
+            return Err(error(ErrorCode::Expired, ARRIVED_LATE));
         }
         // Its agent went on without it: the answer is its next message,
         // whether or not the turn that asked is still running.
@@ -2975,6 +3564,36 @@ impl CompanionHub {
             Ok(())
         }
         .await;
+        // Its agent stopped waiting before this reached it: the request
+        // stays open as it would have (unless someone stopped the turn), and
+        // the answer is its next message, as any later one is. A private
+        // answer goes only to the live question, so it is left to be given
+        // again there.
+        let private = matches!(decision, ApprovalDecision::Answer { .. })
+            && approval.questions.iter().any(|q| q.secret);
+        if !handed && bridge && !private {
+            let now = self.inner.clock.now();
+            let late = self.write(|tx| {
+                if marked {
+                    tx.delete(ALLOW_HANDED, id)?;
+                }
+                let a: Approval = tx.read().require("approval", id)?;
+                if a.state != ApprovalState::Pending {
+                    return Ok(false);
+                }
+                if crate::carry_on::carried_on(&tx.read(), id)? {
+                    return Ok(true);
+                }
+                let kept = crate::carry_on::keep(tx, &a, now)?;
+                if kept {
+                    crate::carry_on::back_to_work(tx, a.run_id, now)?;
+                }
+                Ok(kept)
+            })?;
+            if late {
+                return self.answer_later(caller, id, decision);
+            }
+        }
         let overtaken = self.write(|tx| {
             if marked && !handed {
                 tx.delete(ALLOW_HANDED, id)?;
@@ -3030,6 +3649,8 @@ impl CompanionHub {
                         resolved_at: None,
                         // A new notification, though the old one was handled.
                         alert_handled_at: None,
+                        agent_update: None,
+                        new_version: None,
                         ..last
                     };
                     // Said on the notification, so asking again makes sense.
@@ -3041,8 +3662,10 @@ impl CompanionHub {
                 return Ok(None);
             }
             a.state = if matches!(decision, ApprovalDecision::Deny { .. }) {
-                // An identical request in the same turn is declined at once.
+                // An identical request in the same turn is declined at once,
+                // and an earlier Allow's pass for it goes.
                 crate::more_access::note_declined(tx, &a)?;
+                crate::switch_work::declined(tx, &a)?;
                 ApprovalState::Denied
             } else {
                 ApprovalState::Allowed
@@ -3051,6 +3674,8 @@ impl CompanionHub {
             a.resolved_by = Some(caller.principal);
             a.revision += 1;
             tx.put("approval", id, &a)?;
+            // Kept open as its agent stopped waiting, after this reached it.
+            tx.delete(crate::carry_on::CARRIED_ON, id)?;
             let run_id = a.run_id;
             tx.emit(Event::ApprovalUpserted { approval: a })?;
             resolve_attention(tx, id, self.inner.clock.now())?;
@@ -3100,9 +3725,22 @@ impl CompanionHub {
                 }
             }
         }
+        // A file is sent by the device that uploaded it, and only it: an
+        // admin gets no exception, and nothing an agent showed counts.
+        for file in &bundle.files {
+            let creator: Option<protocol::auth::Principal> =
+                self.read(|r| r.get("artifact_creator", file.artifact_id))?;
+            if creator != Some(caller.principal) {
+                return Err(error(
+                    ErrorCode::PermissionDenied,
+                    "An attached file belongs to another device",
+                ));
+            }
+        }
         Ok(())
     }
     pub(crate) fn validate_bundle(&self, bundle: &AnnotationBundle) -> Result<(), ProtocolError> {
+        self.read(|r| Ok(crate::attached::validate(r, &bundle.files)))??;
         let source_keys: std::collections::HashSet<_> =
             bundle.sources.iter().map(|s| &s.key).collect();
         if source_keys.len() != bundle.sources.len() || bundle.sources.len() > 16 {
@@ -3157,16 +3795,34 @@ impl CompanionHub {
         }
         Ok(())
     }
+    /// The prompt for `text` and `bundle` in `task_id`, with the bundle's
+    /// files put where the agent reads them.
+    async fn prompt_for(
+        &self,
+        task_id: TaskId,
+        text: &str,
+        bundle: Option<&AnnotationBundle>,
+    ) -> Result<PromptInput, ProtocolError> {
+        if let Some(bundle) = bundle {
+            self.validate_bundle(bundle)?;
+        }
+        let attached = match bundle {
+            Some(bundle) => self.place_attached(task_id, &bundle.files).await?,
+            None => Default::default(),
+        };
+        self.prompt_input(text, bundle, &attached)
+    }
     fn prompt_input(
         &self,
         text: &str,
         bundle: Option<&AnnotationBundle>,
+        attached: &crate::attached::Attached,
     ) -> Result<PromptInput, ProtocolError> {
         let mut prompt = PromptInput {
             text: text.into(),
             images: Vec::new(),
         };
-        if let Some(bundle) = bundle {
+        if let Some(bundle) = bundle.filter(|b| crate::attached::has_markup(b)) {
             self.validate_bundle(bundle)?;
             // Include exactly the selected source bytes and what the agent
             // needs of the drawing (`crate::drawn`); do not attach retained
@@ -3199,6 +3855,15 @@ impl CompanionHub {
                     ));
                 }
             }
+        }
+        if let Some(bundle) = bundle.filter(|b| !b.files.is_empty()) {
+            if attached.placed.len() != bundle.files.len() {
+                return Err(error(
+                    ErrorCode::Internal,
+                    "The attached files weren't made ready for the agent",
+                ));
+            }
+            prompt.text.push_str(&crate::attached::note(attached));
         }
         Ok(prompt)
     }
@@ -3294,6 +3959,33 @@ pub(crate) fn carry_permits(
     }
     Ok(())
 }
+/// A check job reserves the same project slot as a run. Standalone jobs have
+/// no task, but still leave a nonempty hold so chats cannot acquire the slot.
+fn writer_task(read: &store::Read<'_>, writer: RunId) -> store::Result<TaskId> {
+    if let Some(job) = read.check_job(CheckJobId(writer.0))? {
+        return Ok(job.task_id.unwrap_or(TaskId(job.id.0)));
+    }
+    Ok(read.require::<Run>("run", writer)?.task_id)
+}
+/// The only writers permitted while a person's Continue is stopping checks.
+/// Validated centrally before any service transaction can commit a new writer.
+pub(crate) fn check_continuation_writer(
+    read: &store::Read<'_>,
+    writer: RunId,
+    original: RunId,
+    command_id: CommandId,
+) -> store::Result<bool> {
+    if writer == original {
+        return Ok(true);
+    }
+    if let Some(job) = read.check_job(CheckJobId(writer.0))? {
+        return Ok(job.run_id == Some(original));
+    }
+    Ok(read
+        .get::<RunIntent>("run_intent", writer)?
+        .is_some_and(|intent| intent.command_id == command_id))
+}
+
 /// A turn that ended while helpers it started still run keeps the project's
 /// writer, and stays stoppable, until those helpers end.
 pub(crate) fn helpers_finishing(run: &Run) -> bool {
@@ -3332,7 +4024,7 @@ pub(crate) fn cleanup_unconfirmed(
     task: &mut Task,
     now: protocol::time::Timestamp,
 ) -> store::Result<()> {
-    if !still_finishing(run) || task.current_run != Some(run.run_id) {
+    if task.checking.is_some() || !still_finishing(run) || task.current_run != Some(run.run_id) {
         return Ok(());
     }
     run.state = RunState::ReconciliationRequired;
@@ -3369,6 +4061,8 @@ pub(crate) fn cleanup_unconfirmed(
         account_id: None,
         alert: None,
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     };
     tx.put("attention", attention.attention_id, &attention)?;
     tx.emit(Event::AttentionUpserted { item: attention })?;
@@ -3518,6 +4212,8 @@ pub(crate) fn go_ahead(task: &Task, now: protocol::time::Timestamp) -> Attention
         // Waiting for you, but it moves on by itself once let start.
         alert: Some(protocol::notifications::AlertType::GoAhead),
         alert_handled_at: None,
+        agent_update: None,
+        new_version: None,
     }
 }
 
@@ -3630,6 +4326,9 @@ pub(crate) fn recount_attention(tx: &mut store::Write<'_>, task_id: TaskId) -> s
 
 #[cfg(test)]
 mod continuation_tests {
+    mod check_helper_regressions {
+        include!("check_helpers_tests.rs");
+    }
     use super::*;
     use crate::{
         Hub,
@@ -3720,6 +4419,105 @@ mod continuation_tests {
     }
 
     #[tokio::test]
+    async fn check_ownership_ignores_late_agent_cleanup_even_during_final_handback() {
+        use protocol::checks::*;
+        let f = Fixture::new().await;
+        f.hub.inner.checks.paused.store(true, Ordering::Release);
+        let task = f.task(Some(TaskMode::Work)).await;
+        let id = task.current_run.unwrap();
+        f.dispatched(id).await;
+        let check = Check {
+            check_id: CheckId::new(),
+            name: "App still works".into(),
+            about: "A failure means the change needs fixing.".into(),
+            run: "printf checked".into(),
+            setup: None,
+            paths: vec![],
+            when: CheckWhen::EveryTask,
+            timeout_secs: 10,
+            network: false,
+            inputs: vec![],
+            enabled: true,
+            typical_secs: None,
+        };
+        let root = f
+            .hub
+            .read(|r| Ok(r.require::<Project>("project", f.project)?.host_path))
+            .unwrap();
+        f.hub
+            .write(|tx| {
+                tx.change_checks(
+                    f.project,
+                    0,
+                    CheckEdit::Save { check },
+                    None,
+                    Path::new(&root),
+                )?;
+                Ok(())
+            })
+            .unwrap();
+        f.hub.capture_checks_start(id).await.unwrap();
+        std::fs::write(Path::new(&root).join("changed.txt"), "changed").unwrap();
+        f.hub
+            .prepare_checks_end(&crate::check_lifecycle::DeferredEnd {
+                run_id: id,
+                state: RunState::Completed,
+                outcome: None,
+                helpers_running: false,
+                why: None,
+            })
+            .await
+            .unwrap();
+        f.hub
+            .end_run(id, RunState::Completed, None, false, None)
+            .unwrap();
+        let task: Task = f.hub.read(|r| r.require("task", task.task_id)).unwrap();
+        let job_id = task.checking.as_ref().expect("checking").job_id;
+        let sentinel = crate::check_execution::job_writer(job_id);
+        for finalizing in [false, true] {
+            if finalizing {
+                f.hub
+                    .write(|tx| {
+                        let mut job = tx.read().check_job(job_id)?.unwrap();
+                        job.state = CheckJobState::Finished;
+                        job.finished_at = Some(f.hub.inner.clock.now());
+                        tx.put_check_job(&job)?;
+                        assert!(f.hub.advance_task_checks(tx, job_id)?.is_some());
+                        Ok(())
+                    })
+                    .unwrap();
+            }
+            for event in [
+                HarnessEvent::CleanupPending,
+                HarnessEvent::Exited {
+                    exit: RunExit::Completed,
+                    outcome: None,
+                },
+            ] {
+                f.hub.harness_event(id, event).await.unwrap();
+            }
+            f.hub.helpers_ended(id).unwrap();
+            f.hub.events_lost(id).unwrap();
+            assert_writer(&f, Some(if finalizing { id } else { sentinel }));
+            let saved: Task = f.hub.read(|r| r.require("task", task.task_id)).unwrap();
+            assert_eq!(saved.state, TaskState::Working);
+            assert!(saved.checking.is_some());
+            let run: Run = f.hub.read(|r| r.require("run", id)).unwrap();
+            assert_eq!(run.state, RunState::Completed);
+            assert_eq!(run.cleanup_pending, !finalizing);
+        }
+        f.hub.finish_recovered_checks().unwrap();
+        assert_writer(&f, None);
+        assert!(
+            !f.hub
+                .read(|r| r.require::<Run>("run", id))
+                .unwrap()
+                .cleanup_pending
+        );
+        f.close().await;
+    }
+
+    #[tokio::test]
     async fn exit_write_failure_recovers_the_outcome_and_releases_the_writer() {
         for (on, failures, exit, state, task_state) in [
             (
@@ -3772,6 +4570,7 @@ mod continuation_tests {
             assert!(!f.hub.inner.liveness.lock().unwrap().contains_key(&id));
             assert_eq!(f.harness.controls.interrupts.load(Ordering::SeqCst), 0);
             db.execute_batch("DROP TRIGGER refuse_exit;").unwrap();
+            drop(db);
             let recovered = tokio::time::timeout(Duration::from_secs(10), async {
                 loop {
                     let run: Run = f.hub.read(|r| r.require("run", id)).unwrap();
@@ -3852,6 +4651,7 @@ mod continuation_tests {
         );
         db.execute_batch("DROP TRIGGER refuse_exit; DROP TRIGGER seed_revocation;")
             .unwrap();
+        drop(db);
         let next = tokio::time::timeout(Duration::from_secs(10), async {
             loop {
                 let task: Task = f.hub.read(|r| r.require("task", waiting)).unwrap();
@@ -3903,6 +4703,7 @@ mod continuation_tests {
         exit_write_failed(failures + 3).await;
         db.execute_batch("DROP TRIGGER refuse_exit; DROP TRIGGER seed_revocation;")
             .unwrap();
+        drop(db);
         tokio::time::timeout(Duration::from_secs(10), async {
             while f
                 .hub
@@ -3958,6 +4759,7 @@ mod continuation_tests {
             .await;
         exit_write_failed(3).await;
         db.execute_batch("DROP TRIGGER refuse_exit;").unwrap();
+        drop(db);
         tokio::time::timeout(Duration::from_secs(10), async {
             while f
                 .hub
@@ -3998,7 +4800,8 @@ mod continuation_tests {
             .expect("exit recovery held shutdown")
             .unwrap();
         db.execute_batch("DROP TRIGGER refuse_exit;").unwrap();
-        drop(f.hub);
+        drop(db);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         f.hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock.clone())
@@ -4163,7 +4966,7 @@ mod continuation_tests {
         for job in jobs {
             let _ = job.await;
         }
-        drop(f.hub);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         let hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock.clone())
@@ -4235,6 +5038,9 @@ mod continuation_tests {
             .unwrap();
         let bundle = f.bundle(task.task_id).await;
         let mut send = CommandEnvelope::new(Command::SendMessage {
+            harness: None,
+            model: None,
+            effort: None,
             task_id: task.task_id,
             text: "keep these words".into(),
             bundle: Some(bundle.clone()),
@@ -4310,6 +5116,9 @@ mod continuation_tests {
                 .unwrap();
             let bundle = f.bundle(task.task_id).await;
             let send = CommandEnvelope::new(Command::SendMessage {
+                harness: None,
+                model: None,
+                effort: None,
                 task_id: task.task_id,
                 text: "keep these words".into(),
                 bundle: Some(bundle.clone()),
@@ -5007,6 +5816,8 @@ mod continuation_tests {
                             account_id: None,
                             alert: None,
                             alert_handled_at: None,
+                            agent_update: None,
+                            new_version: None,
                         };
                         tx.put("attention", id, &item)?;
                     }
@@ -5208,7 +6019,7 @@ mod continuation_tests {
                     0
                 );
                 f.hub.shutdown().await.unwrap();
-                drop(f.hub);
+                crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
                 f.hub = CompanionHub::builder()
                     .data_dir(&f.path)
                     .clock(f.clock.clone())
@@ -5455,6 +6266,8 @@ mod continuation_tests {
                     account_id: None,
                     alert: None,
                     alert_handled_at: None,
+                    agent_update: None,
+                    new_version: None,
                 };
                 tx.put("attention", attention.attention_id, &attention)?;
                 recount_attention(tx, task.task_id)
@@ -5506,7 +6319,7 @@ mod continuation_tests {
             })
             .unwrap();
         f.hub.shutdown().await.unwrap();
-        drop(f.hub);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         f.hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock.clone())
@@ -6771,6 +7584,9 @@ mod continuation_tests {
         let a = task.current_run.unwrap();
         working(&f, task.task_id, a).await;
         let late = CommandEnvelope::new(Command::SendMessage {
+            harness: None,
+            model: None,
+            effort: None,
             task_id: task.task_id,
             text: "For the turn that was working".into(),
             bundle: None,
@@ -6888,7 +7704,7 @@ mod continuation_tests {
             assert!(helpers_finishing(
                 &f.hub.read(|r| r.require::<Run>("run", run)).unwrap()
             ));
-            drop(f.hub);
+            crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
             f.hub = CompanionHub::builder()
                 .data_dir(&f.path)
                 .clock(f.clock.clone())
@@ -7278,7 +8094,7 @@ mod continuation_tests {
         for job in jobs {
             let _ = job.await;
         }
-        drop(f.hub);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         let hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock)
@@ -7373,7 +8189,7 @@ mod continuation_tests {
         for job in jobs {
             let _ = job.await;
         }
-        drop(f.hub);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         let hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock)
@@ -7688,7 +8504,7 @@ mod continuation_tests {
                 queue.paused = false;
                 tx.put("queue", f.project, &queue)?;
                 f.hub
-                    .edit_queue_prompt(tx, item, "edited prompt", Some(queue.revision))
+                    .edit_queue_prompt(tx, item, "edited prompt", Some(queue.revision), true)
             })
             .unwrap();
         let seq = timeline(&f, task_id)
@@ -7778,6 +8594,8 @@ mod continuation_tests {
         }
         fn create(&self, mode: Option<TaskMode>) -> CommandEnvelope {
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 project_id: self.project,
@@ -7840,6 +8658,8 @@ mod continuation_tests {
         ) -> CommandEnvelope {
             let task: Task = self.hub.read(|r| r.require("task", task)).unwrap();
             let mut envelope = CommandEnvelope::new(Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 mode: None,
                 task_id: task.task_id,
                 text,
@@ -7906,6 +8726,7 @@ mod continuation_tests {
                 steps: vec![],
                 general_note: Some("Inspect this region".into()),
                 speech: None,
+                files: vec![],
             })
         }
         async fn close(self) {
@@ -8290,7 +9111,7 @@ mod continuation_tests {
         let created: Task = f.hub.read(|r| r.require("task", task)).unwrap();
         assert!(created.conversation);
         assert_eq!(created.mode, TaskMode::Ask);
-        // A conversation needs no writer, so it goes on beside work.
+        // A read-only conversation needs no writer, so it goes on beside work.
         let writer = f.task(Some(TaskMode::Work)).await.current_run.unwrap();
         let spec = finish_turn(&f, task, "talk-session").await;
         assert_eq!(spec.mode, TaskMode::Ask);
@@ -8445,6 +9266,8 @@ mod continuation_tests {
         let ask = |read_only: bool, mode: Option<TaskMode>| {
             let current: Task = f.hub.read(|r| r.require("task", task.task_id)).unwrap();
             let mut envelope = CommandEnvelope::new(Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 task_id: task.task_id,
                 mode,
                 text: Some("What happened?".into()),
@@ -8524,6 +9347,8 @@ mod continuation_tests {
         let ask = |task: &Task| {
             let current: Task = f.hub.read(|r| r.require("task", task.task_id)).unwrap();
             let mut envelope = CommandEnvelope::new(Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 task_id: task.task_id,
                 mode: None,
                 text: Some("What happened?".into()),
@@ -8595,6 +9420,8 @@ mod continuation_tests {
         let carry = |mode: Option<TaskMode>, run_id: RunId, plan: &str| {
             let current: Task = f.hub.read(|r| r.require("task", task.task_id)).unwrap();
             let mut envelope = CommandEnvelope::new(Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 task_id: task.task_id,
                 mode,
                 text: Some(text.clone()),
@@ -8754,7 +9581,7 @@ mod continuation_tests {
                 ReceiptStatus::Accepted
             );
             f.hub.shutdown().await.unwrap();
-            drop(f.hub);
+            crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
             f.hub = CompanionHub::builder()
                 .data_dir(&f.path)
                 .clock(f.clock.clone())
@@ -8798,7 +9625,7 @@ mod continuation_tests {
                     })
                     .unwrap();
                 f.hub.shutdown().await.unwrap();
-                drop(f.hub);
+                crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
                 f.hub = CompanionHub::builder()
                     .data_dir(&f.path)
                     .clock(f.clock.clone())
@@ -9546,7 +10373,7 @@ mod continuation_tests {
         shutting.await.unwrap();
         assert!(pending(&f, run));
         assert_writer(&f, Some(run));
-        drop(f.hub);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         f.hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock.clone())
@@ -10011,7 +10838,7 @@ mod continuation_tests {
         // ended, through a restart too.
         f.hub.shutdown().await.unwrap();
         assert_writer(&f, Some(run));
-        drop(f.hub);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         f.hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock.clone())
@@ -10171,7 +10998,7 @@ mod continuation_tests {
         };
         assert_eq!(events.iter().filter(|e| matches!(&e.event, Event::TimelineAppended { item: TimelineItem { run_id: Some(id), item: TimelineBody::UserMessage { .. }, .. }, .. } if *id == second_run)).count(), 1);
         f.hub.shutdown().await.unwrap();
-        drop(f.hub);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         let hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock)
@@ -10294,7 +11121,7 @@ mod continuation_tests {
         );
         assert_eq!(f.harness.starts.load(Ordering::SeqCst), 1);
         f.hub.shutdown().await.unwrap();
-        drop(f.hub);
+        crate::testing::drop_hub_and_wait(f.hub, std::time::Duration::from_secs(10)).await;
         let hub = CompanionHub::builder()
             .data_dir(&f.path)
             .clock(f.clock)
@@ -10428,7 +11255,10 @@ mod continuation_tests {
             said("The menu jumps here", "S1", 12_400, 15_000),
             said("and stays wrong", "S1", 3_725_000, 3_726_000),
         ];
-        let prompt = f.hub.prompt_input("Look", Some(&bundle)).unwrap();
+        let prompt = f
+            .hub
+            .prompt_input("Look", Some(&bundle), &Default::default())
+            .unwrap();
         assert!(prompt.text.ends_with(
             "\n\nSaid while watching the video (times are positions in the video; each still is a frame from then):\n- 0:12–0:15, still S1: “The menu jumps here”\n- 1:02:05–1:02:06, still S1: “and stays wrong”"
         ), "{}", prompt.text);
@@ -10436,7 +11266,10 @@ mod continuation_tests {
         for (still, start_ms, end_ms) in [("S9", 0, 1), ("S1", 2, 1)] {
             bundle.comments = vec![said("off", still, start_ms, end_ms)];
             assert_eq!(
-                f.hub.prompt_input("Look", Some(&bundle)).unwrap_err().code,
+                f.hub
+                    .prompt_input("Look", Some(&bundle), &Default::default())
+                    .unwrap_err()
+                    .code,
                 ErrorCode::InvalidRequest
             );
         }

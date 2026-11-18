@@ -15,7 +15,7 @@ use crate::{
 use ports::{COMMAND, PRODUCT_NAME};
 use protocol::{
     accounts::SignInStage,
-    agent_updates::AgentUpdatesView,
+    agent_updates::{AgentUpdateMode, AgentUpdatesView},
     auth::{DeviceRecord, Grants, PairingOffer},
     capability::{AccountReadiness, Availability, HarnessInfo, HarnessKind},
     checklist::{FileDelivery, FileDeliveryView},
@@ -167,7 +167,8 @@ fn carry_on() -> Choice {
     Choice::new('n', "next", "Continue").recommended()
 }
 const UPDATES_ON: &str = "Øphio keeps its own copies up to date";
-const UPDATES_OFF: &str = "Tasks use the versions installed on this computer";
+const UPDATES_NOTIFY: &str = "Øphio tells you about updates without installing them";
+const UPDATES_OFF: &str = "Øphio doesn't check or update automatically";
 const LATER: &str = "later";
 const SKIP: &str = "skip";
 const AGENT: &str = "agent";
@@ -396,7 +397,7 @@ pub(crate) trait Host {
     /// Whether Øphio keeps its own copies of the agents up to date; `None`
     /// from an Øphio that can't.
     async fn agent_updates(&mut self) -> Result<Option<AgentUpdatesView>>;
-    async fn set_agent_updates(&mut self, enabled: bool, revision: u64) -> Result<()>;
+    async fn set_agent_update_mode(&mut self, mode: AgentUpdateMode, revision: u64) -> Result<()>;
     async fn sign_in(&mut self, account_id: &str) -> Result<()>;
     /// The stage of a sign-in to `account_id` begun at `since` or later.
     async fn sign_in_stage(
@@ -1217,7 +1218,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
         loop {
             let network = self.host.network().await?;
             let mut blocks = vec![text(
-                "Your phone reaches this computer through Tailscale, a private network between your own devices that works wherever you are, or through the Wi‑Fi you share at home.",
+                "Your phone reaches this computer through Tailscale, a private network between your own devices that works wherever you are, or through the Wi-Fi you share at home.",
             )];
             match &network.tailscale {
                 Tailscale::Missing => {
@@ -1256,22 +1257,22 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
             blocks.push(match network.wifi {
                 Some(ip) if allowed => fact(
                     Mark::Ok,
-                    "Wi‑Fi",
+                    "Wi-Fi",
                     format!("Phones on this network can reach {ip}, port {}", network.port),
                 ),
                 Some(ip) => fact(
                     Mark::Info,
-                    "Wi‑Fi",
+                    "Wi-Fi",
                     format!("This computer is {ip} here; phones on this network can't reach it unless you allow it"),
                 ),
-                None => fact(Mark::Info, "Wi‑Fi", "No local network found"),
+                None => fact(Mark::Info, "Wi-Fi", "No local network found"),
             });
             let tailscale = matches!(network.tailscale, Tailscale::Running { .. });
             let mut choices = Vec::new();
             if tailscale {
                 choices.push(Choice::new('n', "next", "Use Tailscale").recommended());
             } else if allowed {
-                choices.push(Choice::new('n', "next", "Use this Wi‑Fi").recommended());
+                choices.push(Choice::new('n', "next", "Use this Wi-Fi").recommended());
                 choices.push(Choice::new('c', "check", "Check Tailscale again"));
             } else {
                 choices.push(Choice::new('c', "check", "Check again").recommended());
@@ -1279,7 +1280,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
             let wifi = network.wifi.filter(|_| !allowed);
             if wifi.is_some() {
                 choices.push(
-                    Choice::new('w', "wifi", "This Wi‑Fi only")
+                    Choice::new('w', "wifi", "This Wi-Fi only")
                         .detail("Your phone reaches this computer only at home, on this network."),
                 );
             }
@@ -1302,38 +1303,38 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
         }
     }
 
-    /// Whether the Wi‑Fi was allowed.
+    /// Whether the Wi-Fi was allowed.
     async fn allow_wifi(&mut self, ip: IpAddr, port: u16) -> Go<bool> {
         const STEP: Step = Step::Reach;
         let mut blocks = vec![
             text(format!(
-                "{PRODUCT_NAME} will also listen at {ip}, port {port}, so that a phone on this Wi‑Fi can reach it."
+                "{PRODUCT_NAME} will also listen at {ip}, port {port}, so that a phone on this Wi-Fi can reach it."
             )),
             text(
                 "Only phones you pair can connect, and everything between them is encrypted. Allow it only on a network you trust, such as your home's.",
             ),
         ];
         if cfg!(windows) {
-            blocks.push(text("Windows may ask whether to let Øphio through its firewall: allow it on private networks, and check that this Wi‑Fi is a private network in Settings › Network & internet."));
+            blocks.push(text("Windows may ask whether to let Øphio through its firewall: allow it on private networks, and check that this Wi-Fi is a private network in Settings › Network & internet."));
         }
         blocks.push(text(format!(
             "This restarts Øphio if it is running, and is saved in {}. If this computer's address on the network changes, run `{COMMAND} setup` again.",
             self.host.config_file().display()
         )));
         let choices = vec![
-            Choice::new('y', "allow", "Allow this Wi‑Fi").recommended(),
+            Choice::new('y', "allow", "Allow this Wi-Fi").recommended(),
             back(),
         ];
         if self.choose(STEP, blocks, choices).await? != "allow" {
             return Ok(false);
         }
-        self.busy(STEP, "Allowing this Wi‑Fi…").await;
+        self.busy(STEP, "Allowing this Wi-Fi…").await;
         self.host.allow_wifi(ip).await?;
         self.notice(
             STEP,
             vec![fact(
                 Mark::Ok,
-                "Wi‑Fi",
+                "Wi-Fi",
                 format!("Phones on this network can reach {ip}, port {port}"),
             )],
         )
@@ -1346,11 +1347,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
         self.ensure_running(STEP).await?;
         loop {
             let agents = self.host.agents().await?;
-            let updates = self
-                .host
-                .agent_updates()
-                .await?
-                .filter(|view| view.supported);
+            let updates = self.host.agent_updates().await?;
             let found = |kind| agents.iter().find(|a| a.kind == kind);
             let ready: Vec<HarnessKind> = AGENTS
                 .into_iter()
@@ -1421,21 +1418,13 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                 .iter()
                 .any(|agent| agent.installed == Availability::Available);
             if let Some(view) = updates.as_ref().filter(|_| installed) {
-                if view.enabled {
-                    blocks.push(fact(Mark::Ok, "Updates", UPDATES_ON));
-                    choices.push(Choice::new(
-                        'u',
-                        "updates",
-                        "Use the versions installed on this computer instead",
-                    ));
-                } else {
-                    blocks.push(fact(Mark::Info, "Updates", UPDATES_OFF));
-                    choices.push(Choice::new(
-                        'u',
-                        "updates",
-                        "Keep Claude Code and Codex up to date",
-                    ));
-                }
+                let (mark, detail) = match view.mode {
+                    AgentUpdateMode::Automatic => (Mark::Ok, UPDATES_ON),
+                    AgentUpdateMode::Notify => (Mark::Info, UPDATES_NOTIFY),
+                    AgentUpdateMode::Never => (Mark::Info, UPDATES_OFF),
+                };
+                blocks.push(fact(mark, "Updates", detail));
+                choices.push(Choice::new('u', "updates", "Choose agent updates"));
             }
             let next = if ready.is_empty() {
                 Choice::new('n', "next", "Next")
@@ -1449,9 +1438,9 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
             match chosen {
                 "next" if ready.is_empty() => return Ok(Outcome::Later),
                 "next" => {
-                    if let Some(view) = updates.filter(|view| {
-                        installed && !view.enabled && self.progress.updates.is_none()
-                    }) && !self.ask_updates(view.revision).await?
+                    if let Some(view) =
+                        updates.filter(|_| installed && self.progress.updates.is_none())
+                        && !self.ask_updates(&view).await?
                     {
                         continue;
                     }
@@ -1460,7 +1449,7 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                 "default" => self.choose_default(&ready).await?,
                 "updates" => {
                     if let Some(view) = updates {
-                        self.set_updates(!view.enabled, view.revision).await?;
+                        self.ask_updates(&view).await?;
                     }
                 }
                 _ => {
@@ -1480,38 +1469,42 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
         }
     }
 
-    /// Asks whether Øphio keeps the agents up to date; false on Back.
-    async fn ask_updates(&mut self, revision: u64) -> Go<bool> {
-        let blocks = vec![
-            text("Keep Claude Code and Codex up to date?"),
-            text(
-                "Øphio can keep its own copies of them and update the copies from Anthropic and OpenAI as new versions come out, so new models show up without you updating anything. The versions installed on this computer stay as they are.",
-            ),
-            text("The copies take up to about 1.5 GB of disk space."),
-        ];
-        let choices = vec![
-            Choice::new('y', "on", "Keep them up to date")
+    /// Asks how Øphio checks for agent updates; false on Back or refusal.
+    async fn ask_updates(&mut self, view: &AgentUpdatesView) -> Go<bool> {
+        let mut blocks = vec![text("How should Øphio handle agent updates?")];
+        let mut choices = Vec::new();
+        if view.supported {
+            blocks.push(text(
+                "Øphio can keep its own copies of Claude Code and Codex and update the copies from Anthropic and OpenAI as new versions come out. The versions installed on this computer stay as they are. The copies take up to about 1.5 GB of disk space.",
+            ));
+            choices.push(
+                Choice::new('a', "automatic", "Update automatically")
+                    .detail("Keep the agents up to date for me."),
+            );
+        }
+        choices.extend([
+            Choice::new('t', "notify", "Tell me when there’s an update")
                 .recommended()
-                .detail(
-                    "Øphio checks every few hours and tries each new version before tasks use it.",
-                ),
-            Choice::new('n', "off", "Use the versions installed on this computer")
-                .detail("Turn this on later in the app's Settings › Agent apps, or in this step."),
+                .detail("Tell me about updates without installing them."),
+            Choice::new('d', "never", "Don’t check").detail("Don’t check or update automatically."),
             back(),
-        ];
-        let enabled = match self.choose(Step::Agent, blocks, choices).await? {
-            "on" => true,
-            "off" => false,
+        ]);
+        let mode = match self.choose(Step::Agent, blocks, choices).await? {
+            "automatic" => AgentUpdateMode::Automatic,
+            "notify" => AgentUpdateMode::Notify,
+            "never" => AgentUpdateMode::Never,
             _ => return Ok(false),
         };
-        self.set_updates(enabled, revision).await?;
-        Ok(true)
+        self.set_updates(mode, view.revision).await
     }
 
-    async fn set_updates(&mut self, enabled: bool, revision: u64) -> Go<()> {
-        match self.host.set_agent_updates(enabled, revision).await {
-            Ok(()) => self.progress.updates = Some(enabled),
-            // The step shows where it stands now.
+    async fn set_updates(&mut self, mode: AgentUpdateMode, revision: u64) -> Go<bool> {
+        match self.host.set_agent_update_mode(mode, revision).await {
+            Ok(()) => {
+                self.progress.updates = Some(mode);
+                Ok(true)
+            }
+            // The step shows where it stands now. A refused choice is not saved.
             Err(Error::Protocol(error)) => {
                 let why = if error.code == protocol::ErrorCode::StaleRevision {
                     "It was changed in the app just now, so it was left as it is.".into()
@@ -1520,10 +1513,10 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                 };
                 self.notice(Step::Agent, vec![fact(Mark::Warn, "Updates", why)])
                     .await?;
+                Ok(false)
             }
-            Err(error) => return Err(error.into()),
+            Err(error) => Err(error.into()),
         }
-        Ok(())
     }
 
     async fn choose_default(&mut self, ready: &[HarnessKind]) -> Go<()> {
@@ -1847,8 +1840,8 @@ impl<H: Host, U: Ui> Flow<'_, H, U> {
                 },
                 link("Or open", APP_DOWNLOAD_URL),
                 Block::Steps(vec![
-                    "Download the app on your phone.".into(),
-                    "Open the download. If Android asks, let your browser install unknown apps: Settings › Apps › Special app access › Install unknown apps.".into(),
+                    "Download the app on your phone. If your browser warns that the file might be harmful, choose Download anyway.".into(),
+                    "Open the download. If Android says it isn't allowed to install unknown apps from your browser, tap Settings and turn on Allow from this source.".into(),
                     "Tap Install, then open Øphio.".into(),
                 ]),
             ];

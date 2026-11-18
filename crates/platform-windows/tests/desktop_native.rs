@@ -3,7 +3,6 @@
 //! Windows desktop. Run by hand in the user's own interactive session; a
 //! service or SSH session has no desktop.
 #![cfg(windows)]
-use platform_windows::desktop::WindowsDesktop;
 use ports::desktop::{CapturedFrame, DesktopBackend, PlatformError};
 use protocol::control::{ControlTarget, InputAction};
 use windows::Win32::UI::Input::KeyboardAndMouse::{VIRTUAL_KEY, VK_CONTROL, VK_SHIFT};
@@ -26,7 +25,7 @@ fn has_content(target: &ControlTarget, picture: &CapturedFrame) {
 #[tokio::test]
 #[ignore = "needs the signed-in user's desktop, run by hand"]
 async fn every_display_gives_a_picture_again_and_again() {
-    let desktop = WindowsDesktop::new().unwrap();
+    let desktop = platform_windows::desktop::open().unwrap();
     let targets = desktop.targets().await.unwrap();
     assert!(!targets.is_empty(), "no displays");
     for target in targets {
@@ -241,7 +240,7 @@ async fn console_text_waits_while_a_key_is_held_at_the_computer() {
     let window = window.expect("no classic console opened; is another terminal the default?");
     assert!(native::bring_forward(window), "the console is not in front");
 
-    let desktop = WindowsDesktop::new().unwrap();
+    let desktop = platform_windows::desktop::open().unwrap();
     let target = desktop.targets().await.unwrap().remove(0);
     for vk in [VK_SHIFT, VK_CONTROL] {
         let held = Held::new(vk);

@@ -309,10 +309,10 @@ fn parse_battery(text: &str) -> Option<BatteryReading> {
 }
 
 fn battery() -> Option<BatteryReading> {
-    let output = std::process::Command::new("/usr/bin/pmset")
-        .args(["-g", "batt"])
-        .output()
-        .ok()?;
+    let output = containment::inherit::output(
+        std::process::Command::new("/usr/bin/pmset").args(["-g", "batt"]),
+    )
+    .ok()?;
     parse_battery(std::str::from_utf8(&output.stdout).ok()?)
 }
 

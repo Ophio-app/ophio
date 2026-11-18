@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Conversation isolation on Linux and on a Mac. See the crate README for
-//! deployment and limits.
-use ports::{
-    HarnessError,
-    sandbox::{Sandbox, SandboxSpec, Sandboxes},
-};
+//! Conversation isolation on Linux and on a Mac. Windows has none yet, and
+//! says so. See the crate README for deployment and limits.
+use ports::HarnessError;
+#[cfg(target_os = "linux")]
+use ports::sandbox::{Sandbox, SandboxSpec, Sandboxes};
+#[cfg(target_os = "linux")]
 use protocol::capability::Availability;
-use std::{
-    path::PathBuf,
-    sync::{Arc, OnceLock},
-};
+use std::path::PathBuf;
+#[cfg(target_os = "linux")]
+use std::sync::{Arc, OnceLock};
 
 #[cfg(target_os = "linux")]
 mod disk;
@@ -44,60 +43,51 @@ pub fn program_paths(
     }
 }
 #[cfg(any(target_os = "linux", target_os = "macos"))]
+mod own;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 mod program;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub mod proxy;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub mod relay;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+mod setup;
 #[cfg(target_os = "linux")]
 pub mod shim;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+mod sign_in;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 #[allow(unsafe_code)]
 mod sys;
 
+pub mod checks;
+
+mod on_windows;
+pub use on_windows::NoWindowsSandbox;
+
 /// Install the shim alongside the ophio program, or supply its absolute path.
+#[cfg(target_os = "linux")]
 #[derive(Debug)]
 pub struct Bubblewrap {
     shim: PathBuf,
     probe: OnceLock<Availability>,
-    #[cfg(target_os = "linux")]
     disk: Option<Arc<DiskBudget>>,
 }
+#[cfg(target_os = "linux")]
 impl Bubblewrap {
     pub fn new(shim: impl Into<PathBuf>) -> Self {
         Self {
             shim: shim.into(),
             probe: OnceLock::new(),
-            #[cfg(target_os = "linux")]
             disk: None,
         }
     }
-}
-#[cfg(target_os = "linux")]
-impl Bubblewrap {
     pub fn with_disk_budget(mut self, budget: Arc<DiskBudget>) -> Self {
         self.disk = Some(budget);
         self
     }
 }
-#[cfg(not(target_os = "linux"))]
-#[derive(Debug)]
-pub struct DiskBudget;
-#[cfg(not(target_os = "linux"))]
-impl DiskBudget {
-    pub fn new(_bytes: u64, _entries: u64) -> std::io::Result<Self> {
-        Err(std::io::Error::other("disk budgets require Linux"))
-    }
-    pub fn exceeded(&self) -> std::io::Result<bool> {
-        Ok(true)
-    }
-}
-#[cfg(not(target_os = "linux"))]
-impl Bubblewrap {
-    pub fn with_disk_budget(self, _budget: Arc<DiskBudget>) -> Self {
-        self
-    }
-}
+#[cfg(target_os = "linux")]
 impl Default for Bubblewrap {
     fn default() -> Self {
         let path = std::env::current_exe()
@@ -106,6 +96,7 @@ impl Default for Bubblewrap {
         Self::new(path)
     }
 }
+#[cfg(target_os = "linux")]
 #[async_trait::async_trait]
 impl Sandboxes for Bubblewrap {
     fn availability(&self) -> Availability {
@@ -121,17 +112,11 @@ impl Sandboxes for Bubblewrap {
                 self.availability()
             )));
         }
-        #[cfg(target_os = "linux")]
-        return Ok(Arc::new(linux::LinuxSandbox::with_disk_budget(
+        Ok(Arc::new(linux::LinuxSandbox::with_disk_budget(
             spec,
             self.shim.clone(),
             self.disk.clone(),
-        )?));
-        #[cfg(not(target_os = "linux"))]
-        {
-            let _ = (&self.shim, spec);
-            Err(error("conversation sandboxes require Linux"))
-        }
+        )?))
     }
 }
 fn error(message: impl ToString) -> HarnessError {
@@ -150,53 +135,42 @@ fn blocked_remedy(said: &str, apparmor_restricts: bool) -> String {
         "Something on this computer stops bubblewrap, which Øphio runs limited chats in, from starting (it said: {said}).{hint} See \"Chat access controls\" in the INSTALL.md that came with Øphio, then restart Øphio as described there. Until then, chats can't be limited to a project or kept off the internet."
     )
 }
+#[cfg(target_os = "linux")]
 fn probe(shim: &std::path::Path) -> Availability {
-    #[cfg(target_os = "linux")]
+    use std::os::unix::fs::PermissionsExt;
+    if !shim
+        .metadata()
+        .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
     {
-        use std::os::unix::fs::PermissionsExt;
-        if !shim
-            .metadata()
-            .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
-        {
-            return Availability::Unsupported {
-                reason: "Install ophio-sandbox-shim alongside the ophio program".into(),
-            };
-        }
-        match std::process::Command::new("/usr/bin/bwrap")
-            .args([
-                "--unshare-user",
-                "--unshare-pid",
-                "--unshare-net",
-                "--ro-bind",
-                "/",
-                "/",
-                "/usr/bin/true",
-            ])
-            .output()
-        {
-            Ok(output) if output.status.success() => Availability::Available,
-            Ok(output) => Availability::PermissionMissing {
-                remedy: blocked_remedy(
-                    String::from_utf8_lossy(&output.stderr).trim(),
-                    std::fs::read_to_string(
-                        "/proc/sys/kernel/apparmor_restrict_unprivileged_userns",
-                    )
-                    .is_ok_and(|v| v.trim() == "1"),
-                ),
-            },
-            Err(e) => Availability::Unsupported {
-                reason: format!(
-                    "Install bubblewrap 0.9 or newer from your distribution's bubblewrap package; Øphio runs it from /usr/bin/bwrap ({e})"
-                ),
-            },
-        }
+        return Availability::Unsupported {
+            reason: "Install ophio-sandbox-shim alongside the ophio program".into(),
+        };
     }
-    #[cfg(not(target_os = "linux"))]
+    match std::process::Command::new("/usr/bin/bwrap")
+        .args([
+            "--unshare-user",
+            "--unshare-pid",
+            "--unshare-net",
+            "--ro-bind",
+            "/",
+            "/",
+            "/usr/bin/true",
+        ])
+        .output()
     {
-        let _ = shim;
-        Availability::Unsupported {
-            reason: "Conversation sandboxes currently require Linux".into(),
-        }
+        Ok(output) if output.status.success() => Availability::Available,
+        Ok(output) => Availability::PermissionMissing {
+            remedy: blocked_remedy(
+                String::from_utf8_lossy(&output.stderr).trim(),
+                std::fs::read_to_string("/proc/sys/kernel/apparmor_restrict_unprivileged_userns")
+                    .is_ok_and(|v| v.trim() == "1"),
+            ),
+        },
+        Err(e) => Availability::Unsupported {
+            reason: format!(
+                "Install bubblewrap 0.9 or newer from your distribution's bubblewrap package; Øphio runs it from /usr/bin/bwrap ({e})"
+            ),
+        },
     }
 }
 

@@ -33,9 +33,14 @@ export function ColdStartOffline({ route, children }: { route: Route; children: 
   if (!shown) return children;
   const last = later(lastReached(profile.profileId), heard);
   const incompatible = link.state === "failed" && link.reason === "incompatible_version";
-  return <Screen title="Connection" footer={<div className="offline-foot"><Button variant="primary" block onClick={() => session.reconnect("person")}>Retry connection</Button></div>}><div className="offline-card">
+  return <Screen title="Connection" footer={<div className="offline-foot">{incompatible
+    ? <Button variant="primary" block onClick={() => ui.push({ screen: "settings", section: "settings-versions" })}>Check updates</Button>
+    : <Button variant="primary" block onClick={() => session.reconnect("person")}>Retry connection</Button>}
+  </div>}><div className="offline-card">
     <h1>{incompatible ? "An update is needed" : `Can’t reach ${profile.name}`}</h1>
-    <p>{attempts.current ? `Still trying, attempt ${attempts.current}.` : "Connecting…"}</p>
+    {incompatible
+      ? <p>This app and Øphio on {profile.name} use different versions that cannot connect. Check which one needs updating.</p>
+      : <p>{attempts.current ? `Still trying, attempt ${attempts.current}.` : "Connecting…"}</p>}
     {!incompatible && <p>Check that {profile.name} is switched on and not asleep, that Øphio is running on it, and that this phone is online. It keeps trying by itself.</p>}
     <p className="muted">{last ? <>Last reached <Age at={last} suffix=" ago" /></> : "This device hasn’t recorded a successful connection yet."}</p>
     {link.state === "offline" && <Notice tone="warn">{link.reason}</Notice>}

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //! D3D/WinRT objects stay on a dedicated MTA thread. Only owned packed bytes
 //! cross into Tokio; dropping a capture stream closes its worker channel.
-use super::cursor::{Shape, ShapeKind};
 use super::native::{Dpi, failure, session_ready, unavailable};
 use super::*;
+use platform_desktop::cursor::{Shape, ShapeKind};
 use tokio::sync::{mpsc, oneshot};
 use windows::{
     Foundation::TypedEventHandler,

@@ -4,14 +4,19 @@
 // it. The agent's own one-line account heads it; under that, what the
 // computer worked out the request would do, its risky parts marked; then the
 // buttons, which a phone shows without scrolling. The exact request, the grant
-// scope, the revision it is bound to and its expiry are one tap away. A
-// decision quotes that revision; if the request changed or was answered
-// elsewhere, the card says so instead of acting.
+// scope and the revision it is bound to are one tap away; its deadline is one
+// line under the buttons. Saying no takes one tap, with a reason only if the
+// person wants to give one. A question is just the question, its choices, a
+// field for the person's own words and Send. A decision quotes the revision;
+// if the request changed or was answered elsewhere, the card says so instead
+// of acting.
 
 import { CircleCheck, CircleHelp, CircleX, KeyRound, MessageCircleQuestion, SendHorizontal, ShieldAlert, TriangleAlert } from "lucide-react";
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { plainToolNames } from "./toolNames";
 import type { Approval, ApprovalDecision, ApprovalDetailLine, ApprovalFact, ApprovalKind, ApprovalLineChange, Principal } from "../protocol/types";
 import { Age } from "./Age";
+import { refusalWord } from "./approvalWords";
 import { AnswerLines, ApprovalQuestions, answered, unpicked } from "./ApprovalQuestions";
 import { Button } from "./Button";
 import { focusAfterDecision, OPEN_DECISION } from "./decisionFocus";
@@ -53,17 +58,23 @@ export interface ApprovalActionsContext {
    * the card, any other is shown on it.
    */
   run: (name: string, act: () => Promise<void>) => Promise<void>;
-  /** The card's own decisions: Allow at once, Decline after an optional reason. */
+  /** The card's own decisions, each at once: Allow, and Reject (or Not now) without a reason. */
   allow: () => void;
   decline: () => void;
 }
 
-/** Draws the buttons a request offers, in place of Decline and Allow. */
+/** Draws the buttons a request offers, in place of Reject and Allow. */
 export type ApprovalActions = (ctx: ApprovalActionsContext) => ReactNode;
 
-/** The card's own buttons, for a set that keeps one of them. */
-export function DeclineButton({ ctx, label = "Decline…" }: { ctx: ApprovalActionsContext; label?: string }) {
-  return <Button variant="secondary" onClick={ctx.decline} disabled={ctx.disabled}>{label}</Button>;
+/**
+ * The card's own buttons, for a set that keeps one of them. Saying no is sent
+ * at once: "Reject" on a request, "Not now" on a request for more access
+ * (`refusalWord`). A reason is optional and offered beside the deadline.
+ */
+export function DeclineButton({ ctx, label }: { ctx: ApprovalActionsContext; label?: string }) {
+  return <Button variant="secondary" onClick={ctx.decline} pending={ctx.sending === "deny"} disabled={ctx.disabled}>
+    {ctx.sending === "deny" ? "Sending" : label ?? refusalWord(ctx.approval)}
+  </Button>;
 }
 export function AllowButton({ ctx, label = "Allow" }: { ctx: ApprovalActionsContext; label?: string }) {
   return <Button variant="primary" onClick={ctx.allow} pending={ctx.sending === "allow"} disabled={ctx.disabled}>
@@ -88,7 +99,7 @@ export interface ApprovalCardProps {
   /** Sends the sign-in code a `login_code` request asks for, the same way. */
   onCode?: (code: string) => Promise<void>;
   onOpenTask?: () => void;
-  /** The buttons under what is asked; Decline and Allow when not given. */
+  /** The buttons under what is asked; Reject and Allow when not given. */
   actions?: ApprovalActions;
   /**
    * Inside a row that already says which task asks and when: no frame and no
@@ -202,6 +213,7 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
   // Settled: show what happened, never an actionable stale card.
   if (a.state !== "pending" || staleRevision === a.revision) {
     const settled = settledText(a, myDeviceId);
+    const questionContext = a.kind === "question" ? (a.questions ?? []).filter(q => q.question !== a.title) : [];
     // Green/red only for what the agent reported; a decision it never
     // confirmed is shown as sent.
     const decided = a.state === "allowed" || a.state === "denied";
@@ -214,8 +226,11 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
             <p className="approval__settled-title" id={`${id}-t`}>
               {a.state === "pending" ? "Request changed" : settled.title}{a.resolved_at != null ? ` · ${clockTime(a.resolved_at)}` : ""}
             </p>
-            <p className="approval__settled-what">{a.kind !== "question" && a.kind !== "login_code" && a.headline || a.title}</p>
+            <p className="approval__settled-what">{plainToolNames(a.kind !== "question" && a.kind !== "login_code" && a.headline || a.title)}</p>
             {a.detail && !a.questions?.length && <p className="approval__detail"><ApprovalDetailText approval={a} /></p>}
+            {questionContext.length > 0 && <p className="approval__detail">
+              {questionContext.map((q, index) => <span className="approval__line" key={q.id ?? index}>{q.question}</span>)}
+            </p>}
             {a.shortened && <ExactRequest approval={a} />}
             <p className="approval__settled-meta">
               {a.state === "pending" ? "This request changed or was answered elsewhere. Refreshing…" : settled.meta}
@@ -239,14 +254,27 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
   // at a glance, the request itself one tap away.
   const glance = !isQuestion && !isCode;
   const facts = a.facts ?? [];
+  // A verbose host explanation must not push the decision out of the first view.
+  // The glance keeps what needs attention (or, when nothing does, everything),
+  // at most three lines of it; every fact and the unabridged request are in
+  // the disclosure below it.
+  const longFacts = facts.map(f => f.text).join(", ").length > 130;
+  const risky = facts.filter(f => f.risky);
+  const glanceFacts = longFacts && risky.length ? risky : facts;
+  // A request to use another server's tool names it in words, not as "mcp__github__create_issue".
+  const requestTitle = plainToolNames(glance ? a.headline || a.title : a.title);
+  const shortTitle = glance && requestTitle.length > 110 ? `${requestTitle.slice(0, 107).trimEnd()}…` : requestTitle;
+  const longTitle = shortTitle !== requestTitle;
   const ctx: ApprovalActionsContext = {
     approval: a,
     disabled: !!sending || disabled,
     sending,
     run,
     allow: () => void decide("allow"),
-    decline: () => setMode("deny"),
+    decline: () => void decide("deny"),
   };
+  // A reason is offered only where saying no is one of the card's buttons.
+  const explains = glance && (!a.actions || a.actions.includes("deny"));
   const who = (
     <p className="approval__who" id={`${id}-d`}>
       {onOpenTask ? (
@@ -260,22 +288,18 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
       {isQuestion ? ":" : "."}
     </p>
   );
+  // The deadline is the line under the buttons, never repeated here.
   const scope = (
     <dl className="approval__facts">
       <div>
         <dt>Allows</dt>
         <dd>{a.scope}</dd>
       </div>
-      {a.expires_at && (
-        <div>
-          <dt>Expires</dt>
-          <dd>
-            <Age at={a.expires_at} clock />
-          </dd>
-        </div>
-      )}
     </dl>
   );
+  const deadline = !expired && a.expires_at != null && !accepted && mode !== "deny";
+  const reasonLink = explains && canDecide && !accepted && !disabled && !mode;
+  const more = glance && hasMore(a, longTitle, longFacts);
   return (
     <article ref={card} tabIndex={-1} className={`approval${glance ? " approval--glance" : ""}${embedded ? " approval--embedded" : ""}`} aria-labelledby={`${id}-t`} aria-describedby={a.access_request ? undefined : `${id}-d`} {...(canDecide && !accepted && { [OPEN_DECISION]: "" })}>
       {!embedded && <header className="approval__head">
@@ -284,12 +308,14 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
         <Age at={a.requested_at} suffix=" ago" className="approval__age" />
       </header>}
       <h3 className="approval__title" id={`${id}-t`}>
-        {glance ? a.headline || a.title : a.title}
+        {shortTitle}
       </h3>
-      {/* An agent's request for more access says who asks, and for what, in its headline. */}
-      {!a.access_request && who}
+      {/* An agent's request for more access says who asks, and for what, in its
+          headline; a question is already the agent speaking, so only a list
+          that opens its task names who asked. */}
+      {!a.access_request && (!isQuestion || onOpenTask) && who}
       {glance ? (
-        facts.length ? <FactsLine facts={facts} />
+        facts.length ? <FactsLine facts={glanceFacts} clamp={longFacts} />
           // A computer from before it worked out what a request does: the
           // start of the request, as it describes it.
           : a.detail && <p className="approval__detail approval__peek"><ApprovalDetailText approval={a} brief /></p>
@@ -297,8 +323,9 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
         {questions.length ? (
           <ApprovalQuestions questions={questions} picked={picked} onChange={setPicked} disabled={!canDecide || accepted || !!sending || disabled} />
         ) : a.detail && <p className="approval__detail"><ApprovalDetailText approval={a} /></p>}
-        <ExactRequest approval={a} />
-        {scope}
+        {/* A question's choices are the whole request unless they were cut or couldn't be read. */}
+        {(!isQuestion || a.shortened || !questions.length) && <ExactRequest approval={a} />}
+        {!isQuestion && scope}
       </>}
 
       {accepted ? <p className="approval__note" role="status">Sent. Updating…</p> : !canDecide ? (
@@ -328,16 +355,18 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
         <div ref={compose} className="approval__compose">
           {!questions.length && <TextArea
             label={mode === "answer" ? "Your answer" : "Reason (optional)"}
+            hideLabel={mode === "answer"}
             value={text}
             onChange={setText}
-            rows={2}
-            placeholder={mode === "answer" ? "Type an answer" : "Tell the agent why, so it can adjust"}
+            rows={mode === "answer" ? 1 : 2}
+            placeholder={mode === "answer" ? "Type your answer" : "Tell the agent why, so it can adjust"}
           />}
           <div className="approval__actions">
             {mode === "answer" ? (
               <>
-                <Button variant="secondary" onClick={() => decide("deny")} pending={sending === "deny"} disabled={!!sending || disabled}>
-                  Decline
+                {/* A question is declined, not rejected, and quietly: answering is the point. */}
+                <Button variant="quiet" onClick={() => decide("deny")} pending={sending === "deny"} disabled={!!sending || disabled}>
+                  {sending === "deny" ? "Sending" : "Decline"}
                 </Button>
                 <Button variant="primary" onClick={() => decide("answer")} pending={sending === "answer"} disabled={!!sending || disabled || unanswered}
                   aria-describedby={unanswered && !disabled ? `${id}-unanswered` : undefined}>
@@ -350,15 +379,16 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
                   Back
                 </Button>
                 <Button variant="primary" onClick={() => decide("deny")} pending={sending === "deny"} disabled={!!sending || disabled}>
-                  {sending === "deny" ? "Sending" : "Decline"}
+                  {sending === "deny" ? "Sending" : refusalWord(a)}
                 </Button>
               </>
             )}
           </div>
+          {/* The greyed Send says it waits; a screen reader hears why. */}
           {mode === "answer" && unanswered && !disabled && (
-            <p className="approval__note" id={`${id}-unanswered`}>
+            <span className="visually-hidden" id={`${id}-unanswered`}>
               {questions.length > 1 ? "Answer each question to send." : questions.length ? "Choose an answer or write your own to send it." : "Write an answer to send it."}
-            </p>
+            </span>
           )}
         </div>
       ) : (
@@ -371,18 +401,28 @@ export function ApprovalCard({ approval: a, agent, myDeviceId, canDecide, draft,
           {failure?.message ?? a.delivery?.error?.message}
         </p>
       )}
-      {glance && !expired && a.expires_at && !accepted && <p className="approval__meta">Answer by <Age at={a.expires_at} clock /></p>}
-      {glance && <RequestDetails approval={a}>{scope}</RequestDetails>}
+      {/* The request one tap away and saying no with a reason share one line
+          under the buttons; the request opens across the card, its toggle
+          staying where it was. */}
+      {(deadline || reasonLink || more) && <div className="approval__meta">
+        {more && <RequestDetails approval={a} fullTitle={longTitle ? requestTitle : null} fullFacts={longFacts ? facts : null}>{scope}</RequestDetails>}
+        {deadline && <span>Answer by <Age at={a.expires_at!} clock /></span>}
+        {reasonLink && <button type="button" className="linklike approval__why" onClick={() => setMode("deny")}>
+          {refusalWord(a) === "Not now" ? "Not now, with a reason" : `${refusalWord(a)} with a reason`}
+        </button>}
+      </div>}
+      {glance && !more && scope}
     </article>
   );
 }
 
-/** What the computer worked out the request would do, as one sentence. */
-export function FactsLine({ facts }: { facts: ApprovalFact[] }) {
+/** What the computer worked out the request would do, as one sentence; `clamp` shows three lines of it. */
+export function FactsLine({ facts, clamp = false }: { facts: ApprovalFact[]; clamp?: boolean }) {
   const risky = facts.some((f) => f.risky);
   return <p className={`approval__glance${risky ? " approval__glance--risky" : ""}`}>
     {risky && <TriangleAlert aria-hidden className="approval__glance-icon" strokeWidth={2.2} />}
-    <span>
+    {/* Clamped by CSS only: a screen reader still reads every word of it. */}
+    <span className={clamp ? "approval__glance-text--clamped" : undefined}>
       {facts.map((f, i) => {
         const text = i === 0 ? f.text.charAt(0).toUpperCase() + f.text.slice(1) : f.text;
         return <Fragment key={i}>
@@ -398,13 +438,18 @@ export function FactsLine({ facts }: { facts: ApprovalFact[] }) {
  * The request as the agent sent it, one tap away: "Show command" for a shell
  * command, "Show details" for anything else.
  */
-function RequestDetails({ approval: a, children }: { approval: Approval; children: ReactNode }) {
+function hasMore(a: Approval, longTitle: boolean, longFacts: boolean): boolean {
+  return !!(a.detail || a.raw_request || longTitle || longFacts);
+}
+
+function RequestDetails({ approval: a, children, fullTitle, fullFacts }: { approval: Approval; children: ReactNode; fullTitle: string | null; fullFacts: ApprovalFact[] | null }) {
   const [open, setOpen] = useState(false);
   const what = a.kind === "command" ? "command" : "details";
-  if (!a.detail && !a.raw_request) return <>{children}</>;
   return <details className="approval__more" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
     <summary className="linklike approval__more-toggle">{open ? "Hide" : "Show"} {what}</summary>
     <div className="approval__more-body">
+      {fullTitle && <p className="approval__full-title">{fullTitle}</p>}
+      {fullFacts && <FactsLine facts={fullFacts} />}
       {a.detail && <p className="approval__detail"><ApprovalDetailText approval={a} /></p>}
       <ExactRequest approval={a} />
       {children}
@@ -419,10 +464,13 @@ function RequestDetails({ approval: a, children }: { approval: Approval; childre
  */
 export function settledText(a: Approval, me: string | null): { title: string; meta: string } {
   const who = byWhom(a.resolved_by, me);
-  // A question is answered or declined; nothing else was allowed.
+  // A question is answered or declined; nothing else was allowed. A request
+  // is allowed or rejected; an agent's request for more access, answered
+  // "Not now", reads as declined once settled.
   const words = a.kind === "question" ? { allowed: "Answered", denied: "Declined" }
     : a.kind === "login_code" ? { allowed: "Code given", denied: "No code" }
-    : { allowed: "Allowed", denied: "Declined" };
+    : a.access_request ? { allowed: "Allowed", denied: "Declined" }
+    : { allowed: "Allowed", denied: "Rejected" };
   const reported = a.outcome ? words[a.outcome] : null;
   switch (a.state) {
     case "allowed":

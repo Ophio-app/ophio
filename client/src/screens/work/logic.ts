@@ -13,6 +13,7 @@ import type {
   TimelineItem,
 } from "../../protocol/types";
 import { effortLabel } from "../talk/intent";
+import { cutOffRun } from "../talk/timeline";
 import { modelName } from "../talk/catalog";
 
 export const taskWords: Record<Task["state"], string> = {
@@ -27,7 +28,7 @@ export const taskWords: Record<Task["state"], string> = {
   archived: "Archived",
 };
 export function decisionLabel(run?: Run): string | null {
-  return run?.human_resolution ? run.human_resolution.resolution === "mark_failed" ? "Marked failed" : "Marked completed" : null;
+  return run?.human_resolution ? run.human_resolution.resolution === "mark_failed" ? "Marked failed" : "Marked completed" : run && cutOffRun(run) ? "Cut off" : null;
 }
 export function hasEndedTask(task: Task): boolean {
   return (

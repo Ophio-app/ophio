@@ -66,7 +66,7 @@ async fn cancelled_download_preparation_removes_staged_bytes() {
     // on disk and before a transfer record can own them.
     let publishing = hub.inner.blobs.clone().write_owned().await;
     let preparing = hub.clone();
-    let task = tokio::spawn(async move {
+    let mut task = tokio::spawn(async move {
         preparing
             .submit(
                 &Caller::local_owner(),
@@ -81,19 +81,75 @@ async fn cancelled_download_preparation_removes_staged_bytes() {
             .await
     });
     let staging = dir.path().join("data/staging");
-    let stage = tokio::time::timeout(Duration::from_secs(5), async {
+    let mut last_observation = Vec::new();
+    let observed = tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            if let Ok(mut entries) = tokio::fs::read_dir(&staging).await
-                && let Some(entry) = entries.next_entry().await.unwrap()
-                && entry.metadata().await.unwrap().len() == bytes.len() as u64
-            {
-                break entry.path();
+            let mut observation = Vec::new();
+            let mut stage = None;
+            match tokio::fs::read_dir(&staging).await {
+                Ok(mut entries) => loop {
+                    match entries.next_entry().await {
+                        Ok(Some(entry)) => {
+                            let path = entry.path();
+                            let listed = entry.metadata().await.map(|m| (m.len(), m.is_file()));
+                            let fresh = tokio::fs::metadata(&path)
+                                .await
+                                .map(|m| (m.len(), m.is_file()));
+                            // Windows directory entries can cache a size from before
+                            // an open staging file was written. Query the file itself.
+                            if matches!(&fresh, Ok((len, true)) if *len == bytes.len() as u64) {
+                                stage = Some(path.clone());
+                            }
+                            observation.push(format!(
+                                "{path:?}: directory-entry metadata={listed:?}, fresh metadata={fresh:?}"
+                            ));
+                        }
+                        Ok(None) => break,
+                        Err(error) => {
+                            observation.push(format!("next staging entry failed: {error:?}"));
+                            break;
+                        }
+                    }
+                },
+                Err(error) => observation.push(format!("read staging directory failed: {error:?}")),
+            }
+            last_observation = observation;
+            if let Some(stage) = &stage {
+                // Reading the full copy also closes the observer's handle before
+                // cancellation, so it cannot interfere with Windows cleanup.
+                let staged = tokio::fs::read(stage)
+                    .await
+                    .unwrap_or_else(|error| panic!("read staged download {stage:?}: {error:?}"));
+                assert!(staged == bytes, "staged download {stage:?} has different bytes");
+            }
+            if task.is_finished() {
+                panic!(
+                    "download preparation finished before cancellation: {:?}; staging {staging:?}: {last_observation:?}",
+                    (&mut task).await
+                );
+            }
+            if let Some(stage) = stage {
+                break stage;
             }
             tokio::task::yield_now().await;
         }
     })
-    .await
-    .unwrap();
+    .await;
+    let stage = match observed {
+        Ok(stage) => stage,
+        Err(error) => {
+            if task.is_finished() {
+                panic!(
+                    "download preparation finished while observation expired: {:?}; staging {staging:?}: {last_observation:?}",
+                    (&mut task).await
+                );
+            }
+            panic!(
+                "download preparation still running after {error:?}; expected {} staged bytes; staging {staging:?}: {last_observation:?}",
+                bytes.len()
+            );
+        }
+    };
     task.abort();
     assert!(task.await.unwrap_err().is_cancelled());
     let removed = tokio::time::timeout(Duration::from_secs(2), async {

@@ -3,12 +3,14 @@
 // One authenticated session with one computer: the projection, queries,
 // commands and their honest delivery states.
 
+import { commandPolicy, queryPolicy, requestRefusal } from "./requestPolicy";
 import { FIX_LAUNCH_FEATURE, FIX_LAUNCH_UPDATE, LAUNCH_POLICY_FEATURE, LAUNCH_POLICY_UPDATE } from "../app/launchPolicy";
 import { TASK_BRANCH_FEATURE, TASK_BRANCH_UPDATE } from "../app/taskBranch";
 import { GITHUB_FEATURE, GITHUB_UPDATE } from "../app/githubFeature";
 import { LAUNCHERS_FEATURE, LAUNCHERS_UPDATE } from "../app/launchersFeature";
 import { QUEUE_MARKUP_FEATURE, QUEUE_MARKUP_UPDATE } from "../app/queueMarkupFeature";
 import { SIGN_IN_ON_PHONE_FEATURE, SIGN_IN_ON_PHONE_UPDATE } from "../app/signInFeature";
+import { CHECKS_COMMANDS, CHECKS_FEATURE, CHECKS_QUERIES, CHECKS_UPDATE } from "../app/checksFeature";
 import { HostStateStore } from "../app/screenNames";
 import { reconcileCachedHistory } from "./history";
 import { REPORT_INBOX_FEATURE, REPORT_LOOK_INTO_FEATURE, REPORT_TASK_FEATURE, REPORTS_FEATURE } from "../diagnostics/constants";
@@ -278,6 +280,9 @@ export class HostSession {
   // ---- Queries -----------------------------------------------------------
 
   query<K extends QueryData["kind"]>(q: Query & { kind: K }): Promise<Extract<QueryData, { kind: K }>> {
+    if (CHECKS_QUERIES.includes(q.kind) && !this.state.get().capabilities?.features.includes(CHECKS_FEATURE)) {
+      return Promise.reject(new CommandError({ code: "incompatible_version", message: CHECKS_UPDATE }, null));
+    }
     if (q.kind === "inbox_report_code" && !this.state.get().capabilities?.features.includes("report_inbox_code_v1")) {
       return Promise.reject(new CommandError({ code: "incompatible_version", message: "This computer needs an update to show report tests." }, null));
     }
@@ -291,6 +296,8 @@ export class HostSession {
   }
 
   #request<K extends QueryData["kind"]>(q: Query & { kind: K }): Promise<Extract<QueryData, { kind: K }>> {
+    const refusal = requestRefusal(queryPolicy[q.kind], this.state.get().capabilities?.features);
+    if (refusal) return Promise.reject(new CommandError({ code: "incompatible_version", message: refusal }, null));
     const query_id = uuidv7(this.#now());
     // A computer that reads history names the pending approvals a snapshot
     // leaves out only for a phone that says it reads them itself.
@@ -429,6 +436,9 @@ export class HostSession {
     body: Command,
     opts: { label: string; expectedRevision?: number | null; expiresInMs?: number; commandId?: string } = { label: "" },
   ): Promise<CommandReceipt> {
+    if (CHECKS_COMMANDS.includes(body.command) && !this.state.get().capabilities?.features.includes(CHECKS_FEATURE)) {
+      return Promise.reject(new CommandError({ code: "incompatible_version", message: CHECKS_UPDATE }, null));
+    }
     if (["submit_report", "answer_report_question", "withdraw_report", "set_report_settings"].includes(body.command)
       && !this.state.get().capabilities?.features.includes(REPORTS_FEATURE)) {
       return Promise.reject(new CommandError({ code: "incompatible_version", message: "This computer needs an update to receive reports." }, null));
@@ -472,6 +482,8 @@ export class HostSession {
       && !this.state.get().capabilities?.features.includes(SIGN_IN_ON_PHONE_FEATURE)) {
       return Promise.reject(new CommandError({ code: "incompatible_version", message: SIGN_IN_ON_PHONE_UPDATE }, null));
     }
+    const refusal = requestRefusal(commandPolicy[body.command], this.state.get().capabilities?.features);
+    if (refusal) return Promise.reject(new CommandError({ code: "incompatible_version", message: refusal }, null));
     // A caller that persisted its intent first passes that id, so a retry of
     // an unknown outcome is deduplicated by the host instead of repeated.
     if (this.#bootstrapError) return Promise.reject(new NotConnectedError());

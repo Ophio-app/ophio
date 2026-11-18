@@ -366,6 +366,13 @@ async fn both_platforms_honor_retry_after() {
         } else {
             "/test"
         };
+        let probe = reqwest::Client::new()
+            .get(format!("{}/", server.base))
+            .header("accept", "text/html")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(probe.status(), reqwest::StatusCode::NOT_FOUND);
         server.mock.script(
             path,
             vec![(
@@ -603,8 +610,7 @@ async fn discord_gateway_resumes_and_slash_commands_reach_the_same_authority() {
     let server_base = gateway.clone();
     let hub = f.hub.clone();
     let gateway_worker = tokio::spawn(async move {
-        let (stream, _) = listener.accept().await.unwrap();
-        let mut socket = tokio_tungstenite::accept_async(stream).await.unwrap();
+        let mut socket = accept_gateway(&listener).await;
         socket
             .send(Ws::Text(
                 json!({"op":10,"d":{"heartbeat_interval":1000}})
@@ -633,8 +639,18 @@ async fn discord_gateway_resumes_and_slash_commands_reach_the_same_authority() {
             .await
             .unwrap();
         drop(socket);
-        let (stream, _) = listener.accept().await.unwrap();
-        let mut socket = tokio_tungstenite::accept_async(stream).await.unwrap();
+        // Queue the same unrelated probes that exposed the flaky second accept.
+        // Neither may stand in for the actual Resume connection.
+        use tokio::io::AsyncWriteExt;
+        let address = listener.local_addr().unwrap();
+        let mut probe = tokio::net::TcpStream::connect(address).await.unwrap();
+        probe
+            .write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\nAccept: text/html\r\n\r\n")
+            .await
+            .unwrap();
+        drop(probe);
+        drop(tokio::net::TcpStream::connect(address).await.unwrap());
+        let mut socket = accept_gateway(&listener).await;
         socket
             .send(Ws::Text(
                 json!({"op":10,"d":{"heartbeat_interval":1000}})
@@ -715,8 +731,7 @@ async fn discord_dispatch_without_an_object_body_is_skipped() {
     let gateway = format!("ws://{}", listener.local_addr().unwrap());
     let hub = f.hub.clone();
     let gateway_worker = tokio::spawn(async move {
-        let (stream, _) = listener.accept().await.unwrap();
-        let mut socket = tokio_tungstenite::accept_async(stream).await.unwrap();
+        let mut socket = accept_gateway(&listener).await;
         socket
             .send(Ws::Text(
                 json!({"op":10,"d":{"heartbeat_interval":1000}})

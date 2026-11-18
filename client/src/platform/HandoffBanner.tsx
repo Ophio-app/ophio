@@ -10,11 +10,11 @@ import { useWarning } from "../app/warnings";
 import type { Handoffs } from "./switching";
 import "./lifecycle.css";
 
-export function HandoffBanner({ handoffs, current, onReturn }: { handoffs: Handoffs; current: string; onReturn(id: string, route?: Route): void }) {
+export function HandoffBanner({ handoffs, current, onReturn }: { handoffs: Handoffs; current: string | ReadonlySet<string>; onReturn(id: string, route?: Route): void }) {
   const rows = useStore(handoffs, (s) => s);
   const [dismiss, setDismiss] = useState<string | null>(null);
   const warn = useWarning("control.dismiss");
-  return <>{rows.filter((r) => r.profileId !== current || r.risk.privateTargets.length > 0).map((r) => {
+  return <>{rows.filter((r) => !isCurrent(current, r.profileId) || r.risk.privateTargets.length > 0).map((r) => {
     const name = handoffs.profiles.find((p) => p.profileId === r.profileId)?.name ?? "Previous computer";
     return <aside className="handoff-banner" key={r.profileId} aria-label={`Unresolved control on ${name}`}>
       <strong>{name} · Control not confirmed</strong>
@@ -38,10 +38,12 @@ export function HandoffBanner({ handoffs, current, onReturn }: { handoffs: Hando
 }
 
 /** A modal makes the banner inert; mirror its urgent action inside every sheet. */
-export function HandoffStops({ handoffs, current }: { handoffs: Handoffs; current: string }) {
+export function HandoffStops({ handoffs, current }: { handoffs: Handoffs; current: string | ReadonlySet<string> }) {
   const rows = useStore(handoffs, (s) => s);
-  return <>{rows.filter((r) => r.profileId !== current).map((r) => {
+  return <>{rows.filter((r) => !isCurrent(current, r.profileId)).map((r) => {
     const name = handoffs.profiles.find((p) => p.profileId === r.profileId)?.name ?? "previous computer";
     return <div className="handoff-banner__actions" key={r.profileId}><Button variant="stop-outline" className="intervention" pending={r.busy} onClick={() => void handoffs.stop(r.profileId)}>Stop on {name}</Button></div>;
   })}</>;
 }
+
+function isCurrent(current: string | ReadonlySet<string>, id: string): boolean { return typeof current === "string" ? current === id : current.has(id); }

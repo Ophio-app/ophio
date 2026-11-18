@@ -1105,6 +1105,7 @@ async fn a_question_for_an_agent_put_away_is_answered_under_its_item() {
         person(PersonCall::Wake {
             minutes: 5,
             reason: "later".into(),
+            person_reason: None,
         }),
         ports::bridge::BridgeRequest::RequestHuman {
             reason: "Help".into(),
@@ -1153,6 +1154,8 @@ async fn a_question_for_an_agent_put_away_is_answered_under_its_item() {
         .submit(
             &Caller::local_owner(),
             CommandEnvelope::new(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: Some(TaskMode::Ask),

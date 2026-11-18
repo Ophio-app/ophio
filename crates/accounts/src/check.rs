@@ -40,7 +40,27 @@ pub async fn tool(profile: &Profile, tools: &Tools, config: &Path) -> Checked {
         ),
         _ => return Checked::Unknown("not a tool".into()),
     };
-    let output = match tools.run(status, &extra, LIMIT).await {
+    let result = match &profile.method {
+        Method::Agent {
+            harness: HarnessKind::ClaudeCode,
+            ..
+        } => {
+            // The harness and account check must never inspect/refresh the
+            // same Claude credentials concurrently. The owned task keeps the
+            // gate and process alive even if this caller goes away.
+            let tools = tools.clone();
+            let status = status.to_vec();
+            let home = tools.home();
+            ports::claude_checks::run(home, async move {
+                tools.run_claude_status(&status, &[], LIMIT).await
+            })
+            .await
+            .map_err(|e| format!("Claude Code's status check could not start: {e}"))
+            .and_then(|result| result)
+        }
+        _ => tools.run(status, &extra, LIMIT).await,
+    };
+    let output = match result {
         Ok(output) => output,
         Err(e) if !tools.find(&status[0]).is_file() => {
             tracing::debug!("accounts: {e}");

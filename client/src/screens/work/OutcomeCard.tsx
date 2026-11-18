@@ -85,6 +85,8 @@ export function OutcomeCard({ task, run, project, outcome, plan, writing, compac
   const shown = useRunShown(task, run, ended);
   const showing = shown.slice(-SHOWN_IN_CARD);
   const size = compact ? "sm" : undefined;
+  // A chat's “Stopped” line above already says it stopped: only the way on is left.
+  const quiet = compact && !!task.conversation && outcome.kind === "stopped" && !outcome.items.length;
   const archived = () => toast(`Archived “${task.title}”`);
   const start = (w: NewWork) => {
     setError(null);
@@ -141,9 +143,9 @@ export function OutcomeCard({ task, run, project, outcome, plan, writing, compac
       onClick={() => archive.ask([task], () => ui.openTask(task.project_id, null))}>Archive and start new</Button>}
   </>;
   return (
-    <section className={`receipt-outcome receipt-outcome--${outcome.kind}${outcome.doubts.length ? " receipt-outcome--doubt" : ""}`} aria-labelledby={heading}>
-      <h2 id={heading} className="receipt-outcome__title">{outcome.title}</h2>
-      {outcome.detail && <p className="receipt-outcome__detail">{outcome.detail}</p>}
+    <section className={`receipt-outcome receipt-outcome--${outcome.kind}${outcome.doubts.length ? " receipt-outcome--doubt" : ""}${quiet ? " receipt-outcome--quiet" : ""}`} aria-labelledby={heading}>
+      <h2 id={heading} className={quiet ? "visually-hidden" : "receipt-outcome__title"}>{outcome.title}</h2>
+      {outcome.detail && !quiet && <p className="receipt-outcome__detail">{outcome.detail}</p>}
       {outcome.kind === "done" && run.outcome?.verification?.status !== "failed" && verificationLine(run) && <p className="fine">{verificationLine(run)}</p>}
       {followUpLine(run) && <p className="fine">{followUpLine(run)}</p>}
       {outcome.kind === "watching" && task.wake && <p className="fine">
@@ -192,7 +194,8 @@ export function OutcomeCard({ task, run, project, outcome, plan, writing, compac
           <Button icon={ListChecks} onClick={() => ui.push({ screen: "next_up" }, "work")}>Next up</Button>
         </div>
       </div>}
-      {outcome.newWork.length > 0 && <div className="receipt-outcome__new">
+      {/* A chat shows its suggested work as a card under the turn instead. */}
+      {outcome.newWork.length > 0 && !task.conversation && <div className="receipt-outcome__new">
         <h3>{outcome.newWork.length === 1 ? "New work it found" : `New work it found · ${outcome.newWork.length}`}</h3>
         {outcome.newWork.map((w, i) => <div className="receipt-new-work work-card" key={i}>
           <div className="receipt-new-work__head">

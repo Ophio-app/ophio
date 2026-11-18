@@ -76,6 +76,9 @@ pub(crate) fn fitted(event: HarnessEvent) -> HarnessEvent {
         HarnessEvent::Warning { text } => HarnessEvent::Warning {
             text: fit(text, DETAIL),
         },
+        HarnessEvent::UsageNotice { text } => HarnessEvent::UsageNotice {
+            text: fit(text, DETAIL),
+        },
         HarnessEvent::ReadinessWarning { reason } => HarnessEvent::ReadinessWarning {
             reason: fit(reason, DETAIL),
         },

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useState } from "react";
+import { loadImage } from "../../platform/images";
 import { useApp, useLink } from "../../app/context";
 import { download } from "../../host/transfer";
 import { CommandError, type HostSession } from "../../host/session";
@@ -38,22 +39,15 @@ function trim() {
     }
   }
 }
-export function imageSize(
+export async function imageSize(
   blob: Blob,
 ): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("This image couldn’t be opened."));
-    };
-    img.src = url;
-  });
+  const image = await loadImage(blob);
+  try {
+    return { width: image.width, height: image.height };
+  } finally {
+    image.close();
+  }
 }
 export function acquirePicture(ctx: Context, id: string, expectedSha?: string) {
   const key = `${ctx.profileId}/${id}/${expectedSha ?? ""}`;

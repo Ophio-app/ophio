@@ -57,9 +57,87 @@ pub(crate) struct Running {
     /// with this one's.
     #[serde(default)]
     pub earlier: Vec<RunFix>,
+    /// Other chats whose cards started work included in this report, including
+    /// runs folded into this one and cards tapped while it was already going.
+    #[serde(default)]
+    pub other_origins: Vec<protocol::work_cards::TaskOrigin>,
     /// The Sorts it started.
     #[serde(default)]
     pub sorts: Vec<TaskId>,
+}
+
+/// Kept atomically with the task, before its command worker can start it.
+pub(crate) struct Admission {
+    project_id: ProjectId,
+    started_at: Timestamp,
+    number: Option<u64>,
+    origin: Option<protocol::work_cards::TaskOrigin>,
+}
+
+impl Admission {
+    pub(crate) fn keep(&self, tx: &mut store::Write<'_>, task_id: TaskId) -> store::Result<()> {
+        let mut run = active(&tx.read(), self.project_id)?
+            .filter(|run| run.view.started_at == self.started_at)
+            .ok_or_else(|| error(ErrorCode::Conflict, "Run all is no longer active"))?;
+        if let Some(number) = self.number {
+            if !run.has(task_id) {
+                run.view.fixes.push(RunFix { number, task_id });
+            }
+        } else {
+            run.view.sorting = Some(task_id);
+            if !run.sorts.contains(&task_id) {
+                run.sorts.push(task_id);
+            }
+        }
+        if let Some(origin) = &self.origin {
+            keep_origin(tx, self.project_id, &mut run, origin)?;
+        }
+        tx.put(RUN, self.project_id, &run)?;
+        tx.emit(Event::GithubChanged {
+            project_id: self.project_id,
+        })?;
+        Ok(())
+    }
+}
+
+fn keep_origin(
+    tx: &mut store::Write<'_>,
+    project_id: ProjectId,
+    run: &mut Running,
+    origin: &protocol::work_cards::TaskOrigin,
+) -> store::Result<()> {
+    let key = format!("{}/{}/{}", origin.chat, origin.run, origin.index);
+    if let Some(chat) = tx.read().get::<TaskId>("task_origin", &key)? {
+        let kept = chat == origin.chat
+            && run
+                .view
+                .origin
+                .iter()
+                .chain(&run.other_origins)
+                .any(|o| o.chat == chat);
+        if !kept {
+            return Err(error(ErrorCode::Conflict, "This was already started.").into());
+        }
+    } else {
+        from_card(&tx.read(), project_id, origin)?;
+        tx.put("task_origin", key, &origin.chat)?;
+    }
+    // A run already going from Tasks tells the chat too.
+    if run.view.origin.is_none() {
+        run.view.origin = Some(origin.clone());
+    } else if run
+        .view
+        .origin
+        .as_ref()
+        .is_some_and(|first| first.chat != origin.chat)
+        && !run
+            .other_origins
+            .iter()
+            .any(|other| other.chat == origin.chat)
+    {
+        run.other_origins.push(origin.clone());
+    }
+    Ok(())
 }
 
 impl Running {
@@ -334,6 +412,8 @@ fn create(
     placement: TaskPlacement,
 ) -> Command {
     Command::CreateTask {
+        origin: None,
+        from_chat: None,
         project_id,
         kind: TaskKind::Coding,
         mode,
@@ -359,15 +439,66 @@ fn create(
     }
 }
 
+/// Whether `origin` is a chat's card for fixing every issue in
+/// `project_id`, not yet started.
+fn from_card(
+    r: &store::Read<'_>,
+    project_id: ProjectId,
+    origin: &protocol::work_cards::TaskOrigin,
+) -> store::Result<()> {
+    let refuse = |why: &str| -> store::Error { error(ErrorCode::InvalidRequest, why).into() };
+    if origin.auto {
+        return Err(refuse("Only the person starts fixing every issue."));
+    }
+    let chat: Task = r
+        .require("task", origin.chat)
+        .map_err(|_| refuse("This chat does not exist."))?;
+    if !chat.conversation || chat.project_id != project_id {
+        return Err(refuse(
+            "This work must come from a chat in the same project.",
+        ));
+    }
+    if chat.state == protocol::model::TaskState::Archived {
+        return Err(refuse(
+            "This chat is archived. Bring it back first, or start the work from Tasks.",
+        ));
+    }
+    let run: protocol::model::Run = r
+        .require("run", origin.run)
+        .map_err(|_| refuse("This chat turn does not exist."))?;
+    if run.task_id != origin.chat {
+        return Err(refuse("This turn does not belong to that chat."));
+    }
+    let asked = (run.outcome.as_ref())
+        .and_then(|o| o.report.as_ref())
+        .and_then(|r| r.new_work.get(origin.index as usize))
+        .is_some_and(|w| w.all_issues);
+    if !asked {
+        return Err(refuse(crate::work_card_binding::DIFFERS));
+    }
+    let key = format!("{}/{}/{}", origin.chat, origin.run, origin.index);
+    if r.get::<TaskId>("task_origin", &key)?.is_some() {
+        return Err(error(ErrorCode::Conflict, "This was already started.").into());
+    }
+    Ok(())
+}
+
 impl CompanionHub {
     pub(crate) async fn run_issues(
         &self,
         caller: &Caller,
         project_id: ProjectId,
         step: RunStep,
+        origin: Option<&protocol::work_cards::TaskOrigin>,
     ) -> Result<(), ProtocolError> {
+        if origin.is_some() && step != RunStep::Start {
+            return Err(error(
+                ErrorCode::InvalidRequest,
+                "Only a Start comes from a chat's card.",
+            ));
+        }
         match step {
-            RunStep::Start => self.start_run_all(caller, project_id).await,
+            RunStep::Start => self.start_run_all(caller, project_id, origin).await,
             RunStep::Pause => self.pause_run_all(caller, project_id).await,
             RunStep::Resume => self.resume_run_all(caller, project_id).await,
             RunStep::Stop => self.stop_run_all(caller, project_id).await,
@@ -378,7 +509,29 @@ impl CompanionHub {
         &self,
         caller: &Caller,
         project_id: ProjectId,
+        origin: Option<&protocol::work_cards::TaskOrigin>,
     ) -> Result<(), ProtocolError> {
+        // Hold through every admission, not just the final card marker: a
+        // concurrent tap must not start an agent before it is refused.
+        let start = {
+            let mut starts = self.inner.issue_starts.lock().unwrap();
+            starts.retain(|_, lock| lock.strong_count() > 0);
+            let lock = starts.entry(project_id).or_default();
+            match lock.upgrade() {
+                Some(lock) => lock,
+                None => {
+                    let start = std::sync::Arc::new(tokio::sync::Mutex::new(()));
+                    *lock = std::sync::Arc::downgrade(&start);
+                    start
+                }
+            }
+        };
+        let _starting = start
+            .try_lock()
+            .map_err(|_| error(ErrorCode::Conflict, "This was already started."))?;
+        if let Some(origin) = origin {
+            self.read(|r| from_card(r, project_id, origin))?;
+        }
         let settings = self.github_settings(project_id)?;
         if settings.mode == GithubMode::Off {
             return Err(error(
@@ -402,22 +555,32 @@ impl CompanionHub {
                 Some(run) => run,
                 None => {
                     // One that ended with fixes still going is told with this.
-                    let (earlier, sorts) = match tx.read().get::<Running>(RUN, project_id)? {
-                        Some(old) if old.calm && old.told.is_none() => {
-                            let mut earlier = old.earlier;
-                            earlier.extend(old.view.fixes);
-                            (earlier, old.sorts)
-                        }
-                        _ => (Vec::new(), Vec::new()),
-                    };
+                    let (earlier, other_origins, sorts) =
+                        match tx.read().get::<Running>(RUN, project_id)? {
+                            Some(old) if old.calm && old.told.is_none() => {
+                                let mut earlier = old.earlier;
+                                earlier.extend(old.view.fixes);
+                                let mut origins = old.other_origins;
+                                origins.extend(old.view.origin);
+                                (earlier, origins, old.sorts)
+                            }
+                            _ => (Vec::new(), Vec::new(), Vec::new()),
+                        };
+                    // A failed empty attempt can be retried in the same
+                    // clock tick without replaying its rejected fix commands.
+                    let started_at = tx
+                        .read()
+                        .get::<Running>(RUN, project_id)?
+                        .map_or(now, |old| Timestamp(now.0.max(old.view.started_at.0 + 1)));
                     Running {
                         view: IssueRun {
-                            started_at: now,
+                            started_at,
                             fixes: Vec::new(),
                             sorting: None,
                             paused: false,
                             ended_at: None,
                             stopped: false,
+                            origin: None,
                         },
                         by: caller.principal,
                         paused_tasks: Vec::new(),
@@ -425,10 +588,14 @@ impl CompanionHub {
                         calm: true,
                         told: None,
                         earlier,
+                        other_origins,
                         sorts,
                     }
                 }
             };
+            if let Some(origin) = origin {
+                from_card(&tx.read(), project_id, origin)?;
+            }
             run.by = caller.principal;
             run.starting_since = Some(now);
             tx.put(RUN, project_id, &run)
@@ -441,6 +608,7 @@ impl CompanionHub {
                 &fix_with,
                 &listed.items,
                 true,
+                origin,
             )
             .await;
         let (added, sorting) = match outcome {
@@ -449,6 +617,9 @@ impl CompanionHub {
                 self.write(|tx| {
                     if let Some(mut run) = active(&tx.read(), project_id)? {
                         run.starting_since = None;
+                        if run.view.fixes.is_empty() && run.view.sorting.is_none() {
+                            run.view.ended_at = Some(now);
+                        }
                         tx.put(RUN, project_id, &run)?;
                     }
                     Ok(())
@@ -478,6 +649,8 @@ impl CompanionHub {
             let empty = run.view.fixes.is_empty() && run.view.sorting.is_none();
             if empty {
                 run.view.ended_at = Some(now);
+            } else if let Some(origin) = origin {
+                keep_origin(tx, project_id, &mut run, origin)?;
             }
             tx.put(RUN, project_id, &run)?;
             // Run all is the go-ahead for Next up as well: its fixes would
@@ -500,6 +673,7 @@ impl CompanionHub {
     /// on each fix already waiting in Next up, and, if `sort`, starts a Sort
     /// when issues wait to be sorted. Says what it added, and the Sort the
     /// run waits on.
+    #[allow(clippy::too_many_arguments)]
     async fn add_to_run(
         &self,
         caller: &Caller,
@@ -508,6 +682,7 @@ impl CompanionHub {
         fix_with: &LaunchChoice,
         listed: &[GithubItem],
         sort: bool,
+        origin: Option<&protocol::work_cards::TaskOrigin>,
     ) -> Result<(Vec<RunFix>, Option<TaskId>), ProtocolError> {
         let (tasks, queue, run) = self.read(|r| {
             Ok((
@@ -556,7 +731,18 @@ impl CompanionHub {
                         },
                     ));
                     envelope.command_id = fix_command(project_id, run.view.started_at, item.number);
-                    let receipt = self.admit_inside(caller, envelope).await;
+                    let receipt = self
+                        .admit_run_task(
+                            caller,
+                            envelope,
+                            Admission {
+                                project_id,
+                                started_at: run.view.started_at,
+                                number: Some(item.number),
+                                origin: origin.cloned(),
+                            },
+                        )
+                        .await;
                     match (receipt.error, receipt.result) {
                         (None, Some(CommandResult::TaskCreated { task_id, .. })) => {
                             added.push(RunFix {
@@ -602,7 +788,18 @@ impl CompanionHub {
                     GithubLink::Triage,
                     TaskPlacement::StartNow,
                 ));
-                let receipt = self.admit_inside(caller, envelope).await;
+                let receipt = self
+                    .admit_run_task(
+                        caller,
+                        envelope,
+                        Admission {
+                            project_id,
+                            started_at: run.view.started_at,
+                            number: None,
+                            origin: origin.cloned(),
+                        },
+                    )
+                    .await;
                 match (receipt.error, receipt.result) {
                     (None, Some(CommandResult::TaskCreated { task_id, .. })) => Some(task_id),
                     (Some(e), _) => {
@@ -666,6 +863,7 @@ impl CompanionHub {
                                 fix_with,
                                 &listed.items,
                                 false,
+                                None,
                             )
                             .await
                         {
@@ -765,6 +963,8 @@ impl CompanionHub {
         let mut failed = None;
         for (task_id, revision) in stopped {
             let mut envelope = CommandEnvelope::new(Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 task_id,
                 mode: None,
                 text: Some(CARRY_ON.into()),
@@ -848,6 +1048,22 @@ impl CompanionHub {
         envelope: CommandEnvelope,
     ) -> std::pin::Pin<Box<dyn Future<Output = protocol::CommandReceipt> + Send + 'a>> {
         Box::pin(self.admit(caller, envelope))
+    }
+
+    fn admit_run_task<'a>(
+        &'a self,
+        caller: &'a Caller,
+        envelope: CommandEnvelope,
+        admission: Admission,
+    ) -> std::pin::Pin<Box<dyn Future<Output = protocol::CommandReceipt> + Send + 'a>> {
+        Box::pin(self.admit_with_context(
+            caller,
+            envelope,
+            self.inner.clock.now(),
+            None,
+            None,
+            Some(admission),
+        ))
     }
 
     async fn stop_each(&self, caller: &Caller, tasks: &[TaskId]) -> Result<(), ProtocolError> {

@@ -4436,7 +4436,7 @@ fn resolve_dir(text: &str, ctx: &Ctx) -> Option<PathBuf> {
     }
     let path = match home_path(text, ctx.place.home.as_deref()) {
         Some(home) => home?,
-        None if text.starts_with('/') => PathBuf::from(text),
+        None if text.starts_with('/') || Path::new(text).is_absolute() => PathBuf::from(text),
         None => ctx.cwd.as_ref()?.join(text),
     };
     Some(normal(&path))
@@ -4451,7 +4451,7 @@ fn resolve(word: &Word, ctx: &Ctx) -> Option<PathBuf> {
     }
     let path = match home_path(text, ctx.place.home.as_deref()) {
         Some(home) => home?,
-        None if text.starts_with('/') => PathBuf::from(text),
+        None if text.starts_with('/') || Path::new(text).is_absolute() => PathBuf::from(text),
         None => ctx.cwd.as_ref()?.join(text),
     };
     Some(normal(&path))
@@ -4517,7 +4517,7 @@ fn locate_as_written(word: &Word, ctx: &Ctx) -> Option<Target> {
     let path = match home_path(fixed, ctx.place.home.as_deref()) {
         Some(Some(home)) => home,
         Some(None) => return Some(unknown()),
-        None if fixed.starts_with('/') => PathBuf::from(fixed),
+        None if fixed.starts_with('/') || Path::new(fixed).is_absolute() => PathBuf::from(fixed),
         None => match &ctx.cwd {
             Some(cwd) => cwd.join(fixed),
             None => return Some(unknown()),

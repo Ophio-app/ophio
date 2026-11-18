@@ -141,7 +141,7 @@ fn choose() -> Screen {
             vec![Block::Text("Your phone reaches this computer.".into())],
             Ask::Choose(vec![
                 Choice::new('n', "next", "Continue").recommended(),
-                Choice::new('w', "wifi", "Allow Wi‑Fi").detail("Only on this network."),
+                Choice::new('w', "wifi", "Allow Wi-Fi").detail("Only on this network."),
                 Choice::new('b', "back", "Back"),
             ]),
         )
@@ -316,12 +316,19 @@ fn snapshot(name: &str, actual: &str) {
         .join("src/setup/tests/screens")
         .join(name);
     if std::env::var_os("UPDATE_SNAPSHOTS").is_some() {
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(&path, actual).unwrap();
+        regenerate_snapshot(&path, actual);
         return;
     }
-    let expected = std::fs::read_to_string(&path)
-        .unwrap_or_else(|_| panic!("no {name}; run with UPDATE_SNAPSHOTS=1 to make it"));
+    // Native test executables can run on a different computer than the build.
+    // Keep reviewed baselines in the executable, not at a build-machine path.
+    let expected = match name {
+        "60x20.txt" => include_str!("screens/60x20.txt"),
+        "80x24.txt" => include_str!("screens/80x24.txt"),
+        "120x40.txt" => include_str!("screens/120x40.txt"),
+        _ => panic!("no embedded snapshot for {name}"),
+    };
+    #[cfg(windows)]
+    let expected = windows_expected(name, expected);
     for (n, (expected, actual)) in expected.lines().zip(actual.lines()).enumerate() {
         assert_eq!(
             actual,
@@ -331,6 +338,52 @@ fn snapshot(name: &str, actual: &str) {
         );
     }
     assert_eq!(expected.lines().count(), actual.lines().count(), "{name}");
+}
+
+fn regenerate_snapshot(path: &std::path::Path, actual: &str) {
+    #[cfg(windows)]
+    let _ = (path, actual);
+    #[cfg(windows)]
+    panic!(
+        "Windows snapshot regeneration is refused: preserve Unix baselines and review windows-lines.json"
+    );
+    #[cfg(not(windows))]
+    {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, actual).unwrap();
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_snapshot_regeneration_preserves_unix_baselines() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("baseline.txt");
+    std::fs::write(&path, "Unix baseline\n").unwrap();
+    let refused = std::panic::catch_unwind(|| regenerate_snapshot(&path, "Windows output\n"));
+    assert!(refused.is_err());
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "Unix baseline\n");
+    let missing = temp.path().join("not-created/baseline.txt");
+    assert!(std::panic::catch_unwind(|| regenerate_snapshot(&missing, "output")).is_err());
+    assert!(!missing.parent().unwrap().exists());
+}
+
+// Only the intentional platform wording differs. Assert each Unix baseline
+// line before applying its exact Windows expectation; never normalize output.
+#[cfg(windows)]
+fn windows_expected(name: &str, unix: &str) -> String {
+    let changes: std::collections::BTreeMap<String, Vec<(usize, String, String)>> =
+        serde_json::from_str(include_str!("screens/windows-lines.json")).unwrap();
+    let mut lines: Vec<_> = unix.lines().collect();
+    for (line, before, after) in changes.get(name).expect("Windows snapshot fixture missing") {
+        assert_eq!(
+            lines[line - 1],
+            before,
+            "{name} baseline line {line} changed"
+        );
+        lines[line - 1] = after;
+    }
+    lines.join("\n") + "\n"
 }
 
 #[tokio::test]
@@ -443,7 +496,7 @@ fn a_terminal_too_small_says_so() {
     assert!(drawn.hits.is_empty());
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn a_window_too_small_to_show_what_is_asked_takes_no_answer() {
     let wait = Some(Duration::from_millis(30));
     let mut ui = tui([key(KeyCode::Enter), typed("w").remove(0)], (39, 11));
@@ -635,7 +688,7 @@ async fn a_click_picks_what_it_lands_on() {
     assert_eq!(ui.ask(&screen, None).await, c("later"));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn a_long_page_scrolls_and_what_it_asks_stays() {
     let size = (80, 24);
     let mut blocks: Vec<Block> = (1..=30)
@@ -647,6 +700,7 @@ async fn a_long_page_scrolls_and_what_it_asks_stays() {
         .collect();
     blocks.insert(0, Block::Text("The top of the page.".into()));
     let screen = Screen { blocks, ..choose() };
+    // Rendering must not use up the deadline before scripted keys are read.
     let wait = Some(Duration::from_millis(30));
     let wheel = |kind| mouse(kind, 40, 10);
     let mut ui = tui([wheel(MouseEventKind::ScrollDown)], size);
@@ -670,7 +724,7 @@ async fn a_long_page_scrolls_and_what_it_asks_stays() {
     assert!(text.contains("╴pgdn for more╶"));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn what_was_done_is_kept_while_the_screen_waits() {
     let size = (80, 24);
     let wait = Some(Duration::from_millis(30));
@@ -690,7 +744,7 @@ async fn what_was_done_is_kept_while_the_screen_waits() {
     assert_eq!(ui.ask(&choose(), None).await, c("next"));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn nothing_done_is_carried_to_a_screen_about_something_else() {
     let size = (80, 24);
     let wait = Some(Duration::from_millis(30));
@@ -747,7 +801,7 @@ async fn a_screen_shown_while_something_happens_is_answered_at_once() {
     assert_eq!(ui.ask(&choose(), None).await, c("next"));
 }
 
-#[tokio::test]
+#[tokio::test(start_paused = true)]
 async fn the_screen_is_drawn_again_after_a_program_had_the_terminal() {
     let mut ui = tui([key(KeyCode::Down)], (80, 24));
     assert_eq!(

@@ -63,6 +63,12 @@ async fn finished(
     if let Some(e) = r.error {
         return Err(e.code);
     }
+    // Independent Mac fixtures share FSEvents' serialized startup: measured
+    // at 4.6 s alone, but up to 28.1 s per command with four fixtures running.
+    // Allow that test-only contention here, not in production or other tests.
+    #[cfg(target_os = "macos")]
+    settle_within(&f.hub, id, Duration::from_secs(45)).await;
+    #[cfg(not(target_os = "macos"))]
     settle(&f.hub, id).await;
     let stored = f.hub.read(|r| r.command(id)).unwrap().unwrap();
     match (stored.result, stored.error) {
@@ -104,6 +110,8 @@ fn start_task(
     place: Option<TaskPlace>,
 ) -> Command {
     Command::CreateTask {
+        origin: None,
+        from_chat: None,
         github: None,
         agent_chosen: None,
         mode: Some(TaskMode::Work),
@@ -252,7 +260,7 @@ async fn setup_skills_are_built_in_and_written_out_for_the_task_that_uses_one() 
             .filter(|e| e.source == CatalogSource::OphioSetup && e.kind == kind)
             .count()
     };
-    assert_eq!(built_in(CatalogKind::Skill), 17, "{catalog:?}");
+    assert_eq!(built_in(CatalogKind::Skill), 19, "{catalog:?}");
     assert_eq!(built_in(CatalogKind::Agent), 16, "{catalog:?}");
     let checklist = entry(&catalog, CatalogKind::Skill, "checklist");
     assert_eq!(checklist.name, "Give the person a checklist");
@@ -752,6 +760,75 @@ async fn a_one_offs_folder_under_a_link_into_ophios_own_is_refused_before_anythi
     f.close().await;
 }
 
+#[cfg(windows)]
+#[test]
+fn library_file_keeps_long_file_links_under_short_roots_and_uses_protocol_separators() {
+    let temp = tempfile::tempdir().unwrap();
+    let root_path = temp.path().join("catalog-root");
+    std::fs::create_dir(&root_path).unwrap();
+    let root_path = ports::library::canonical(&root_path).unwrap();
+    assert!(
+        matches!(
+            root_path.components().next(),
+            Some(std::path::Component::Prefix(prefix))
+                if matches!(prefix.kind(), std::path::Prefix::Disk(_))
+        ),
+        "The root must have an ordinary short display path: {root_path:?}"
+    );
+    let mut parts = vec!["skills".to_owned(), "nested-skill".to_owned()];
+    while root_path
+        .join(parts.join("/"))
+        .join("SKILL.md")
+        .as_os_str()
+        .len()
+        < 280
+    {
+        parts.push("nested-folder-for-the-long-path-regression".to_owned());
+    }
+    parts.push("SKILL.md".to_owned());
+    // The filesystem sees an extended path even when long paths are disabled
+    // for ordinary Win32 names. Only the root's display spelling is short.
+    let file = parts
+        .iter()
+        .fold(std::fs::canonicalize(&root_path).unwrap(), |path, part| {
+            path.join(part)
+        });
+    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+    std::fs::write(&file, b"Instructions").unwrap();
+    let file = ports::library::canonical(&file).unwrap();
+    assert!(
+        matches!(
+            file.components().next(),
+            Some(std::path::Component::Prefix(prefix))
+                if matches!(prefix.kind(), std::path::Prefix::VerbatimDisk(_))
+        ),
+        "The file must cross the display-spelling threshold: {file:?}"
+    );
+    let root = protocol::library::LibraryRoot {
+        root_id: protocol::LibraryRootId::new(),
+        label: "Catalog".into(),
+        host_path: root_path.to_str().unwrap().to_owned(),
+        kind: protocol::library::RootKind::Skills,
+        writable: true,
+        project_id: None,
+        harness: None,
+        only: Some(vec!["skills".into()]),
+    };
+    let expected = CatalogFile {
+        root_id: root.root_id,
+        path: parts.join("/"),
+    };
+    assert_eq!(
+        crate::launchers::library_file(&file, std::slice::from_ref(&root)),
+        Some(expected.clone())
+    );
+    assert!(!expected.path.contains('\\'));
+    // Resolving the spelling must not broaden a selectively granted root.
+    let mut hidden = root;
+    hidden.only = Some(vec!["other-skills".into()]);
+    assert_eq!(crate::launchers::library_file(&file, &[hidden]), None);
+}
+
 /// Library as the companion has it, over the test's folders, with its own
 /// storage beside them.
 async fn with_library(
@@ -773,6 +850,35 @@ async fn with_library(
     })
     .await;
     (f, folders, library)
+}
+
+async fn external_copy_edit_is_announced(
+    library: &::library::FsLibrary,
+    file: &CatalogFile,
+    host_path: &str,
+    text: &str,
+) {
+    use ports::LibraryFs;
+    let mut events = library.changes();
+    std::fs::write(host_path, text).unwrap();
+    let expected = format!("{:x}", Sha256::digest(text.as_bytes()));
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            let event = events.recv().await.unwrap();
+            if event.root_id == file.root_id
+                && event.path == file.path
+                && event.revision.as_ref() == Some(&expected)
+            {
+                break;
+            }
+        }
+    })
+    .await
+    .expect("launcher copy refresh must leave the copied file monitored");
+    assert_eq!(
+        library.read(file.root_id, &file.path).await.unwrap().text,
+        text
+    );
 }
 
 fn create_agent(name: &str, description: Option<&str>) -> CommandEnvelope {
@@ -900,9 +1006,10 @@ async fn a_built_in_skill_is_copied_to_edit_and_the_copy_is_never_written_over()
     };
     assert_eq!(id, "setup-phone");
     let folder = ports::library::canonical(&folders.base.join("Ophio/Skills")).unwrap();
-    assert_eq!(
-        PathBuf::from(&host_path),
-        folder.join("setup-phone/SKILL.md")
+    crate::testing::assert_path_eq(
+        &host_path,
+        folder.join("setup-phone").join("SKILL.md"),
+        true,
     );
     // Made inside the one-offs folder, it opens in Library through that.
     assert_eq!(file.path, "Skills/setup-phone/SKILL.md");
@@ -922,12 +1029,12 @@ async fn a_built_in_skill_is_copied_to_edit_and_the_copy_is_never_written_over()
     assert_eq!(copied.source, CatalogSource::OphioSetup);
     assert_eq!(copied.copy, Some(SkillCopy { newer: false }));
     assert_eq!(copied.library.as_ref(), Some(&file));
-    assert_eq!(copied.host_path, host_path);
+    crate::testing::assert_path_eq(&copied.host_path, &host_path, true);
     assert_eq!(copied.digest, built_in.digest);
 
     // Edited, it is theirs: copying again keeps it, and a task starts from it.
     let mine = "---\nname: Set up my phone\ndescription: My way\n---\nMy own steps.\n";
-    std::fs::write(&host_path, mine).unwrap();
+    external_copy_edit_is_announced(&library, &file, &host_path, mine).await;
     let r = finished(&f, &owner, copy_skill("setup-phone")).await;
     assert!(r.is_ok(), "{r:?}");
     assert_eq!(std::fs::read_to_string(&host_path).unwrap(), mine);
@@ -958,7 +1065,8 @@ async fn a_built_in_skill_is_copied_to_edit_and_the_copy_is_never_written_over()
             skill_file,
             ..
         }) => {
-            assert_eq!(skill_file, PathBuf::from(&host_path));
+            // The harness opens this internal path; Windows may require extended spelling.
+            crate::testing::assert_path_eq(&skill_file, &host_path, false);
             assert_eq!(instructions, "My own steps.");
         }
         other => panic!("{other:?}"),
@@ -1091,7 +1199,7 @@ async fn a_built_in_agent_starts_a_task_and_is_copied_to_edit() {
 
     // Edited, a task starts from the copy, and it is never written over.
     let mine = "---\nname: Bug hunter\ndescription: Mine\n---\nHunt my way.\n";
-    std::fs::write(&host_path, mine).unwrap();
+    external_copy_edit_is_announced(&library, &file, &host_path, mine).await;
     let edited = entry(&catalog(&f, None).await, CatalogKind::Agent, "bug-hunter").clone();
     let r = f.hub.submit(&owner, start(&edited.digest)).await;
     let Some(CommandResult::TaskCreated { task_id, .. }) = r.result else {

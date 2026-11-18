@@ -18,6 +18,59 @@ use support::{Client, PinVerifier};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_util::sync::CancellationToken;
 
+/// Cargo can keep the outer test build locked while this process runs. Build
+/// missing tools in a separate target directory, with an independent job pool.
+fn bridge_executable_dir() -> PathBuf {
+    static DIRECTORY: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    DIRECTORY
+        .get_or_init(|| {
+            let executable = std::env::current_exe().unwrap();
+            let directory = executable.parent().unwrap().parent().unwrap();
+            if directory.join(computer_mcp::BINARY_NAME).is_file() {
+                return directory.to_owned();
+            }
+            eprintln!("Building the missing computer-mcp binary for composition tests");
+            let output = std::process::Command::new(env!("CARGO"))
+                .args([
+                    "build",
+                    "--locked",
+                    "--package",
+                    "computer-mcp",
+                    "--bin",
+                    "computer-mcp",
+                    "--profile",
+                    "dev",
+                    "--message-format=json-render-diagnostics",
+                    "--target-dir",
+                ])
+                .arg(directory.join("composition-bridge"))
+                .current_dir(env!("CARGO_MANIFEST_DIR"))
+                .env_remove("CARGO_MAKEFLAGS")
+                .env_remove("MAKEFLAGS")
+                .env_remove("MFLAGS")
+                .output()
+                .expect("Could not start Cargo to build the composition test bridge");
+            assert!(
+                output.status.success(),
+                "Could not build the composition test bridge:\n{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let binary = String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+                .find_map(|message| {
+                    (message["reason"] == "compiler-artifact"
+                        && message["target"]["name"] == "computer-mcp")
+                        .then(|| message["executable"].as_str().map(PathBuf::from))
+                        .flatten()
+                })
+                .expect("Cargo did not report the composition test bridge executable");
+            assert!(binary.is_file(), "The built bridge executable is missing");
+            binary.parent().unwrap().to_owned()
+        })
+        .clone()
+}
+
 struct Rig {
     temp: tempfile::TempDir,
     paths: Paths,
@@ -220,22 +273,10 @@ impl Rig {
         let claude = fake("harness-claude", "fake_claude.py");
         let codex = fake("harness-codex", "fake_codex.py");
         let executable_dir = if bridge {
-            std::env::current_exe()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .to_owned()
+            bridge_executable_dir()
         } else {
             temp.path().join("no-bridge")
         };
-        if bridge {
-            assert!(
-                executable_dir.join(computer_mcp::BINARY_NAME).exists(),
-                "Build computer-mcp before this test: cargo build -p computer-mcp"
-            );
-        }
         let options = ComposeOptions {
             environment: [(
                 "HOME".into(),
@@ -254,6 +295,7 @@ impl Rig {
             desktop_factory: Some(Arc::new(SyntheticDesktop)),
             speech_factory,
             accounts: false,
+            release_check: false,
         };
         let runtime = Runtime::build(paths.clone(), config, &identity, options.clone())
             .await
@@ -432,7 +474,9 @@ impl Rig {
                 .unwrap();
         }
         self.runtime.shutdown().await.unwrap();
+        let hub = self.runtime.hub.as_ref().clone();
         drop(self.runtime);
+        services::testing::drop_hub_and_wait(hub, Duration::from_secs(10)).await;
         drop(self.lock);
         assert!(!self.paths.socket().exists());
         assert!(
@@ -559,6 +603,8 @@ impl Phone {
     async fn task(&mut self, project_id: ProjectId, harness: HarnessKind, prompt: &str) -> TaskId {
         match self
             .effect(Command::CreateTask {
+                origin: None,
+                from_chat: None,
                 github: None,
                 agent_chosen: None,
                 mode: None,
@@ -984,6 +1030,8 @@ async fn a_claude_conversation_gets_ophio_tools_while_bypassing_native_prompts()
     let project_id = phone.project(&dir).await;
     let CommandResult::TaskCreated { task_id, .. } = phone
         .effect(Command::CreateTask {
+            origin: None,
+            from_chat: None,
             github: None,
             agent_chosen: None,
             mode: None,
@@ -1393,7 +1441,9 @@ async fn an_enable_that_is_refused_or_fails_leaves_sharing_off() {
             "{code:?}: the phone is not told why: {desktop:?}"
         );
         runtime.shutdown().await.unwrap();
+        let hub = runtime.hub.as_ref().clone();
         drop(runtime);
+        services::testing::drop_hub_and_wait(hub, Duration::from_secs(10)).await;
         // The next start does not ask again.
         let runtime = Runtime::build(
             paths.clone(),
@@ -2011,6 +2061,8 @@ async fn terminal_shell_exit_precedes_close_and_allows_repeated_replay() {
         "service stream must end after exit"
     );
     attachment.input.detach().await;
+    // Detaching ends the stream; the input handle still owns a hub reference.
+    drop(attachment);
     drop(phone);
     rig.shutdown().await;
 }
@@ -2763,6 +2815,8 @@ async fn a_question_alert_carries_the_question_and_takes_its_answer() {
             quiet: true,
             reports: false,
             sign_in: false,
+            new_version: false,
+            agent_updates: false,
             handled: vec![],
             types: false,
         })
@@ -2872,6 +2926,8 @@ async fn a_handled_alert_is_shared_with_every_watcher_and_kept_through_a_restart
         quiet: true,
         reports: false,
         sign_in: false,
+        new_version: false,
+        agent_updates: false,
         types,
         handled: Vec::new(),
     };
@@ -2893,7 +2949,7 @@ async fn a_handled_alert_is_shared_with_every_watcher_and_kept_through_a_restart
                 && alert.task_id == task
                 && alert.kind == kind
             {
-                return alert;
+                return *alert;
             }
         }
     }

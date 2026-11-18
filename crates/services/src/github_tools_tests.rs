@@ -15,6 +15,8 @@ impl Repo {
             .submit(
                 &Caller::local_owner(),
                 CommandEnvelope::new(Command::CreateTask {
+                    origin: None,
+                    from_chat: None,
                     github: Some(Box::new(link)),
                     agent_chosen: None,
                     mode: None,
@@ -189,6 +191,7 @@ async fn a_linked_run_opens_its_draft_pull_request_and_keeps_it_current() {
     let head = task.branch.as_ref().unwrap().name.clone();
     r.on(&head);
     let pr = || GithubCall::Pr {
+        branch: None,
         title: "fix: saving no longer crashes".into(),
         body: format!(
             "Problem\n\nIt pushed with {}.\n🤖 Claude Code in Øphio, working for @someone",
@@ -326,7 +329,13 @@ async fn a_linked_run_opens_its_draft_pull_request_and_keeps_it_current() {
             head: "ddd444".into(),
         });
     });
-    r.on("save-fix-2");
+    // Replacing a saved branch is deliberate, never inferred from the
+    // project checkout. The accepted replacement is remembered.
+    let mut replacement = pr();
+    if let GithubCall::Pr { branch, .. } = &mut replacement {
+        *branch = Some("save-fix-2".into());
+    }
+    r.on("main");
     r.gh.answer("GET /repos/octo/app/branches/save-fix-2", json!({}));
     r.gh.answer(
         "GET /repos/octo/app/pulls?head=octo:save-fix-2&state=open&per_page=5",
@@ -341,9 +350,10 @@ async fn a_linked_run_opens_its_draft_pull_request_and_keeps_it_current() {
         }),
     );
     assert_eq!(
-        call(&r.f, &binding, pr()).await.unwrap(),
+        call(&r.f, &binding, replacement).await.unwrap(),
         "Opened draft pull request #22: https://github.com/octo/app/pull/22"
     );
+    assert_eq!(r.task(task.task_id).branch.unwrap().name, "save-fix-2");
     let github = r.task(task.task_id).github.unwrap();
     assert_eq!(
         (github.pr.unwrap().number, github.checked_by, github.rounds),
@@ -411,6 +421,7 @@ async fn another_persons_pull_request_keeps_their_description() {
     r.on("save-fix");
     r.gh.answer("GET /repos/octo/app/branches/save-fix", json!({}));
     let pr = GithubCall::Pr {
+        branch: None,
         title: "fix: atomic saves".into(),
         body: "Rewritten.".into(),
     };
@@ -1195,6 +1206,521 @@ async fn a_stacked_pull_request_starts_from_the_one_under_it() {
 }
 
 #[tokio::test]
+async fn a_saved_task_branch_wins_over_an_unrelated_checkout() {
+    for state in [Some(TaskState::Archived), None, Some(TaskState::Working)] {
+        let r = repo(true).await;
+        r.set(drafts()).await.unwrap();
+        r.mine(286, "Plain pages");
+        let (task, binding) = r
+            .started(GithubLink::Issue {
+                number: 286,
+                review_with: None,
+                when_green: None,
+            })
+            .await;
+        let head = task.branch.as_ref().unwrap().name.clone();
+        if let Some(state) = state {
+            let mut other = task.clone();
+            other.task_id = TaskId::new();
+            other.state = state;
+            other.current_run = None;
+            other.branch = Some(TaskBranch {
+                name: "old-task".into(),
+                new: false,
+            });
+            r.f.hub
+                .write(|tx| tx.put("task", other.task_id, &other))
+                .unwrap();
+        }
+        r.on("old-task");
+        r.gh.answer(
+            "GET /repos/octo/app/branches/old-task",
+            json!({ "commit": { "sha": "old" } }),
+        );
+        r.gh.answer(
+            "GET /repos/octo/app/pulls?head=octo:old-task&state=open&per_page=5",
+            json!([]),
+        );
+        r.gh.answer(
+            "GET /repos/octo/app/pulls?head=octo:old-task&state=closed&per_page=5",
+            json!([{
+                "number": 215, "merged_at": "2026-11-10T00:00:00Z",
+                "head": { "ref": "old-task", "sha": "old" },
+            }]),
+        );
+        let pr = || GithubCall::Pr {
+            branch: None,
+            title: "fix: plain pages".into(),
+            body: "Pages render plainly.".into(),
+        };
+        // A missing or unpushed saved branch must not fall back to the
+        // checkout, even when that checkout has already been pushed.
+        let e = call(&r.f, &binding, pr()).await.unwrap_err();
+        assert!(e.contains(&format!("git push -u origin {head}")), "{e}");
+        let branch = segment(&head);
+        r.gh.answer(
+            &format!("GET /repos/octo/app/branches/{branch}"),
+            json!({ "commit": { "sha": "new" } }),
+        );
+        r.gh.answer(
+            &format!("GET /repos/octo/app/pulls?head=octo:{branch}&state=open&per_page=5"),
+            json!([]),
+        );
+        r.gh.answer(
+            &format!("GET /repos/octo/app/pulls?head=octo:{branch}&state=closed&per_page=5"),
+            json!([]),
+        );
+        r.gh.answer(
+            "POST /repos/octo/app/pulls",
+            json!({
+                "number": 286, "state": "open", "draft": true,
+                "html_url": "https://github.com/octo/app/pull/286",
+                "head": { "ref": head, "sha": "new" },
+            }),
+        );
+        call(&r.f, &binding, pr()).await.unwrap();
+        assert_eq!(
+            r.gh.called("POST /repos/octo/app/pulls").unwrap()["head"],
+            head
+        );
+        assert_eq!(r.times("GET /repos/octo/app/branches/old-task"), 0);
+        r.f.close().await;
+    }
+}
+
+#[tokio::test]
+async fn a_task_worktrees_pr_ignores_a_dirty_shared_checkout_on_a_merged_branch() {
+    let r = repo(true).await;
+    r.set(drafts()).await.unwrap();
+    r.mine(286, "Clear the release blockers");
+    let (task, binding) = r
+        .started(GithubLink::Issue {
+            number: 286,
+            review_with: None,
+            when_green: None,
+        })
+        .await;
+    let head = task.branch.as_ref().unwrap().name.clone();
+    let old = "ophio/215-old-task";
+    let dir = r.f.project_dir();
+    let scratch = tempfile::tempdir().unwrap();
+    let worktree = scratch.path().join("task");
+    let remote = scratch.path().join("remote.git");
+    let git = |at: &std::path::Path, args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .args(args)
+            .current_dir(at)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8(out.stdout).unwrap().trim().to_owned()
+    };
+    git(&dir, &["checkout", "-b", old, "origin/main"]);
+    let old_sha = git(&dir, &["rev-parse", "HEAD"]);
+    std::fs::write(dir.join("unfinished.txt"), "Keep this person's work.\n").unwrap();
+    let dirty = git(&dir, &["status", "--porcelain"]);
+    assert!(!dirty.is_empty());
+    git(
+        &dir,
+        &[
+            "worktree",
+            "add",
+            "-b",
+            &head,
+            worktree.to_str().unwrap(),
+            "origin/main",
+        ],
+    );
+    git(
+        &worktree,
+        &[
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "Fix the new task",
+        ],
+    );
+    git(&dir, &["init", "--bare", remote.to_str().unwrap()]);
+    // Push only to a disposable local remote; GitHub's replies below use
+    // that actual pushed commit. The project still identifies octo/app.
+    git(&worktree, &["push", remote.to_str().unwrap(), &head]);
+    let sha = git(
+        &dir,
+        &["--git-dir", remote.to_str().unwrap(), "rev-parse", &head],
+    );
+    assert_ne!(sha, old_sha);
+
+    let mut archived = task.clone();
+    archived.task_id = TaskId::new();
+    archived.state = TaskState::Archived;
+    archived.current_run = None;
+    archived.branch = Some(TaskBranch {
+        name: old.into(),
+        new: false,
+    });
+    archived.github.as_mut().unwrap().pr = Some(PrSummary {
+        number: 234,
+        url: "https://github.com/octo/app/pull/234".into(),
+        state: PrState::Merged,
+        draft: false,
+        head: old_sha.clone(),
+        passed: 0,
+        failed: 0,
+        pending: 0,
+        unresolved: 0,
+        conflict: false,
+    });
+    r.f.hub
+        .write(|tx| tx.put("task", archived.task_id, &archived))
+        .unwrap();
+    let old_branch = segment(old);
+    r.gh.answer(
+        &format!("GET /repos/octo/app/branches/{old_branch}"),
+        json!({ "commit": { "sha": old_sha } }),
+    );
+    r.gh.answer(
+        &format!("GET /repos/octo/app/pulls?head=octo:{old_branch}&state=open&per_page=5"),
+        json!([]),
+    );
+    r.gh.answer(
+        &format!("GET /repos/octo/app/pulls?head=octo:{old_branch}&state=closed&per_page=5"),
+        json!([{ "number": 234, "merged_at": "2026-11-10T00:00:00Z", "head": { "ref": old, "sha": old_sha } }]),
+    );
+    let branch = segment(&head);
+    r.gh.answer(
+        &format!("GET /repos/octo/app/branches/{branch}"),
+        json!({ "commit": { "sha": sha } }),
+    );
+    for state in ["open", "closed"] {
+        r.gh.answer(
+            &format!("GET /repos/octo/app/pulls?head=octo:{branch}&state={state}&per_page=5"),
+            json!([]),
+        );
+    }
+    r.gh.answer(
+        "POST /repos/octo/app/pulls",
+        json!({ "number": 286, "state": "open", "draft": true,
+            "html_url": "https://github.com/octo/app/pull/286",
+            "head": { "ref": head, "sha": sha } }),
+    );
+    let answer = call(
+        &r.f,
+        &binding,
+        GithubCall::Pr {
+            branch: None,
+            title: "fix: clear release blockers".into(),
+            body: "Closes #286".into(),
+        },
+    )
+    .await
+    .unwrap();
+    assert!(answer.contains("#286"), "{answer}");
+    assert_eq!(
+        r.gh.called("POST /repos/octo/app/pulls").unwrap()["head"],
+        head
+    );
+    assert_eq!(
+        r.times(&format!("GET /repos/octo/app/branches/{old_branch}")),
+        0
+    );
+    assert_eq!(r.task(task.task_id).github.unwrap().pr.unwrap().head, sha);
+    assert_eq!(git(&dir, &["branch", "--show-current"]), old);
+    assert_eq!(git(&dir, &["status", "--porcelain"]), dirty);
+    assert_eq!(
+        std::fs::read_to_string(dir.join("unfinished.txt")).unwrap(),
+        "Keep this person's work.\n"
+    );
+    git(&dir, &["worktree", "remove", worktree.to_str().unwrap()]);
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn an_unsaved_task_branch_is_inferred_only_when_safe() {
+    let r = repo(true).await;
+    r.set(drafts()).await.unwrap();
+    let (task, binding) = r.started(GithubLink::NewPr).await;
+    assert!(task.branch.is_none());
+    let pr = || GithubCall::Pr {
+        branch: None,
+        title: "fix: plain pages".into(),
+        body: "Pages render plainly.".into(),
+    };
+    r.on("main");
+    let e = call(&r.f, &binding, pr()).await.unwrap_err();
+    assert!(e.contains("default branch"), "{e}");
+    assert_eq!(r.times("GET /repos/octo/app/branches/main"), 0);
+
+    let mut other = task.clone();
+    other.task_id = TaskId::new();
+    other.current_run = None;
+    other.branch = Some(TaskBranch {
+        name: "other-task".into(),
+        new: false,
+    });
+    r.f.hub
+        .write(|tx| tx.put("task", other.task_id, &other))
+        .unwrap();
+    r.on("other-task");
+    let e = call(&r.f, &binding, pr()).await.unwrap_err();
+    assert!(e.contains("Check out this task's branch first"), "{e}");
+    assert_eq!(r.times("GET /repos/octo/app/branches/other-task"), 0);
+
+    r.on("new-work");
+    let e = call(&r.f, &binding, pr()).await.unwrap_err();
+    assert!(e.contains("git push -u origin new-work"), "{e}");
+    r.gh.answer(
+        "GET /repos/octo/app/branches/new-work",
+        json!({ "commit": { "sha": "new" } }),
+    );
+    r.gh.answer(
+        "GET /repos/octo/app/pulls?head=octo:new-work&state=open&per_page=5",
+        json!([]),
+    );
+    r.gh.answer(
+        "GET /repos/octo/app/pulls?head=octo:new-work&state=closed&per_page=5",
+        json!([]),
+    );
+    r.gh.answer(
+        "POST /repos/octo/app/pulls",
+        json!({
+            "number": 21, "state": "open", "draft": true,
+            "html_url": "https://github.com/octo/app/pull/21",
+            "head": { "ref": "new-work", "sha": "new" },
+        }),
+    );
+    call(&r.f, &binding, pr()).await.unwrap();
+    assert_eq!(
+        r.gh.called("POST /repos/octo/app/pulls").unwrap()["head"],
+        "new-work"
+    );
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn a_fork_replacement_uses_its_recorded_branch_not_the_checkout() {
+    let r = repo(true).await;
+    r.set(drafts()).await.unwrap();
+    let original = pull(7, "someone/app", "teammate");
+    r.gh.answer("GET /repos/octo/app/pulls/7", original);
+    let (task, binding) = r.started(GithubLink::Pr { number: 7 }).await;
+    let head = task.branch.as_ref().unwrap().name.clone();
+    assert_ne!(head, "save-fix");
+    r.on("main");
+    let branch = segment(&head);
+    r.gh.answer(
+        &format!("GET /repos/octo/app/branches/{branch}"),
+        json!({ "commit": { "sha": "new" } }),
+    );
+    r.gh.answer(
+        &format!("GET /repos/octo/app/pulls?head=octo:{branch}&state=open&per_page=5"),
+        json!([]),
+    );
+    r.gh.answer(
+        &format!("GET /repos/octo/app/pulls?head=octo:{branch}&state=closed&per_page=5"),
+        json!([]),
+    );
+    r.gh.answer(
+        "POST /repos/octo/app/pulls",
+        json!({
+            "number": 21, "state": "open", "draft": true,
+            "html_url": "https://github.com/octo/app/pull/21",
+            "head": { "ref": head, "sha": "new" },
+        }),
+    );
+    r.gh.answer("POST /repos/octo/app/issues/7/comments", json!({}));
+    call(
+        &r.f,
+        &binding,
+        GithubCall::Pr {
+            branch: None,
+            title: "fix: plain pages".into(),
+            body: "Pages render plainly.".into(),
+        },
+    )
+    .await
+    .unwrap();
+    let sent = r.gh.called("POST /repos/octo/app/pulls").unwrap();
+    assert_eq!(sent["head"], head);
+    assert!(
+        sent["body"]
+            .as_str()
+            .unwrap()
+            .contains("Continues #7 by @teammate")
+    );
+    assert_eq!(r.times("POST /repos/octo/app/issues/7/comments"), 1);
+    assert!(r.gh.called("PATCH /repos/octo/app/pulls/7").is_none());
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn a_same_repo_takeover_can_explicitly_replace_and_remember_its_branch() {
+    let r = repo(true).await;
+    r.set(drafts()).await.unwrap();
+    r.gh.answer(
+        "GET /repos/octo/app/pulls/7",
+        pull(7, "octo/app", "teammate"),
+    );
+    let (task, binding) = r.started(GithubLink::Pr { number: 7 }).await;
+    let original_branch = task.branch.clone();
+    assert_eq!(original_branch.as_ref().unwrap().name, "save-fix");
+    assert!(
+        r.f.harness
+            .specs
+            .lock()
+            .unwrap()
+            .last()
+            .unwrap()
+            .github
+            .as_ref()
+            .unwrap()
+            .contains("passing that name in branch")
+    );
+    // The original can be read but the agent cannot push to it. It pushes
+    // its work separately; the shared checkout is unrelated to either.
+    r.on("unrelated");
+    let mut other = task.clone();
+    other.task_id = TaskId::new();
+    other.current_run = None;
+    other.github = None;
+    other.branch = Some(TaskBranch {
+        name: "other-task".into(),
+        new: false,
+    });
+    r.f.hub
+        .write(|tx| tx.put("task", other.task_id, &other))
+        .unwrap();
+    let pr = |branch: Option<&str>| GithubCall::Pr {
+        title: "fix: atomic saves".into(),
+        body: "Saves are atomic.".into(),
+        branch: branch.map(str::to_owned),
+    };
+    for (branch, why) in [
+        ("", "valid Git branch"),
+        ("bad..name", "valid Git branch"),
+        ("bad\nname", "valid Git branch"),
+        ("main", "default branch"),
+        ("other-task", "another task"),
+        ("replacement", "git push -u origin replacement"),
+    ] {
+        let e = call(&r.f, &binding, pr(Some(branch))).await.unwrap_err();
+        assert!(e.contains(why), "{branch:?}: {e}");
+        assert_eq!(r.task(task.task_id).branch, original_branch);
+        assert_eq!(r.task(task.task_id).github.unwrap().pr.unwrap().number, 7);
+        assert!(r.gh.called("POST /repos/octo/app/pulls").is_none());
+        assert!(r.gh.called("PATCH /repos/octo/app/pulls/7").is_none());
+    }
+    r.gh.answer(
+        "GET /repos/octo/app/branches/replacement",
+        json!({"commit":{"sha":"new"}}),
+    );
+    r.gh.answer(
+        "GET /repos/octo/app/pulls?head=octo:replacement&state=open&per_page=5",
+        json!([]),
+    );
+    r.gh.answer(
+        "GET /repos/octo/app/pulls?head=octo:replacement&state=closed&per_page=5",
+        json!([]),
+    );
+    // Even a valid branch is not remembered if GitHub refuses the post.
+    call(&r.f, &binding, pr(Some("replacement")))
+        .await
+        .unwrap_err();
+    assert_eq!(r.task(task.task_id).branch, original_branch);
+    let opened = json!({
+        "number":21, "state":"open", "draft":true,
+        "html_url":"https://github.com/octo/app/pull/21",
+        "user":{"login":"me"}, "head":{"ref":"replacement","sha":"new"},
+    });
+    r.gh.answer("POST /repos/octo/app/pulls", opened.clone());
+    r.gh.answer("POST /repos/octo/app/issues/7/comments", json!({}));
+    call(&r.f, &binding, pr(Some("replacement"))).await.unwrap();
+    let saved = r.task(task.task_id);
+    assert_eq!(
+        saved.branch.unwrap(),
+        TaskBranch {
+            name: "replacement".into(),
+            new: false
+        }
+    );
+    assert_eq!(saved.github.unwrap().pr.unwrap().number, 21);
+    let posted = r.gh.called("POST /repos/octo/app/pulls").unwrap();
+    assert_eq!(posted["head"], "replacement");
+    assert!(
+        posted["body"]
+            .as_str()
+            .unwrap()
+            .contains("Continues #7 by @teammate")
+    );
+    assert_eq!(r.times("POST /repos/octo/app/issues/7/comments"), 1);
+    assert!(r.gh.called("PATCH /repos/octo/app/pulls/7").is_none());
+    // Later calls, including later runs, need no branch argument and do
+    // not return to either the original branch or the shared checkout.
+    r.on("main");
+    r.gh.answer("GET /repos/octo/app/pulls/21", opened.clone());
+    r.gh.answer("PATCH /repos/octo/app/pulls/21", opened);
+    let answer = call(&r.f, &binding, pr(None)).await.unwrap();
+    assert!(answer.starts_with("Updated pull request #21"), "{answer}");
+    assert_eq!(r.task(task.task_id).branch.unwrap().name, "replacement");
+    assert!(r.gh.called("PATCH /repos/octo/app/pulls/7").is_none());
+    assert_eq!(r.times("GET /repos/octo/app/branches/unrelated"), 0);
+    r.f.close().await;
+}
+
+#[tokio::test]
+async fn a_declined_explicit_replacement_keeps_the_saved_branch() {
+    let r = repo(false).await;
+    r.set(drafts()).await.unwrap();
+    r.mine(12, "Plain pages");
+    let (task, binding) = r
+        .started(GithubLink::Issue {
+            number: 12,
+            review_with: None,
+            when_green: None,
+        })
+        .await;
+    r.gh.answer(
+        "GET /repos/octo/app/branches/replacement",
+        json!({"commit":{"sha":"new"}}),
+    );
+    r.gh.answer(
+        "GET /repos/octo/app/pulls?head=octo:replacement&state=open&per_page=5",
+        json!([]),
+    );
+    r.gh.answer(
+        "GET /repos/octo/app/pulls?head=octo:replacement&state=closed&per_page=5",
+        json!([]),
+    );
+    let posting = calling(
+        &r.f,
+        &binding,
+        GithubCall::Pr {
+            title: "fix: plain pages".into(),
+            body: "Pages render plainly.".into(),
+            branch: Some("replacement".into()),
+        },
+    );
+    let approval = pending(&r.f).await;
+    decide(&r.f, &approval, ApprovalDecision::Deny { reason: None }).await;
+    let e = result(posting.await.unwrap()).unwrap_err();
+    assert!(e.contains("declined"), "{e}");
+    let saved = r.task(task.task_id);
+    assert_eq!(saved.branch, task.branch);
+    assert!(saved.github.unwrap().pr.is_none());
+    assert!(r.gh.called("POST /repos/octo/app/pulls").is_none());
+    r.f.close().await;
+}
+
+#[tokio::test]
 async fn a_tasks_pull_request_is_never_another_tasks() {
     let r = repo(true).await;
     r.set(drafts()).await.unwrap();
@@ -1231,6 +1757,14 @@ async fn a_tasks_pull_request_is_never_another_tasks() {
             conflict: false,
         })
     });
+    // Without a saved branch, inference still checks PR ownership.
+    r.f.hub
+        .write(|tx| {
+            let mut task: Task = tx.read().require("task", task.task_id)?;
+            task.branch = None;
+            tx.put("task", task.task_id, &task)
+        })
+        .unwrap();
     r.on("save-fix");
     r.gh.answer("GET /repos/octo/app/branches/save-fix", json!({}));
     r.gh.answer(
@@ -1238,6 +1772,7 @@ async fn a_tasks_pull_request_is_never_another_tasks() {
         json!([pull(9, "octo/app", "me")]),
     );
     let pr = || GithubCall::Pr {
+        branch: None,
         title: "fix: plain pages".into(),
         body: "Pages render plainly.".into(),
     };
@@ -1246,9 +1781,23 @@ async fn a_tasks_pull_request_is_never_another_tasks() {
         e.contains("#9") && e.contains("another task's") && e.contains("Make saving atomic"),
         "{e}"
     );
-    assert!(e.contains(&format!("`{head}`")), "{e}");
+    assert!(e.contains("branch of its own"), "{e}");
+    let mut explicit = pr();
+    if let GithubCall::Pr { branch, .. } = &mut explicit {
+        *branch = Some("save-fix".into());
+    }
+    let e = call(&r.f, &binding, explicit).await.unwrap_err();
+    assert!(e.contains("another task's"), "{e}");
+    assert!(r.task(task.task_id).branch.is_none());
 
-    // Known as the other's branch, the folder's is passed over for its own.
+    // Once recorded, its own branch wins over the other task's checkout.
+    r.f.hub
+        .write(|tx| {
+            let mut t: Task = tx.read().require("task", task.task_id)?;
+            t.branch = task.branch.clone();
+            tx.put("task", t.task_id, &t)
+        })
+        .unwrap();
     r.f.hub
         .write(|tx| {
             let mut t: Task = tx.read().require("task", other.task_id)?;
@@ -1322,6 +1871,7 @@ async fn a_branch_already_merged_as_it_is_opens_no_second_pull_request() {
     };
     r.gh.answer(&closed, settled(true, "aaa111"));
     let pr = || GithubCall::Pr {
+        branch: None,
         title: "fix: plain pages".into(),
         body: "Pages render plainly.".into(),
     };
@@ -1473,7 +2023,7 @@ async fn an_agent_is_told_and_held_to_the_persons_choice_for_its_task() {
         .await;
     let text = told(&r);
     assert!(
-        text.contains("the person chose to merge its pull request themselves")
+        text.contains("the person merges its pull request themselves")
             && text.contains("the person marks it ready and merges it")
             && !text.contains("github_merge"),
         "{text}"
@@ -1485,10 +2035,132 @@ async fn an_agent_is_told_and_held_to_the_persons_choice_for_its_task() {
         },
     ] {
         let e = call(&r.f, &binding, refused).await.unwrap_err();
-        assert!(
-            e.contains("chose to merge this pull request themselves"),
-            "{e}"
-        );
+        assert!(e.contains("merges this pull request themselves"), "{e}");
+    }
+    r.f.close().await;
+}
+
+/// A change a chat's agent proposed, started without asking in a project
+/// that takes its pull requests through to merging, still stops at its pull
+/// request for the person: it is told so and can't mark it ready or merge it.
+#[tokio::test]
+async fn work_started_without_asking_stops_at_its_pull_request_in_through_merge() {
+    use ports::bridge::WorkCall;
+    let r = repo(true).await;
+    let through = GithubSettings {
+        mode: GithubMode::ThroughMerge,
+        ..Default::default()
+    };
+    r.set(through).await.unwrap();
+    let keep = GithubAction::AnswerWarning {
+        project_id: r.project_id,
+        repo: "octo/app".into(),
+        keep_through_merge: true,
+    };
+    r.act(&Caller::local_owner(), keep).await.unwrap();
+    let f = &r.f;
+    let owner = Caller::local_owner();
+    let receipt = (f.hub)
+        .submit(
+            &owner,
+            CommandEnvelope::new(Command::SetAutoStart {
+                project_id: r.project_id,
+                auto_start: Some(protocol::work_cards::AutoStart::DEFAULT),
+            }),
+        )
+        .await;
+    assert_eq!(receipt.error, None, "{receipt:?}");
+    let q: QueueView = f.hub.read(|x| x.require("queue", r.project_id)).unwrap();
+    let resume = (f.hub)
+        .submit(
+            &owner,
+            edit(
+                Command::QueueResume {
+                    project_id: r.project_id,
+                },
+                q.revision,
+            ),
+        )
+        .await;
+    assert_eq!(resume.error, None, "{resume:?}");
+    let (chat, _) = f
+        .task(r.project_id, TaskPlacement::StartNow, &owner, false)
+        .await;
+    f.hub
+        .write(|tx| {
+            let mut task: Task = tx.read().require("task", chat)?;
+            task.conversation = true;
+            tx.put("task", chat, &task)
+        })
+        .unwrap();
+    let task: Task = f.hub.read(|x| x.require("task", chat)).unwrap();
+    let run = task.current_run.unwrap();
+    let said = (f.hub)
+        .work_request(
+            run,
+            &task,
+            WorkCall::Propose {
+                tasks: vec![json!("Fix the crash on save")],
+                in_order: false,
+                all_issues: false,
+            },
+        )
+        .await
+        .unwrap();
+    assert!(said.contains("stops at its pull request"), "{said}");
+    f.hub.finish_run(run, RunState::Completed, None).unwrap();
+    let started = tokio::time::timeout(Duration::from_secs(15), async {
+        loop {
+            let tasks: Vec<Task> = f.hub.read(|x| x.list("task")).unwrap();
+            if let Some(t) = tasks
+                .into_iter()
+                .find(|t| t.origin.as_ref().is_some_and(|o| o.auto && o.run == run))
+                && t.current_run.is_some()
+            {
+                break t;
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("the proposal should start, and start running, by itself");
+    let github = started.github.as_deref().expect("its own pull request");
+    assert_eq!(github.link, GithubLink::NewPr);
+    assert_eq!(github.when_green, Some(WhenGreen::Leave));
+    let id = run_started(f, started.task_id).await;
+    let spec = tokio::time::timeout(Duration::from_secs(15), async {
+        loop {
+            let found = (f.harness.specs.lock().unwrap().iter())
+                .find(|s| s.run_id == id)
+                .cloned();
+            if let Some(spec) = found {
+                break spec;
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .unwrap();
+    let text = spec.github.clone().unwrap();
+    assert!(
+        text.contains("the person merges its pull request themselves")
+            && !text.contains("github_merge"),
+        "{text}"
+    );
+    let bridge = spec.bridge.clone().expect("a bridge");
+    let token = (bridge.env.iter())
+        .find(|(key, _)| key == ports::bridge::RUN_TOKEN_ENV)
+        .map(|(_, token)| token.clone())
+        .unwrap();
+    let binding = f.hub.bind(&token).await.expect("bridge binding");
+    for refused in [
+        GithubCall::Ready,
+        GithubCall::Merge {
+            expected_head: "aaa111".into(),
+        },
+    ] {
+        let e = call(f, &binding, refused).await.unwrap_err();
+        assert!(e.contains("merges this pull request themselves"), "{e}");
     }
     r.f.close().await;
 }

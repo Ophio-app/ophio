@@ -2,10 +2,17 @@
 //! The system's own calls for screens, permissions and the lock.
 #![allow(unsafe_code)]
 
-use platform_windows::desktop::geometry::Monitor;
+use objc2_core_foundation::{
+    CFBoolean, CFDictionary, CFRetained, CFString, CFType, kCFBooleanTrue,
+    kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks,
+};
+use platform_desktop::geometry::Monitor;
 use ports::desktop::PlatformError;
 use protocol::control::DesktopLockState;
-use std::ffi::{CStr, c_char, c_int, c_void};
+use std::{
+    ffi::{CStr, c_int, c_void},
+    ptr::NonNull,
+};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -44,28 +51,6 @@ unsafe extern "C" {
     fn AXIsProcessTrustedWithOptions(options: *const c_void) -> bool;
     static kAXTrustedCheckOptionPrompt: *const c_void;
 }
-#[link(name = "CoreFoundation", kind = "framework")]
-unsafe extern "C" {
-    fn CFRelease(value: *const c_void);
-    fn CFStringCreateWithCString(
-        allocator: *const c_void,
-        text: *const c_char,
-        encoding: u32,
-    ) -> *const c_void;
-    fn CFDictionaryGetValue(dictionary: *const c_void, key: *const c_void) -> *const c_void;
-    fn CFBooleanGetValue(value: *const c_void) -> bool;
-    fn CFDictionaryCreate(
-        allocator: *const c_void,
-        keys: *const *const c_void,
-        values: *const *const c_void,
-        count: isize,
-        key_callbacks: *const c_void,
-        value_callbacks: *const c_void,
-    ) -> *const c_void;
-    static kCFBooleanTrue: *const c_void;
-    static kCFTypeDictionaryKeyCallBacks: c_void;
-    static kCFTypeDictionaryValueCallBacks: c_void;
-}
 
 const UTF8: u32 = 0x0800_0100;
 const MAX_DISPLAYS: usize = 64;
@@ -90,7 +75,7 @@ pub(super) const ASLEEP: &str = "The Mac’s screen is asleep. Wake it to see it
 
 /// Whether the Mac's screens are connected but asleep, so none is active: a
 /// Mac whose display slept lists no screen at all until it wakes.
-pub(super) fn asleep() -> bool {
+pub(crate) fn asleep() -> bool {
     let mut ids = [0u32; MAX_DISPLAYS];
     let mut count = 0u32;
     let mut active = 0u32;
@@ -174,50 +159,61 @@ pub fn ask_for_permissions() -> (bool, bool) {
     // released after the call that reads it.
     unsafe {
         let screen = CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess();
-        let keys = [kAXTrustedCheckOptionPrompt];
-        let values = [kCFBooleanTrue];
-        let options = CFDictionaryCreate(
-            std::ptr::null(),
-            keys.as_ptr(),
-            values.as_ptr(),
+        let mut keys = [kAXTrustedCheckOptionPrompt];
+        let Some(value) = kCFBooleanTrue else {
+            return (screen, AXIsProcessTrusted());
+        };
+        let mut values = [(value as *const CFBoolean).cast()];
+        let options = CFDictionary::new(
+            None,
+            keys.as_mut_ptr(),
+            values.as_mut_ptr(),
             1,
-            (&raw const kCFTypeDictionaryKeyCallBacks).cast(),
-            (&raw const kCFTypeDictionaryValueCallBacks).cast(),
+            &kCFTypeDictionaryKeyCallBacks,
+            &kCFTypeDictionaryValueCallBacks,
         );
-        let input = AXIsProcessTrustedWithOptions(options);
-        if !options.is_null() {
-            CFRelease(options);
-        }
+        let input =
+            AXIsProcessTrustedWithOptions(options.as_ref().map_or(std::ptr::null(), |options| {
+                CFRetained::as_ptr(options).as_ptr().cast()
+            }));
         (screen, input)
     }
 }
 
 /// Whether the screen is locked, as the window system says for this session. No
 /// session at all, as from a connection with no one logged in, says nothing.
-pub(super) fn lock_state() -> DesktopLockState {
+pub(crate) fn lock_state() -> DesktopLockState {
+    // SAFETY: Copy returns a +1 CF reference or NULL. Only a non-null value is
+    // adopted; the canonical owner releases it after typed session inspection.
+    let session = unsafe { CGSessionCopyCurrentDictionary() };
+    let Some(session) = NonNull::new(session.cast_mut().cast::<CFType>()) else {
+        return DesktopLockState::Unknown;
+    };
+    let session = unsafe { CFRetained::from_raw(session) };
+    session_lock_state(&session)
+}
+
+fn session_lock_state(session: &CFType) -> DesktopLockState {
     const LOCKED: &CStr = c"CGSSessionScreenIsLocked";
-    // SAFETY: the dictionary is ours to release; the key string is released after
-    // the lookup, and the value is read while the dictionary holds it.
-    unsafe {
-        let session = CGSessionCopyCurrentDictionary();
-        if session.is_null() {
-            return DesktopLockState::Unknown;
-        }
-        let key = CFStringCreateWithCString(std::ptr::null(), LOCKED.as_ptr(), UTF8);
-        let state = if key.is_null() {
-            DesktopLockState::Unknown
-        } else {
-            let value = CFDictionaryGetValue(session, key);
-            CFRelease(key);
-            // The key is there only while it is locked.
-            if !value.is_null() && CFBooleanGetValue(value) {
-                DesktopLockState::Locked
-            } else {
-                DesktopLockState::Unlocked
-            }
-        };
-        CFRelease(session);
-        state
+    let Some(session) = session.downcast_ref::<CFDictionary>() else {
+        return DesktopLockState::Unknown;
+    };
+    // SAFETY: static, nul-terminated UTF-8 key. Allocation failure remains
+    // unknown rather than creating an owner for NULL or claiming unlocked.
+    let Some(key) = (unsafe { CFString::with_c_string(None, LOCKED.as_ptr(), UTF8) }) else {
+        return DesktopLockState::Unknown;
+    };
+    // SAFETY: this copied dictionary remains retained throughout the lookup;
+    // the value is type checked before CoreFoundation's boolean accessor.
+    let value = unsafe { session.value(CFRetained::as_ptr(&key).as_ptr().cast()) };
+    let Some(value) = (unsafe { value.cast::<CFType>().as_ref() }) else {
+        // The key is absent while the screen is unlocked.
+        return DesktopLockState::Unlocked;
+    };
+    match value.downcast_ref::<CFBoolean>() {
+        Some(value) if value.value() => DesktopLockState::Locked,
+        Some(_) => DesktopLockState::Unlocked,
+        None => DesktopLockState::Unknown,
     }
 }
 
@@ -267,6 +263,26 @@ pub(super) fn lock() -> Result<(), PlatformError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_cf_session_state_checks_types_without_reading_a_session() {
+        let key = CFString::from_str("CGSSessionScreenIsLocked");
+        for (locked, expected) in [
+            (true, DesktopLockState::Locked),
+            (false, DesktopLockState::Unlocked),
+        ] {
+            let session = CFDictionary::from_slices(&[&*key], &[CFBoolean::new(locked)]);
+            assert_eq!(session_lock_state(&session), expected);
+        }
+        let empty = CFDictionary::<CFString, CFBoolean>::empty();
+        assert_eq!(session_lock_state(&empty), DesktopLockState::Unlocked);
+        let invalid_value = CFDictionary::from_slices(&[&*key], &[&*key]);
+        assert_eq!(
+            session_lock_state(&invalid_value),
+            DesktopLockState::Unknown
+        );
+        assert_eq!(session_lock_state(&key), DesktopLockState::Unknown);
+    }
 
     #[test]
     fn a_screen_is_named_for_people_and_told_from_the_others() {

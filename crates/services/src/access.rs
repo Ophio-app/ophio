@@ -13,10 +13,27 @@ use protocol::{
     *,
 };
 use std::{
+    borrow::Cow,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
 };
+
+/// Ordinary Work tasks without conversation grants use the native agent's
+/// access, rather than Ophio's restricted conversation sandbox. Keep that
+/// default shared with standalone checks; their runner narrows it to project
+/// writes and allowlisted toolchain reads, never arbitrary host-file reads.
+pub(crate) fn launch_access(access: Option<&ConversationAccess>) -> Cow<'_, ConversationAccess> {
+    access.map(Cow::Borrowed).unwrap_or_else(|| {
+        Cow::Owned(ConversationAccess {
+            whole_read: true,
+            whole_write: true,
+            internet: true,
+            local_network: true,
+            ..Default::default()
+        })
+    })
+}
 
 impl CompanionHub {
     pub(crate) fn access_lock(&self, task: TaskId) -> Arc<tokio::sync::Mutex<()>> {
@@ -60,6 +77,40 @@ impl CompanionHub {
         })
     }
 
+    /// The turn's effective grant. A busy project stays read-only for the
+    /// whole turn, even if its writer finishes or access changes meanwhile.
+    pub(crate) fn conversation_reach(
+        &self,
+        r: &store::Read<'_>,
+        task: &Task,
+        run: RunId,
+        access: &ConversationAccess,
+    ) -> store::Result<Reach> {
+        let mut reach = self.access_reach(r, access)?;
+        if !access.unrestricted()
+            && r.get::<Option<TaskId>>(CHAT_WRITER_HOLD, run)?
+                .flatten()
+                .is_some()
+        {
+            let project: Project = r.require("project", task.project_id)?;
+            // Whole-computer write with the internet off is still sandboxed.
+            // It cannot exclude a subtree, so retain whole-computer read only.
+            reach.whole_write = false;
+            let mut write = Vec::new();
+            for path in reach.write {
+                if paths_overlap(&path, Path::new(&project.host_path)) {
+                    if !reach.read.contains(&path) {
+                        reach.read.push(path);
+                    }
+                } else {
+                    write.push(path);
+                }
+            }
+            reach.write = write;
+        }
+        Ok(reach)
+    }
+
     pub(crate) fn conversation_sandbox(
         &self,
         task: &Task,
@@ -69,9 +120,10 @@ impl CompanionHub {
         given: Vec<PathBuf>,
         bridged: bool,
     ) -> Result<Option<Arc<dyn Sandbox>>, ProtocolError> {
-        let Some(access) = task.access.as_ref().filter(|a| !a.unrestricted()) else {
+        let access = launch_access(task.access.as_ref());
+        if access.unrestricted() {
             return Ok(None);
-        };
+        }
         let backend = self
             .inner
             .sandboxes
@@ -79,7 +131,7 @@ impl CompanionHub {
             .ok_or_else(|| unsupported("Conversation access"))?;
         let (reach, candidates) = self.read(|r| {
             Ok((
-                self.access_reach(r, access)?,
+                self.conversation_reach(r, task, run, &access)?,
                 r.list::<Project>("project")?
                     .into_iter()
                     .map(|p| PathBuf::from(p.host_path))
@@ -164,19 +216,37 @@ impl CompanionHub {
         let side = self.side_turn(run_id)?;
         let access = held_to(task.access.as_ref(), side)
             .ok_or_else(|| error(ErrorCode::InvalidRequest, "Missing conversation access"))?;
-        let reach = self.read(|r| self.access_reach(r, &access))?;
-        let result = match sandbox {
-            Some(sandbox) => sandbox.update(reach).await,
-            None if access.unrestricted()
-                && self.read(|r| {
-                    Ok(r.get::<Option<ConversationAccess>>("run_access", run_id)?
-                        .flatten()
-                        .is_some_and(|a| a.unrestricted()))
-                })? =>
-            {
-                Applied::Applied
+        let (reach, needs_writer, was_unrestricted) = self.read(|r| {
+            let run: Run = r.require("run", run_id)?;
+            let blocked = r
+                .get::<Option<TaskId>>(CHAT_WRITER_HOLD, run_id)?
+                .flatten()
+                .is_some();
+            let was_unrestricted = r
+                .get::<Option<ConversationAccess>>("run_access", run_id)?
+                .flatten()
+                .is_some_and(|a| a.unrestricted());
+            Ok((
+                self.conversation_reach(r, &task, run_id, &access)?,
+                !side
+                    && !run.holds_writer
+                    && conversation_writes_project(r, &task)?
+                    && (!blocked || (access.unrestricted() && !was_unrestricted)),
+                was_unrestricted,
+            ))
+        })?;
+        let result = if needs_writer {
+            // Never grant live write access without reserving the project.
+            // The next turn either claims it or snapshots its current holder.
+            Applied::NeedsRestart(
+                "The conversation needs to check who may change this project.".into(),
+            )
+        } else {
+            match sandbox {
+                Some(sandbox) => sandbox.update(reach).await,
+                None if access.unrestricted() && was_unrestricted => Applied::Applied,
+                None => Applied::NeedsRestart("The conversation now needs a sandbox.".into()),
             }
-            None => Applied::NeedsRestart("The conversation now needs a sandbox.".into()),
         };
         let Applied::NeedsRestart(reason) = result else {
             return Ok(AccessApplied::Live);
@@ -232,6 +302,10 @@ impl CompanionHub {
                 return Err(error(ErrorCode::OutcomeUnknown,"The agent ended before reporting a native session; send the request again").into());
             }
             let next = self.new_run(tx, &mut task, command, Some(text.clone()), None, side)?;
+            // The same request carries on: the turn is the person's if the one it replaces was.
+            if crate::proposals::is_person_turn(&tx.read(), run_id)? {
+                crate::proposals::person_turn(tx, next)?;
+            }
             tx.put("task", task_id, &task)?;
             tx.emit(Event::TaskUpserted { task })?;
             tx.emit(Event::TimelineAppended { task_id, item: TimelineItem { seq:0, at:self.inner.clock.now(), run_id:Some(next),
@@ -276,6 +350,53 @@ impl CompanionHub {
         Ok(note(told.as_ref(), access, reach, &at, what).map(|text| (text, access.clone())))
     }
 
+    /// A writer hold is scheduling, not a change to the person's access.
+    /// Record the returned hold only after the agent has heard this note.
+    pub(crate) fn writer_note(
+        &self,
+        task: &Task,
+        run: RunId,
+        resumes: bool,
+    ) -> Result<Option<(String, Option<TaskId>)>, ProtocolError> {
+        let (hold, told, holder) = self.read(|r| {
+            let hold = r.get::<Option<TaskId>>(CHAT_WRITER_HOLD, run)?.flatten();
+            let told = if resumes {
+                r.get::<Option<TaskId>>(WRITER_TOLD, task.task_id)?
+                    .flatten()
+            } else {
+                None
+            };
+            let holder = hold
+                .map(|id| r.get::<Task>("task", id))
+                .transpose()?
+                .flatten();
+            Ok((hold, told, holder))
+        })?;
+        if hold == told {
+            return Ok(None);
+        }
+        let text = match hold {
+            Some(_) => {
+                let title = holder.as_ref().map(|t| t.title.as_str()).unwrap_or("another task");
+                let mut text = format!(
+                    "Ophio: “{title}” is changing this project’s files. Read them, but do not change them this turn. If the person asks for changes to this project, suggest them as work using Ophio’s tools, or tell the person you can make them in a later reply once “{title}” finishes. This temporary pause does not change the person’s access choices."
+                );
+                if let Some(access) = &task.access {
+                    if access.unrestricted() {
+                        text.push_str(" With unrestricted access, the computer cannot enforce this instruction.");
+                    } else if access.whole_write {
+                        text.push_str(" For this reply, whole-computer access is read-only. Only separately allowed folders that do not overlap this project, and your scratch folder if available, remain writable.");
+                    }
+                }
+                text
+            }
+            None if self.read(|r| Ok(r.require::<Run>("run", run)?.holds_writer))? =>
+                "Ophio: the pause on changing this project has ended. This reply may change this project’s files within the person’s existing access permissions.".into(),
+            None => "Ophio: the pause on changing this project has ended. Follow this reply’s access permissions; this does not grant any additional access.".into(),
+        };
+        Ok(Some((text, hold)))
+    }
+
     fn access_blocked(
         &self,
         run_id: RunId,
@@ -290,6 +411,23 @@ impl CompanionHub {
             if task.access.is_none() || task.current_run != Some(run_id) {
                 return Ok(());
             }
+            #[cfg(windows)]
+            let project_id = path.as_deref().and_then(|path| {
+                let path = ports::library::comparison(Path::new(path)).ok()?;
+                tx.read()
+                    .list::<Project>("project")
+                    .ok()?
+                    .into_iter()
+                    .filter_map(|project| {
+                        let root =
+                            ports::library::comparison(Path::new(&project.host_path)).ok()?;
+                        path.starts_with(&root)
+                            .then_some((root.components().count(), project.project_id))
+                    })
+                    .max_by_key(|(depth, _)| *depth)
+                    .map(|(_, id)| id)
+            });
+            #[cfg(not(windows))]
             let project_id = path.as_deref().and_then(|path| {
                 tx.read()
                     .list::<Project>("project")
@@ -359,6 +497,51 @@ pub(crate) enum AccessApplied {
 /// The access a conversation's agent was last told, by task: what its
 /// native session has heard.
 pub(crate) const TOLD: &str = "access_told";
+
+/// Per-run snapshot: another task owns this conversation's project writer.
+pub(crate) const CHAT_WRITER_HOLD: &str = "chat_writer_hold";
+/// The writer hold the native session last heard, keyed by task.
+pub(crate) const WRITER_TOLD: &str = "chat_writer_told";
+
+/// Whether this conversation's grant can change anything inside its project.
+/// A parent or child project's write grant overlaps just as its own does.
+pub(crate) fn conversation_writes_project(r: &store::Read<'_>, task: &Task) -> store::Result<bool> {
+    let Some(access) = task.access.as_ref().filter(|_| task.conversation) else {
+        return Ok(false);
+    };
+    if access.whole_write {
+        return Ok(true);
+    }
+    let project: Project = r.require("project", task.project_id)?;
+    for id in &access.write {
+        let writable: Project = r.require("project", id)?;
+        if paths_overlap(
+            Path::new(&project.host_path),
+            Path::new(&writable.host_path),
+        ) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn paths_overlap(a: &Path, b: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        match (ports::library::comparison(a), ports::library::comparison(b)) {
+            (Ok(a), Ok(b)) => a.starts_with(&b) || b.starts_with(&a),
+            // This predicate controls writer exclusion. Unverified paths must
+            // not leave a potentially overlapping grant writable.
+            _ => true,
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let a = std::fs::canonicalize(a).unwrap_or_else(|_| lexical(a));
+        let b = std::fs::canonicalize(b).unwrap_or_else(|_| lexical(b));
+        a.starts_with(&b) || b.starts_with(&a)
+    }
+}
 
 /// What `task`'s runs are held to now, if anything: an unrestricted
 /// conversation reaches what the computer does.
@@ -476,6 +659,7 @@ fn reached(reach: &Reach, at: &Folders<'_>) -> String {
     text
 }
 
+#[cfg(not(windows))]
 fn lexical(path: &Path) -> PathBuf {
     let mut normalized = PathBuf::new();
     for part in path.components() {
@@ -526,17 +710,70 @@ fn blocked_write(detail: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_overlap_resolves_missing_children_and_extended_aliases() {
+        let temp = tempfile::tempdir().unwrap();
+        let ordinary = ports::library::canonical(temp.path()).unwrap();
+        let extended = std::fs::canonicalize(temp.path()).unwrap();
+        let missing = ordinary.join("not-created-yet").join("child");
+        assert!(!missing.exists());
+        assert!(paths_overlap(&extended, &missing));
+        assert!(paths_overlap(&missing, &extended));
+        assert!(!paths_overlap(
+            &ordinary.join("first-missing"),
+            &extended.join("different-missing"),
+        ));
+        let compared = ports::library::comparison(&missing).unwrap();
+        assert_eq!(compared, extended.join("not-created-yet").join("child"));
+        assert!(paths_overlap(Path::new("\0"), &ordinary));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_comparison_refuses_a_dangling_junction_instead_of_trusting_its_name() {
+        use std::os::windows::process::CommandExt;
+        let temp = tempfile::tempdir().unwrap();
+        let target = temp.path().join("target");
+        let link = temp.path().join("link");
+        std::fs::create_dir(&target).unwrap();
+        let system = PathBuf::from(std::env::var_os("SystemRoot").unwrap());
+        // cmd's built-in mklink has legacy path parsing. Keep its arguments
+        // relative to our owned fixture instead of passing extended paths.
+        let fixture = ports::library::canonical(temp.path()).unwrap();
+        let output = std::process::Command::new(system.join("System32").join("cmd.exe"))
+            .current_dir(&fixture)
+            .raw_arg("/D /C mklink /J link target")
+            .creation_flags(0x08000000)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{output:?}; fixture={fixture:?}; link={link:?}; target={target:?}"
+        );
+        std::fs::remove_dir(&target).unwrap();
+        assert!(ports::library::comparison(&link.join("missing")).is_err());
+        std::fs::remove_dir(&link).unwrap();
+    }
     #[test]
     fn finds_actual_denied_paths_in_shell_and_python_results() {
+        // A rooted Unix path has no drive on Windows, so it is not absolute.
+        let root = if cfg!(windows) { r"C:\repo" } else { "/repo" };
+        let out = Path::new(root).join("out").to_string_lossy().into_owned();
+        let spaced = Path::new(root).join("a b").to_string_lossy().into_owned();
         assert_eq!(
-            blocked_write("/bin/sh: line 1: /repo/out: Read-only file system"),
-            Some("/repo/out".into())
+            blocked_write(&format!("/bin/sh: line 1: {out}: Read-only file system")),
+            Some(out.clone())
         );
         assert_eq!(
-            blocked_write("OSError: [Errno 30] Read-only file system: '/repo/a b'"),
-            Some("/repo/a b".into())
+            blocked_write(&format!(
+                "OSError: [Errno 30] Read-only file system: '{spaced}'"
+            )),
+            Some(spaced)
         );
-        assert_eq!(blocked_write("wrote /repo/out"), None);
+        assert_eq!(blocked_write(&format!("wrote {out}")), None);
+        assert_eq!(blocked_write("relative/out: Read-only file system"), None);
     }
 
     fn reach(access: &ConversationAccess, write: &[&str]) -> Reach {

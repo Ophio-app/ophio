@@ -6,13 +6,14 @@
 
 import type { AgentChoice } from "../../app/ui";
 import type { Tone } from "../../design/Chip";
-import type { Command, ConversationAccess, HarnessInfo, QueueView, Run, Task, TaskStart } from "../../protocol/types";
+import type { AnnotationBundle, Command, ConversationAccess, HarnessInfo, QueueView, Run, Task, TaskStart } from "../../protocol/types";
 import { createTaskCommand } from "./intent";
 import type { SendRequest } from "./send";
 import { taskRowBadge } from "./TaskBar";
 
 /** Whether the computer can hold a conversation and carry it into Work. */
 export const CONVERSATIONS_FEATURE = "conversations_v1";
+export const CHAT_AGENT_SWITCH_FEATURE = "chat_agent_switch_v1";
 export const CONVERSATIONS_UPDATE = "Update Øphio on this computer to hold conversations in Chat.";
 
 /** The draft a new conversation is written in, apart from a new task's. */
@@ -40,8 +41,8 @@ export function conversationBadge(t: Task, run: Run | undefined, queue: QueueVie
 
 /** A conversation starts at once, in Ask, with the person's first message,
  * or from an agent or skill. */
-export function startConversation(projectId: string, text: string, agent: AgentChoice, from: { start?: TaskStart; access?: ConversationAccess | null } = {}): Command {
-  return createTaskCommand({ projectId, prompt: text, title: null, agent, mode: "ask", placement: { mode: "start_now" }, mission: null, bundle: null, conversation: true, start: from.start, access: from.access });
+export function startConversation(projectId: string, text: string, agent: AgentChoice, from: { start?: TaskStart; access?: ConversationAccess | null; bundle?: AnnotationBundle | null } = {}): Command {
+  return createTaskCommand({ projectId, prompt: text, title: null, agent, mode: "ask", placement: { mode: "start_now" }, mission: null, bundle: from.bundle ?? null, conversation: true, start: from.start, access: from.access });
 }
 
 /** The first message of a conversation started from an agent or skill: it
@@ -68,8 +69,16 @@ export function turnModel(task: Task, h: HarnessInfo | undefined, pick: AgentCho
 }
 
 /** The choice the composer's chip shows: what the next message will use. */
-export function nextChoice(task: Task, pick: AgentChoice | null | undefined): AgentChoice {
-  return pick && pick.harness === task.harness ? pick : { harness: task.harness, model: task.model, effort: task.effort };
+export function nextChoice(task: Task, pick: AgentChoice | null | undefined, switchAgent = false): AgentChoice {
+  return pick && (switchAgent || pick.harness === task.harness) ? pick : { harness: task.harness, model: task.model, effort: task.effort };
+}
+
+/** A queued message must keep the complete choice made when it was sent,
+ * rather than inherit whichever agent happens to finish before it. */
+export function turnAgent(task: Task, harnesses: HarnessInfo[], pick: AgentChoice | null | undefined, switchAgent: boolean): { harness?: Task["harness"]; model?: string; effort?: string } {
+  const choice = nextChoice(task, pick, switchAgent);
+  if (switchAgent) return { harness: choice.harness, ...(choice.model ? { model: choice.model } : {}), ...(choice.effort ? { effort: choice.effort } : {}) };
+  return turnModel(task, harnesses.find(h => h.kind === task.harness), pick);
 }
 
 export const CONVERSATION_SUMMARY_PROMPT =

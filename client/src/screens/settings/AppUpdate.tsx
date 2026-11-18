@@ -54,16 +54,17 @@ export function useAppOffer(enabled = true): AppOfferFound | null {
  * this app install apps. Android stops an install it may not make yet to send
  * the person to that setting, and can cancel it on the way back; so the
  * setting comes first, and the update carries on when the app is back in
- * front. A caller that has already checked passes what it found.
+ * front. A caller that does the checking passes what it found, null while
+ * it has no answer; left out, this checks for itself.
  */
-export function AppUpdate({ found: given }: { found?: AppOfferFound } = {}) {
+export function AppUpdate({ found: given }: { found?: AppOfferFound | null } = {}) {
   const { platform, profile, session } = useApp();
   const link = useLink();
   const offers = useHost((s) => s.capabilities?.app_updates);
   const transfers = useHost((s) => s.grants?.transfers ?? false);
   const updater = platform.appUpdate;
   const own = useAppOffer(given === undefined);
-  const found = given ?? own;
+  const found = given === undefined ? own : given;
   const [step, setStep] = useState<Step>({ step: "idle" });
   /** Android's answer since the person asked to update, newer than `found`'s. */
   const [fresh, setFresh] = useState<{ allowed: boolean; asks: boolean } | null>(null);

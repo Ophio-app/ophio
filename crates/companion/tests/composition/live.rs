@@ -68,17 +68,7 @@ async fn live_rig() -> Rig {
         )
         .unwrap(),
     );
-    let executable_dir = std::env::current_exe()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .to_owned();
-    assert!(
-        executable_dir.join(computer_mcp::BINARY_NAME).exists(),
-        "Build computer-mcp before this test: cargo build -p computer-mcp"
-    );
+    let executable_dir = bridge_executable_dir();
     let options = ComposeOptions {
         environment: [("HOME".into(), std::env::var("HOME").unwrap())]
             .into_iter()
@@ -90,6 +80,7 @@ async fn live_rig() -> Rig {
         desktop_factory: Some(Arc::new(SyntheticDesktop)),
         speech_factory: Arc::new(companion::frontdoors::LocalSpeech),
         accounts: false,
+        release_check: false,
     };
     let runtime = Runtime::build(paths.clone(), config, &identity, options.clone())
         .await
@@ -247,6 +238,7 @@ async fn agent_text(phone: &mut Phone, task: TaskId) -> Vec<String> {
             TimelineBody::AgentMessage {
                 text,
                 partial: false,
+                ..
             } => Some(text),
             TimelineBody::Note { text } => Some(format!("[note] {text}")),
             _ => None,
@@ -310,6 +302,8 @@ async fn qualify(harness: HarnessKind) {
     phone
         .command(
             Command::ResumeTask {
+                observed_reply: None,
+                harness: None,
                 mode: None,
                 task_id: task,
                 text: Some(

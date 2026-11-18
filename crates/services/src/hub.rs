@@ -15,6 +15,52 @@ use std::{
 };
 use tokio::sync::{Mutex as AsyncMutex, broadcast};
 
+/// Remember the last definite status across failed checks. Unknown is not a
+/// sign-out, but must not hide a later sign-out or recovery from the log.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ClaudeSignInTransition {
+    SignedOut,
+    SignedIn,
+}
+
+fn claude_sign_in_state(infos: &[HarnessInfo]) -> Option<bool> {
+    match &infos
+        .iter()
+        .find(|info| info.kind == HarnessKind::ClaudeCode)?
+        .account
+    {
+        AccountReadiness::SignedIn { .. } => Some(true),
+        AccountReadiness::SignedOut { .. } => Some(false),
+        _ => None,
+    }
+}
+
+fn claude_sign_in_transition(
+    previous: Option<bool>,
+    current: Option<bool>,
+) -> Option<ClaudeSignInTransition> {
+    match (previous, current) {
+        (Some(true), Some(false)) => Some(ClaudeSignInTransition::SignedOut),
+        (Some(false), Some(true)) => Some(ClaudeSignInTransition::SignedIn),
+        _ => None,
+    }
+}
+
+fn log_claude_sign_in_transition(transition: ClaudeSignInTransition) {
+    match transition {
+        ClaudeSignInTransition::SignedOut => {
+            tracing::warn!("Claude reported sign-in changed from signed in to signed out")
+        }
+        ClaudeSignInTransition::SignedIn => {
+            tracing::info!("Claude reported sign-in changed from signed out to signed in")
+        }
+    }
+}
+
+#[cfg(test)]
+#[path = "hub_sign_in_log_tests.rs"]
+mod sign_in_log_tests;
+
 #[derive(Clone)]
 pub struct CompanionHub {
     pub(crate) inner: Arc<Inner>,
@@ -63,6 +109,7 @@ pub(crate) struct LoginAsk {
     pub code: Option<(zeroize::Zeroizing<String>, String)>,
 }
 pub(crate) struct Inner {
+    pub checks: crate::check_execution::Runtime,
     pub reports: crate::reports::Runtime,
     pub contributions: crate::contribution::Runtime,
     pub db: Mutex<store::Store>,
@@ -87,12 +134,15 @@ pub(crate) struct Inner {
     pub folder_browsers: Arc<tokio::sync::Semaphore>,
     pub inbox: Mutex<Option<PathBuf>>,
     pub harnesses: Vec<Arc<dyn ports::HarnessAdapter>>,
+    catalog_refresh: AsyncMutex<()>,
     pub sandboxes: Option<Arc<dyn ports::sandbox::Sandboxes>>,
     pub sandbox_runs: Mutex<HashMap<RunId, Arc<dyn ports::sandbox::Sandbox>>>,
     /// The sandboxed run that last showed each preview: its server is on
     /// that sandbox's loopback while the run lasts.
     pub preview_runs: Mutex<HashMap<PreviewId, RunId>>,
     pub access_changes: Mutex<HashMap<TaskId, std::sync::Weak<AsyncMutex<()>>>>,
+    /// A person's Continue keeps first claim while its old checks stop.
+    pub checking_continuations: Mutex<HashMap<ProjectId, crate::commands::CheckingContinuation>>,
     pub desktop: Mutex<Option<Arc<dyn ports::DesktopBackend>>>,
     pub desktop_absent: Mutex<Availability>,
     pub desktop_changed: tokio::sync::watch::Sender<u64>,
@@ -149,6 +199,10 @@ pub(crate) struct Inner {
     /// Uploads whose copy to their folder has claimed its room or been
     /// written, and so no longer hold room for a copy to come.
     pub copies: Mutex<std::collections::HashSet<TransferId>>,
+    /// Commands being admitted that came from outside this computer: a
+    /// person's own, from their phone, a channel or the command line. What
+    /// Ophio sends itself is never here.
+    pub from_person: Mutex<std::collections::HashSet<CommandId>>,
     pub shutdown: tokio::sync::watch::Sender<bool>,
     pub jobs: Mutex<Vec<tokio::task::JoinHandle<()>>>,
     pub windows: Option<Arc<dyn ports::windows::WindowActions>>,
@@ -165,8 +219,18 @@ pub(crate) struct Inner {
     pub agent_updates: AsyncMutex<()>,
     /// Held while an agent adds work the person asked for to Next up.
     pub planning: AsyncMutex<()>,
+    /// One Run all admission at a time per project, including sorting tasks.
+    pub issue_starts: Mutex<HashMap<ProjectId, std::sync::Weak<AsyncMutex<()>>>>,
     /// Checks of the copies started and not yet finished.
     pub agent_checks: std::sync::atomic::AtomicUsize,
+    /// Asks whether a newer Øphio is out, once a day while that is on.
+    pub release_check: Option<crate::release_check::ReleaseCheck>,
+    /// Rung when the check is turned on or off.
+    pub release_wake: Arc<tokio::sync::Notify>,
+    /// Held through each check, so two never ask at once.
+    pub release_checking: AsyncMutex<()>,
+    /// A check is asking now.
+    pub release_busy: std::sync::atomic::AtomicBool,
     pub agent_browser: Option<Arc<dyn ports::agent_browser::AgentBrowsing>>,
     pub github: Option<Arc<dyn ports::github::Github>>,
     pub system: Option<crate::system::SystemSampler>,
@@ -185,6 +249,10 @@ pub(crate) struct Inner {
     pub configured_roots: Mutex<Option<Vec<ports::RootSpec>>>,
     /// Where agent files were last found, and the roots wanted for them.
     pub(crate) agent_files: Mutex<crate::agent_files::Found>,
+    #[cfg(test)]
+    pub(crate) completed_writes: AtomicU64,
+    /// Unsaved reply tails; checkpoint writes consume them only after commit.
+    pub(crate) partial_replies: Mutex<crate::partial_reply::Runtime>,
     /// The keys and tokens each running task was given, masked in what it says.
     pub(crate) run_secrets: Mutex<HashMap<RunId, crate::accounts::RunSecrets>>,
     pub preview_forwards: crate::preview_forward::PreviewForwards,
@@ -229,6 +297,7 @@ pub struct HubBuilder {
     accounts: Option<Arc<dyn ports::accounts::Accounts>>,
     agent_logins: Option<Arc<dyn ports::agent_logins::AgentLogins>>,
     agent_updater: Option<Arc<dyn ports::agent_copy::AgentUpdater>>,
+    release_check: Option<crate::release_check::ReleaseCheck>,
     terminal_block: Option<ports::TerminalBlock>,
     app_updates: Vec<(protocol::capability::AppOffer, std::path::PathBuf)>,
     agent_browser: Option<Arc<dyn ports::agent_browser::AgentBrowsing>>,
@@ -267,6 +336,7 @@ impl Default for HubBuilder {
             accounts: None,
             agent_logins: None,
             agent_updater: None,
+            release_check: None,
             terminal_block: None,
             app_updates: Vec::new(),
             agent_browser: None,
@@ -314,6 +384,11 @@ impl HubBuilder {
     /// the owner has that on.
     pub fn agent_updater(mut self, value: Arc<dyn ports::agent_copy::AgentUpdater>) -> Self {
         self.agent_updater = Some(value);
+        self
+    }
+    /// Checks once a day whether a newer Øphio is out, while that is on.
+    pub fn release_check(mut self, value: crate::release_check::ReleaseCheck) -> Self {
+        self.release_check = Some(value);
         self
     }
     /// The launch arguments that keep what is disabled in Ophio from Claude
@@ -487,6 +562,8 @@ impl HubBuilder {
         let host_id = stored_id.or(self.host_id).unwrap_or_default();
         let epoch = BootEpoch::new();
         let started = self.clock.now();
+        let boot = crate::cut_off::boot_id();
+        let mut abandoned_check_ends = Vec::new();
         let commit = db.write(started, |tx| {
             crate::contribution::recover(tx)?;
             // Topic switches saved before notification types existed.
@@ -498,13 +575,22 @@ impl HubBuilder {
                 tx.delete("terminal_owner", id)?;
             }
             for mut run in tx.read().list::<Run>("run")? {
+                crate::partial_reply::finish(tx, &run)?;
+                tx.delete(crate::partial_reply::WATERMARK, run.run_id)?;
                 let mut task: Task = tx.read().require("task", run.task_id)?;
+                // A completed agent run may still own its deferred checking end.
+                // Check recovery, not helper recovery, accounts for that work.
+                if tx.read().get::<serde_json::Value>("check_deferred_end", task.task_id)?.is_some() {
+                    continue;
+                }
                 // Repair writer projections saved by versions that gave every
-                // mode a slot. Helpers a finished Work turn kept the slot for
+                // mode a slot. New chat turns record their admission separately
+                // and keep their real reservation. Helpers a finished turn kept the slot for
                 // were never confirmed ended, so it stays until the person
                 // reconciles the task. Never disturb a different run's
                 // ownership.
-                if crate::runs::run_mode(&run, &task) != TaskMode::Work {
+                if crate::runs::run_mode(&run, &task) != TaskMode::Work
+                    && tx.read().get::<Option<TaskId>>(crate::access::CHAT_WRITER_HOLD, run.run_id)?.is_none() {
                     if run.holds_writer {
                         run.holds_writer = false;
                         tx.put("run", run.run_id, &run)?;
@@ -525,6 +611,7 @@ impl HubBuilder {
                         tx.emit(Event::QueueChanged { queue })?;
                     }
                 }
+                let unconfirmed = crate::runs::still_finishing(&run);
                 crate::runs::cleanup_unconfirmed(tx, &mut run, &mut task, started)?;
                 let recovered = domain::recover_run(run.state);
                 if recovered != run.state {
@@ -532,7 +619,48 @@ impl HubBuilder {
                     tx.put("run", run.run_id, &run)?;
                     tx.emit(Event::RunUpserted { run: Box::new(run.clone()) })?;
                     task.state = TaskState::ReconciliationRequired; task.updated_at = started; task.revision += 1;
-                    tx.put("task", task.task_id, &task)?; tx.emit(Event::TaskUpserted { task })?;
+                    tx.put("task", task.task_id, &task)?; tx.emit(Event::TaskUpserted { task: task.clone() })?;
+                }
+                if run.state.is_terminal() || run.state == RunState::ReconciliationRequired {
+                    // Startup recovery does not call end_run. Its abandoned
+                    // filesystem journal must be discarded only after this
+                    // reconciliation transaction has committed successfully.
+                    abandoned_check_ends.push(run.run_id);
+                    if tx.read().get::<crate::check_lifecycle::DeferredEnd>(crate::check_lifecycle::HELPERS_END, run.run_id)?.is_some() {
+                        tx.emit(Event::TimelineAppended {
+                            task_id: task.task_id,
+                            item: TimelineItem { seq: 0, at: started, run_id: Some(run.run_id), item: TimelineBody::Note {
+                                text: "Not checked: Ophio restarted before the background helpers could be confirmed finished.".into(),
+                            } },
+                        })?;
+                        tx.delete(crate::check_lifecycle::HELPERS_END, run.run_id)?;
+                    }
+                }
+                // A chat cut off whose agent and what it started have stopped
+                // carries on when the person writes.
+                if !unconfirmed {
+                    crate::cut_off::mark_at_start(tx, &mut run, &task, boot.as_deref(), started)?;
+                    if task.conversation && run.nothing_running && run.holds_writer {
+                        // A chat with a confirmed process end is safe to leave
+                        // behind even while its reply's outcome stays unknown.
+                        run.holds_writer = false;
+                        tx.put("run", run.run_id, &run)?;
+                        tx.emit(Event::RunUpserted { run: Box::new(run.clone()) })?;
+                        if let Some(mut project) = tx.read().get::<Project>("project", task.project_id)?
+                            && project.active_writer == Some(run.run_id) {
+                            project.active_writer = None;
+                            tx.put("project", project.project_id, &project)?;
+                            tx.emit(Event::ProjectUpserted { project })?;
+                        }
+                        if let Some(mut queue) = tx.read().get::<protocol::queue::QueueView>("queue", task.project_id)?
+                            && queue.writer == Some(run.run_id) {
+                            queue.writer = None;
+                            crate::runs::bump_queue_revision(tx, &mut queue)?;
+                            tx.put("queue", queue.project_id, &queue)?;
+                            crate::runs::sync_queue_attention(tx, &queue, started)?;
+                            tx.emit(Event::QueueChanged { queue })?;
+                        }
+                    }
                 }
             }
             // Normalize projections stored by versions that counted review results.
@@ -553,6 +681,7 @@ impl HubBuilder {
                 };
                 if work.pending && matches!(work.envelope.body, protocol::command::Command::SendMessage { .. }) {
                     crate::runs::fail_undispatched_followup(tx, work.envelope.command_id, started)?;
+                    crate::runs::fail_undispatched_chat_turn(tx, work.envelope.command_id, started)?;
                 }
                 if work.pending { work.pending = false; work.stage = CommandStage::ReconciliationRequired; tx.command(&work)?; tx.emit(Event::CommandProgress { result: None, error: None, command_id: work.envelope.command_id, stage: work.stage, detail: Some("Øphio restarted on the computer before the effect was settled; review required".into()) })?; }
             }
@@ -616,6 +745,7 @@ impl HubBuilder {
         let (shutdown, _) = tokio::sync::watch::channel(false);
         let hub = CompanionHub {
             inner: Arc::new(Inner {
+                checks: Default::default(),
                 reports: crate::reports::Runtime::new(self.reports, &data, started)?,
                 contributions: crate::contribution::Runtime::default(),
                 db: Mutex::new(db),
@@ -635,7 +765,12 @@ impl HubBuilder {
                 app_updates: self.app_updates,
                 agent_updates: AsyncMutex::new(()),
                 planning: AsyncMutex::new(()),
+                issue_starts: Mutex::default(),
                 agent_checks: std::sync::atomic::AtomicUsize::new(0),
+                release_check: self.release_check,
+                release_wake: Arc::default(),
+                release_checking: AsyncMutex::new(()),
+                release_busy: Default::default(),
                 agent_browser: self.agent_browser,
                 github: self.github,
                 system: self.system.map(crate::system::SystemSampler::new),
@@ -646,6 +781,9 @@ impl HubBuilder {
                 launchers: self.launchers,
                 configured_roots: Mutex::default(),
                 agent_files: Mutex::default(),
+                #[cfg(test)]
+                completed_writes: AtomicU64::new(0),
+                partial_replies: Mutex::default(),
                 run_secrets: Mutex::default(),
                 head: AtomicU64::new(commit.head),
                 host_id,
@@ -660,10 +798,12 @@ impl HubBuilder {
                 folder_browsers: crate::project_folders::slots(),
                 inbox: Mutex::new(inbox),
                 harnesses: self.harnesses,
+                catalog_refresh: AsyncMutex::new(()),
                 sandboxes: self.sandboxes,
                 sandbox_runs: Mutex::default(),
                 preview_runs: Mutex::default(),
                 access_changes: Mutex::default(),
+                checking_continuations: Mutex::default(),
                 voice: Default::default(),
                 desktop: Mutex::new(self.desktop),
                 desktop_absent: Mutex::new(self.desktop_absent),
@@ -703,11 +843,15 @@ impl HubBuilder {
                 max_upload: self.max_upload,
                 copying: Mutex::new(HashMap::new()),
                 copies: Mutex::new(std::collections::HashSet::new()),
+                from_person: Mutex::new(std::collections::HashSet::new()),
                 shutdown,
                 jobs: Mutex::new(Vec::new()),
                 _instance_lock: instance_lock,
             }),
         };
+        for run_id in abandoned_check_ends {
+            hub.remove_prepared_checks_end(run_id);
+        }
         for event in &commit.events {
             hub.observe_report_event(event);
         }
@@ -715,7 +859,11 @@ impl HubBuilder {
         hub.refresh_host().await?;
         hub.refresh_readiness().await?;
         hub.start_reports().await?;
+        hub.recover_check_jobs().await?;
+        hub.finish_recovered_checks()?;
         hub.start_background();
+        hub.wake_checks();
+        hub.start_reply_checkpoints();
         // A review's findings left waiting for their verifier when Ophio
         // last stopped go to it now.
         let resuming = hub.clone();
@@ -772,10 +920,44 @@ impl CompanionHub {
             .write(now, |tx| {
                 let value = f(tx)?;
                 crate::waiting::settle(tx, now)?;
+                // All writer mutations pass this transaction boundary. A
+                // Continue stopping checks must not lose its next turn to
+                // any other admission path before it can reserve its run.
+                let reservations = self
+                    .inner
+                    .checking_continuations
+                    .lock()
+                    .map_err(internal)?
+                    .clone();
+                for (project_id, reserved) in reservations {
+                    if let Some(writer) = tx
+                        .read()
+                        .require::<Project>("project", project_id)?
+                        .active_writer
+                        && !crate::runs::check_continuation_writer(
+                            &tx.read(),
+                            writer,
+                            reserved.run_id,
+                            reserved.command_id,
+                        )?
+                    {
+                        return Err(error(
+                            ErrorCode::Conflict,
+                            "This project is reserved while a person continues its checking task.",
+                        )
+                        .into());
+                    }
+                }
                 Ok(value)
             })
             .map_err(stored)?;
+        #[cfg(test)]
+        self.inner.completed_writes.fetch_add(1, Ordering::Relaxed);
         self.inner.head.store(commit.head, Ordering::Release);
+        if commit.changed(crate::partial_reply::WATERMARK) {
+            db.read(|read| self.inner.partial_replies.lock().unwrap().committed(read))
+                .map_err(stored)?;
+        }
         // Read where no transaction is open, as by pairing and the server.
         if let Some(name) = commit.events.iter().rev().find_map(|e| match &e.event {
             Event::HostUpdated { host } => Some(&host.name),
@@ -797,6 +979,9 @@ impl CompanionHub {
         }
         if commit.changed("device") || commit.changed("channel") {
             self.inner.credentials.fetch_add(1, Ordering::Relaxed);
+        }
+        if commit.changed(store::checks::JOBS) || commit.changed("project") {
+            self.wake_checks();
         }
         let credentials = self.inner.credentials.load(Ordering::Relaxed);
         let mut subscribers = self.inner.subscribers.lock().map_err(internal)?;
@@ -975,6 +1160,9 @@ impl CompanionHub {
         Ok(true)
     }
     pub async fn refresh_catalog(&self) -> Result<(), ProtocolError> {
+        // A slower, older probe must not overwrite a newer sign-in observation
+        // or manufacture reversed state-change messages in the service log.
+        let _refresh = self.inner.catalog_refresh.lock().await;
         let asked_at = self.inner.clock.now();
         let mut infos = Vec::new();
         for adapter in &self.inner.harnesses {
@@ -1001,17 +1189,33 @@ impl CompanionHub {
             infos.push(info);
         }
         let now = self.inner.clock.now();
-        self.write(|tx| {
+        let transition = self.write(|tx| {
             let stored = tx.read().get::<Vec<HarnessInfo>>("meta", "harnesses")?;
             crate::usage_limits::carry(&mut infos, stored.as_deref().unwrap_or_default(), now);
+            let previous = tx
+                .read()
+                .get::<bool>("meta", "claude-sign-in-state")?
+                .or_else(|| stored.as_deref().and_then(claude_sign_in_state));
+            let current = claude_sign_in_state(&infos);
+            let transition = claude_sign_in_transition(previous, current);
+            if let Some(current) = current {
+                tx.put("meta", "claude-sign-in-state", &current)?;
+            }
             let computer = self.computer_name(&tx.read())?;
             crate::sign_in_watch::catalog_seen(tx, &infos, &computer, asked_at, now)?;
+            crate::agent_updates::catalog_seen(tx, &infos, now)?;
             if stored.as_ref() != Some(&infos) {
                 tx.put("meta", "harnesses", &infos)?;
                 tx.emit(Event::HarnessesChanged { harnesses: infos })?;
             }
-            Ok(())
-        })
+            Ok(transition)
+        })?;
+        // Do not log a transition if its write failed; never log account
+        // labels, remedies, unknown reasons, or native command output.
+        if let Some(transition) = transition {
+            log_claude_sign_in_transition(transition);
+        }
+        Ok(())
     }
     fn start_background(&self) {
         let weak = Arc::downgrade(&self.inner);
@@ -1060,6 +1264,7 @@ impl CompanionHub {
             let mut tick = tokio::time::interval(Duration::from_secs(60 * 60));
             loop {
                 tokio::select! { _ = shutdown.changed() => break, _ = tick.tick() => { let Some(inner) = weak.upgrade() else { break }; let hub = Self { inner }; if let Err(e) = hub.expire_shown().await { tracing::error!(code=?e.code, "shown expiry failed"); }
+                    if let Err(e) = hub.collect_attached().await { tracing::error!(code=?e.code, "attached files cleanup failed"); }
                     if let Err(e) = hub.collect_transfers().await { tracing::error!(code=?e.code, "transfer cleanup failed"); }
                     if let Err(e) = hub.collect_scratch().await { tracing::error!(code=?e.code, "scratch cleanup failed"); }
                     if let Some(library) = &hub.inner.library && let Err(error) = library.purge().await { tracing::error!(%error, "Library cleanup failed"); } }
@@ -1079,7 +1284,8 @@ impl CompanionHub {
             let weak = Arc::downgrade(&self.inner);
             let mut shutdown = self.inner.shutdown.subscribe();
             self.spawn(async move {
-                let mut tick = tokio::time::interval(crate::agent_updates::EVERY);
+                // Re-read the wall clock after sleep, including laptop suspension.
+                let mut tick = tokio::time::interval(Duration::from_secs(60 * 60));
                 tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
                 loop {
                     tokio::select! {
@@ -1092,6 +1298,7 @@ impl CompanionHub {
                 }
             });
         }
+        self.start_release_checks();
         // Only with a GitHub port: an idle hub without one never ticks.
         if self.inner.github.is_some() {
             let weak = Arc::downgrade(&self.inner);
@@ -1206,14 +1413,17 @@ impl CompanionHub {
         }
         let controls: Vec<_> = {
             let runs = self.inner.runs.lock().await;
+            let controls: Vec<_> = runs.values().cloned().collect();
+            // The watch can drop run-event receivers immediately. Mark each
+            // actor as stopping first, so it can finish EOF-driven shutdown.
+            for control in &controls {
+                control.close_admission();
+            }
             self.inner.shutdown.send_replace(true);
-            runs.values().cloned().collect()
+            controls
         };
         // Run events are no longer recorded, and an accepted Stop may never
         // reach its effect. Nothing held is written from here on.
-        for control in &controls {
-            control.close_admission();
-        }
         let desktop_result = self
             .set_desktop(
                 None,
@@ -1245,6 +1455,7 @@ impl CompanionHub {
                 let _ = terminal.close(info.terminal_id).await;
             }
         }
+        self.save_replies().await?;
         self.inner.runs.lock().await.clear();
         self.inner.waits.lock().await.clear();
         desktop_result
@@ -1351,6 +1562,30 @@ impl CompanionHub {
     }
 }
 
+/// Marks a command as the person's own while it is admitted.
+struct PersonsCommand<'a>(&'a CompanionHub, CommandId);
+
+impl<'a> PersonsCommand<'a> {
+    fn new(hub: &'a CompanionHub, id: CommandId) -> Self {
+        hub.inner.from_person.lock().unwrap().insert(id);
+        Self(hub, id)
+    }
+}
+
+impl Drop for PersonsCommand<'_> {
+    fn drop(&mut self) {
+        self.0.inner.from_person.lock().unwrap().remove(&self.1);
+    }
+}
+
+impl CompanionHub {
+    /// Whether command `id`, being admitted now, came from the person
+    /// rather than from Ophio itself.
+    pub(crate) fn is_from_person(&self, id: CommandId) -> bool {
+        self.inner.from_person.lock().unwrap().contains(&id)
+    }
+}
+
 #[async_trait]
 impl Hub for CompanionHub {
     fn host_id(&self) -> HostId {
@@ -1424,6 +1659,7 @@ impl Hub for CompanionHub {
         self.link_outcome(kind, code)
     }
     async fn submit(&self, c: &Caller, e: CommandEnvelope) -> CommandReceipt {
+        let _person = PersonsCommand::new(self, e.command_id);
         self.admit(c, e).await
     }
     async fn submit_received(
@@ -1432,6 +1668,7 @@ impl Hub for CompanionHub {
         e: CommandEnvelope,
         received: Timestamp,
     ) -> CommandReceipt {
+        let _person = PersonsCommand::new(self, e.command_id);
         self.admit_received(c, e, received, None).await
     }
     async fn reject_command(

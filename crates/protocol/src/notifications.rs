@@ -20,8 +20,8 @@ pub const ALERT_TYPES_FEATURE: &str = "alert_types_v1";
 /// has its own Android notification category and its own choice of
 /// [`Tier`] on each phone, and each project may choose its own.
 ///
-/// The rule for what alerts by default: only what waits on the person and
-/// won't move until they act. What is worth a look shows silently, and
+/// By default, what waits on the person alerts, as do replies in a chat
+/// they aren't viewing. Other things worth a look show silently, and
 /// routine progress waits in the app.
 #[derive(
     Debug,
@@ -71,6 +71,10 @@ pub enum AlertType {
     Reports,
     /// A computer offers a newer Øphio for this phone. The phone's own.
     AppUpdate,
+    /// A newer Øphio is out for a computer, to update it with.
+    NewVersion,
+    /// Agent updates and newly available models on a computer.
+    AgentUpdate,
     /// A task finished its work.
     Finished,
     /// A pull request merged.
@@ -126,11 +130,14 @@ pub struct TypeInfo {
     pub group: TypeGroup,
     /// The recommended choice.
     pub tier: Tier,
+    /// A project may choose its own for it: its notifications belong to a
+    /// project's work.
+    pub project: bool,
 }
 
 impl AlertType {
     /// Every type, in the order Settings lists them.
-    pub const ALL: [AlertType; 18] = [
+    pub const ALL: [AlertType; 20] = [
         AlertType::Question,
         AlertType::Approval,
         AlertType::SignIn,
@@ -145,6 +152,8 @@ impl AlertType {
         AlertType::IssueCall,
         AlertType::Reports,
         AlertType::AppUpdate,
+        AlertType::NewVersion,
+        AlertType::AgentUpdate,
         AlertType::Finished,
         AlertType::Merged,
         AlertType::Issues,
@@ -208,9 +217,9 @@ impl AlertType {
             ),
             Reply => (
                 "Chat replies",
-                "An agent replied in a chat you’re in.",
+                "An agent replied in a chat you aren’t viewing.",
                 WorthALook,
-                Silent,
+                Alert,
             ),
             PrReady => (
                 "Pull requests ready to merge",
@@ -239,6 +248,18 @@ impl AlertType {
             AppUpdate => (
                 "Øphio updates",
                 "A computer has a newer Øphio for this phone.",
+                WorthALook,
+                Silent,
+            ),
+            NewVersion => (
+                "New Øphio versions",
+                "A newer Øphio is out for one of your computers.",
+                WorthALook,
+                Silent,
+            ),
+            AgentUpdate => (
+                "Agent updates and new models",
+                "Claude Code or Codex has an update or new models on a computer.",
                 WorthALook,
                 Silent,
             ),
@@ -273,7 +294,19 @@ impl AlertType {
             description,
             group,
             tier,
+            project: self.in_projects(),
         }
+    }
+
+    /// Whether a project may choose for this type. A newer Øphio for the
+    /// phone or the computer belongs to no project; a choice for one is
+    /// never kept, which also keeps a type older versions don't know out of
+    /// the settings they read.
+    pub fn in_projects(self) -> bool {
+        !matches!(
+            self,
+            AlertType::AppUpdate | AlertType::NewVersion | AlertType::AgentUpdate
+        )
     }
 
     /// The recommended choice for this type.
@@ -287,6 +320,12 @@ impl AlertType {
     pub fn of(item: &crate::model::AttentionItem, conversation: bool) -> Option<AlertType> {
         if let Some(t) = item.alert {
             return Some(t);
+        }
+        if item.agent_update.is_some() && item.task_id.is_none() {
+            return Some(AlertType::AgentUpdate);
+        }
+        if item.new_version.is_some() && item.task_id.is_none() {
+            return Some(AlertType::NewVersion);
         }
         if item.account_id.is_some() && item.task_id.is_none() {
             return Some(AlertType::SignIn);
@@ -347,6 +386,21 @@ pub struct TypeTier {
     #[serde(rename = "type")]
     pub alert_type: AlertType,
     pub tier: Tier,
+}
+
+/// Choices by type, leaving out any for a type or tier this version doesn't
+/// know: a newer version may have kept one, and the rest still holds. Read
+/// strictly, one unknown type would make the whole of the settings, and so
+/// the computer's start after going back to this version, fail.
+fn known_tiers<'de, D>(deserializer: D) -> Result<Vec<TypeTier>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let values = Vec::<serde_json::Value>::deserialize(deserializer)?;
+    Ok(values
+        .into_iter()
+        .filter_map(|v| serde_json::from_value(v).ok())
+        .collect())
 }
 
 /// What an alert is about. Each can be turned off, everywhere or in one
@@ -446,7 +500,11 @@ pub struct NotificationSettings {
     /// follows, new projects included. Only ever brought over from a topic
     /// turned off for every project before types existed, and only
     /// stricter: phones don't set it, and saving keeps it.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(
+        default,
+        skip_serializing_if = "Vec::is_empty",
+        deserialize_with = "known_tiers"
+    )]
     #[ts(as = "Option<Vec<TypeTier>>", optional)]
     pub tiers: Vec<TypeTier>,
     #[schemars(range(max = crate::MAX_SAFE_INTEGER))]
@@ -475,7 +533,11 @@ pub struct ProjectNotifications {
     pub bundle: Option<bool>,
     /// The project's own choice for a type, over each phone's. Older
     /// computers keep none.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(
+        default,
+        skip_serializing_if = "Vec::is_empty",
+        deserialize_with = "known_tiers"
+    )]
     #[ts(as = "Option<Vec<TypeTier>>", optional)]
     pub tiers: Vec<TypeTier>,
 }
@@ -549,7 +611,7 @@ impl NotificationSettings {
         }
         once(&mut self.off);
         let mut tiers: Vec<TypeTier> = Vec::new();
-        for t in self.tiers.drain(..).rev() {
+        for t in (self.tiers.drain(..).rev()).filter(|t| t.alert_type.in_projects()) {
             if !tiers.iter().any(|k| k.alert_type == t.alert_type) {
                 tiers.push(t);
             }
@@ -563,7 +625,7 @@ impl NotificationSettings {
             p.on.retain(|t| !p.off.contains(t));
             // Each type once, the last choice for it kept, in type order.
             let mut tiers: Vec<TypeTier> = Vec::new();
-            for t in p.tiers.drain(..).rev() {
+            for t in (p.tiers.drain(..).rev()).filter(|t| t.alert_type.in_projects()) {
                 if !tiers.iter().any(|k| k.alert_type == t.alert_type) {
                     tiers.push(t);
                 }
@@ -664,15 +726,24 @@ mod tests {
             let info = t.info();
             assert!(!info.name.is_empty() && info.description.ends_with('.'));
         }
-        // Only what waits on the person alerts by default.
+        // Replies also alert unless the person is viewing that exact chat.
         assert!(
             (AlertType::ALL.iter())
                 .filter(|t| t.default_tier() == Tier::Alert)
-                .all(|t| t.info().group == TypeGroup::NeedsYou)
+                .all(|t| t.info().group == TypeGroup::NeedsYou || *t == AlertType::Reply)
         );
         assert_eq!(AlertType::Finished.default_tier(), Tier::Off);
         assert_eq!(AlertType::GoAhead.default_tier(), Tier::Silent);
-        assert_eq!(AlertType::Reply.default_tier(), Tier::Silent);
+        assert_eq!(AlertType::Reply.default_tier(), Tier::Alert);
+        assert_eq!(AlertType::AgentUpdate.default_tier(), Tier::Silent);
+        assert!(!AlertType::AgentUpdate.info().project);
+        assert_eq!(
+            serde_json::to_string(&AlertType::AgentUpdate).unwrap(),
+            r#""agent_update""#
+        );
+        assert_eq!(AlertType::NewVersion.default_tier(), Tier::Silent);
+        let text = serde_json::to_string(&AlertType::NewVersion).unwrap();
+        assert_eq!(text, r#""new_version""#);
         let text = serde_json::to_string(&AlertType::PrNeedsYou).unwrap();
         assert_eq!(text, r#""pr_needs_you""#);
     }
@@ -689,6 +760,43 @@ mod tests {
         if std::fs::read_to_string(&path).ok().as_deref() != Some(text.as_str()) {
             std::fs::write(&path, text).unwrap();
         }
+    }
+
+    /// A newer Øphio belongs to no project, so no choice for it is kept,
+    /// and an older version never reads one it doesn't know.
+    #[test]
+    fn choices_for_types_in_no_project_are_never_kept() {
+        let a = ProjectId::new();
+        let choice = |alert_type, tier| TypeTier { alert_type, tier };
+        let settings = NotificationSettings {
+            projects: vec![ProjectNotifications {
+                tiers: vec![
+                    choice(AlertType::NewVersion, Tier::Off),
+                    choice(AlertType::AppUpdate, Tier::Alert),
+                    choice(AlertType::Merged, Tier::Off),
+                ],
+                ..ProjectNotifications::new(a)
+            }],
+            tiers: vec![choice(AlertType::NewVersion, Tier::Off)],
+            ..NotificationSettings::default()
+        }
+        .tidy()
+        .unwrap();
+        assert!(settings.tiers.is_empty());
+        assert_eq!(
+            settings.projects[0].tiers,
+            [choice(AlertType::Merged, Tier::Off)]
+        );
+        let only = NotificationSettings {
+            projects: vec![ProjectNotifications {
+                tiers: vec![choice(AlertType::NewVersion, Tier::Off)],
+                ..ProjectNotifications::new(a)
+            }],
+            ..NotificationSettings::default()
+        };
+        assert!(only.tidy().unwrap().projects.is_empty());
+        assert!(!AlertType::NewVersion.info().project);
+        assert!(AlertType::Finished.info().project);
     }
 
     #[test]
@@ -722,6 +830,50 @@ mod tests {
             ..settings.clone()
         };
         assert_eq!(tier(&muted, AlertType::Finished), Some(Tier::Off));
+    }
+
+    /// A newer version may keep a choice for a type this one doesn't know;
+    /// the settings still read, without it, so a computer that went back to
+    /// this version still starts, and a phone still reads its settings.
+    #[test]
+    fn choices_for_unknown_types_are_left_out_when_read() {
+        let project = ProjectId::new();
+        let text = serde_json::json!({
+            "off": [],
+            "bundle": false,
+            "projects": [{
+                "project_id": project,
+                "tiers": [
+                    { "type": "something_new", "tier": "off" },
+                    { "type": "finished", "tier": "alert" },
+                    { "type": "merged", "tier": "louder_still" },
+                ],
+            }],
+            "tiers": [
+                { "type": "something_new", "tier": "silent" },
+                { "type": "slow", "tier": "off" },
+                "not a choice",
+            ],
+            "revision": 3,
+        });
+        let settings: NotificationSettings = serde_json::from_value(text).unwrap();
+        assert_eq!(settings.revision, 3);
+        assert_eq!(
+            settings.tiers,
+            [TypeTier {
+                alert_type: AlertType::Slow,
+                tier: Tier::Off
+            }]
+        );
+        assert_eq!(
+            settings.projects[0].tiers,
+            [TypeTier {
+                alert_type: AlertType::Finished,
+                tier: Tier::Alert
+            }]
+        );
+        // Not a list at all is still an error.
+        assert!(serde_json::from_str::<NotificationSettings>(r#"{"tiers":3}"#).is_err());
     }
 
     #[test]
